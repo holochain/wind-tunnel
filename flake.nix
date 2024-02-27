@@ -23,13 +23,7 @@
                 inputsFrom = [
                     inputs.holochain.devShells.${system}.holonix
                 ];
-                packages = [
-                    # Should be the latest LTS version of nodejs
-                    pkgs.nodejs_20
-
-                    # Not an 'official' packaging but looks maintained, see the official install guide here https://grafana.com/docs/k6/latest/get-started/installation/
-                    pkgs.k6
-                ];
+                packages = [];
             };
         };
     };
