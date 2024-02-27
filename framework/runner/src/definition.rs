@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::context::{Context, RunnerContext, UserValuesConstraint};
 
 pub type HookResult = anyhow::Result<()>;
 
 pub type GlobalHookMut<RV> = fn(&mut RunnerContext<RV>) -> HookResult;
+pub type GlobalHook<RV> = fn(Arc<RunnerContext<RV>>) -> HookResult;
 pub type AgentHookMut<RV, V> = fn(&mut Context<RV, V>) -> HookResult;
 
 /// The builder for a scenario definition.
@@ -21,14 +22,21 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     /// Global setup hook for this scenario. It will be run once, before any agents are started.
     setup_fn: Option<GlobalHookMut<RV>>,
     /// Setup hook for an agent, which will be run once for each agent as it starts.
-    ///
-    /// This is optional and if not provided, you can still set up an agent as part of the [ScenarioDefinitionBuilder::agent_behaviour].
-    /// The difference with this hook is that it is syncronised so that you can set up all agents before any of them start running their behaviour.
     setup_agent_fn: Option<AgentHookMut<RV, V>>,
     /// The agent behaviour for this scenario. There are two ways that this can be used:
     /// - Specify a single behaviour for all agents using [ScenarioDefinitionBuilder::use_agent_behaviour]. This will then start as many identical agents as you request.
     /// - Specify multiple behaviours using [ScenarioDefinitionBuilder::use_named_agent_behaviour]. You then need to tell the runner how many agents you want to run each behaviour.
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
+    /// Teardown hook for an agent, which will be run once for each agent when its behaviour is finished.
+    ///
+    /// If the scenario run is bounded by time, then this hook will be run.
+    /// If the scenario is configured to run forever, then this hook will be run on a best effort basis when the test is stopped.
+    teardown_agent_fn: Option<AgentHookMut<RV, V>>,
+    /// Teardown hook for this scenario. It will be run once, after all agents have finished.
+    /// 
+    /// If the scenario run is bounded by time, then this hook will be run.
+    /// If the scenario is configured to run forever, then this hook will be run on a best effort basis when the test is stopped.
+    teardown_fn: Option<GlobalHook<RV>>,
 }
 
 pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint> {
@@ -37,6 +45,8 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub setup_fn: Option<GlobalHookMut<RV>>,
     pub setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
+    pub teardown_agent_fn: Option<AgentHookMut<RV, V>>,
+    pub teardown_fn: Option<GlobalHook<RV>>,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilder<RV, V> {
@@ -51,11 +61,13 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
+            teardown_agent_fn: None,
+            teardown_fn: None,
         }
     }
 
     /// Set the global setup hook [ScenarioDefinitionBuilder::setup_fn] for this scenario.
-    pub fn use_setup(mut self, setup_fn: fn(&mut RunnerContext<RV>) -> HookResult) -> Self {
+    pub fn use_setup(mut self, setup_fn: GlobalHookMut<RV>) -> Self {
         self.setup_fn = Some(setup_fn);
         self
     }
@@ -63,14 +75,14 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// Set the agent setup hook [ScenarioDefinitionBuilder::setup_agent_fn] for this scenario.
     pub fn use_agent_setup(
         mut self,
-        setup_agent_fn: fn(&mut Context<RV, V>) -> HookResult,
+        setup_agent_fn: AgentHookMut<RV, V>,
     ) -> Self {
         self.setup_agent_fn = Some(setup_agent_fn);
         self
     }
 
     /// Set the default agent behaviour hook [ScenarioDefinitionBuilder::agent_behaviour] for this scenario.
-    pub fn use_agent_behaviour(self, behaviour: fn(&mut Context<RV, V>) -> HookResult) -> Self {
+    pub fn use_agent_behaviour(self, behaviour: AgentHookMut<RV, V>) -> Self {
         self.use_named_agent_behaviour("default", behaviour)
     }
 
@@ -78,7 +90,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     pub fn use_named_agent_behaviour(
         mut self,
         name: &str,
-        behaviour: fn(&mut Context<RV, V>) -> HookResult,
+        behaviour: AgentHookMut<RV, V>,
     ) -> Self {
         let previous = self.agent_behaviour.insert(name.to_string(), behaviour);
 
@@ -89,13 +101,30 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         self
     }
 
+    /// Set the agent teardown hook [ScenarioDefinitionBuilder::teardown_agent_fn] for this scenario.
+    pub fn use_agent_teardown(
+        mut self,
+        teardown_agent_fn: AgentHookMut<RV, V>,
+    ) -> Self {
+        self.teardown_agent_fn = Some(teardown_agent_fn);
+        self
+    }
+
+    /// Set the global teardown hook [ScenarioDefinitionBuilder::teardown_fn] for this scenario.
+    pub fn use_teardown(mut self, teardown_fn: GlobalHook<RV>) -> Self {
+        self.teardown_fn = Some(teardown_fn);
+        self
+    }
+
     pub(crate) fn build(self) -> ScenarioDefinition<RV, V> {
         ScenarioDefinition {
             name: self.name,
             cli: self.cli,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
-            agent_behaviour: self.agent_behaviour.clone(),
+            agent_behaviour: self.agent_behaviour,
+            teardown_agent_fn: self.teardown_agent_fn,
+            teardown_fn: self.teardown_fn,
         }
     }
 }

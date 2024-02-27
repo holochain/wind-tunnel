@@ -1,6 +1,8 @@
+use std::{sync::Arc, thread, time::Duration};
+
 use wind_tunnel_runner::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HolochainRunnerContext {
     value: usize,
 }
@@ -15,7 +17,7 @@ fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     Ok(())
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HolochainContext {
     value: String,
 }
@@ -23,8 +25,6 @@ pub struct HolochainContext {
 impl UserValuesConstraint for HolochainContext {}
 
 fn agent_setup(ctx: &mut Context<HolochainRunnerContext, HolochainContext>) -> HookResult {
-    println!("Setting up the agent");
-
     ctx.get_mut().value = "Hello, world!".to_string();
 
     Ok(())
@@ -37,6 +37,33 @@ fn agent_behaviour(ctx: &mut Context<HolochainRunnerContext, HolochainContext>) 
         ctx.get().value
     );
 
+    let mut shutdown_listener = ctx.shutdown_listener().clone();
+    ctx.runner_context().executor().execute(async {
+        loop {
+            tokio::select! {
+                _ = shutdown_listener.wait_for_shutdown() => {
+                    println!("Agent should shutdown");
+                    break;
+                }
+                _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                    println!("Agent running");
+                }
+            }
+        }
+    });
+    
+    Ok(())
+}
+
+fn agent_teardown(_ctx: &mut Context<HolochainRunnerContext, HolochainContext>) -> HookResult {
+    println!("Shutdown hook");
+
+    Ok(())
+}
+
+fn teardown(_ctx: Arc<RunnerContext<HolochainRunnerContext>>) -> HookResult {
+    println!("Tearing down the scenario");
+
     Ok(())
 }
 
@@ -46,7 +73,9 @@ fn main() -> WindTunnelResult {
     ))
     .use_setup(setup)
     .use_agent_setup(agent_setup)
-    .use_agent_behaviour(agent_behaviour);
+    .use_agent_behaviour(agent_behaviour)
+    .use_agent_teardown(agent_teardown)
+    .use_teardown(teardown);
 
     run(builder)?;
 

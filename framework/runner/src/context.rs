@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
-use crate::executor::Executor;
+use crate::{executor::Executor, shutdown::DelegatedShutdownListener};
 
-pub trait UserValuesConstraint: Default + Send + Sync + 'static {}
+pub trait UserValuesConstraint: Default + Debug + Send + Sync + 'static {}
 
+#[derive(Debug)]
 pub struct RunnerContext<RV: UserValuesConstraint> {
     executor: Arc<Executor>,
     value: RV,
@@ -32,19 +33,25 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
 
 pub struct Context<RV: UserValuesConstraint, V: UserValuesConstraint> {
     runner_context: Arc<RunnerContext<RV>>,
+    shutdown_listener: DelegatedShutdownListener,
     value: V,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> Context<RV, V> {
-    pub(crate) fn new(runner_context: Arc<RunnerContext<RV>>) -> Self {
+    pub(crate) fn new(runner_context: Arc<RunnerContext<RV>>, shutdown_listener: DelegatedShutdownListener) -> Self {
         Self {
             runner_context,
+            shutdown_listener,
             value: Default::default(),
         }
     }
 
     pub fn runner_context(&self) -> &Arc<RunnerContext<RV>> {
         &self.runner_context
+    }
+
+    pub fn shutdown_listener(&mut self) -> &mut DelegatedShutdownListener {
+        &mut self.shutdown_listener
     }
 
     pub fn get_mut(&mut self) -> &mut V {

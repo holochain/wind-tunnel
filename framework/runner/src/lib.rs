@@ -3,6 +3,7 @@ mod definition;
 mod executor;
 mod run;
 mod types;
+mod shutdown;
 
 pub mod prelude {
     pub use crate::context::UserValuesConstraint;
