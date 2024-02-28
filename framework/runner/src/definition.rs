@@ -1,6 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::context::{Context, RunnerContext, UserValuesConstraint};
+use clap::Parser;
+
+use crate::{cli::WindTunnelScenarioCli, context::{Context, RunnerContext, UserValuesConstraint}};
 
 pub type HookResult = anyhow::Result<()>;
 
@@ -18,7 +20,11 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     name: String,
     /// This value is initialised for you and you cannot change it.
     #[doc(hidden)]
-    cli: wind_tunnel_cli::WindTunnelCli,
+    cli: WindTunnelScenarioCli,
+    /// The default duration for this scenario, in seconds.
+    ///
+    /// This can be overridden when the scenario is run using the `--duration` flag.
+    default_duration: Option<u64>,
     /// Global setup hook for this scenario. It will be run once, before any agents are started.
     setup_fn: Option<GlobalHookMut<RV>>,
     /// Setup hook for an agent, which will be run once for each agent as it starts.
@@ -39,9 +45,11 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     teardown_fn: Option<GlobalHook<RV>>,
 }
 
+/// The result of combining a scenario builder with the input CLI arguments to produce a scenario definition.
 pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint> {
     pub name: String,
-    pub cli: wind_tunnel_cli::WindTunnelCli,
+    pub agent_count: usize,
+    pub duration: Option<u64>,
     pub setup_fn: Option<GlobalHookMut<RV>>,
     pub setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -53,17 +61,26 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// Initialise a new scenario definition from the scenario name and command line arguments.
     /// See the [ScenarioDefinitionBuilder::name] for more information about the name.
     pub fn new(name: &str) -> Self {
-        let cli = wind_tunnel_cli::init();
+        // No that keen on mixing this into a constructor, but in the interest of keeping the boilerplate for tests
+        // low this is going here for now.
+        let cli = WindTunnelScenarioCli::parse();
 
         Self {
             name: name.to_string(),
             cli,
+            default_duration: None,
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
             teardown_agent_fn: None,
             teardown_fn: None,
         }
+    }
+
+    /// Set the default duration [ScenarioDefinitionBuilder::default_duration] for this scenario.
+    pub fn with_default_duration(mut self, duration: u64) -> Self {
+        self.default_duration = Some(duration);
+        self
     }
 
     /// Set the global setup hook [ScenarioDefinitionBuilder::setup_fn] for this scenario.
@@ -117,9 +134,16 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     }
 
     pub(crate) fn build(self) -> ScenarioDefinition<RV, V> {
+        let resolved_duration = if self.cli.soak {
+            None
+        } else {
+            self.cli.duration.or(self.default_duration)
+        };
+
         ScenarioDefinition {
             name: self.name,
-            cli: self.cli,
+            agent_count: self.cli.agents,
+            duration: resolved_duration,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,

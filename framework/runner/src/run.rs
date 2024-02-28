@@ -14,17 +14,26 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     println!("Running scenario: {}", definition.name);
 
     let mut runner_context = RunnerContext::new(Executor::default());
-    let shutdown_listener = start_shutdown_listener(runner_context.executor())?;
+    let shutdown_handle = start_shutdown_listener(runner_context.executor())?;
 
     if let Some(setup_fn) = definition.setup_fn {
         setup_fn(&mut runner_context)?;
+    }
+
+    // After the setup has run, if this is a time bounded scenario we need to set a timer to shutdown the test
+    if let Some(duration) = definition.duration {
+        let shutdown_handle = shutdown_handle.clone();
+        runner_context.executor().submit(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(duration as u64)).await;
+            shutdown_handle.shutdown();
+        });
     }
 
     let runner_context = Arc::new(runner_context);
     let runner_context_for_teardown = runner_context.clone();
 
     let mut handles = Vec::new();
-    for agent_index in 0..definition.cli.agents {
+    for agent_index in 0..definition.agent_count {
         // Read access to the runner context for each agent
         let runner_context = runner_context.clone();
 
@@ -33,9 +42,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let teardown_agent_fn = definition.teardown_agent_fn.clone();
 
         // For us to check if the agent should shutdown between behaviour cycles
-        let mut cycle_shutdown_receiver = shutdown_listener.new_listener();
+        let mut cycle_shutdown_receiver = shutdown_handle.new_listener();
         // For the behaviour implementation to listen for shutdown and respond appropriately
-        let delegated_shutdown_listener = shutdown_listener.new_listener();
+        let delegated_shutdown_listener = shutdown_handle.new_listener();
 
         handles.push(std::thread::spawn(move || {
             let mut context = Context::new(runner_context, delegated_shutdown_listener);

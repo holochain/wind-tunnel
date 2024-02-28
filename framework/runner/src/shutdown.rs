@@ -4,13 +4,18 @@ use tokio::{signal, sync::broadcast::{Receiver, Sender}};
 use parking_lot::Mutex;
 use crate::executor::Executor;
 
-pub(crate) struct ShutdownListener {
+#[derive(Clone)]
+pub(crate) struct ShutdownHandle {
     sender: Sender<()>,
 }
 
-impl ShutdownListener {
+impl ShutdownHandle {
     pub(crate) fn new(sender: Sender<()>) -> Self {
         Self { sender }
+    }
+
+    pub(crate) fn shutdown(&self) {
+        self.sender.send(()).expect("Failed to send shutdown signal");
     }
 
     pub(crate) fn new_listener(&self) -> DelegatedShutdownListener {
@@ -47,7 +52,7 @@ impl DelegatedShutdownListener {
     }
 }
 
-pub(crate) fn start_shutdown_listener(executor: &Arc<Executor>) -> anyhow::Result<ShutdownListener> {
+pub(crate) fn start_shutdown_listener(executor: &Arc<Executor>) -> anyhow::Result<ShutdownHandle> {
     let (tx, _) = tokio::sync::broadcast::channel(1);
 
     let sender = tx.clone();
@@ -57,5 +62,5 @@ pub(crate) fn start_shutdown_listener(executor: &Arc<Executor>) -> anyhow::Resul
         println!("Received shutdown signal, shutting down...");
     });
 
-    Ok(ShutdownListener::new(tx))
+    Ok(ShutdownHandle::new(tx))
 }

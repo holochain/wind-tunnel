@@ -4,6 +4,7 @@ mod executor;
 mod run;
 mod types;
 mod shutdown;
+mod cli;
 
 pub mod prelude {
     pub use crate::context::UserValuesConstraint;

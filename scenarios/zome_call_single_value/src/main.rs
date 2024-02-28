@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use wind_tunnel_runner::prelude::*;
 
@@ -71,6 +71,7 @@ fn main() -> WindTunnelResult {
     let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainContext>::new(env!(
         "CARGO_PKG_NAME"
     ))
+    .with_default_duration(10)
     .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
