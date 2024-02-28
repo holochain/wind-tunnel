@@ -2,13 +2,16 @@ use std::{collections::HashMap, sync::Arc};
 
 use clap::Parser;
 
-use crate::{cli::WindTunnelScenarioCli, context::{Context, RunnerContext, UserValuesConstraint}};
+use crate::{
+    cli::WindTunnelScenarioCli,
+    context::{AgentContext, RunnerContext, UserValuesConstraint},
+};
 
 pub type HookResult = anyhow::Result<()>;
 
 pub type GlobalHookMut<RV> = fn(&mut RunnerContext<RV>) -> HookResult;
 pub type GlobalHook<RV> = fn(Arc<RunnerContext<RV>>) -> HookResult;
-pub type AgentHookMut<RV, V> = fn(&mut Context<RV, V>) -> HookResult;
+pub type AgentHookMut<RV, V> = fn(&mut AgentContext<RV, V>) -> HookResult;
 
 /// The builder for a scenario definition.
 ///
@@ -39,7 +42,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     /// If the scenario is configured to run forever, then this hook will be run on a best effort basis when the test is stopped.
     teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     /// Teardown hook for this scenario. It will be run once, after all agents have finished.
-    /// 
+    ///
     /// If the scenario run is bounded by time, then this hook will be run.
     /// If the scenario is configured to run forever, then this hook will be run on a best effort basis when the test is stopped.
     teardown_fn: Option<GlobalHook<RV>>,
@@ -61,9 +64,13 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// Initialise a new scenario definition from the scenario name and command line arguments.
     /// See the [ScenarioDefinitionBuilder::name] for more information about the name.
     pub fn new(name: &str) -> Self {
-        // No that keen on mixing this into a constructor, but in the interest of keeping the boilerplate for tests
+        // Not that keen on mixing this into a constructor, but in the interest of keeping the boilerplate for tests
         // low this is going here for now.
         let cli = WindTunnelScenarioCli::parse();
+
+        // Even less keen on mixing this into the constructor. Maybe an init function would be better? Or even a proc macro to add the init header to
+        // test entry points?
+        env_logger::init();
 
         Self {
             name: name.to_string(),
@@ -90,10 +97,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     }
 
     /// Set the agent setup hook [ScenarioDefinitionBuilder::setup_agent_fn] for this scenario.
-    pub fn use_agent_setup(
-        mut self,
-        setup_agent_fn: AgentHookMut<RV, V>,
-    ) -> Self {
+    pub fn use_agent_setup(mut self, setup_agent_fn: AgentHookMut<RV, V>) -> Self {
         self.setup_agent_fn = Some(setup_agent_fn);
         self
     }
@@ -104,11 +108,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     }
 
     /// Set a named agent behaviour hook [ScenarioDefinitionBuilder::agent_behaviour] for this scenario.
-    pub fn use_named_agent_behaviour(
-        mut self,
-        name: &str,
-        behaviour: AgentHookMut<RV, V>,
-    ) -> Self {
+    pub fn use_named_agent_behaviour(mut self, name: &str, behaviour: AgentHookMut<RV, V>) -> Self {
         let previous = self.agent_behaviour.insert(name.to_string(), behaviour);
 
         if previous.is_some() {
@@ -119,10 +119,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     }
 
     /// Set the agent teardown hook [ScenarioDefinitionBuilder::teardown_agent_fn] for this scenario.
-    pub fn use_agent_teardown(
-        mut self,
-        teardown_agent_fn: AgentHookMut<RV, V>,
-    ) -> Self {
+    pub fn use_agent_teardown(mut self, teardown_agent_fn: AgentHookMut<RV, V>) -> Self {
         self.teardown_agent_fn = Some(teardown_agent_fn);
         self
     }

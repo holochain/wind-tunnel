@@ -1,0 +1,27 @@
+[package]
+name = "holochain_client_instrumented"
+version = "0.1.0"
+edition = "2021"
+description = "An instrumented wrapper around the holochain_client"
+
+[dependencies]
+anyhow = { workspace = true }
+
+wind_tunnel_instruments_derive = { workspace = true }
+
+holochain_client_0_2 = { workspace = true, optional = true }
+holochain_client_0_3 = { workspace = true, optional = true }
+
+[lints]
+workspace = true
+
+[features]
+default = ["holochain_0_2"]
+
+holochain_0_2 = [
+    "dep:holochain_client_0_2"
+]
+
+holochain_0_3 = [
+    "dep:holochain_client_0_3"
+]
