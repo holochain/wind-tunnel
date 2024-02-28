@@ -1,7 +1,10 @@
 [workspace]
 resolver = "2"
-members = [
+members = [ 
     "framework/runner",
+    "framework/instruments",
+
+    "bindings/runner", 
     
     "scenarios/zome_call_single_value",
 ]
@@ -12,7 +15,16 @@ clap = { version = "4.5.1", features = ["derive"] }
 tokio = { version = "1.36.0", features = ["full"] }
 parking_lot = "0.12.1"
 
+# Client for Holochain 0.2
+holochain_client_0_2 = { version = "0.4.5", crate = "holochain_client" }
+# Client for Holochain 0.3
+holochain_client_0_3 = { version = "0.5.0-dev.27", crate = "holochain_client" }
+
+# Framework
 wind_tunnel_runner = { path = "./framework/runner" }
+
+# Bindings
+holochain_wind_tunnel_runner = { path = "./bindings/runner" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

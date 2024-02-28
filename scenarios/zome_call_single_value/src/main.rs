@@ -1,13 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use wind_tunnel_runner::prelude::*;
-
-#[derive(Default, Debug)]
-pub struct HolochainRunnerContext {
-    value: usize,
-}
-
-impl UserValuesConstraint for HolochainRunnerContext {}
+use holochain_wind_tunnel_runner::prelude::*;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     println!("Setting up the scenario");
@@ -16,13 +9,6 @@ fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
 
     Ok(())
 }
-
-#[derive(Default, Debug)]
-pub struct HolochainContext {
-    value: String,
-}
-
-impl UserValuesConstraint for HolochainContext {}
 
 fn agent_setup(ctx: &mut Context<HolochainRunnerContext, HolochainContext>) -> HookResult {
     ctx.get_mut().value = "Hello, world!".to_string();
