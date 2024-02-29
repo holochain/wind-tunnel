@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use wind_tunnel_instruments::ReportConfig;
 
 use crate::{
     context::{AgentContext, RunnerContext, UserValuesConstraint},
@@ -19,13 +20,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
-    let mut runner_context = RunnerContext::new(executor, shutdown_handle.clone());
+    let reporter = Arc::new(ReportConfig::default().enable_summary().init());
+    let mut runner_context = RunnerContext::new(executor, reporter, shutdown_handle.clone());
 
     if let Some(setup_fn) = definition.setup_fn {
         setup_fn(&mut runner_context)?;
     }
 
-    // After the setup has run, if this is a time bounded scenario we need to set a timer to shutdown the test
+    // After the setup has run, if this is a time bounded scenario we need to set a timer to shut down the test
     if let Some(duration) = definition.duration {
         let shutdown_handle = shutdown_handle.clone();
         runner_context.executor().spawn(async move {
@@ -95,8 +97,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {
-        teardown_fn(runner_context_for_teardown)?;
+        teardown_fn(runner_context_for_teardown.clone())?;
     }
+
+    runner_context_for_teardown.reporter().finalize();
 
     Ok(())
 }

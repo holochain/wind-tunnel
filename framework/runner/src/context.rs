@@ -1,4 +1,5 @@
 use std::{fmt::Debug, sync::Arc};
+use wind_tunnel_instruments::Reporter;
 
 use crate::{
     executor::Executor,
@@ -10,14 +11,20 @@ pub trait UserValuesConstraint: Default + Debug + Send + Sync + 'static {}
 #[derive(Debug)]
 pub struct RunnerContext<RV: UserValuesConstraint> {
     executor: Arc<Executor>,
+    reporter: Arc<Reporter>,
     shutdown_handle: ShutdownHandle,
     value: RV,
 }
 
 impl<RV: UserValuesConstraint> RunnerContext<RV> {
-    pub(crate) fn new(executor: Arc<Executor>, shutdown_handle: ShutdownHandle) -> Self {
+    pub(crate) fn new(
+        executor: Arc<Executor>,
+        reporter: Arc<Reporter>,
+        shutdown_handle: ShutdownHandle,
+    ) -> Self {
         Self {
             executor,
+            reporter,
             shutdown_handle,
             value: Default::default(),
         }
@@ -25,6 +32,10 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
 
     pub fn executor(&self) -> &Arc<Executor> {
         &self.executor
+    }
+
+    pub fn reporter(&self) -> Arc<Reporter> {
+        self.reporter.clone()
     }
 
     /// Get a new shutdown listener that will be triggered when the runner is shutdown.

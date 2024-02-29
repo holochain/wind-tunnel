@@ -6,11 +6,12 @@ use std::{sync::Arc, time::Duration};
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     println!("Setting up the scenario");
 
+    let reporter = ctx.reporter();
     let _client = ctx
         .executor()
         .execute_in_place(async move {
             log::info!("Connecting a Holochain admin client");
-            AdminWebsocket::connect("ws://localhost:8888".to_string()).await
+            AdminWebsocket::connect("ws://localhost:8888".to_string(), reporter).await
         })
         .context("Failed to connect the Holochain admin client")?;
 
@@ -26,11 +27,16 @@ fn agent_setup(
 ) -> HookResult {
     ctx.get_mut().value = "Hello, world!".to_string();
 
+    let reporter = ctx.runner_context().reporter();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
             log::info!("Connecting a Holochain admin client");
-            let mut client = AdminWebsocket::connect("ws://localhost:8888".to_string()).await?;
+            let mut client = AdminWebsocket::connect(
+                "ws://localhost:8888".to_string(),
+                reporter,
+            )
+            .await?;
 
             let key = client
                 .generate_agent_pub_key()

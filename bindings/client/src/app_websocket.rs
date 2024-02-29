@@ -1,17 +1,25 @@
-use holochain_client::{AppWebsocket, ConductorApiResult};
 use anyhow::Result;
+use holochain_client::{AppWebsocket, ConductorApiResult};
 use holochain_conductor_api::{AppInfo, ClonedCell, NetworkInfo, ZomeCall};
-use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload, NetworkInfoRequestPayload};
+use holochain_types::app::{
+    DisableCloneCellPayload, EnableCloneCellPayload, NetworkInfoRequestPayload,
+};
 use holochain_types::prelude::{CreateCloneCellPayload, InstalledAppId};
 use holochain_zome_types::ExternIO;
+use std::sync::Arc;
+use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
-pub struct AppWebsocketInstrumented(AppWebsocket);
+pub struct AppWebsocketInstrumented {
+    inner: AppWebsocket,
+    reporter: Arc<Reporter>,
+}
 
 impl AppWebsocketInstrumented {
-    #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn connect(app_url: String) -> Result<Self> {
-        AppWebsocket::connect(app_url).await.map(Self)
+    pub async fn connect(app_url: String, reporter: Arc<Reporter>) -> Result<Self> {
+        AppWebsocket::connect(app_url)
+            .await
+            .map(|inner| Self { inner, reporter })
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -19,12 +27,12 @@ impl AppWebsocketInstrumented {
         &mut self,
         app_id: InstalledAppId,
     ) -> ConductorApiResult<Option<AppInfo>> {
-        self.0.app_info(app_id).await
+        self.inner.app_info(app_id).await
     }
 
-    #[wind_tunnel_instrument(prefix = "app_")]
+    #[wind_tunnel_instrument(prefix = "app_", pre_hook = pre_call_zome)]
     pub async fn call_zome(&mut self, msg: ZomeCall) -> ConductorApiResult<ExternIO> {
-        self.0.call_zome(msg).await
+        self.inner.call_zome(msg).await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -32,7 +40,7 @@ impl AppWebsocketInstrumented {
         &mut self,
         payload: CreateCloneCellPayload,
     ) -> ConductorApiResult<ClonedCell> {
-        self.0.create_clone_cell(payload).await
+        self.inner.create_clone_cell(payload).await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -40,7 +48,7 @@ impl AppWebsocketInstrumented {
         &mut self,
         payload: EnableCloneCellPayload,
     ) -> ConductorApiResult<ClonedCell> {
-        self.0.enable_clone_cell(payload).await
+        self.inner.enable_clone_cell(payload).await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -48,11 +56,18 @@ impl AppWebsocketInstrumented {
         &mut self,
         payload: DisableCloneCellPayload,
     ) -> ConductorApiResult<()> {
-        self.0.disable_clone_cell(payload).await
+        self.inner.disable_clone_cell(payload).await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn network_info(&mut self, payload: NetworkInfoRequestPayload) -> ConductorApiResult<Vec<NetworkInfo>> {
-        self.0.network_info(payload).await
+    pub async fn network_info(
+        &mut self,
+        payload: NetworkInfoRequestPayload,
+    ) -> ConductorApiResult<Vec<NetworkInfo>> {
+        self.inner.network_info(payload).await
     }
+}
+
+fn pre_call_zome(operation_record: &mut OperationRecord, msg: &ZomeCall) {
+    operation_record.add_attr("zome_name", msg.zome_name.0.to_string());
 }
