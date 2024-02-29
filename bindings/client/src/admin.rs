@@ -14,6 +14,7 @@ use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 pub struct AdminWebsocketInstrumented(AdminWebsocket);
 
 impl AdminWebsocketInstrumented {
+    #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn connect(admin_url: String) -> Result<Self> {
         AdminWebsocket::connect(admin_url).await.map(Self)
     }
