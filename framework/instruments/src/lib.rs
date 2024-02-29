@@ -1,14 +1,23 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+pub struct OperationRecord {
+    operation_id: String,
+    started: std::time::Instant,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl OperationRecord {
+    pub fn new(operation_id: String) -> Self {
+        Self {
+            operation_id,
+            started: std::time::Instant::now(),
+        }
     }
+}
+
+pub fn report_operation<T, E>(request_record: OperationRecord, response: &Result<T, E>) {
+    let duration = request_record.started.elapsed();
+    println!(
+        "Operation {} took {}ms, and failed? {:?}",
+        request_record.operation_id,
+        duration.as_millis(),
+        response.is_err(),
+    );
 }
