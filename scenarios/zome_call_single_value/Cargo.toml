@@ -2,6 +2,7 @@
 name = "zome_call_single_value"
 version = "0.1.0"
 edition = "2021"
+build = "../scenario_build.rs"
 
 [dependencies]
 tokio = { workspace = true }
@@ -11,5 +12,16 @@ log = { workspace = true }
 holochain_wind_tunnel_runner = { workspace = true }
 holochain_client_instrumented = { workspace = true }
 
+[build-dependencies]
+toml = { workspace = true }
+anyhow = { workspace = true }
+holochain_types = { workspace = true }
+serde_yaml = { workspace = true }
+walkdir = { workspace = true }
+
 [lints]
 workspace = true
+
+[package.metadata.required-dna]
+name = "return_single_value"
+zomes = ["return_single_value"]

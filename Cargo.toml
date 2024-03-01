@@ -1,14 +1,27 @@
 [workspace]
 resolver = "2"
-members = [ 
+members = [
     "framework/runner",
     "framework/instruments",
     "framework/instruments_derive",
 
-    "bindings/runner", 
-    "bindings/client", 
+    "bindings/runner",
+    "bindings/client",
     
-    "scenarios/zome_call_single_value", 
+    "scenarios/zome_call_single_value",
+    "zomes/return_single_value/coordinator",
+]
+
+# By default, don't build the scenarios or zomes.
+# The scenarios should only be built when they are being run.
+# The zomes should only be built into wasm as part of running scenarios.
+default-members = [
+    "framework/runner",
+    "framework/instruments",
+    "framework/instruments_derive",
+
+    "bindings/runner",
+    "bindings/client",
 ]
 
 [workspace.dependencies]
@@ -21,6 +34,9 @@ env_logger = "0.11.2"
 derive_more = "0.99.17"
 opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
 itertools = "0.12.1"
+toml = "0.8.10"
+serde_yaml = "0.9"
+walkdir = "2"
 
 # Deps for Holochain 0.2
 holochain_client = { version = "0.4.7" }
