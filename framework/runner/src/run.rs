@@ -53,12 +53,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         // For the behaviour implementation to listen for shutdown and respond appropriately
         let delegated_shutdown_listener = shutdown_handle.new_listener();
 
+        let agent_id = format!("agent-{}", agent_index);
+
         handles.push(
             std::thread::Builder::new()
-                .name(format!("agent-{}", agent_index))
+                .name(agent_id.clone())
                 .spawn(move || {
                     let mut context =
-                        AgentContext::new(runner_context, delegated_shutdown_listener);
+                        AgentContext::new(agent_id, runner_context, delegated_shutdown_listener);
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         setup_agent_fn(&mut context).unwrap();
                     }

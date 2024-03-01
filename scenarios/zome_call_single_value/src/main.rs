@@ -1,7 +1,9 @@
 use anyhow::Context;
-use holochain_client_instrumented::prelude::AdminWebsocket;
+use holochain_client_instrumented::prelude::{AdminWebsocket};
 use holochain_wind_tunnel_runner::prelude::*;
 use std::{sync::Arc, time::Duration};
+use std::path::Path;
+use holochain_types::prelude::{AppBundleSource, InstallAppPayload};
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     println!("Setting up the scenario");
@@ -27,6 +29,7 @@ fn agent_setup(
 ) -> HookResult {
     ctx.get_mut().value = "Hello, world!".to_string();
 
+    let agent_id = ctx.agent_id().to_string();
     let reporter = ctx.runner_context().reporter();
     ctx.runner_context()
         .executor()
@@ -38,12 +41,23 @@ fn agent_setup(
             )
             .await?;
 
+            // TODO kills the test if it fails, that is not intentional. The error should be reported but not unwrapped
             let key = client
                 .generate_agent_pub_key()
                 .await
                 .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
 
             log::info!("Generated agent pub key: {:}", key);
+
+            client.list_apps(None).await.map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+
+            client.install_app(InstallAppPayload {
+                source: AppBundleSource::Path(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../happs").join(env!("CARGO_PKG_NAME")).join("return_single_value.happ")),
+                agent_key: key,
+                installed_app_id: Some(format!("{}-app", agent_id).to_string()),
+                membrane_proofs: Default::default(),
+                network_seed: None,
+            }).await.map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
 
             Ok(())
         })
