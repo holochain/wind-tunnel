@@ -29,7 +29,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     // After the setup has run, if this is a time bounded scenario we need to set a timer to shut down the test
-    if let Some(duration) = definition.duration {
+    if let Some(duration) = definition.duration_s {
         let shutdown_handle = shutdown_handle.clone();
         runner_context.executor().spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(duration)).await;

@@ -24,10 +24,14 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     /// This value is initialised for you and you cannot change it.
     #[doc(hidden)]
     cli: WindTunnelScenarioCli,
+    /// The default number of agents that should be spawned for this scenario.
+    ///
+    /// This can be overridden when the scenario is run using the `--agents` flag.
+    default_agent_count: Option<usize>,
     /// The default duration for this scenario, in seconds.
     ///
     /// This can be overridden when the scenario is run using the `--duration` flag.
-    default_duration: Option<u64>,
+    default_duration_s: Option<u64>,
     /// Global setup hook for this scenario. It will be run once, before any agents are started.
     setup_fn: Option<GlobalHookMut<RV>>,
     /// Setup hook for an agent, which will be run once for each agent as it starts.
@@ -52,7 +56,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
 pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint> {
     pub name: String,
     pub agent_count: usize,
-    pub duration: Option<u64>,
+    pub duration_s: Option<u64>,
     pub setup_fn: Option<GlobalHookMut<RV>>,
     pub setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -75,7 +79,8 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         Self {
             name: name.to_string(),
             cli,
-            default_duration: None,
+            default_agent_count: None,
+            default_duration_s: None,
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
@@ -84,9 +89,15 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         }
     }
 
-    /// Set the default duration [ScenarioDefinitionBuilder::default_duration] for this scenario.
-    pub fn with_default_duration(mut self, duration: u64) -> Self {
-        self.default_duration = Some(duration);
+    /// Sets the default number of agents [ScenarioDefinitionBuilder::default_agent_count] for this scenario.
+    pub fn with_default_agent_count(mut self, count: usize) -> Self {
+        self.default_agent_count = Some(count);
+        self
+    }
+
+    /// Set the default duration [ScenarioDefinitionBuilder::default_duration_s] for this scenario.
+    pub fn with_default_duration_s(mut self, duration: u64) -> Self {
+        self.default_duration_s = Some(duration);
         self
     }
 
@@ -134,13 +145,14 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         let resolved_duration = if self.cli.soak {
             None
         } else {
-            self.cli.duration.or(self.default_duration)
+            self.cli.duration.or(self.default_duration_s)
         };
 
         ScenarioDefinition {
             name: self.name,
-            agent_count: self.cli.agents,
-            duration: resolved_duration,
+            // Priority given to the CLI, then the default value provided by the scenario, then default to 1
+            agent_count: self.cli.agents.or(self.default_agent_count).unwrap_or(1),
+            duration_s: resolved_duration,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,

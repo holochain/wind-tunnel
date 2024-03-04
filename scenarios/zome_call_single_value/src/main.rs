@@ -198,7 +198,7 @@ fn main() -> WindTunnelResult {
     let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new(
         env!("CARGO_PKG_NAME"),
     )
-    .with_default_duration(10)
+    .with_default_duration_s(60)
     .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)

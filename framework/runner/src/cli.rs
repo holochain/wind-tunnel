@@ -4,8 +4,8 @@ use clap::Parser;
 #[command(about, long_about = None)]
 pub struct WindTunnelScenarioCli {
     /// The number of agents to run
-    #[clap(long, default_value = "10")]
-    pub agents: usize,
+    #[clap(long)]
+    pub agents: Option<usize>,
 
     /// The number of seconds to run the scenario for
     #[clap(long)]
