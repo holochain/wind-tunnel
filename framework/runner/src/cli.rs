@@ -3,6 +3,10 @@ use clap::Parser;
 #[derive(Parser)]
 #[command(about, long_about = None)]
 pub struct WindTunnelScenarioCli {
+    /// A connection string for the service to test
+    #[clap(short, long)]
+    pub connection_string: String,
+
     /// The number of agents to run
     #[clap(long)]
     pub agents: Option<usize>,

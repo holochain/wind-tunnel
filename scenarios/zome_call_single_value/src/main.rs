@@ -3,23 +3,23 @@ use holochain_client_instrumented::prelude::{
     AdminWebsocket, AppAgentWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
 };
-use holochain_conductor_api::{AppStatusFilter, CellInfo, ZomeCall};
+use holochain_conductor_api::{AppStatusFilter, CellInfo};
 use holochain_types::prelude::{
-    AppBundleSource, CapAccess, ExternIO, GrantZomeCallCapabilityPayload, InstallAppPayload,
-    ZomeCallCapGrant,
+    AppBundleSource, ExternIO, InstallAppPayload,
 };
 use holochain_wind_tunnel_runner::prelude::*;
 use std::path::Path;
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc};
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
+    let connection_string = ctx.get_connection_string().to_string();
     let reporter = ctx.reporter();
     let app_port = ctx
         .executor()
         .execute_in_place(async move {
-            log::info!("Connecting a Holochain admin client");
+            log::info!("Connecting a Holochain admin client: {}", connection_string);
             let mut admin_client =
-                AdminWebsocket::connect("ws://localhost:8888".to_string(), reporter).await?;
+                AdminWebsocket::connect(connection_string, reporter).await?;
 
             let existing_app_ports = admin_client
                 .list_app_interfaces()
@@ -45,6 +45,7 @@ fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
+    let connection_string = ctx.runner_context().get_connection_string().to_string();
     // TODO extract as common code
     let app_port = ctx.runner_context().get().app_port.unwrap();
     let reporter = ctx.runner_context().reporter();
@@ -61,9 +62,9 @@ fn agent_setup(
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            log::info!("Connecting a Holochain admin client");
+            log::info!("Connecting a Holochain admin client: {}", connection_string);
             let mut client =
-                AdminWebsocket::connect("ws://localhost:8888".to_string(), reporter).await?;
+                AdminWebsocket::connect(connection_string, reporter).await?;
 
             // TODO kills the test if it fails, that is not intentional. The error should be reported but not unwrapped
             let key = client

@@ -57,6 +57,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub name: String,
     pub agent_count: usize,
     pub duration_s: Option<u64>,
+    pub connection_string: String,
     pub setup_fn: Option<GlobalHookMut<RV>>,
     pub setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -153,6 +154,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             // Priority given to the CLI, then the default value provided by the scenario, then default to 1
             agent_count: self.cli.agents.or(self.default_agent_count).unwrap_or(1),
             duration_s: resolved_duration,
+            connection_string: self.cli.connection_string,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,

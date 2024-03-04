@@ -16,13 +16,13 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 ) -> anyhow::Result<()> {
     let definition = definition.build();
 
-    println!("Running scenario: {}", definition.name);
+    log::info!("Running scenario: {}", definition.name);
 
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let reporter = Arc::new(ReportConfig::default().enable_summary().init());
-    let mut runner_context = RunnerContext::new(executor, reporter, shutdown_handle.clone());
+    let mut runner_context = RunnerContext::new(executor, reporter, shutdown_handle.clone(), definition.connection_string);
 
     if let Some(setup_fn) = definition.setup_fn {
         setup_fn(&mut runner_context)?;
@@ -53,7 +53,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let agent_behaviour_fn = definition.agent_behaviour.clone();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
-        // For us to check if the agent should shutdown between behaviour cycles
+        // For us to check if the agent should shut down between behaviour cycles
         let mut cycle_shutdown_receiver = shutdown_handle.new_listener();
         // For the behaviour implementation to listen for shutdown and respond appropriately
         let delegated_shutdown_listener = shutdown_handle.new_listener();
@@ -65,7 +65,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                 .name(agent_id.clone())
                 .spawn(move || {
                     let mut context =
-                        AgentContext::new(agent_id, runner_context, delegated_shutdown_listener);
+                        AgentContext::new(agent_id.clone(), runner_context, delegated_shutdown_listener);
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         setup_agent_fn(&mut context).unwrap();
                     }
@@ -73,7 +73,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     if let Some(behaviour) = agent_behaviour_fn.get("default") {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
-                                println!("Stopping agent {}", agent_index);
+                                log::debug!("Stopping agent {}", agent_id);
                                 break;
                             }
 
@@ -91,7 +91,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     }
 
                     if let Some(teardown_agent_fn) = teardown_agent_fn {
-                        teardown_agent_fn(&mut context).unwrap();
+                        if let Err(e) = teardown_agent_fn(&mut context) {
+                            log::error!("Agent teardown failed for agent {}: {:?}", agent_id, e);
+                        }
                     }
                 })
                 .expect("Failed to spawn thread for test agent"),
