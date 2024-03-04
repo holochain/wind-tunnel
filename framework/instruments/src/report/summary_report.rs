@@ -19,7 +19,7 @@ impl SummaryReportCollector {
     }
 
     fn print_summary_of_operations(&self) {
-        println!("Summary of operations");
+        println!("\nSummary of operations");
         let rows = self.operation_records.iter().fold(HashMap::new(), |mut acc, record| {
             match acc.entry(record.operation_id.clone()) {
                 std::collections::hash_map::Entry::Vacant(entry) => {
