@@ -10,9 +10,10 @@ use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
+#[derive(Clone)]
 pub struct AppWebsocketInstrumented {
-    inner: AppWebsocket,
-    reporter: Arc<Reporter>,
+    pub(crate) inner: AppWebsocket,
+    pub(crate) reporter: Arc<Reporter>,
 }
 
 impl AppWebsocketInstrumented {
@@ -20,6 +21,13 @@ impl AppWebsocketInstrumented {
         AppWebsocket::connect(app_url)
             .await
             .map(|inner| Self { inner, reporter })
+    }
+
+    pub async fn from_existing(
+        app_ws: AppWebsocket,
+        reporter: Arc<Reporter>,
+    ) -> Result<Self> {
+        Ok(Self { inner: app_ws, reporter })
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]

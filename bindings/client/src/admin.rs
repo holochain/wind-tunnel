@@ -1,8 +1,5 @@
 use holo_hash::DnaHash;
-use holochain_client::{
-    AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, ConductorApiResult, EnableAppResponse,
-    InstallAppPayload,
-};
+use holochain_client::{AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload, ConductorApiResult, EnableAppResponse, InstallAppPayload, SigningCredentials};
 use holochain_types::prelude::{DeleteCloneCellPayload, Record};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
 use std::sync::Arc;
@@ -114,6 +111,14 @@ impl AdminWebsocketInstrumented {
         records: Vec<Record>,
     ) -> ConductorApiResult<()> {
         self.inner.graft_records(cell_id, validate, records).await
+    }
+
+    // This is really a wrapper function, because it will call `grant_zome_call_capability` but it will call
+    // that on the `AdminWebsocket` rather than this `AdminWebsocketInstrumented` type. So we need to instrument
+    // this and include the time taken to do the client side logic for setting up signing credentials.
+    #[wind_tunnel_instrument(prefix = "admin_")]
+    pub async fn authorize_signing_credentials(&mut self, request: AuthorizeSigningCredentialsPayload) -> Result<SigningCredentials> {
+        self.inner.authorize_signing_credentials(request).await
     }
 }
 

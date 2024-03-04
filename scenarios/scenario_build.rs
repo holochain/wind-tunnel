@@ -191,7 +191,7 @@ fn build_required_dna(
             build_wasm(&coordinator_dir)?;
             let wasm_file = find_wasm(target_dir, dna_name, "coordinator")?;
             coordinator_manifests.push(holochain_types::dna::ZomeManifest {
-                name: format!("{}_coordinator", zome_name).into(),
+                name: zome_name.to_string().into(),
                 hash: None,
                 location: holochain_types::prelude::ZomeLocation::Bundled(
                     wasm_file

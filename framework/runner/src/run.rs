@@ -72,15 +72,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                 break;
                             }
 
-                            println!("Running agent behaviour");
                             match behaviour(&mut context) {
                                 Ok(()) => {}
                                 Err(e) if e.is::<ShutdownSignalError>() => {
-                                    // Do nothing, this is expected if the agent is being shutdown
+                                    // Do nothing, this is expected if the agent is being shutdown.
+                                    // The check at the top of the loop will catch this and break out.
                                 }
                                 Err(e) => {
                                     log::error!("Agent behaviour failed: {:?}", e);
-                                    break;
                                 }
                             }
                         }
@@ -95,7 +94,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     for handle in handles {
-        handle.join().expect("Error joining thread for test agent");
+        handle.join().map_err(|e| {
+            anyhow::anyhow!("Error joining thread for test agent: {:?}", e)
+        })?;
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {
