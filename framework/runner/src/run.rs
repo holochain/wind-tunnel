@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
 use wind_tunnel_instruments::ReportConfig;
@@ -10,6 +11,7 @@ use crate::{
     shutdown::{start_shutdown_listener, ShutdownSignalError},
 };
 use crate::monitor::start_monitor;
+use crate::progress::start_progress;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -28,8 +30,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         setup_fn(&mut runner_context)?;
     }
 
-    // After the setup has run, if this is a time bounded scenario we need to set a timer to shut down the test
+    // After the setup has run, and if this is a time bounded scenario, then we need to take additional actions
     if let Some(duration) = definition.duration_s {
+        if !definition.no_progress {
+            // If the scenario is time bounded then start the progress monitor to show the user how long is left
+            start_progress(Duration::from_secs(duration), shutdown_handle.new_listener());
+        }
+
+        // Set a timer to shut down the test after the duration has elapsed
         let shutdown_handle = shutdown_handle.clone();
         runner_context.executor().spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(duration)).await;

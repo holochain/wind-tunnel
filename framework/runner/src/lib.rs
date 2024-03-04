@@ -6,6 +6,7 @@ mod run;
 mod shutdown;
 mod types;
 mod monitor;
+mod progress;
 
 pub mod prelude {
     pub use crate::context::UserValuesConstraint;

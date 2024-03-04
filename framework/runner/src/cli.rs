@@ -18,4 +18,7 @@ pub struct WindTunnelScenarioCli {
     /// Run this test as a soak test, ignoring any configured duration and continuing to run until stopped
     #[clap(long, default_value = "false")]
     pub soak: bool,
+
+    #[clap(long, default_value = "false")]
+    pub no_progress: bool,
 }
