@@ -9,6 +9,7 @@ use crate::{
     executor::Executor,
     shutdown::{start_shutdown_listener, ShutdownSignalError},
 };
+use crate::monitor::start_monitor;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -38,6 +39,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let runner_context = Arc::new(runner_context);
     let runner_context_for_teardown = runner_context.clone();
+
+    // Ready to start spawning agents so start the resource monitor to report high usage by agents
+    // which might lead to a misleading outcome.
+    start_monitor(shutdown_handle.new_listener());
 
     let mut handles = Vec::new();
     for agent_index in 0..definition.agent_count {

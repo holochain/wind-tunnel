@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use crate::report::ReportCollector;
 use crate::OperationRecord;
-use itertools::Itertools;
 
 pub struct SummaryReportCollector {
     operation_records: Vec<OperationRecord>,
