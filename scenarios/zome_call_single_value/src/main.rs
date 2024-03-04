@@ -148,8 +148,6 @@ fn agent_behaviour(
     let mut app_agent_client = ctx.get().app_agent_client.clone().unwrap();
     let installed_app_id = ctx.get().installed_app_id.clone().unwrap();
     ctx.runner_context().executor().execute_in_place(async {
-        tokio::time::sleep(Duration::from_secs(1)).await;
-
         let app_info = app_agent_client
             .app_info(installed_app_id)
             .await

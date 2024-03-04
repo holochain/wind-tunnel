@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::report::ReportCollector;
 use crate::OperationRecord;
 use itertools::Itertools;
@@ -46,8 +47,19 @@ impl ReportCollector for SummaryReportCollector {
             println!("Fastest unsuccessful operation: {:?}", record);
         });
 
-        for (operation_id, operations) in &self.operation_records.iter().group_by(|op| op.operation_id.clone()) {
-            let operations = operations.collect::<Vec<_>>();
+        let grouped = self.operation_records.iter().fold(HashMap::new(), |mut acc, record| {
+            match acc.entry(record.operation_id.clone()) {
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    entry.insert(vec![record.clone()]);
+                }
+                std::collections::hash_map::Entry::Occupied(mut entry) => {
+                    entry.get_mut().push(record.clone());
+                }
+            }
+            acc
+        });
+
+        for (operation_id, operations) in grouped {
             let total_ops_for_id = operations.len();
             let total_duration_millis_for_id = operations.iter().map(|record| record.duration().unwrap().as_millis()).sum::<u128>();
 
