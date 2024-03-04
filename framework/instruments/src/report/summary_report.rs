@@ -1,6 +1,11 @@
+mod operations_table;
+
 use std::collections::HashMap;
+use tabled::settings::Style;
+use tabled::Table;
 use crate::report::ReportCollector;
 use crate::OperationRecord;
+use crate::report::summary_report::operations_table::OperationRow;
 
 pub struct SummaryReportCollector {
     operation_records: Vec<OperationRecord>,
@@ -12,41 +17,10 @@ impl SummaryReportCollector {
             operation_records: Vec::new(),
         }
     }
-}
 
-impl ReportCollector for SummaryReportCollector {
-    fn add_operation(&mut self, operation_record: &OperationRecord) {
-        self.operation_records.push(operation_record.clone());
-    }
-
-    fn finalize(&self) {
-        let total_operations = self.operation_records.len();
-        let total_duration_millis = self
-            .operation_records
-            .iter()
-            .map(|record| record.duration().unwrap().as_millis())
-            .sum::<u128>();
-
-        println!("Total operations: {}", total_operations);
-        println!("Total operations time: {}ms", total_duration_millis);
-
-        self.operation_records.iter().filter(|op| !op.is_error).max_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-            println!("Slowest successful operation: {:?}", record);
-        });
-
-        self.operation_records.iter().filter(|op| !op.is_error).min_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-            println!("Fastest successful operation: {:?}", record);
-        });
-
-        self.operation_records.iter().filter(|op| op.is_error).max_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-            println!("Slowest unsuccessful operation: {:?}", record);
-        });
-
-        self.operation_records.iter().filter(|op| op.is_error).min_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-            println!("Fastest unsuccessful operation: {:?}", record);
-        });
-
-        let grouped = self.operation_records.iter().fold(HashMap::new(), |mut acc, record| {
+    fn print_summary_of_operations(&self) {
+        println!("Summary of operations");
+        let rows = self.operation_records.iter().fold(HashMap::new(), |mut acc, record| {
             match acc.entry(record.operation_id.clone()) {
                 std::collections::hash_map::Entry::Vacant(entry) => {
                     entry.insert(vec![record.clone()]);
@@ -56,33 +30,33 @@ impl ReportCollector for SummaryReportCollector {
                 }
             }
             acc
-        });
+        }).into_iter().map(|(operation_id, operations)| {
+            let total_operations = operations.len();
+            let total_duration_micro = operations.iter().map(|record| record.duration().unwrap().as_micros()).sum::<u128>();
 
-        for (operation_id, operations) in grouped {
-            let total_ops_for_id = operations.len();
-            let total_duration_millis_for_id = operations.iter().map(|record| record.duration().unwrap().as_millis()).sum::<u128>();
+            OperationRow {
+                operation_id,
+                total_operations,
+                total_duration_ms: total_duration_micro as f64 / 1000.0,
+                avg_time_ms: (total_duration_micro as f64 / total_operations as f64) / 1000.0,
+                min_time_ms: operations.iter().filter(|op| !op.is_error).min_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).unwrap().elapsed.unwrap().as_micros() as f64 / 1000.0,
+                max_time_ms: operations.iter().filter(|op| !op.is_error).max_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).unwrap().elapsed.unwrap().as_micros() as f64 / 1000.0,
+            }
+        }).collect::<Vec<_>>();
 
-            println!();
-            println!("Operation ID: {}", operation_id);
-            println!("Total operations: {}", total_ops_for_id);
-            println!("Total operations time: {}ms", total_duration_millis_for_id);
-            println!("Average time: {}ms", total_duration_millis_for_id as f64 / total_ops_for_id as f64);
+        let mut table = Table::new(&rows);
+        table.with(Style::modern());
 
-            operations.iter().filter(|op| !op.is_error).max_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-                println!("Slowest successful: {:?}", record);
-            });
+        println!("{}", table);
+    }
+}
 
-            operations.iter().filter(|op| !op.is_error).min_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-                println!("Fastest successful: {:?}", record);
-            });
+impl ReportCollector for SummaryReportCollector {
+    fn add_operation(&mut self, operation_record: &OperationRecord) {
+        self.operation_records.push(operation_record.clone());
+    }
 
-            operations.iter().filter(|op| op.is_error).max_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-                println!("Slowest unsuccessful: {:?}", record);
-            });
-
-            operations.iter().filter(|op| op.is_error).min_by(|a, b| a.duration().unwrap().cmp(&b.duration().unwrap())).map(|record| {
-                println!("Fastest unsuccessful: {:?}", record);
-            });
-        }
+    fn finalize(&self) {
+        self.print_summary_of_operations();
     }
 }
