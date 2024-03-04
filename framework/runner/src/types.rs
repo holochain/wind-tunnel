@@ -1,1 +1,1 @@
-pub type WindTunnelResult = anyhow::Result<()>;
+pub type WindTunnelResult<T> = anyhow::Result<T>;

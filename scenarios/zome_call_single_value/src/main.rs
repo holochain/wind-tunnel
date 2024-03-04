@@ -1,6 +1,6 @@
 use anyhow::Context;
 use holochain_client_instrumented::prelude::{
-    AdminWebsocket, AppAgentWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
+    AdminWebsocket, AppAgentWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
 };
 use holochain_conductor_api::{AppStatusFilter, CellInfo};
@@ -12,59 +12,26 @@ use std::path::Path;
 use std::{sync::Arc};
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    let connection_string = ctx.get_connection_string().to_string();
-    let reporter = ctx.reporter();
-    let app_port = ctx
-        .executor()
-        .execute_in_place(async move {
-            log::info!("Connecting a Holochain admin client: {}", connection_string);
-            let mut admin_client =
-                AdminWebsocket::connect(connection_string, reporter).await?;
-
-            let existing_app_ports = admin_client
-                .list_app_interfaces()
-                .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
-            if !existing_app_ports.is_empty() {
-                Ok(*existing_app_ports.first().context("No app ports found")?)
-            } else {
-                let attached_app_port = admin_client
-                    .attach_app_interface(0)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
-                Ok(attached_app_port)
-            }
-        })
-        .context("Failed set up app port")?;
-
-    ctx.get_mut().app_port = Some(app_port);
-
+    configure_app_ws_url(ctx)?;
     Ok(())
 }
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    let connection_string = ctx.runner_context().get_connection_string().to_string();
-    // TODO extract as common code
-    let app_port = ctx.runner_context().get().app_port.unwrap();
-    let reporter = ctx.runner_context().reporter();
-    let app_client = ctx.runner_context().executor().execute_in_place(async {
-        let client =
-            AppWebsocket::connect(format!("ws://localhost:{}", app_port), reporter).await?;
-        Ok(client)
-    })?;
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
 
     // TODO break this function down a bit?
+    let app_ws_url = ctx.runner_context().get().app_ws_url();
     let agent_id = ctx.agent_id().to_string();
     let reporter = ctx.runner_context().reporter();
     let (installed_app_id, app_agent_client) = ctx
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            log::info!("Connecting a Holochain admin client: {}", connection_string);
+            log::info!("Connecting a Holochain admin client: {}", admin_ws_url);
             let mut client =
-                AdminWebsocket::connect(connection_string, reporter).await?;
+                AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
 
             // TODO kills the test if it fails, that is not intentional. The error should be reported but not unwrapped
             let key = client
@@ -126,10 +93,11 @@ fn agent_setup(
             let mut signer = ClientAgentSigner::default();
             signer.add_credentials(cell_id, credentials);
 
-            let app_agent_client = AppAgentWebsocket::from_existing(
-                app_client,
+            let app_agent_client = AppAgentWebsocket::connect(
+                app_ws_url,
                 installed_app_id.clone(),
                 signer.into(),
+                reporter,
             )
             .await?;
 
@@ -195,7 +163,7 @@ fn teardown(_ctx: Arc<RunnerContext<HolochainRunnerContext>>) -> HookResult {
     Ok(())
 }
 
-fn main() -> WindTunnelResult {
+fn main() -> WindTunnelResult<()> {
     let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new(
         env!("CARGO_PKG_NAME"),
     )
