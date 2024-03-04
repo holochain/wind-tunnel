@@ -1,11 +1,17 @@
-use crate::prelude::HolochainRunnerContext;
+use crate::context::HolochainAgentContext;
+use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
-use holochain_client_instrumented::prelude::AdminWebsocket;
-use wind_tunnel_runner::prelude::{RunnerContext, WindTunnelResult};
+use holochain_client_instrumented::prelude::{
+    AdminWebsocket, AppAgentWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
+};
+use holochain_conductor_api::CellInfo;
+use holochain_types::prelude::{AppBundleSource, InstallAppPayload, RoleName};
+use std::path::PathBuf;
+use wind_tunnel_runner::prelude::{AgentContext, RunnerContext, WindTunnelResult};
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
 ///
-/// After calling this function you will be able to use the app port in your agent hooks:
+/// After calling this function you will be able to use the `app_ws_url` in your agent hooks:
 /// ```rust
 /// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext};
 /// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
@@ -21,7 +27,9 @@ use wind_tunnel_runner::prelude::{RunnerContext, WindTunnelResult};
 /// - If there are no app interfaces, attaches a new one.
 /// - Reads the current admin URL from the [RunnerContext] and swaps the admin port for the app port.
 /// - Sets the `app_ws_url` value in [HolochainRunnerContext].
-pub fn configure_app_ws_url(ctx: &mut RunnerContext<HolochainRunnerContext>) -> WindTunnelResult<()> {
+pub fn configure_app_ws_url(
+    ctx: &mut RunnerContext<HolochainRunnerContext>,
+) -> WindTunnelResult<()> {
     let admin_ws_url = ctx.get_connection_string().to_string();
     let reporter = ctx.reporter();
     let app_port = ctx
@@ -56,6 +64,133 @@ pub fn configure_app_ws_url(ctx: &mut RunnerContext<HolochainRunnerContext>) -> 
         .map_err(|_| anyhow::anyhow!("Failed to set app port on admin URL"))?;
 
     ctx.get_mut().app_ws_url = Some(admin_ws_url.to_string());
+
+    Ok(())
+}
+
+/// Opinionated app installation which will give you what you need in most cases.
+///
+/// The [RoleName] you provide is used to find the cell id of the installed app.
+///
+/// Requires:
+/// - The [HolochainRunnerContext] to have a valid `app_ws_url`. Consider calling [configure_app_ws_url] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, install_app};
+/// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     Ok(())
+/// }
+/// ```
+///
+/// After calling this function you will be able to use the `installed_app_id`, `cell_id` and `app_agent_client` in your agent hooks:
+/// ```rust
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext};
+/// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     let installed_app_id = ctx.get().installed_app_id();
+///     let cell_id = ctx.get().cell_id();
+///     let app_agent_client = ctx.get().app_agent_client();
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Connects to an admin port using the connection string from the runner context.
+/// - Generates an agent public key.
+/// - Installs the app using the provided `app_path` and the agent public key.
+/// - Enables the app.
+/// - Authorizes signing credentials.
+/// - Connects to the app websocket.
+/// - Sets the `installed_app_id`, `cell_id` and `app_agent_client` values in [HolochainAgentContext].
+pub fn install_app(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
+    app_path: PathBuf,
+    role_name: &RoleName,
+) -> WindTunnelResult<()> {
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let agent_id = ctx.agent_id().to_string();
+    let reporter = ctx.runner_context().reporter();
+
+    let (installed_app_id, cell_id, app_agent_client) = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move {
+            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
+            let mut client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+
+            // TODO kills the test if it fails, that is not intentional. The error should be reported but not unwrapped
+            let key = client
+                .generate_agent_pub_key()
+                .await
+                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+            log::debug!("Generated agent pub key: {:}", key);
+
+            let installed_app_id = format!("{}-app", agent_id).to_string();
+            let app_info = client
+                .install_app(InstallAppPayload {
+                    source: AppBundleSource::Path(app_path),
+                    agent_key: key,
+                    installed_app_id: Some(installed_app_id.clone()),
+                    membrane_proofs: Default::default(),
+                    network_seed: None,
+                })
+                .await
+                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+            log::debug!("Installed app: {:}", installed_app_id);
+
+            client
+                .enable_app(installed_app_id.clone())
+                .await
+                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+            log::debug!("Enabled app: {:}", installed_app_id);
+
+            let cell_id = match app_info
+                .cell_info
+                .get(role_name)
+                .ok_or(anyhow::anyhow!("Role not found"))?
+                .first()
+                .ok_or(anyhow::anyhow!("Cell not found"))?
+            {
+                CellInfo::Provisioned(c) => c.cell_id.clone(),
+                _ => anyhow::bail!("Cell not provisioned"),
+            };
+            log::debug!("Got cell id: {:}", cell_id);
+
+            let credentials = client
+                .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
+                    cell_id: cell_id.clone(),
+                    functions: None,
+                })
+                .await
+                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+            log::debug!("Authorized signing credentials");
+
+            let mut signer = ClientAgentSigner::default();
+            signer.add_credentials(cell_id.clone(), credentials);
+
+            let app_agent_client = AppAgentWebsocket::connect(
+                app_ws_url,
+                installed_app_id.clone(),
+                signer.into(),
+                reporter,
+            )
+            .await?;
+
+            Ok((installed_app_id, cell_id, app_agent_client))
+        })
+        .context("Failed to install app")?;
+
+    ctx.get_mut().installed_app_id = Some(installed_app_id);
+    ctx.get_mut().cell_id = Some(cell_id);
+    ctx.get_mut().app_agent_client = Some(app_agent_client);
 
     Ok(())
 }
