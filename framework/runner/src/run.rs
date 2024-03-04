@@ -72,12 +72,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             std::thread::Builder::new()
                 .name(agent_id.clone())
                 .spawn(move || {
+                    // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context =
                         AgentContext::new(agent_id.clone(), runner_context, delegated_shutdown_listener);
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         setup_agent_fn(&mut context).unwrap();
                     }
 
+                    // TODO implement warmup
                     if let Some(behaviour) = agent_behaviour_fn.get("default") {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
