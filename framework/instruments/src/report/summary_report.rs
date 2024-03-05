@@ -69,7 +69,7 @@ impl SummaryReportCollector {
             })
             .collect::<Vec<_>>();
 
-        let mut table = Table::new(&rows);
+        let mut table = Table::new(rows);
         table.with(Style::modern());
 
         println!("{}", table);

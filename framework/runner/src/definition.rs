@@ -1,7 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use clap::Parser;
-
+use crate::init::init;
 use crate::{
     cli::WindTunnelScenarioCli,
     context::{AgentContext, RunnerContext, UserValuesConstraint},
@@ -47,16 +46,29 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilder<RV, V> {
     /// Initialise a new scenario definition from the scenario name and command line arguments.
     ///
+    /// Calling this constructor will also initialise the runner CLI and set up logging by calling [init].
+    /// This is a shortcut for:
+    /// ```rust,no_run
+    /// use wind_tunnel_runner::prelude::{init, ScenarioDefinitionBuilder, UserValuesConstraint};
+    ///
+    /// #[derive(Debug, Default)]
+    /// struct Values {}
+    /// impl UserValuesConstraint for Values {}
+    ///
+    /// let cli = init();
+    /// let scenario = ScenarioDefinitionBuilder::<Values, Values>::new("my-scenario", cli);
+    /// ```
+    ///
     /// The name of the scenario should be unique within the test suite. The recommended value is `env!("CARGO_PKG_NAME")`.
-    pub fn new(name: &str) -> Self {
-        // Not that keen on mixing this into a constructor, but in the interest of keeping the boilerplate for tests
-        // low this is going here for now.
-        let cli = WindTunnelScenarioCli::parse();
+    pub fn new_with_init(name: &str) -> Self {
+        let cli = init();
+        ScenarioDefinitionBuilder::new(name, cli)
+    }
 
-        // Even less keen on mixing this into the constructor. Maybe an init function would be better? Or even a proc macro to add the init header to
-        // test entry points?
-        env_logger::init();
-
+    /// Create a scenario definition without initialising the runner.
+    ///
+    /// This is intended for testing or scenarios where you want to avoid initialising the CLI.
+    pub fn new(name: &str, cli: WindTunnelScenarioCli) -> Self {
         Self {
             name: name.to_string(),
             cli,

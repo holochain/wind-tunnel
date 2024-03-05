@@ -87,7 +87,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         delegated_shutdown_listener,
                     );
                     if let Some(setup_agent_fn) = setup_agent_fn {
-                        setup_agent_fn(&mut context).unwrap();
+                        if let Err(e) = setup_agent_fn(&mut context) {
+                            log::error!("Agent setup failed for agent {}: {:?}", agent_id, e);
+                            return;
+                        }
                     }
 
                     // TODO implement warmup
@@ -128,7 +131,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {
-        teardown_fn(runner_context_for_teardown.clone())?;
+        // Don't crash the runner if the teardown fails. We still want the reporting and runner
+        // shutdown to happen cleanly. The hook is documented as 'best effort'
+        if let Err(e) = teardown_fn(runner_context_for_teardown.clone()) {
+            log::error!("Teardown failed: {:?}", e);
+        }
     }
 
     runner_context_for_teardown.reporter().finalize();

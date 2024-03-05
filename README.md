@@ -156,7 +156,7 @@ Then replace your `main` function with the following:
 
 ```rust
 fn main() -> WindTunnelResult<()> {
-    let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new(
+    let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new_with_init(
         env!("CARGO_PKG_NAME"),
     )
     .with_default_duration_s(60)

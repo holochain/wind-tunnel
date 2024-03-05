@@ -59,7 +59,7 @@ fn teardown(_ctx: Arc<RunnerContext<HolochainRunnerContext>>) -> HookResult {
 }
 
 fn main() -> WindTunnelResult<()> {
-    let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new(
+    let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new_with_init(
         env!("CARGO_PKG_NAME"),
     )
     .with_default_duration_s(60)

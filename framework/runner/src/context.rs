@@ -75,6 +75,15 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
     pub fn get(&self) -> &RV {
         &self.value
     }
+
+    /// Force stop the scenario.
+    ///
+    /// This will trigger shutdown of all agents and the runner. It is primarily exposed for testing
+    /// but if you need to stop the scenario from within a hook, you can use this. It is a better
+    /// alternative to using a panic if you really need the scenario to stop.
+    pub fn force_stop_scenario(&self) {
+        self.shutdown_handle.shutdown();
+    }
 }
 
 /// The context available to an agent during a scenario run. One context is created for each agent

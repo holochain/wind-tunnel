@@ -6,18 +6,10 @@ use std::sync::Arc;
 mod metrics;
 mod report;
 
+#[derive(Default)]
 pub struct ReportConfig {
     pub enable_metrics: bool,
     pub enable_summary: bool,
-}
-
-impl Default for ReportConfig {
-    fn default() -> Self {
-        Self {
-            enable_metrics: false,
-            enable_summary: false,
-        }
-    }
 }
 
 impl ReportConfig {
@@ -44,7 +36,7 @@ impl ReportConfig {
                 }),
             ]
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .collect(),
         }
     }
