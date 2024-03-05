@@ -3,6 +3,7 @@ use holochain_types::prelude::{ExternIO};
 use holochain_wind_tunnel_runner::prelude::*;
 use std::path::Path;
 use std::sync::Arc;
+use holochain_wind_tunnel_runner::scenario_happ_path;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;
@@ -14,10 +15,7 @@ fn agent_setup(
 ) -> HookResult {
     install_app(
         ctx,
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../happs")
-            .join(env!("CARGO_PKG_NAME"))
-            .join("return_single_value.happ"),
+        scenario_happ_path!("return_single_value"),
         &"return_single_value".to_string(),
     )?;
 

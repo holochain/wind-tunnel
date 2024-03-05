@@ -2,6 +2,7 @@ mod context;
 mod runner_context;
 /// Common operations for Holochain scenarios.
 mod common;
+mod macros;
 
 pub mod prelude {
     pub use crate::context::HolochainAgentContext;
