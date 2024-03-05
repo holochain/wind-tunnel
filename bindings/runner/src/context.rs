@@ -2,6 +2,7 @@ use holochain_client_instrumented::prelude::AppAgentWebsocket;
 use holochain_types::prelude::CellId;
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
+/// Holochain-specific context values for the [wind_tunnel_runner::prelude::AgentContext].
 #[derive(Default, Debug)]
 pub struct HolochainAgentContext {
     pub(crate) installed_app_id: Option<String>,

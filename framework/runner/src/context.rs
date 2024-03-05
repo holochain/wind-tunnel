@@ -8,12 +8,15 @@ use crate::{
 
 pub trait UserValuesConstraint: Default + Debug + Send + Sync + 'static {}
 
+/// The context created by the runner for a scenario run. This context is visible to all agents
+/// so it is read-only from within agent hooks but can be modified by global hooks.
+///
+/// This type has a generic parameter for the user-defined state that can be stored in the context.
 #[derive(Debug)]
 pub struct RunnerContext<RV: UserValuesConstraint> {
     executor: Arc<Executor>,
     reporter: Arc<Reporter>,
     shutdown_handle: ShutdownHandle,
-    /// Connection string for the service to test, supplied by the user via the CLI.
     connection_string: String,
     value: RV,
 }
@@ -34,10 +37,18 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
         }
     }
 
+    /// A handle to the [Executor] for the runner.
+    ///
+    /// This is used to run async code within hooks.
     pub fn executor(&self) -> &Arc<Executor> {
         &self.executor
     }
 
+    /// A handle to the reporter for the runner.
+    ///
+    /// This is used to record data in-memory and you
+    /// shouldn't need to access it directly. This should be passed to an instrumented client so
+    /// that it can report data to the runner.
     pub fn reporter(&self) -> Arc<Reporter> {
         self.reporter.clone()
     }
@@ -50,19 +61,31 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
         self.shutdown_handle.new_listener()
     }
 
+    /// Connection string for the target service of the scenario, supplied by the user via the CLI.
     pub fn get_connection_string(&self) -> &str {
         &self.connection_string
     }
 
+    /// Get mutable access to the user-defined state for the runner.
     pub fn get_mut(&mut self) -> &mut RV {
         &mut self.value
     }
 
+    /// Get the user-defined state for the runner.
     pub fn get(&self) -> &RV {
         &self.value
     }
 }
 
+/// The context available to an agent during a scenario run. One context is created for each agent
+/// so it is safe to store agent-specific state in this context.
+///
+/// The context holds a reference to the [RunnerContext] so that the agent can read shared state
+/// for the scenario.
+///
+/// This type is generic over two parameters, one for the [AgentContext] and one for the [RunnerContext].
+/// These are used to store user-defined state for the agent and the runner respectively.
+#[derive(Debug)]
 pub struct AgentContext<RV: UserValuesConstraint, V: UserValuesConstraint> {
     agent_id: String,
     runner_context: Arc<RunnerContext<RV>>,
@@ -91,6 +114,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
         &self.agent_id
     }
 
+    /// A handle to the runner context for the scenario.
     pub fn runner_context(&self) -> &Arc<RunnerContext<RV>> {
         &self.runner_context
     }
@@ -103,10 +127,12 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
         &mut self.shutdown_listener
     }
 
+    /// Get mutable access to the user-defined state for the agent.
     pub fn get_mut(&mut self) -> &mut V {
         &mut self.value
     }
 
+    /// Get the user-defined state for the agent.
     pub fn get(&self) -> &V {
         &self.value
     }

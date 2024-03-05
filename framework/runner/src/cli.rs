@@ -19,6 +19,9 @@ pub struct WindTunnelScenarioCli {
     #[clap(long, default_value = "false")]
     pub soak: bool,
 
+    /// Do not show a progress bar on the CLI.
+    ///
+    /// This is recommended for CI/CD environments where the progress bar isn't being looked at by anyone and is just adding noise to the logs.
     #[clap(long, default_value = "false")]
     pub no_progress: bool,
 }

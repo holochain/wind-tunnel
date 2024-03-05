@@ -2,6 +2,14 @@ use std::future::Future;
 
 use crate::shutdown::{ShutdownHandle, ShutdownSignalError};
 
+/// A wrapper around a Tokio runtime which allows futures to be run with managed shutdown handling.
+///
+/// When Wind Tunnel scenarios are finishing or being cancelled, the [Executor] will signal all futures
+/// to stop. Please be aware of this when running async code and ensure that you use types that support
+/// cancellation if they could be long-running.
+///
+/// You should not need to construct this type yourself. It is constructed by the Wind Tunnel runner
+/// during as part of the [run](crate::run::run) function. You get a handle to it from the [RunnerContext](crate::context::RunnerContext).
 #[derive(Debug)]
 pub struct Executor {
     runtime: tokio::runtime::Runtime,
@@ -41,7 +49,7 @@ impl Executor {
     /// Note that the future will not be cancelled if the runner is shutdown. It is also not guaranteed
     /// that the runner will wait for the future to complete before shutting down.
     ///
-    /// In agent behaviour hooks, you should use [Executor::execute] instead of [Executor::submit] to ensure that your
+    /// In agent behaviour hooks, you should use [Executor::execute_in_place] instead of [Executor::spawn] to ensure that your
     /// your future completes before the behaviour completes and is scheduled again.
     pub fn spawn(&self, fut: impl Future<Output = ()> + Send + 'static) {
         self.runtime.spawn(fut);

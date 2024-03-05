@@ -27,7 +27,7 @@ impl ShutdownHandle {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DelegatedShutdownListener {
     receiver: Arc<Mutex<Receiver<()>>>,
 }
