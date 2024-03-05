@@ -20,6 +20,7 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
     WindTunnelScenarioCli {
         connection_string: "test_connection_string".to_string(),
         agents: None,
+        behaviour: vec![],
         duration: None,
         soak: false,
         no_progress: true,

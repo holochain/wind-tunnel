@@ -3,7 +3,6 @@ use holochain_types::prelude::ExternIO;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::path::Path;
-use std::sync::Arc;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;
@@ -44,30 +43,15 @@ fn agent_behaviour(
     Ok(())
 }
 
-fn agent_teardown(
-    _ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
-) -> HookResult {
-    println!("Shutdown hook");
-
-    Ok(())
-}
-
-fn teardown(_ctx: Arc<RunnerContext<HolochainRunnerContext>>) -> HookResult {
-    println!("Tearing down the scenario");
-
-    Ok(())
-}
-
 fn main() -> WindTunnelResult<()> {
-    let builder = ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new_with_init(
-        env!("CARGO_PKG_NAME"),
-    )
-    .with_default_duration_s(60)
-    .use_setup(setup)
-    .use_agent_setup(agent_setup)
-    .use_agent_behaviour(agent_behaviour)
-    .use_agent_teardown(agent_teardown)
-    .use_teardown(teardown);
+    let builder =
+        ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new_with_init(
+            env!("CARGO_PKG_NAME"),
+        )
+        .with_default_duration_s(60)
+        .use_setup(setup)
+        .use_agent_setup(agent_setup)
+        .use_agent_behaviour(agent_behaviour);
 
     run(builder)?;
 

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::init::init;
@@ -29,18 +30,34 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     teardown_fn: Option<GlobalHook<RV>>,
 }
 
+pub struct AssignedBehaviour {
+    pub(crate) behaviour_name: String,
+    pub(crate) agent_count: usize,
+}
+
 /// The result of combining a scenario builder with the input CLI arguments to produce a scenario definition.
 pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint> {
-    pub name: String,
-    pub agent_count: usize,
-    pub duration_s: Option<u64>,
-    pub connection_string: String,
-    pub no_progress: bool,
-    pub setup_fn: Option<GlobalHookMut<RV>>,
-    pub setup_agent_fn: Option<AgentHookMut<RV, V>>,
-    pub agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
-    pub teardown_agent_fn: Option<AgentHookMut<RV, V>>,
-    pub teardown_fn: Option<GlobalHook<RV>>,
+    pub(crate) name: String,
+    pub(crate) agent_count: usize,
+    pub(crate) assigned_behaviours: Vec<AssignedBehaviour>,
+    pub(crate) duration_s: Option<u64>,
+    pub(crate) connection_string: String,
+    pub(crate) no_progress: bool,
+    pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
+    pub(crate) setup_agent_fn: Option<AgentHookMut<RV, V>>,
+    pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
+    pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
+    pub(crate) teardown_fn: Option<GlobalHook<RV>>,
+}
+
+impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V> {
+    pub(crate) fn assigned_behaviours_flat(&self) -> Vec<String> {
+        self.assigned_behaviours
+            .iter()
+            .flat_map(|b| std::iter::repeat(&b.behaviour_name).take(b.agent_count))
+            .cloned()
+            .collect()
+    }
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilder<RV, V> {
@@ -150,17 +167,42 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         self
     }
 
-    pub(crate) fn build(self) -> ScenarioDefinition<RV, V> {
+    pub(crate) fn build(self) -> anyhow::Result<ScenarioDefinition<RV, V>> {
         let resolved_duration = if self.cli.soak {
             None
         } else {
             self.cli.duration.or(self.default_duration_s)
         };
 
-        ScenarioDefinition {
+        // Priority given to the CLI, then the default value provided by the scenario, then default to 1
+        let resolved_agent_count = self.cli.agents.or(self.default_agent_count).unwrap_or(1);
+
+        // Check that the user hasn't requested behaviours that aren't registered in the scenario.
+        let registered_behaviours = self
+            .agent_behaviour
+            .keys()
+            .cloned()
+            .collect::<HashSet<String>>();
+        let requested_behaviours = self
+            .cli
+            .behaviour
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect::<HashSet<String>>();
+        let unknown_behaviours = requested_behaviours
+            .difference(&registered_behaviours)
+            .collect::<Vec<&String>>();
+        if unknown_behaviours.len() > 0 {
+            return Err(anyhow::anyhow!(
+                "Unknown behaviours requested: {:?}",
+                unknown_behaviours
+            ));
+        }
+
+        Ok(ScenarioDefinition {
             name: self.name,
-            // Priority given to the CLI, then the default value provided by the scenario, then default to 1
-            agent_count: self.cli.agents.or(self.default_agent_count).unwrap_or(1),
+            agent_count: resolved_agent_count,
+            assigned_behaviours: build_assigned_behaviours(&self.cli, resolved_agent_count)?,
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,
             no_progress: self.cli.no_progress,
@@ -169,6 +211,118 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             agent_behaviour: self.agent_behaviour,
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
+        })
+    }
+}
+
+fn build_assigned_behaviours(
+    cli: &WindTunnelScenarioCli,
+    resolved_agent_count: usize,
+) -> anyhow::Result<Vec<AssignedBehaviour>> {
+    let mut resolved_agent_count = resolved_agent_count as i32; // Signed so we can go negative.
+    let mut assigned_behaviours = Vec::new();
+    for (behaviour_name, agent_count) in &cli.behaviour {
+        resolved_agent_count -= *agent_count as i32;
+        if resolved_agent_count < 0 {
+            return Err(anyhow::anyhow!("The number of agents assigned to behaviours must be less than or equal to the total number of agents"));
         }
+
+        assigned_behaviours.push(AssignedBehaviour {
+            behaviour_name: behaviour_name.to_string(),
+            agent_count: *agent_count,
+        });
+    }
+
+    if resolved_agent_count > 0 {
+        assigned_behaviours.push(AssignedBehaviour {
+            behaviour_name: "default".to_string(),
+            agent_count: resolved_agent_count as usize, // Known > 0 here as checked above.
+        });
+    }
+
+    Ok(assigned_behaviours)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::definition::build_assigned_behaviours;
+
+    #[test]
+    pub fn build_assigned_behaviours_default() {
+        let assigned = build_assigned_behaviours(
+            &crate::cli::WindTunnelScenarioCli {
+                connection_string: "".to_string(),
+                agents: None,
+                behaviour: vec![],
+                duration: None,
+                soak: false,
+                no_progress: false,
+            },
+            5,
+        )
+        .unwrap();
+
+        assert_eq!(1, assigned.len());
+        assert_eq!("default", assigned[0].behaviour_name);
+        assert_eq!(5, assigned[0].agent_count);
+    }
+
+    #[test]
+    pub fn build_assigned_behaviours_exact() {
+        let assigned = build_assigned_behaviours(
+            &crate::cli::WindTunnelScenarioCli {
+                connection_string: "".to_string(),
+                agents: None,
+                behaviour: vec![], // Not specified
+                duration: None,
+                soak: false,
+                no_progress: false,
+            },
+            5,
+        )
+        .unwrap();
+
+        assert_eq!(1, assigned.len());
+        assert_eq!("default", assigned[0].behaviour_name);
+        assert_eq!(5, assigned[0].agent_count);
+    }
+
+    #[test]
+    pub fn build_assigned_behaviours_partial() {
+        let assigned = build_assigned_behaviours(
+            &crate::cli::WindTunnelScenarioCli {
+                connection_string: "".to_string(),
+                agents: None,
+                behaviour: vec![("login".to_string(), 3)], // 3 of 5
+                duration: None,
+                soak: false,
+                no_progress: false,
+            },
+            5,
+        )
+        .unwrap();
+
+        assert_eq!(2, assigned.len());
+        assert_eq!("login", assigned[0].behaviour_name);
+        assert_eq!(3, assigned[0].agent_count);
+        assert_eq!("default", assigned[1].behaviour_name);
+        assert_eq!(2, assigned[1].agent_count);
+    }
+
+    #[test]
+    pub fn build_assigned_behaviours_too_many() {
+        let result = build_assigned_behaviours(
+            &crate::cli::WindTunnelScenarioCli {
+                connection_string: "".to_string(),
+                agents: None,
+                behaviour: vec![("login".to_string(), 30)], // 30 of 5
+                duration: None,
+                soak: false,
+                no_progress: false,
+            },
+            5,
+        );
+
+        assert!(result.is_err());
     }
 }

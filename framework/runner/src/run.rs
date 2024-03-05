@@ -16,7 +16,7 @@ use crate::{
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
 ) -> anyhow::Result<()> {
-    let definition = definition.build();
+    let definition = definition.build()?;
 
     log::info!("Running scenario: {}", definition.name);
 
@@ -28,15 +28,15 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         executor,
         reporter,
         shutdown_handle.clone(),
-        definition.connection_string,
+        definition.connection_string.clone(),
     );
 
-    if let Some(setup_fn) = definition.setup_fn {
+    if let Some(setup_fn) = &definition.setup_fn {
         setup_fn(&mut runner_context)?;
     }
 
     // After the setup has run, and if this is a time bounded scenario, then we need to take additional actions
-    if let Some(duration) = definition.duration_s {
+    if let Some(duration) = definition.duration_s.clone() {
         if !definition.no_progress {
             // If the scenario is time bounded then start the progress monitor to show the user how long is left
             start_progress(
@@ -60,13 +60,15 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     // which might lead to a misleading outcome.
     start_monitor(shutdown_handle.new_listener());
 
+    let assigned_behaviours = definition.assigned_behaviours_flat();
+
     let mut handles = Vec::new();
     for agent_index in 0..definition.agent_count {
         // Read access to the runner context for each agent
         let runner_context = runner_context.clone();
 
         let setup_agent_fn = definition.setup_agent_fn;
-        let agent_behaviour_fn = definition.agent_behaviour.clone();
+        let agent_behaviour_fn = definition.agent_behaviour.get(&assigned_behaviours[agent_index]).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
         // For us to check if the agent should shut down between behaviour cycles
@@ -94,7 +96,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     }
 
                     // TODO implement warmup
-                    if let Some(behaviour) = agent_behaviour_fn.get("default") {
+                    if let Some(behaviour) = agent_behaviour_fn {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
                                 log::debug!("Stopping agent {}", agent_id);
