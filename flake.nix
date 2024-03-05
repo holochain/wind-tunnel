@@ -23,7 +23,16 @@
                 inputsFrom = [
                     inputs.holochain.devShells.${system}.holonix
                 ];
-                packages = [];
+                packages = [
+                    pkgs.influxdb2-cli
+                    pkgs.influxdb2-server
+                ];
+
+                shellHook = ''
+                    export INFLUXD_BOLT_PATH=`pwd`/influx/.influxdbv2/influxd.bolt
+                    export INFLUXD_ENGINE_PATH=`pwd`/influx/.influxdbv2/engine
+                    export INFLUXD_CONFIG_PATH=`pwd`/influx
+                '';
             };
         };
     };
