@@ -1,13 +1,15 @@
+use crate::app_websocket::AppWebsocketInstrumented;
+use anyhow::Result;
+use holochain_client::{
+    AgentSigner, AppAgentWebsocket, AppWebsocket, ConductorApiResult, ZomeCallTarget,
+};
+use holochain_types::app::InstalledAppId;
+use holochain_types::prelude::{ExternIO, FunctionName, ZomeName};
 use std::fmt::{Debug, Formatter};
 use std::ops::{Deref, DerefMut};
-use anyhow::Result;
-use holochain_client::{AgentSigner, AppAgentWebsocket, AppWebsocket, ConductorApiResult, ZomeCallTarget};
-use holochain_types::app::InstalledAppId;
 use std::sync::Arc;
-use holochain_types::prelude::{ExternIO, FunctionName, ZomeName};
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
-use crate::app_websocket::AppWebsocketInstrumented;
 
 #[derive(Clone)]
 pub struct AppAgentWebsocketInstrumented {
@@ -27,21 +29,32 @@ impl AppAgentWebsocketInstrumented {
         reporter: Arc<Reporter>,
     ) -> Result<Self> {
         let app_ws = AppWebsocket::connect(url).await?;
-        let inner = AppAgentWebsocket::from_existing(app_ws.clone(), app_id.clone(), signer.clone()).await?;
-        let inner_instrumented = AppWebsocketInstrumented::from_existing(app_ws, reporter.clone()).await?;
+        let inner =
+            AppAgentWebsocket::from_existing(app_ws.clone(), app_id.clone(), signer.clone())
+                .await?;
+        let inner_instrumented =
+            AppWebsocketInstrumented::from_existing(app_ws, reporter.clone()).await?;
 
-        Ok(Self { inner, inner_instrumented, reporter })
+        Ok(Self {
+            inner,
+            inner_instrumented,
+            reporter,
+        })
     }
 
     pub async fn from_existing(
         app_ws: AppWebsocketInstrumented,
         app_id: InstalledAppId,
-        signer: Arc<Box<dyn AgentSigner + Send + Sync>>
+        signer: Arc<Box<dyn AgentSigner + Send + Sync>>,
     ) -> Result<Self> {
         let inner_instrumented = app_ws.clone();
         AppAgentWebsocket::from_existing(app_ws.inner, app_id, signer)
             .await
-            .map(|inner| Self { inner, inner_instrumented, reporter: app_ws.reporter })
+            .map(|inner| Self {
+                inner,
+                inner_instrumented,
+                reporter: app_ws.reporter,
+            })
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -52,7 +65,9 @@ impl AppAgentWebsocketInstrumented {
         fn_name: FunctionName,
         payload: ExternIO,
     ) -> ConductorApiResult<ExternIO> {
-        self.inner.call_zome(target, zome_name, fn_name, payload).await
+        self.inner
+            .call_zome(target, zome_name, fn_name, payload)
+            .await
     }
 }
 
@@ -72,7 +87,6 @@ impl DerefMut for AppAgentWebsocketInstrumented {
 
 impl Debug for AppAgentWebsocketInstrumented {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AppAgentWebsocketInstrumented")
-            .finish()
+        f.debug_struct("AppAgentWebsocketInstrumented").finish()
     }
 }

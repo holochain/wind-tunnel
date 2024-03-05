@@ -1,9 +1,9 @@
 use anyhow::Context;
-use holochain_types::prelude::{ExternIO};
+use holochain_types::prelude::ExternIO;
 use holochain_wind_tunnel_runner::prelude::*;
+use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::path::Path;
 use std::sync::Arc;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;

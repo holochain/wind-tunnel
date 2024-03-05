@@ -1,5 +1,5 @@
+use holochain_client_instrumented::prelude::AppAgentWebsocket;
 use holochain_types::prelude::CellId;
-use holochain_client_instrumented::prelude::{AppAgentWebsocket};
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
 #[derive(Default, Debug)]
@@ -19,7 +19,9 @@ impl HolochainAgentContext {
 
     /// Get the `cell_id` that was configured during agent setup.
     pub fn cell_id(&self) -> CellId {
-        self.cell_id.clone().expect("cell_id is not set, did you forget to call `install_app` in your agent_setup?")
+        self.cell_id
+            .clone()
+            .expect("cell_id is not set, did you forget to call `install_app` in your agent_setup?")
     }
 
     /// Get the `app_agent_client` that was configured during agent setup.

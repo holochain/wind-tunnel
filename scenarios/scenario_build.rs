@@ -41,8 +41,15 @@ fn main() -> anyhow::Result<()> {
         let dna_name = get_name_from_required_dna_table(&required_dna);
         let zome_names = get_zome_names_from_required_dna_table(&required_dna);
 
-        let built_path = build_required_dna(&manifest_dir, &package_name, &target_dir, &out_dir, &dna_name, &zome_names)
-            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+        let built_path = build_required_dna(
+            &manifest_dir,
+            &package_name,
+            &target_dir,
+            &out_dir,
+            &dna_name,
+            &zome_names,
+        )
+        .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
 
         built_dnas.push((dna_name, built_path));
     }
@@ -59,8 +66,15 @@ fn main() -> anyhow::Result<()> {
             let dna_name = get_name_from_required_dna_table(required_dna);
             let zome_names = get_zome_names_from_required_dna_table(&required_dna);
 
-            let built_path = build_required_dna(&manifest_dir, &package_name, &target_dir, &out_dir, &dna_name, &zome_names)
-                .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+            let built_path = build_required_dna(
+                &manifest_dir,
+                &package_name,
+                &target_dir,
+                &out_dir,
+                &dna_name,
+                &zome_names,
+            )
+            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
 
             built_dnas.push((dna_name, built_path));
         }
@@ -73,15 +87,26 @@ fn main() -> anyhow::Result<()> {
         .and_then(|metadata| metadata.get("required-happ"));
 
     // Permit a table for a single required hApp.
-    if let Some(required_happ) = required_happs_section.and_then(|required_happ| required_happ.as_table()) {
+    if let Some(required_happ) =
+        required_happs_section.and_then(|required_happ| required_happ.as_table())
+    {
         let happ_name = get_name_from_required_happ_table(required_happ);
         let dnas = get_dna_names_from_required_happ_table(required_happ);
 
-        build_required_happ(&out_dir, &manifest_dir, &package_name, &happ_name, &dnas, &built_dnas)?;
+        build_required_happ(
+            &out_dir,
+            &manifest_dir,
+            &package_name,
+            &happ_name,
+            &dnas,
+            &built_dnas,
+        )?;
     }
 
     // Expect an array for multiple required hApps.
-    if let Some(required_happs_array) = required_happs_section.and_then(|required_happ| required_happ.as_array()) {
+    if let Some(required_happs_array) =
+        required_happs_section.and_then(|required_happ| required_happ.as_array())
+    {
         for required_happ in required_happs_array.into_iter().map(|required_happ| {
             required_happ
                 .as_table()
@@ -90,7 +115,14 @@ fn main() -> anyhow::Result<()> {
             let happ_name = get_name_from_required_happ_table(required_happ);
             let dnas = get_dna_names_from_required_happ_table(required_happ);
 
-            build_required_happ(&out_dir, &manifest_dir, &package_name, &happ_name, &dnas, &built_dnas)?;
+            build_required_happ(
+                &out_dir,
+                &manifest_dir,
+                &package_name,
+                &happ_name,
+                &dnas,
+                &built_dnas,
+            )?;
         }
     }
 
@@ -115,7 +147,10 @@ fn get_name_from_required_happ_table(required_happ: &Table) -> String {
 }
 
 fn find_target_dir(manifest_dir: &str) -> anyhow::Result<PathBuf> {
-    let target_dir = Path::new(manifest_dir).join("../../target").canonicalize().unwrap();
+    let target_dir = Path::new(manifest_dir)
+        .join("../../target")
+        .canonicalize()
+        .unwrap();
     if !target_dir.exists() {
         anyhow::bail!("Target directory not found at {}", target_dir.display());
     }
@@ -156,7 +191,8 @@ fn build_required_dna(
         let zome_dir = Path::new(scenario_manifest_dir)
             .join("../../zomes")
             .join(&zome_name)
-            .canonicalize().unwrap();
+            .canonicalize()
+            .unwrap();
         if !zome_dir.exists() {
             anyhow::bail!("Zome directory not found at {}", zome_dir.display());
         }
@@ -223,14 +259,18 @@ fn build_required_dna(
 
     let dna_manifest_workdir = Path::new(out_dir).join(dna_name);
     if !dna_manifest_workdir.exists() {
-        std::fs::create_dir(&dna_manifest_workdir).context("Failed to create DNA manifest workdir")?;
+        std::fs::create_dir(&dna_manifest_workdir)
+            .context("Failed to create DNA manifest workdir")?;
     }
     let dna_manifest_path = dna_manifest_workdir.join("dna.yaml");
     let dna_manifest_str =
         serde_yaml::to_string(&manifest).context("Failed to serialize DNA manifest")?;
     std::fs::write(&dna_manifest_path, dna_manifest_str).context("Failed to write DNA manifest")?;
 
-    let dna_out_dir = Path::new(scenario_manifest_dir).join(format!("../../dnas/{}", scenario_package_name)).canonicalize().unwrap();
+    let dna_out_dir = Path::new(scenario_manifest_dir)
+        .join(format!("../../dnas/{}", scenario_package_name))
+        .canonicalize()
+        .unwrap();
     if !dna_out_dir.exists() {
         std::fs::create_dir(&dna_out_dir).context("Failed to create DNA out dir")?;
     }
@@ -247,11 +287,16 @@ fn build_required_dna(
     if !pack_cmd
         .status()
         .context("Failed run `hc dna pack`")?
-        .success() {
+        .success()
+    {
         anyhow::bail!("`hc dna pack` command failed");
     }
 
-    println!("cargo:warning=Built DNA '{}' and placed it in {}", dna_name, dna_out_dir.display());
+    println!(
+        "cargo:warning=Built DNA '{}' and placed it in {}",
+        dna_name,
+        dna_out_dir.display()
+    );
 
     Ok(dna_out_dir.join(format!("{}.dna", dna_name)))
 }
@@ -298,19 +343,37 @@ fn find_wasm(target_dir: &PathBuf, name: &str, kind: &str) -> anyhow::Result<Pat
 }
 
 fn print_rerun_for_package(package_dir: &PathBuf) {
-    println!("cargo:rerun-if-changed={}", package_dir.join("Cargo.toml").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        package_dir.join("Cargo.toml").display()
+    );
     walkdir::WalkDir::new(package_dir.join("src"))
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file() && e.path().extension().map_or(false, |ext| ext == "rs"))
+        .filter(|e| {
+            e.file_type().is_file() && e.path().extension().map_or(false, |ext| ext == "rs")
+        })
         .for_each(|e| println!("cargo:rerun-if-changed={}", e.path().display()));
 }
 
-fn build_required_happ(out_dir: &str, scenario_manifest_dir: &str, scenario_package_name: &str, happ_name: &str, dnas: &[String], all_dnas: &[(String, PathBuf)]) -> anyhow::Result<()> {
-    let roles = dnas.iter().map(|dna_name| {
-        let dna = all_dnas.iter().find(|(name, _)| name == dna_name).context(format!("DNA not found: {}", dna_name))?;
+fn build_required_happ(
+    out_dir: &str,
+    scenario_manifest_dir: &str,
+    scenario_package_name: &str,
+    happ_name: &str,
+    dnas: &[String],
+    all_dnas: &[(String, PathBuf)],
+) -> anyhow::Result<()> {
+    let roles = dnas
+        .iter()
+        .map(|dna_name| {
+            let dna = all_dnas
+                .iter()
+                .find(|(name, _)| name == dna_name)
+                .context(format!("DNA not found: {}", dna_name))?;
 
-        let role_manifest = format!(r#"
+            let role_manifest = format!(
+                r#"
 - name: {}
   provisioning:
     strategy: create
@@ -324,30 +387,48 @@ fn build_required_happ(out_dir: &str, scenario_manifest_dir: &str, scenario_pack
       quantum_time: ~
     installed_hash: ~
     clone_limit: 0
-    "#, dna_name, dna.1.display());
+    "#,
+                dna_name,
+                dna.1.display()
+            );
 
-        Ok(role_manifest.to_string())
-    }).collect::<anyhow::Result<Vec<String>>>()?.into_iter().fold(String::new(), |acc, role| acc + "\n" + &role);
+            Ok(role_manifest.to_string())
+        })
+        .collect::<anyhow::Result<Vec<String>>>()?
+        .into_iter()
+        .fold(String::new(), |acc, role| acc + "\n" + &role);
 
-    let manifest = format!(r#"
+    let manifest = format!(
+        r#"
 manifest_version: '1'
 name: {}
 description: ~
 roles:
 {}
-"#, happ_name, roles);
+"#,
+        happ_name, roles
+    );
 
     let happ_manifest_workdir = Path::new(out_dir).join(happ_name);
     if !happ_manifest_workdir.exists() {
-        std::fs::create_dir(&happ_manifest_workdir).context("Failed to create hApp manifest workdir").unwrap();
+        std::fs::create_dir(&happ_manifest_workdir)
+            .context("Failed to create hApp manifest workdir")
+            .unwrap();
     }
 
     let happ_manifest_path = happ_manifest_workdir.join("happ.yaml");
-    std::fs::write(&happ_manifest_path, manifest).context("Failed to write hApp manifest").unwrap();
+    std::fs::write(&happ_manifest_path, manifest)
+        .context("Failed to write hApp manifest")
+        .unwrap();
 
-    let happ_out_dir = Path::new(scenario_manifest_dir).join(format!("../../happs/{}", scenario_package_name)).canonicalize().unwrap();
+    let happ_out_dir = Path::new(scenario_manifest_dir)
+        .join(format!("../../happs/{}", scenario_package_name))
+        .canonicalize()
+        .unwrap();
     if !happ_out_dir.exists() {
-        std::fs::create_dir(&happ_out_dir).context("Failed to create hApp out dir").unwrap();
+        std::fs::create_dir(&happ_out_dir)
+            .context("Failed to create hApp out dir")
+            .unwrap();
     }
 
     let mut pack_cmd = std::process::Command::new("hc");
@@ -364,11 +445,16 @@ roles:
     if !pack_cmd
         .status()
         .context("Failed run `hc happ pack`")?
-        .success() {
+        .success()
+    {
         anyhow::bail!("`hc happ pack` command failed");
     }
 
-    println!("cargo:warning=Built hApp '{}' and placed it in {}", happ_name, happ_out_dir.display());
+    println!(
+        "cargo:warning=Built hApp '{}' and placed it in {}",
+        happ_name,
+        happ_out_dir.display()
+    );
 
     Ok(())
 }

@@ -23,11 +23,11 @@ impl AppWebsocketInstrumented {
             .map(|inner| Self { inner, reporter })
     }
 
-    pub async fn from_existing(
-        app_ws: AppWebsocket,
-        reporter: Arc<Reporter>,
-    ) -> Result<Self> {
-        Ok(Self { inner: app_ws, reporter })
+    pub async fn from_existing(app_ws: AppWebsocket, reporter: Arc<Reporter>) -> Result<Self> {
+        Ok(Self {
+            inner: app_ws,
+            reporter,
+        })
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]

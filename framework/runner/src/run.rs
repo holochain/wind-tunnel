@@ -4,14 +4,14 @@ use std::time::Duration;
 use anyhow::Context;
 use wind_tunnel_instruments::ReportConfig;
 
+use crate::monitor::start_monitor;
+use crate::progress::start_progress;
 use crate::{
     context::{AgentContext, RunnerContext, UserValuesConstraint},
     definition::ScenarioDefinitionBuilder,
     executor::Executor,
     shutdown::{start_shutdown_listener, ShutdownSignalError},
 };
-use crate::monitor::start_monitor;
-use crate::progress::start_progress;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -24,7 +24,12 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let reporter = Arc::new(ReportConfig::default().enable_summary().init());
-    let mut runner_context = RunnerContext::new(executor, reporter, shutdown_handle.clone(), definition.connection_string);
+    let mut runner_context = RunnerContext::new(
+        executor,
+        reporter,
+        shutdown_handle.clone(),
+        definition.connection_string,
+    );
 
     if let Some(setup_fn) = definition.setup_fn {
         setup_fn(&mut runner_context)?;
@@ -34,7 +39,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     if let Some(duration) = definition.duration_s {
         if !definition.no_progress {
             // If the scenario is time bounded then start the progress monitor to show the user how long is left
-            start_progress(Duration::from_secs(duration), shutdown_handle.new_listener());
+            start_progress(
+                Duration::from_secs(duration),
+                shutdown_handle.new_listener(),
+            );
         }
 
         // Set a timer to shut down the test after the duration has elapsed
@@ -73,8 +81,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                 .name(agent_id.clone())
                 .spawn(move || {
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
-                    let mut context =
-                        AgentContext::new(agent_id.clone(), runner_context, delegated_shutdown_listener);
+                    let mut context = AgentContext::new(
+                        agent_id.clone(),
+                        runner_context,
+                        delegated_shutdown_listener,
+                    );
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         setup_agent_fn(&mut context).unwrap();
                     }
@@ -111,9 +122,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     for handle in handles {
-        handle.join().map_err(|e| {
-            anyhow::anyhow!("Error joining thread for test agent: {:?}", e)
-        })?;
+        handle
+            .join()
+            .map_err(|e| anyhow::anyhow!("Error joining thread for test agent: {:?}", e))?;
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {

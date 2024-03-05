@@ -1,9 +1,9 @@
+use crate::shutdown::DelegatedShutdownListener;
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use std::cmp::min;
 use std::fmt::Write;
 use std::time::Duration;
-use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use tokio::time::Instant;
-use crate::shutdown::DelegatedShutdownListener;
 
 /// Displays a progress bar while the test is running to show the user how long is left.
 pub fn start_progress(planned_runtime: Duration, mut shutdown_listener: DelegatedShutdownListener) {
