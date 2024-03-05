@@ -38,7 +38,6 @@ pub struct AssignedBehaviour {
 /// The result of combining a scenario builder with the input CLI arguments to produce a scenario definition.
 pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint> {
     pub(crate) name: String,
-    pub(crate) agent_count: usize,
     pub(crate) assigned_behaviours: Vec<AssignedBehaviour>,
     pub(crate) duration_s: Option<u64>,
     pub(crate) connection_string: String,
@@ -201,7 +200,6 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
 
         Ok(ScenarioDefinition {
             name: self.name,
-            agent_count: resolved_agent_count,
             assigned_behaviours: build_assigned_behaviours(&self.cli, resolved_agent_count)?,
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,

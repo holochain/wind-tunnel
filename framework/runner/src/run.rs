@@ -63,14 +63,14 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let assigned_behaviours = definition.assigned_behaviours_flat();
 
     let mut handles = Vec::new();
-    for agent_index in 0..definition.agent_count {
+    for (agent_index, assigned_behaviour) in assigned_behaviours.iter().enumerate() {
         // Read access to the runner context for each agent
         let runner_context = runner_context.clone();
 
         let setup_agent_fn = definition.setup_agent_fn;
         let agent_behaviour_fn = definition
             .agent_behaviour
-            .get(&assigned_behaviours[agent_index])
+            .get(assigned_behaviour)
             .cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
