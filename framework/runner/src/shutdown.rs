@@ -1,10 +1,10 @@
 use std::{borrow::BorrowMut, sync::Arc};
 
+use tokio::sync::Mutex;
 use tokio::{
     signal,
     sync::broadcast::{Receiver, Sender},
 };
-use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ShutdownHandle {

@@ -192,7 +192,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         let unknown_behaviours = requested_behaviours
             .difference(&registered_behaviours)
             .collect::<Vec<&String>>();
-        if unknown_behaviours.len() > 0 {
+        if !unknown_behaviours.is_empty() {
             return Err(anyhow::anyhow!(
                 "Unknown behaviours requested: {:?}",
                 unknown_behaviours

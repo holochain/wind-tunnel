@@ -36,7 +36,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     // After the setup has run, and if this is a time bounded scenario, then we need to take additional actions
-    if let Some(duration) = definition.duration_s.clone() {
+    if let Some(duration) = definition.duration_s {
         if !definition.no_progress {
             // If the scenario is time bounded then start the progress monitor to show the user how long is left
             start_progress(
@@ -68,7 +68,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let runner_context = runner_context.clone();
 
         let setup_agent_fn = definition.setup_agent_fn;
-        let agent_behaviour_fn = definition.agent_behaviour.get(&assigned_behaviours[agent_index]).cloned();
+        let agent_behaviour_fn = definition
+            .agent_behaviour
+            .get(&assigned_behaviours[agent_index])
+            .cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
         // For us to check if the agent should shut down between behaviour cycles

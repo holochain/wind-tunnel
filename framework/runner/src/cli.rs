@@ -43,9 +43,15 @@ pub struct WindTunnelScenarioCli {
 
 fn parse_agent_behaviour(s: &str) -> anyhow::Result<(String, usize)> {
     let mut parts = s.split(':');
-    let name = parts.next().map(|s| s.to_string()).ok_or(anyhow::anyhow!("No name specified for behaviour"))?;
+    let name = parts
+        .next()
+        .map(|s| s.to_string())
+        .ok_or(anyhow::anyhow!("No name specified for behaviour"))?;
 
-    let count = parts.next().and_then(|s| s.parse::<usize>().ok()).unwrap_or(1);
+    let count = parts
+        .next()
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(1);
 
     Ok((name, count))
 }
