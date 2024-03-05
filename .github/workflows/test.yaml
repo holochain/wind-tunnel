@@ -1,0 +1,35 @@
+name: "test"
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v25
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.20.4/install
+          extra_nix_config: |
+            experimental-features = flakes nix-command
+
+      - uses: cachix/cachix-action@v14
+        with:
+          name: holochain-ci
+
+      - name: Lint
+        run: |
+          nix develop --command bash -c "cargo clippy --all-targets --all-features -- -D warnings"
+
+      - name: Check formatting
+        run: |
+          nix develop --command bash -c "cargo fmt --all -- --check"
+
+      - name: Unit tests
+        run: |
+          nix develop --command bash -c "cargo test"
