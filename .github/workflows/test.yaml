@@ -33,3 +33,11 @@ jobs:
       - name: Unit tests
         run: |
           nix develop --command bash -c "cargo test"
+
+      - name: Smoke test
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          
+          # Run a single scenario for 5 seconds
+          nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress"
