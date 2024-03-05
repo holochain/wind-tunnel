@@ -1,10 +1,10 @@
 use std::{borrow::BorrowMut, sync::Arc};
 
-use parking_lot::Mutex;
 use tokio::{
     signal,
     sync::broadcast::{Receiver, Sender},
 };
+use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ShutdownHandle {
@@ -42,10 +42,15 @@ impl DelegatedShutdownListener {
     /// Point in time check if the shutdown signal has been received. If this returns true then work
     /// be stopped so that the scenario can shut down.
     pub fn should_shutdown(&mut self) -> bool {
-        match self.receiver.lock().try_recv() {
-            Ok(_) => true,
-            Err(tokio::sync::broadcast::error::TryRecvError::Closed) => true,
-            // If the receiver is empty or lagged then we should not shutdown.
+        match self.receiver.try_lock() {
+            Ok(mut guard) => {
+                match guard.try_recv() {
+                    Ok(_) => true,
+                    Err(tokio::sync::broadcast::error::TryRecvError::Closed) => true,
+                    // If the receiver is empty or lagged then we should not shutdown.
+                    Err(_) => false,
+                }
+            }
             Err(_) => false,
         }
     }
@@ -57,6 +62,7 @@ impl DelegatedShutdownListener {
         self.receiver
             .borrow_mut()
             .lock()
+            .await
             .recv()
             .await
             .expect("Failed to receive shutdown signal");

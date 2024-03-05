@@ -1,8 +1,10 @@
 use opentelemetry_api::global::meter_with_version;
 use opentelemetry_api::metrics::{Histogram, Unit};
 
+#[allow(unused)]
 pub type OperationDurationMetric = Histogram<f64>;
 
+#[allow(unused)]
 pub fn create_operation_duration_metric() -> OperationDurationMetric {
     meter_with_version(
         "wt.operation",

@@ -92,7 +92,7 @@ pub fn wind_tunnel_instrument(args: TokenStream, input: TokenStream) -> TokenStr
             .collect::<syn::Result<Vec<Option<_>>>>()
             .unwrap()
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .fold(
                 Punctuated::<Expr, syn::token::Comma>::new(),
                 |mut punct, arg| {
