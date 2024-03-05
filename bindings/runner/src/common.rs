@@ -17,7 +17,8 @@ use wind_tunnel_runner::prelude::{AgentContext, RunnerContext, WindTunnelResult}
 /// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
 ///
 /// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
-///     let app_ws_url = ctx.get().app_ws_url();
+///     let app_ws_url = ctx.runner_context().get().app_ws_url();
+///     Ok(())
 /// }
 /// ```
 ///
