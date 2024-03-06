@@ -21,9 +21,19 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     log::info!("Running scenario: {}", definition.name);
 
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
+
+    let reporter = {
+        // Influxive needs a runtime during setup, so make the runtime available on the current thread.
+        let _h = runtime.handle().enter();
+        Arc::new(
+            ReportConfig::default()
+                .enable_summary()
+                .enable_metrics()
+                .init_reporter()?,
+        )
+    };
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
-    let reporter = Arc::new(ReportConfig::default().enable_summary().init());
     let mut runner_context = RunnerContext::new(
         executor,
         reporter,
@@ -68,10 +78,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let runner_context = runner_context.clone();
 
         let setup_agent_fn = definition.setup_agent_fn;
-        let agent_behaviour_fn = definition
-            .agent_behaviour
-            .get(assigned_behaviour)
-            .cloned();
+        let agent_behaviour_fn = definition.agent_behaviour.get(assigned_behaviour).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
         // For us to check if the agent should shut down between behaviour cycles

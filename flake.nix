@@ -26,12 +26,36 @@
                 packages = [
                     pkgs.influxdb2-cli
                     pkgs.influxdb2-server
+                    pkgs.yq
                 ];
 
                 shellHook = ''
-                    export INFLUXD_BOLT_PATH=`pwd`/influx/.influxdbv2/influxd.bolt
-                    export INFLUXD_ENGINE_PATH=`pwd`/influx/.influxdbv2/engine
-                    export INFLUXD_CONFIG_PATH=`pwd`/influx
+                    # Configure InfluxDB to store data within the repository
+                    export INFLUXD_BOLT_PATH="`pwd`/influx/.influxdbv2/influxd.bolt"
+                    export INFLUXD_ENGINE_PATH="`pwd`/influx/.influxdbv2/engine/"
+                    export INFLUXD_CONFIG_PATH="`pwd`/influx/"
+
+                    # Configure the InfluxDB CLI to store its config within the repository
+                    export INFLUX_CONFIGS_PATH="`pwd`/influx/influx.toml"
+
+                    # Configures the current shell to use InfluxDB with Wind Tunnel
+                    use_influx() {
+                        export INFLUX_HOST="http://localhost:8087"
+                        export INFLUX_BUCKET=windtunnel
+                        export INFLUX_TOKEN="$(cat $INFLUX_CONFIGS_PATH | tomlq -r .default.token)"
+                    }
+
+                    # Dev only setup for InfluxDB, this function can be called from inside the dev shell once `influxd` is running
+                    configure_influx() {
+                        influx setup --host http://localhost:8087 --username windtunnel --password windtunnel --org holo --bucket windtunnel --force
+                        use_influx
+                    }
+
+                    # Remove data and config, must be run when influxd is not running
+                    clear_influx() {
+                         rm -rf "`pwd`/influx/.influxdbv2"
+                         rm "`pwd`/influx/influx.toml"
+                    }
                 '';
             };
         };

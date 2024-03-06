@@ -8,7 +8,7 @@ use holochain_types::prelude::{ExternIO, FunctionName, ZomeName};
 use std::fmt::{Debug, Formatter};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use wind_tunnel_instruments::Reporter;
+use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
 #[derive(Clone)]
@@ -57,7 +57,7 @@ impl AppAgentWebsocketInstrumented {
             })
     }
 
-    #[wind_tunnel_instrument(prefix = "app_")]
+    #[wind_tunnel_instrument(prefix = "app_agent_", pre_hook = pre_call_zome)]
     pub async fn call_zome(
         &mut self,
         target: ZomeCallTarget,
@@ -69,6 +69,12 @@ impl AppAgentWebsocketInstrumented {
             .call_zome(target, zome_name, fn_name, payload)
             .await
     }
+}
+
+fn pre_call_zome(operation_record: &mut OperationRecord, _target: &ZomeCallTarget, zome_name: &ZomeName, fn_name: &FunctionName, _payload: &ExternIO) {
+    operation_record.add_attr("zome_name",zome_name.to_string());
+    operation_record.add_attr("fn_name", fn_name.to_string());
+
 }
 
 impl Deref for AppAgentWebsocketInstrumented {

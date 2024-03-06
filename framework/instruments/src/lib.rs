@@ -23,13 +23,17 @@ impl ReportConfig {
         self
     }
 
-    pub fn init(self) -> Reporter {
-        Reporter {
+    pub fn init_reporter(self) -> anyhow::Result<Reporter> {
+        Ok(Reporter {
             inner: [
-                self.enable_metrics.then(|| {
-                    RwLock::new(Box::new(report::MetricsReportCollector::new())
-                        as Box<(dyn ReportCollector + Send + Sync)>)
-                }),
+                if self.enable_metrics {
+                    let metrics_collector = report::MetricsReportCollector::new()?;
+                    Some(RwLock::new(
+                        Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
+                    ))
+                } else {
+                    None
+                },
                 self.enable_summary.then(|| {
                     RwLock::new(Box::new(report::SummaryReportCollector::new())
                         as Box<(dyn ReportCollector + Send + Sync)>)
@@ -38,7 +42,7 @@ impl ReportConfig {
             .into_iter()
             .flatten()
             .collect(),
-        }
+        })
     }
 }
 

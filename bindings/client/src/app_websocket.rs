@@ -78,4 +78,5 @@ impl AppWebsocketInstrumented {
 
 fn pre_call_zome(operation_record: &mut OperationRecord, msg: &ZomeCall) {
     operation_record.add_attr("zome_name", msg.zome_name.0.to_string());
+    operation_record.add_attr("fn_name", msg.fn_name.0.to_string());
 }
