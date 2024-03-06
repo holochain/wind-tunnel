@@ -240,3 +240,7 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 ```bash
 RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
 ```
+
+### Published crates
+
+- [ wind_tunnel_instruments ](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments) - [ ![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments) ](https://crates.io/crates/wind_tunnel_instruments) - Instruments for measuring performance with Wind Tunnel.
