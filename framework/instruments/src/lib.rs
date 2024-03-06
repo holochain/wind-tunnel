@@ -2,6 +2,8 @@ use crate::report::ReportCollector;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::runtime::Runtime;
+use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 mod report;
 
@@ -22,11 +24,16 @@ impl ReportConfig {
         self
     }
 
-    pub fn init_reporter(self) -> anyhow::Result<Reporter> {
+    pub fn init_reporter(
+        self,
+        runtime: &Runtime,
+        shutdown_listener: DelegatedShutdownListener,
+    ) -> anyhow::Result<Reporter> {
         Ok(Reporter {
             inner: [
                 if self.enable_metrics {
-                    let metrics_collector = report::MetricsReportCollector::new()?;
+                    let metrics_collector =
+                        report::MetricsReportCollector::new(runtime, shutdown_listener)?;
                     Some(RwLock::new(
                         Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
                     ))

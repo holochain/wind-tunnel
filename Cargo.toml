@@ -9,13 +9,14 @@ members = [
     "bindings/client",
     
     "scenarios/zome_call_single_value",
-    "zomes/return_single_value/coordinator",
+    "zomes/return_single_value/coordinator", "framework/core",
 ]
 
 # By default, don't build the scenarios or zomes.
 # The scenarios should only be built when they are being run.
 # The zomes should only be built into wasm as part of running scenarios.
 default-members = [
+    "framework/core",
     "framework/runner",
     "framework/instruments",
     "framework/instruments_derive",
@@ -33,8 +34,6 @@ log = "0.4.20"
 env_logger = "0.11.2"
 derive_more = "0.99.17"
 opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
-influxive-writer = "0.0.2-alpha.1"
-influxive-core = "0.0.2-alpha.1"
 toml = "0.8.10"
 serde_yaml = "0.9"
 walkdir = "2"
@@ -42,6 +41,7 @@ sysinfo = "0.30.6"
 url = "2.5.0"
 tabled = "0.15.0"
 indicatif = "0.17.8"
+influxdb = "0.7.2"
 
 # Deps for Holochain 0.2
 holochain_client = { version = "0.4.8" }
@@ -54,6 +54,7 @@ hdi = "0.3.6"
 mr_bundle = "0.2.6"
 
 # Framework
+wind_tunnel_core = { path = "./framework/core", version = "0.1.0-alpha.1" }
 wind_tunnel_instruments = { path = "./framework/instruments", version = "0.1.0-alpha.1" }
 wind_tunnel_instruments_derive = { path = "./framework/instruments_derive", version = "0.1.0-alpha.1" }
 wind_tunnel_runner = { path = "./framework/runner", version = "0.1.0-alpha.1" }

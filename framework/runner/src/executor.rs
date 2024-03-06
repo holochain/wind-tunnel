@@ -1,6 +1,5 @@
 use std::future::Future;
-
-use crate::shutdown::{ShutdownHandle, ShutdownSignalError};
+use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
 
 /// A wrapper around a Tokio runtime which allows futures to be run with managed shutdown handling.
 ///

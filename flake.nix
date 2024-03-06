@@ -27,6 +27,7 @@
                     pkgs.influxdb2-cli
                     pkgs.influxdb2-server
                     pkgs.yq
+                    pkgs.curl
                 ];
 
                 shellHook = ''
@@ -51,10 +52,10 @@
                         use_influx
                     }
 
-                    # Remove data and config, must be run when influxd is not running
+                    # Remove data and config
                     clear_influx() {
-                         rm -rf "`pwd`/influx/.influxdbv2"
-                         rm "`pwd`/influx/influx.toml"
+                         curl http://localhost:8087/debug/flush
+                         rm "$INFLUX_CONFIGS_PATH"
                     }
                 '';
             };

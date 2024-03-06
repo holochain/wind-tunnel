@@ -1,10 +1,8 @@
 use std::{fmt::Debug, sync::Arc};
+use wind_tunnel_core::prelude::{DelegatedShutdownListener, ShutdownHandle};
 use wind_tunnel_instruments::Reporter;
 
-use crate::{
-    executor::Executor,
-    shutdown::{DelegatedShutdownListener, ShutdownHandle},
-};
+use crate::executor::Executor;
 
 pub trait UserValuesConstraint: Default + Debug + Send + Sync + 'static {}
 

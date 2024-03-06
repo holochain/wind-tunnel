@@ -1,5 +1,5 @@
-use crate::shutdown::DelegatedShutdownListener;
 use sysinfo::{Pid, ProcessRefreshKind, System};
+use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 /// Monitor the resource usage of the wind-tunnel process and report high usage.
 ///

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
+use wind_tunnel_core::prelude::ShutdownSignalError;
 use wind_tunnel_instruments::ReportConfig;
 
 use crate::monitor::start_monitor;
@@ -10,7 +11,7 @@ use crate::{
     context::{AgentContext, RunnerContext, UserValuesConstraint},
     definition::ScenarioDefinitionBuilder,
     executor::Executor,
-    shutdown::{start_shutdown_listener, ShutdownSignalError},
+    shutdown::start_shutdown_listener,
 };
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
@@ -22,6 +23,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
 
+    let shutdown_handle = start_shutdown_listener(&runtime)?;
+
     let reporter = {
         let _h = runtime.handle().enter();
         let mut report_config = ReportConfig::default().enable_summary();
@@ -30,9 +33,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             report_config = report_config.enable_metrics();
         }
 
-        Arc::new(report_config.init_reporter()?)
+        Arc::new(report_config.init_reporter(&runtime, shutdown_handle.new_listener())?)
     };
-    let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(
         executor,
