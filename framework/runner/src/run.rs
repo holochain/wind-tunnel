@@ -24,17 +24,13 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::default()
-            .enable_summary();
+        let mut report_config = ReportConfig::default().enable_summary();
 
         if !definition.no_metrics {
             report_config = report_config.enable_metrics();
         }
 
-        Arc::new(
-            report_config
-                .init_reporter()?,
-        )
+        Arc::new(report_config.init_reporter()?)
     };
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
