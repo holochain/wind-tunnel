@@ -268,9 +268,10 @@ fn build_required_dna(
     std::fs::write(&dna_manifest_path, dna_manifest_str).context("Failed to write DNA manifest")?;
 
     let dna_out_dir = Path::new(scenario_manifest_dir)
-        .join(format!("../../dnas/{}", scenario_package_name))
+        .join("../../dnas")
         .canonicalize()
-        .unwrap();
+        .unwrap()
+        .join(scenario_package_name);
     if !dna_out_dir.exists() {
         std::fs::create_dir(&dna_out_dir).context("Failed to create DNA out dir")?;
     }
@@ -422,9 +423,10 @@ roles:
         .unwrap();
 
     let happ_out_dir = Path::new(scenario_manifest_dir)
-        .join(format!("../../happs/{}", scenario_package_name))
+        .join("../../happs")
         .canonicalize()
-        .unwrap();
+        .unwrap()
+        .join(scenario_package_name);
     if !happ_out_dir.exists() {
         std::fs::create_dir(&happ_out_dir)
             .context("Failed to create hApp out dir")

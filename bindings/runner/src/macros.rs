@@ -6,6 +6,6 @@ macro_rules! scenario_happ_path {
             .join(env!("CARGO_PKG_NAME"))
             .join(format!("{}.happ", $name))
             .canonicalize()
-            .expect("Failed to canonicalize path to scenario hApp")
+            .expect("Failed to canonicalize path to scenario hApp. Has the hApp been built?")
     };
 }
