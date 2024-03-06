@@ -244,10 +244,10 @@ RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://local
 ### Published crates
 
 Framework crates:
-- [ ![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments) ](https://crates.io/crates/wind_tunnel_instruments) Instruments for measuring performance with Wind Tunnel - [wind_tunnel_instruments](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments)
-- [ ![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments_derive) ](https://crates.io/crates/wind_tunnel_instruments_derive) Derive macros for the wind_tunnel_instruments crate - [wind_tunnel_instruments_derive](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments_derive)
-- [ ![crates.io](https://img.shields.io/crates/v/wind_tunnel_runner) ](https://crates.io/crates/wind_tunnel_runner) The Wind Tunnel runner - [wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/framework/runner)
+- [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments)](https://crates.io/crates/wind_tunnel_instruments) Instruments for measuring performance with Wind Tunnel - [wind_tunnel_instruments](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments)
+- [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments_derive)](https://crates.io/crates/wind_tunnel_instruments_derive) Derive macros for the wind_tunnel_instruments crate - [wind_tunnel_instruments_derive](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments_derive)
+- [![crates.io](https://img.shields.io/crates/v/wind_tunnel_runner)](https://crates.io/crates/wind_tunnel_runner) The Wind Tunnel runner - [wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/framework/runner)
 
 Bindings crates for Holochain:
-- [ ![crates.io](https://img.shields.io/crates/v/holochain_client_instrumented) ](https://crates.io/crates/holochain_client_instrumented) An instrumented wrapper around the holochain_client - [holochain_client_instrumented](https://github.com/holochain/wind-tunnel/tree/main/bindings/client)
-- [ ![crates.io](https://img.shields.io/crates/v/holochain_wind_tunnel_runner) ](https://crates.io/crates/holochain_wind_tunnel_runner) Customises the wind_tunnel_runner for Holochain testing - [holochain_wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/bindings/runner)
+- [![crates.io](https://img.shields.io/crates/v/holochain_client_instrumented)](https://crates.io/crates/holochain_client_instrumented) An instrumented wrapper around the holochain_client - [holochain_client_instrumented](https://github.com/holochain/wind-tunnel/tree/main/bindings/client)
+- [![crates.io](https://img.shields.io/crates/v/holochain_wind_tunnel_runner)](https://crates.io/crates/holochain_wind_tunnel_runner) Customises the wind_tunnel_runner for Holochain testing - [holochain_wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/bindings/runner)
