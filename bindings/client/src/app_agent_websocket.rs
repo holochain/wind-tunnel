@@ -71,10 +71,15 @@ impl AppAgentWebsocketInstrumented {
     }
 }
 
-fn pre_call_zome(operation_record: &mut OperationRecord, _target: &ZomeCallTarget, zome_name: &ZomeName, fn_name: &FunctionName, _payload: &ExternIO) {
-    operation_record.add_attr("zome_name",zome_name.to_string());
+fn pre_call_zome(
+    operation_record: &mut OperationRecord,
+    _target: &ZomeCallTarget,
+    zome_name: &ZomeName,
+    fn_name: &FunctionName,
+    _payload: &ExternIO,
+) {
+    operation_record.add_attr("zome_name", zome_name.to_string());
     operation_record.add_attr("fn_name", fn_name.to_string());
-
 }
 
 impl Deref for AppAgentWebsocketInstrumented {

@@ -3,7 +3,6 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-mod metrics;
 mod report;
 
 #[derive(Default)]
