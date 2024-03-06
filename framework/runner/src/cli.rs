@@ -39,6 +39,10 @@ pub struct WindTunnelScenarioCli {
     /// This is recommended for CI/CD environments where the progress bar isn't being looked at by anyone and is just adding noise to the logs.
     #[clap(long, default_value = "false")]
     pub no_progress: bool,
+
+    /// Disable the metrics reporter.
+    #[clap(long, default_value = "false")]
+    pub no_metrics: bool,
 }
 
 fn parse_agent_behaviour(s: &str) -> anyhow::Result<(String, usize)> {

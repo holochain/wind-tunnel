@@ -24,6 +24,7 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
         duration: None,
         soak: false,
         no_progress: true,
+        no_metrics: true,
     }
 }
 

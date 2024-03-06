@@ -23,12 +23,16 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
 
     let reporter = {
-        // Influxive needs a runtime during setup, so make the runtime available on the current thread.
         let _h = runtime.handle().enter();
+        let mut report_config = ReportConfig::default()
+            .enable_summary();
+
+        if !definition.no_metrics {
+            report_config = report_config.enable_metrics();
+        }
+
         Arc::new(
-            ReportConfig::default()
-                .enable_summary()
-                .enable_metrics()
+            report_config
                 .init_reporter()?,
         )
     };

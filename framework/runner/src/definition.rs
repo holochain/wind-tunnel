@@ -42,6 +42,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) duration_s: Option<u64>,
     pub(crate) connection_string: String,
     pub(crate) no_progress: bool,
+    pub(crate) no_metrics: bool,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
     pub(crate) setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -204,6 +205,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,
             no_progress: self.cli.no_progress,
+            no_metrics: self.cli.no_metrics,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,
@@ -254,7 +256,8 @@ mod tests {
                 behaviour: vec![],
                 duration: None,
                 soak: false,
-                no_progress: false,
+                no_progress: true,
+                no_metrics: true,
             },
             5,
         )
@@ -274,7 +277,8 @@ mod tests {
                 behaviour: vec![], // Not specified
                 duration: None,
                 soak: false,
-                no_progress: false,
+                no_progress: true,
+                no_metrics: true,
             },
             5,
         )
@@ -294,7 +298,8 @@ mod tests {
                 behaviour: vec![("login".to_string(), 3)], // 3 of 5
                 duration: None,
                 soak: false,
-                no_progress: false,
+                no_progress: true,
+                no_metrics: true,
             },
             5,
         )
@@ -316,7 +321,8 @@ mod tests {
                 behaviour: vec![("login".to_string(), 30)], // 30 of 5
                 duration: None,
                 soak: false,
-                no_progress: false,
+                no_progress: true,
+                no_metrics: true,
             },
             5,
         );
