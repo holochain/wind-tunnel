@@ -50,11 +50,17 @@
                     configure_influx() {
                         influx setup --host http://localhost:8087 --username windtunnel --password windtunnel --org holo --bucket windtunnel --force
                         use_influx
+
+                        # Import variables
+                        ls influx/templates/variables/ | xargs -I % influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "`pwd`/influx/templates/variables/%" -quiet --force yes
+
+                        # Import dashboards
+                        ls influx/templates/dashboards/ | xargs -I % influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "`pwd`/influx/templates/dashboards/%" --quiet --force yes
                     }
 
                     # Remove data and config
                     clear_influx() {
-                         curl http://localhost:8087/debug/flush
+                         curl "http://localhost:8087/debug/flush"
                          rm "$INFLUX_CONFIGS_PATH"
                     }
                 '';
