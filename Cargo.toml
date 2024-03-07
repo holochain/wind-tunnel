@@ -47,7 +47,9 @@ sysinfo = "0.30.6"
 url = "2.5.0"
 tabled = "0.15.0"
 indicatif = "0.17.8"
-influxdb = { version = "0.7.2", git = "https://github.com/influxdb-rs/influxdb-rust", default-features = false, features = ["use-serde", "reqwest-client-native-tls-vendored"] }
+# TODO waiting for 0.7.3+ relase to use the new reqwest-client-native-tls-vendored feature
+# TODO waiting for Holochain 0.3 to add the feature `serde` back here, conflicts at 0.2
+influxdb = { version = "0.7.2", git = "https://github.com/influxdb-rs/influxdb-rust", default-features = false, features = ["reqwest-client-native-tls-vendored"] }
 
 # Deps for Holochain 0.2
 holochain_client = { version = "0.4.8" }
