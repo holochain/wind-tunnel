@@ -5,9 +5,11 @@ use holochain_client_instrumented::prelude::{
     AdminWebsocket, AppAgentWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
 };
 use holochain_conductor_api::CellInfo;
-use holochain_types::prelude::{AppBundleSource, InstallAppPayload, RoleName};
+use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
 use std::path::PathBuf;
-use wind_tunnel_runner::prelude::{AgentContext, RunnerContext, WindTunnelResult};
+use wind_tunnel_runner::prelude::{
+    AgentContext, RunnerContext, UserValuesConstraint, WindTunnelResult,
+};
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
 ///
@@ -79,8 +81,7 @@ pub fn configure_app_ws_url(
 /// Call this function as follows:
 /// ```rust
 /// use std::path::Path;
-/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, install_app};
-/// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, install_app, AgentContext, HookResult};
 ///
 /// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
@@ -90,8 +91,7 @@ pub fn configure_app_ws_url(
 ///
 /// After calling this function you will be able to use the `installed_app_id`, `cell_id` and `app_agent_client` in your agent hooks:
 /// ```rust
-/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext};
-/// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
 ///
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     let installed_app_id = ctx.get().installed_app_id();
@@ -110,11 +110,14 @@ pub fn configure_app_ws_url(
 /// - Authorizes signing credentials.
 /// - Connects to the app websocket.
 /// - Sets the `installed_app_id`, `cell_id` and `app_agent_client` values in [HolochainAgentContext].
-pub fn install_app(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
+pub fn install_app<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     app_path: PathBuf,
     role_name: &RoleName,
-) -> WindTunnelResult<()> {
+) -> WindTunnelResult<()>
+where
+    SV: UserValuesConstraint,
+{
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let app_ws_url = ctx.runner_context().get().app_ws_url();
     let agent_id = ctx.agent_id().to_string();
@@ -194,4 +197,63 @@ pub fn install_app(
     ctx.get_mut().app_agent_client = Some(app_agent_client);
 
     Ok(())
+}
+
+/// Calls a zome function on the cell specified in `ctx.get().cell_id()`.
+///
+/// Requires:
+/// - The [HolochainAgentContext] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
+/// - The [HolochainAgentContext] to have a valid `app_agent_client`. Consider calling [install_app] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_types::prelude::ActionHash;
+/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     // Return type determined by why you assign the result to
+///     let action_hash: ActionHash = call_zome(
+///         ctx,
+///         "crud", // zome name
+///         "create_sample_entry", // function name
+///         "this is a test entry value" // payload
+///     )?;
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Gets the `cell_id` and `app_agent_client` from the context.
+/// - Tries to serialize the input payload.
+/// - Calls the zome function using the `app_agent_client`.
+/// - Tries to deserialize and return the response.
+pub fn call_zome<I, O, SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    zome_name: &str,
+    fn_name: &str,
+    payload: I,
+) -> anyhow::Result<O>
+where
+    O: std::fmt::Debug + serde::de::DeserializeOwned,
+    I: serde::Serialize + std::fmt::Debug,
+    SV: UserValuesConstraint,
+{
+    let cell_id = ctx.get().cell_id();
+    let mut app_agent_client = ctx.get().app_agent_client();
+    ctx.runner_context().executor().execute_in_place(async {
+        let result = app_agent_client
+            .call_zome(
+                cell_id.into(),
+                zome_name.into(),
+                fn_name.into(),
+                ExternIO::encode(payload).context("Encoding failure")?,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+
+        Ok(result
+            .decode()
+            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?)
+    })
 }
