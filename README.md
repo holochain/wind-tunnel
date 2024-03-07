@@ -126,7 +126,7 @@ behaviour by different agents.
 
 ### Writing Scenarios for Holochain
 
-> ![NOTE]
+> [!NOTE]
 > Writing scenarios requires some knowledge of `wind-tunnel`'s methodology. That is assumed knowledge for this section!
 
 Writing a Wind Tunnel scenario is relatively straight forward. The complexity is mostly in the measurement and analysis of the system
@@ -217,6 +217,32 @@ fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgent
     Ok(())
 }
 ```
+
+### Running scenarios locally
+
+When developing your scenarios you can disable anything that requires running infrastructure, other than the target system. However, once you
+are ready to run your scenario to get results you will need a few extra steps.
+
+#### Running InfluxDB
+
+InfluxDB is used to store the metrics that Wind Tunnel collects. You can run it locally from inside a Nix shell launched with `nix develop`:
+
+```bash
+influxd
+```
+
+This terminal will then be occupied running InfluxDB. Start another terminal where you can configure the database and create a user, again from inside the Nix shell:
+
+```bash
+configure_influx
+```
+
+This will do a one-time setup for InfluxDB and also configure your shell environment to use it. Next time you start a new terminal you will need to run `use_influx` instead.
+
+You can now navigate to the InfluxDB [dashboard](http://localhost:8087) and log in with `windtunnel`/`windtunnel`. The variables and dashboards you need will already be set up
+so you can now run your scenario and the metrics will be pushed to InfluxDB.
+
+```bash
 
 ### Developer guide (for wind-tunnel)
 

@@ -41,3 +41,7 @@ jobs:
           
           # Run a single scenario for 5 seconds
           nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+
+      - name: Check scripts
+        run: |
+          nix develop --command bash -c "shellcheck scripts/*.sh"
