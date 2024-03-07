@@ -2,6 +2,8 @@ use crate::report::ReportCollector;
 use crate::OperationRecord;
 use anyhow::Context;
 use influxdb::{Client, InfluxDbWriteable, Timestamp, WriteQuery};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::runtime::Runtime;
 use tokio::select;
@@ -9,7 +11,8 @@ use tokio::sync::mpsc::UnboundedSender;
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 pub struct MetricsReportCollector {
-    pub writer: UnboundedSender<influxdb::WriteQuery>,
+    pub writer: UnboundedSender<WriteQuery>,
+    pub flush_complete: Arc<AtomicBool>,
 }
 
 impl MetricsReportCollector {
@@ -29,9 +32,14 @@ impl MetricsReportCollector {
             "Cannot configure metrics reporter without environment variable `INFLUX_TOKEN`",
         )?);
 
-        let writer = start_metrics_write_task(runtime, shutdown_listener, client);
+        let flush_complete = Arc::new(AtomicBool::new(false));
+        let writer =
+            start_metrics_write_task(runtime, shutdown_listener, client, flush_complete.clone());
 
-        Ok(Self { writer })
+        Ok(Self {
+            writer,
+            flush_complete,
+        })
     }
 }
 
@@ -63,7 +71,27 @@ impl ReportCollector for MetricsReportCollector {
     }
 
     fn finalize(&self) {
-        // Not required for metrics currently.
+        let wait_started = std::time::Instant::now();
+        let mut notify_timer = std::time::Instant::now();
+        while !self
+            .flush_complete
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            if notify_timer.elapsed().as_secs() > 10 {
+                log::warn!(
+                    "Still waiting for metrics to flush after {} seconds.",
+                    wait_started.elapsed().as_secs()
+                );
+                notify_timer = std::time::Instant::now();
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+
+        log::debug!(
+            "Metrics flushed after {} seconds",
+            wait_started.elapsed().as_secs()
+        );
     }
 }
 
@@ -71,6 +99,7 @@ fn start_metrics_write_task(
     runtime: &Runtime,
     mut shutdown_listener: DelegatedShutdownListener,
     client: Client,
+    flush_complete: Arc<AtomicBool>,
 ) -> UnboundedSender<WriteQuery> {
     let (writer, mut receiver) = tokio::sync::mpsc::unbounded_channel();
     runtime.spawn(async move {
@@ -92,7 +121,7 @@ fn start_metrics_write_task(
             }
         }
 
-        log::trace!("Draining any remaining metrics before shutting down...");
+        log::debug!("Draining any remaining metrics before shutting down...");
         let mut drain_count = 0;
 
         // Drain remaining metrics before shutting down
@@ -101,9 +130,16 @@ fn start_metrics_write_task(
                 log::warn!("Failed to send metric to InfluxDB: {}", e);
             }
             drain_count += 1;
+
+            if drain_count % 1000 == 0 {
+                log::debug!("Drained {} remaining metrics", drain_count);
+            }
         }
 
         log::debug!("Drained {} remaining metrics", drain_count);
+
+        flush_complete.store(true, std::sync::atomic::Ordering::Relaxed);
     });
+
     writer
 }

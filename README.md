@@ -242,6 +242,25 @@ This will do a one-time setup for InfluxDB and also configure your shell environ
 You can now navigate to the InfluxDB [dashboard](http://localhost:8087) and log in with `windtunnel`/`windtunnel`. The variables and dashboards you need will already be set up,
 so you can now run your scenario and the metrics will be pushed to InfluxDB.
 
+#### Running Telegraf
+
+This is used for pushing system metrics to InfluxDB. This is not required locally but if you would like to run it then you can do so from inside the Nix shell:
+
+```bash
+use_influx
+start_telegraf
+```
+
+#### Running Holochain
+
+For a zero-config and quick way to run Holochain, you can use the following command:
+
+```bash
+hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
+```
+
+For more advanced scenarios or for distributed tests, this is not appropriate!
+
 #### Running scenarios
 
 Each scenario is expected to provide a README.md with at least:

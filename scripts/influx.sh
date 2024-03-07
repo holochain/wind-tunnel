@@ -26,10 +26,10 @@ configure_influx() {
     use_influx
 
     # Import variables
-    find influx/templates/variables/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "$(pwd)/influx/templates/variables/{}" -quiet --force yes \;
+    find influx/templates/variables/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "{}" -quiet --force yes \;
 
     # Import dashboards
-    find influx/templates/dashboards/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "$(pwd)/influx/templates/dashboards/{}" --quiet --force yes \;
+    find influx/templates/dashboards/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "{}" --quiet --force yes \;
 }
 
 # Remove data and config

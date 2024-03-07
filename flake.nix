@@ -26,6 +26,8 @@
                 packages = [
                     pkgs.influxdb2-cli
                     pkgs.influxdb2-server
+                    # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
+                    pkgs.telegraf
                     pkgs.yq
                     pkgs.httpie
                     pkgs.shellcheck
@@ -33,6 +35,7 @@
 
                 shellHook = ''
                     source ./scripts/influx.sh
+                    source ./scripts/telegraf.sh
                 '';
             };
         };
