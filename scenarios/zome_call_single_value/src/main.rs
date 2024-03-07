@@ -24,21 +24,7 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    let cell_id = ctx.get().cell_id();
-    let mut app_agent_client = ctx.get().app_agent_client();
-    ctx.runner_context().executor().execute_in_place(async {
-        app_agent_client
-            .call_zome(
-                cell_id.into(),
-                "return_single_value".into(),
-                "get_value".into(),
-                ExternIO::encode(()).context("Encoding failure")?,
-            )
-            .await
-            .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
-
-        Ok(())
-    })?;
+    let _: usize = call_zome(ctx, "return_single_value", "get_value", ())?;
 
     Ok(())
 }
