@@ -252,7 +252,7 @@ For example, see the [zome_call_single_value](https://github.com/holochain/wind-
 
 ### Developer guide (for wind-tunnel)
 
-There is a Nix environment provided and it is recommended that you use its shell for development:
+There is a Nix environment provided, and it is recommended that you use its shell for development:
 
 ```bash
 nix develop
