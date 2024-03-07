@@ -27,7 +27,7 @@
                     pkgs.influxdb2-cli
                     pkgs.influxdb2-server
                     pkgs.yq
-                    pkgs.curl
+                    pkgs.httpie
                 ];
 
                 shellHook = ''

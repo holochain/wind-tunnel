@@ -29,6 +29,6 @@ configure_influx() {
 
 # Remove data and config
 clear_influx() {
-     curl "http://localhost:8087/debug/flush"
+     http "http://localhost:8087/debug/flush"
      rm "$INFLUX_CONFIGS_PATH"
 }
