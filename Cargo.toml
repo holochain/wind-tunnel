@@ -1,15 +1,20 @@
 [workspace]
 resolver = "2"
 members = [
-    "framework/runner",
+    "framework/core",
     "framework/instruments",
     "framework/instruments_derive",
+    "framework/runner",
 
-    "bindings/runner",
     "bindings/client",
-    
+    "bindings/runner",
+
     "scenarios/zome_call_single_value",
-    "zomes/return_single_value/coordinator", "framework/core",
+    "scenarios/single_write_many_read",
+
+    "zomes/return_single_value/coordinator",
+    "zomes/crud/coordinator",
+    "zomes/crud/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -17,12 +22,12 @@ members = [
 # The zomes should only be built into wasm as part of running scenarios.
 default-members = [
     "framework/core",
-    "framework/runner",
     "framework/instruments",
     "framework/instruments_derive",
+    "framework/runner",
 
-    "bindings/runner",
     "bindings/client",
+    "bindings/runner",
 ]
 
 [workspace.dependencies]
@@ -42,7 +47,7 @@ sysinfo = "0.30.6"
 url = "2.5.0"
 tabled = "0.15.0"
 indicatif = "0.17.8"
-influxdb = "0.7.2"
+influxdb = { version = "0.7.2", git = "https://github.com/influxdb-rs/influxdb-rust", default-features = false, features = ["use-serde", "reqwest-client-native-tls-vendored"] }
 
 # Deps for Holochain 0.2
 holochain_client = { version = "0.4.8" }
@@ -63,6 +68,9 @@ wind_tunnel_runner = { path = "./framework/runner", version = "0.1.0-alpha.1" }
 # Bindings
 holochain_client_instrumented = { path = "./bindings/client", version = "0.1.0-alpha.1" }
 holochain_wind_tunnel_runner = { path = "./bindings/runner", version = "0.1.0-alpha.1" }
+
+# Zomes for coorindator dependencies
+crud_integrity = { path = "./zomes/crud/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
