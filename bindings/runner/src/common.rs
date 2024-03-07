@@ -252,8 +252,8 @@ where
             .await
             .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
 
-        Ok(result
+        result
             .decode()
-            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?)
+            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
 }
