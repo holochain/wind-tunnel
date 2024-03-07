@@ -239,10 +239,16 @@ configure_influx
 
 This will do a one-time setup for InfluxDB and also configure your shell environment to use it. Next time you start a new terminal you will need to run `use_influx` instead.
 
-You can now navigate to the InfluxDB [dashboard](http://localhost:8087) and log in with `windtunnel`/`windtunnel`. The variables and dashboards you need will already be set up
+You can now navigate to the InfluxDB [dashboard](http://localhost:8087) and log in with `windtunnel`/`windtunnel`. The variables and dashboards you need will already be set up,
 so you can now run your scenario and the metrics will be pushed to InfluxDB.
 
-```bash
+#### Running scenarios
+
+Each scenario is expected to provide a README.md with at least:
+- A description of the scenario and what it is testing for.
+- A suggested command or commands to run the scenario, with justification for the configuration used.
+
+For example, see the [zome_call_single_value](https://github.com/holochain/wind-tunnel/blob/main/scenarios/zome_call_single_value/README.md) scenario.
 
 ### Developer guide (for wind-tunnel)
 
