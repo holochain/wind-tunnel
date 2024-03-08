@@ -34,13 +34,29 @@ jobs:
         run: |
           nix develop --command bash -c "cargo test"
 
-      - name: Smoke test
+      - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
-          # Run a single scenario for 5 seconds
+          # Run the scenario for 5 seconds
           nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+
+      - name: Smoke test - single_write_many_read
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          
+          # Run the scenario for 5 seconds
+          nix develop --command bash -c "RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+
+      - name: Smoke test - single_write_many_read
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+      
+          # Run the scenario for 5 seconds
+          nix develop --command bash -c "RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics"
 
       - name: Check scripts
         run: |
