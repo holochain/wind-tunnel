@@ -38,8 +38,8 @@ fn main() -> anyhow::Result<()> {
     if let Some(required_dna) =
         required_dna_section.and_then(|required_dna| required_dna.as_table())
     {
-        let dna_name = get_name_from_required_dna_table(&required_dna);
-        let zome_names = get_zome_names_from_required_dna_table(&required_dna);
+        let dna_name = get_name_from_required_dna_table(required_dna);
+        let zome_names = get_zome_names_from_required_dna_table(required_dna);
 
         let built_path = build_required_dna(
             &manifest_dir,
@@ -58,13 +58,13 @@ fn main() -> anyhow::Result<()> {
     if let Some(required_dna_array) =
         required_dna_section.and_then(|required_dna| required_dna.as_array())
     {
-        for required_dna in required_dna_array.into_iter().map(|required_dna| {
+        for required_dna in required_dna_array.iter().map(|required_dna| {
             required_dna
                 .as_table()
                 .expect("Expected required-dna to be a table")
         }) {
             let dna_name = get_name_from_required_dna_table(required_dna);
-            let zome_names = get_zome_names_from_required_dna_table(&required_dna);
+            let zome_names = get_zome_names_from_required_dna_table(required_dna);
 
             let built_path = build_required_dna(
                 &manifest_dir,
@@ -107,7 +107,7 @@ fn main() -> anyhow::Result<()> {
     if let Some(required_happs_array) =
         required_happs_section.and_then(|required_happ| required_happ.as_array())
     {
-        for required_happ in required_happs_array.into_iter().map(|required_happ| {
+        for required_happ in required_happs_array.iter().map(|required_happ| {
             required_happ
                 .as_table()
                 .expect("Expected required-happ to be a table")
@@ -134,7 +134,7 @@ fn get_dna_names_from_required_happ_table(required_happ: &Table) -> Vec<String> 
         .get("dnas")
         .and_then(|dnas| dnas.as_array())
         .expect("No dnas specified for required hApp")
-        .into_iter()
+        .iter()
         .filter_map(|dna_name| dna_name.as_str().map(|s| s.to_string()))
         .collect::<Vec<String>>()
 }
@@ -170,7 +170,7 @@ fn get_zome_names_from_required_dna_table(table: &Table) -> Vec<String> {
         .get("zomes")
         .and_then(|z| z.as_array())
         .expect("No zomes specified for required DNA")
-        .into_iter()
+        .iter()
         .filter_map(|zome_name| zome_name.as_str().map(|s| s.to_string()))
         .collect()
 }
@@ -179,7 +179,7 @@ fn get_zome_names_from_required_dna_table(table: &Table) -> Vec<String> {
 fn build_required_dna(
     scenario_manifest_dir: &str,
     scenario_package_name: &str,
-    target_dir: &PathBuf,
+    target_dir: &Path,
     out_dir: &str,
     dna_name: &str,
     zome_names: &[String],
@@ -190,7 +190,7 @@ fn build_required_dna(
     for zome_name in zome_names {
         let zome_dir = Path::new(scenario_manifest_dir)
             .join("../../zomes")
-            .join(&zome_name)
+            .join(zome_name)
             .canonicalize()
             .unwrap();
         if !zome_dir.exists() {
@@ -265,7 +265,7 @@ fn build_required_dna(
     let dna_manifest_path = dna_manifest_workdir.join("dna.yaml");
     let dna_manifest_str =
         serde_yaml::to_string(&manifest).context("Failed to serialize DNA manifest")?;
-    std::fs::write(&dna_manifest_path, dna_manifest_str).context("Failed to write DNA manifest")?;
+    std::fs::write(dna_manifest_path, dna_manifest_str).context("Failed to write DNA manifest")?;
 
     let dna_out_dir = Path::new(scenario_manifest_dir)
         .join("../../dnas")
@@ -302,8 +302,8 @@ fn build_required_dna(
     Ok(dna_out_dir.join(format!("{}.dna", dna_name)))
 }
 
-fn build_wasm(coordinator_dir: &PathBuf) -> anyhow::Result<()> {
-    let mut build_cmd = wasm_build_command(&coordinator_dir.to_str().unwrap());
+fn build_wasm(coordinator_dir: &Path) -> anyhow::Result<()> {
+    let mut build_cmd = wasm_build_command(coordinator_dir.to_str().unwrap());
     if !build_cmd
         .status()
         .context("could not run cargo build")?
@@ -331,7 +331,7 @@ fn wasm_build_command(build_dir: &str) -> std::process::Command {
 }
 
 /// `kind` is either "coordinator" or "integrity"
-fn find_wasm(target_dir: &PathBuf, name: &str, kind: &str) -> anyhow::Result<PathBuf> {
+fn find_wasm(target_dir: &Path, name: &str, kind: &str) -> anyhow::Result<PathBuf> {
     let wasm_path = target_dir
         .join("wasm32-unknown-unknown")
         .join("release")
@@ -343,7 +343,7 @@ fn find_wasm(target_dir: &PathBuf, name: &str, kind: &str) -> anyhow::Result<Pat
     Ok(wasm_path)
 }
 
-fn print_rerun_for_package(package_dir: &PathBuf) {
+fn print_rerun_for_package(package_dir: &Path) {
     println!(
         "cargo:rerun-if-changed={}",
         package_dir.join("Cargo.toml").display()
@@ -418,7 +418,7 @@ roles:
     }
 
     let happ_manifest_path = happ_manifest_workdir.join("happ.yaml");
-    std::fs::write(&happ_manifest_path, manifest)
+    std::fs::write(happ_manifest_path, manifest)
         .context("Failed to write hApp manifest")
         .unwrap();
 

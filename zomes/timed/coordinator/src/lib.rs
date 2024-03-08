@@ -40,7 +40,7 @@ fn get_timed_entries_local(_: ()) -> ExternResult<Vec<Record>> {
 
 fn fixed_base() -> AnyLinkableHash {
     let mut result = blake2b_256("fixed".as_bytes());
-    for i in 0..4 {
+    for _ in 0..4 {
         result.insert(0, 0);
     }
     AnyLinkableHash::from_raw_36_and_type(result, AnyLinkable::External)
