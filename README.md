@@ -218,6 +218,22 @@ fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgent
 }
 ```
 
+#### Record custom metrics
+
+This is useful for scenarios that need to measure things that don't happen through the instrumented client that is talking to the system under test.
+
+```rust
+fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+    let metric = ReportMetric::new("my_custom_metric")
+        .with_field("value", 1);
+    ctx.runner_context().reporter().clone().add_custom(metric);
+    
+    Ok(())
+}
+```
+
+The metric will appear in InfluxDB as `wt.custom.my_custom_metric` with a field `value` set to `1`.
+
 ### Running scenarios locally
 
 When developing your scenarios you can disable anything that requires running infrastructure, other than the target system. However, once you
