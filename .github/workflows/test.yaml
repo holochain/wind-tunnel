@@ -58,7 +58,7 @@ jobs:
           pkill holochain
           pkill lair-keystore
 
-      - name: Smoke test - single_write_many_read
+      - name: Smoke test - dht_sync_lag
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
