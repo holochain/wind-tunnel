@@ -1,14 +1,31 @@
-use crate::report::ReportCollector;
+use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use anyhow::Context;
 use influxdb::{Client, InfluxDbWriteable, Timestamp, WriteQuery};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::SystemTime;
+use influxive_core::DataType;
 use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
+
+trait DataTypeExt {
+    fn into_type(self) -> influxdb::Type;
+}
+
+impl DataTypeExt for DataType {
+    fn into_type(self) -> influxdb::Type {
+        match self {
+            DataType::Bool(b) => influxdb::Type::Boolean(b),
+            DataType::F64(f) => influxdb::Type::Float(f),
+            DataType::I64(i) => influxdb::Type::SignedInteger(i),
+            DataType::U64(u) => influxdb::Type::UnsignedInteger(u),
+            DataType::String(s) => influxdb::Type::Text(s.into_string()),
+        }
+    }
+}
 
 pub struct MetricsReportCollector {
     pub writer: UnboundedSender<WriteQuery>,
@@ -65,6 +82,27 @@ impl ReportCollector for MetricsReportCollector {
 
         for (k, v) in &operation_record.attr {
             query = query.add_tag(k, v.to_string());
+        }
+
+        self.writer.send(query).unwrap();
+    }
+
+    fn add_custom(&mut self, metric: ReportMetric) {
+        let metric = metric.into_inner();
+
+        let mut query = Timestamp::Nanoseconds(
+            metric.timestamp
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ).into_query(metric.name.into_string());
+
+        for (k, v) in metric.fields {
+            query = query.add_field(k.into_string(), v.into_type());
+        }
+
+        for (k, v) in metric.tags {
+            query = query.add_tag(k.into_string(), v.into_type());
         }
 
         self.writer.send(query).unwrap();

@@ -81,6 +81,10 @@ impl ReportCollector for SummaryReportCollector {
         self.operation_records.push(operation_record.clone());
     }
 
+    fn add_custom(&mut self, _metric: crate::report::ReportMetric) {
+        // No custom metrics for the summary report
+    }
+
     fn finalize(&self) {
         self.print_summary_of_operations();
     }

@@ -1,0 +1,29 @@
+[package]
+name = "dht_sync_lag"
+version = "0.1.0"
+edition = "2021"
+build = "../scenario_build.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+holochain_types = { workspace = true }
+holochain_wind_tunnel_runner = { workspace = true }
+timed_integrity = { workspace = true }
+
+[build-dependencies]
+toml = { workspace = true }
+anyhow = { workspace = true }
+holochain_types = { workspace = true }
+serde_yaml = { workspace = true }
+walkdir = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.required-dna]
+name = "timed"
+zomes = ["timed"]
+
+[package.metadata.required-happ]
+name = "timed"
+dnas = ["timed"]

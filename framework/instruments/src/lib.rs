@@ -7,6 +7,11 @@ use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 mod report;
 
+pub mod prelude {
+    pub use crate::report::{ReportCollector, ReportMetric};
+    pub use crate::{ReportConfig, Reporter, OperationRecord, report_operation};
+}
+
 #[derive(Default)]
 pub struct ReportConfig {
     pub enable_metrics: bool,
@@ -60,6 +65,12 @@ impl Reporter {
     fn add_operation(&self, operation_record: &OperationRecord) {
         for collector in &self.inner {
             collector.write().add_operation(operation_record);
+        }
+    }
+
+    pub fn add_custom(&self, metric: report::ReportMetric) {
+        for collector in &self.inner {
+            collector.write().add_custom(metric.clone());
         }
     }
 

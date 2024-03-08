@@ -18,4 +18,8 @@ pub mod prelude {
     pub use crate::init::init;
     pub use crate::run::run;
     pub use crate::types::WindTunnelResult;
+
+    // Re-export of the `wind_tunnel_instruments` prelude. This is for convenience so that you can
+    // access reporting tools from within scenarios.
+    pub use wind_tunnel_instruments::prelude::*;
 }

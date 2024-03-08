@@ -44,9 +44,8 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
 
     /// A handle to the reporter for the runner.
     ///
-    /// This is used to record data in-memory and you
-    /// shouldn't need to access it directly. This should be passed to an instrumented client so
-    /// that it can report data to the runner.
+    /// This is used to record data in-memory. You shouldn't need to access it directly.
+    /// This should be passed to an instrumented client so that it can report data to the runner.
     pub fn reporter(&self) -> Arc<Reporter> {
         self.reporter.clone()
     }
