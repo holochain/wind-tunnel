@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 start_telegraf() {
     if [[ -z "$INFLUX_TOKEN" ]]; then
