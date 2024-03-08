@@ -1,10 +1,10 @@
-use std::collections::HashSet;
+use anyhow::anyhow;
 use holochain_types::prelude::{ActionHash, Record, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
+use std::collections::HashSet;
 use std::path::Path;
 use std::time::SystemTime;
-use anyhow::anyhow;
 use timed_integrity::TimedEntry;
 
 #[derive(Debug, Default)]
@@ -54,20 +54,41 @@ fn agent_behaviour_record_lag(
 ) -> HookResult {
     let found: Vec<Record> = call_zome(ctx, "timed", "get_timed_entries_local", ())?;
 
-    let found = found.into_iter().filter(|r| !ctx.get().scenario_values.seen_actions.contains(r.action_address())).collect::<Vec<_>>();
+    let found = found
+        .into_iter()
+        .filter(|r| {
+            !ctx.get()
+                .scenario_values
+                .seen_actions
+                .contains(r.action_address())
+        })
+        .collect::<Vec<_>>();
 
     let reporter_handle = ctx.runner_context().reporter().clone();
     for new_record in &found {
-        let timed_entry: TimedEntry = new_record.entry().to_app_option().map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?.unwrap();
+        let timed_entry: TimedEntry = new_record
+            .entry()
+            .to_app_option()
+            .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
+            .unwrap();
 
         let metric = ReportMetric::new("dht_sync_lag");
-        let lag_ms = (metric.timestamp.clone().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros() - timed_entry.created_at.as_micros() as u128) as f64 / 1000.0;
-        let metric = metric
-            .with_field("value", lag_ms);
+        let lag_ms = (metric
+            .timestamp
+            .clone()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+            - timed_entry.created_at.as_micros() as u128) as f64
+            / 1000.0;
+        let metric = metric.with_field("value", lag_ms);
 
         reporter_handle.add_custom(metric);
 
-        ctx.get_mut().scenario_values.seen_actions.insert(new_record.action_address().clone());
+        ctx.get_mut()
+            .scenario_values
+            .seen_actions
+            .insert(new_record.action_address().clone());
     }
 
     let metric = ReportMetric::new("dht_sync_recv_count")

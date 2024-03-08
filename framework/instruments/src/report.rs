@@ -1,9 +1,9 @@
 mod metrics_report;
 mod summary_report;
 
-use std::ops::Deref;
-use influxive_core::{Metric, StringType};
 use crate::OperationRecord;
+use influxive_core::{Metric, StringType};
+use std::ops::Deref;
 
 pub use metrics_report::MetricsReportCollector;
 pub use summary_report::SummaryReportCollector;

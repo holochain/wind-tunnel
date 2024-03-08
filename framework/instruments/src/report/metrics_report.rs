@@ -2,10 +2,10 @@ use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use anyhow::Context;
 use influxdb::{Client, InfluxDbWriteable, Timestamp, WriteQuery};
+use influxive_core::DataType;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::SystemTime;
-use influxive_core::DataType;
 use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
@@ -91,11 +91,13 @@ impl ReportCollector for MetricsReportCollector {
         let metric = metric.into_inner();
 
         let mut query = Timestamp::Nanoseconds(
-            metric.timestamp
+            metric
+                .timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos(),
-        ).into_query(metric.name.into_string());
+        )
+        .into_query(metric.name.into_string());
 
         for (k, v) in metric.fields {
             query = query.add_field(k.into_string(), v.into_type());

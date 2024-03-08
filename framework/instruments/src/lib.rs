@@ -9,7 +9,7 @@ mod report;
 
 pub mod prelude {
     pub use crate::report::{ReportCollector, ReportMetric};
-    pub use crate::{ReportConfig, Reporter, OperationRecord, report_operation};
+    pub use crate::{report_operation, OperationRecord, ReportConfig, Reporter};
 }
 
 #[derive(Default)]
