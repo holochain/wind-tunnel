@@ -41,6 +41,8 @@ jobs:
           
           # Run the scenario for 5 seconds
           nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          
+          pkill hc
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -49,6 +51,8 @@ jobs:
           
           # Run the scenario for 5 seconds
           nix develop --command bash -c "RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          
+          pkill hc
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -57,6 +61,8 @@ jobs:
       
           # Run the scenario for 5 seconds
           nix develop --command bash -c "RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics"
+          
+          pkill hc
 
       - name: Check scripts
         run: |
