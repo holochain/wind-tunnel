@@ -34,7 +34,7 @@
     inputs.holochain.inputs.flake-parts.lib.mkFlake { inherit inputs; }
     {
         systems = builtins.attrNames inputs.holochain.devShells;
-        perSystem = { config, pkgs, system, ... }:
+        perSystem = { lib, config, pkgs, system, ... }:
          let
             opensslStatic =
               if system == "x86_64-darwin"
@@ -65,11 +65,13 @@
               cargoExtraArgs = "-p zome_call_single_value";
 
               buildInputs = (with pkgs; [
-                openssl opensslStatic
+                openssl opensslStatic # Some Holochain crates link against openssl
               ]);
 
               nativeBuildInputs = (with pkgs; [
-                perl pkg-config go inputs.holochain.packages.${system}.holochain
+                perl pkg-config # To build openssl-sys
+                go # Because the holochain_client depends on Kitsune/tx5
+                inputs.holochain.packages.${system}.holochain # The build needs `hc` provided
               ]);
             };
         in
@@ -94,13 +96,9 @@
                 '';
             };
 
-            packages = {
-                zome_call_single_value = zome_call_single_value;
-            };
-
             apps = {
                 zome_call_single_value = {
-                    program = zome_call_single_value;
+                    program = "${lib.getBin zome_call_single_value}/bin/zome_call_single_value";
                 };
             };
         };
