@@ -2,6 +2,7 @@ use anyhow::Context;
 use holochain_types::dna::ZomeDependency;
 use holochain_types::prelude::Timestamp;
 use std::env;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use toml::Table;
 
@@ -147,15 +148,13 @@ fn get_name_from_required_happ_table(required_happ: &Table) -> String {
 }
 
 fn find_target_dir(manifest_dir: &str) -> anyhow::Result<PathBuf> {
-    let target_dir = Path::new(manifest_dir)
-        .join("../../target")
-        .canonicalize()
-        .unwrap();
+    let target_dir = Path::new(manifest_dir).join("../../wasm-target");
+
     if !target_dir.exists() {
-        anyhow::bail!("Target directory not found at {}", target_dir.display());
+        std::fs::create_dir(&target_dir).context("Failed to create target directory")?;
     }
 
-    Ok(target_dir)
+    Ok(target_dir.canonicalize().unwrap())
 }
 
 fn get_name_from_required_dna_table(table: &Table) -> String {
@@ -203,7 +202,7 @@ fn build_required_dna(
             // Ensure the build script is re-run if the integrity zome changes
             print_rerun_for_package(&integrity_dir);
 
-            build_wasm(&integrity_dir)?;
+            build_wasm(&integrity_dir, target_dir)?;
             let wasm_file = find_wasm(target_dir, dna_name, "integrity")?;
             integrity_manifests.push(holochain_types::dna::ZomeManifest {
                 name: format!("{}_integrity", zome_name).into(),
@@ -224,7 +223,7 @@ fn build_required_dna(
             // Ensure the build script is re-run if the coordinator zome changes
             print_rerun_for_package(&coordinator_dir);
 
-            build_wasm(&coordinator_dir)?;
+            build_wasm(&coordinator_dir, target_dir)?;
             let wasm_file = find_wasm(target_dir, dna_name, "coordinator")?;
             coordinator_manifests.push(holochain_types::dna::ZomeManifest {
                 name: zome_name.to_string().into(),
@@ -287,7 +286,7 @@ fn build_required_dna(
 
     if !pack_cmd
         .status()
-        .context("Failed run `hc dna pack`")?
+        .context("Failed to run `hc dna pack`")?
         .success()
     {
         anyhow::bail!("`hc dna pack` command failed");
@@ -302,20 +301,31 @@ fn build_required_dna(
     Ok(dna_out_dir.join(format!("{}.dna", dna_name)))
 }
 
-fn build_wasm(coordinator_dir: &Path) -> anyhow::Result<()> {
-    let mut build_cmd = wasm_build_command(coordinator_dir.to_str().unwrap());
-    if !build_cmd
-        .status()
-        .context("could not run cargo build")?
-        .success()
-    {
+fn build_wasm(coordinator_dir: &Path, target_dir: &Path) -> anyhow::Result<()> {
+    let mut build_cmd = wasm_build_command(coordinator_dir.to_str().unwrap(), target_dir);
+
+    let mut child = build_cmd
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    let mut buf = [0u8; 1024];
+    let mut stderr = child.stderr.take().unwrap();
+    while let Ok(amt) = stderr.read(&mut buf) {
+        if amt == 0 {
+            break;
+        }
+        println!("cargo:warning={}", std::str::from_utf8(&buf).unwrap());
+    }
+
+    if !child.wait().context("could not run cargo build")?.success() {
         anyhow::bail!("cargo build command failed");
     }
 
     Ok(())
 }
 
-fn wasm_build_command(build_dir: &str) -> std::process::Command {
+fn wasm_build_command(build_dir: &str, target_dir: &Path) -> std::process::Command {
     let mut cmd = std::process::Command::new("cargo");
 
     cmd.current_dir(build_dir)
@@ -323,6 +333,10 @@ fn wasm_build_command(build_dir: &str) -> std::process::Command {
         .env_remove("CARGO_BUILD_RUSTFLAGS")
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .arg("build")
+        .arg("--target-dir")
+        .arg(target_dir)
+        .arg("--locked")
+        .arg("--quiet")
         .arg("--release")
         .arg("--target")
         .arg("wasm32-unknown-unknown");
@@ -446,7 +460,7 @@ roles:
 
     if !pack_cmd
         .status()
-        .context("Failed run `hc happ pack`")?
+        .context("Failed to run `hc happ pack`")?
         .success()
     {
         anyhow::bail!("`hc happ pack` command failed");
