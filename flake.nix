@@ -74,6 +74,27 @@
                 inputs.holochain.packages.${system}.holochain # The build needs `hc` provided
               ]);
             };
+
+            zome_call_single_value_happs = pkgs.stdenv.mkDerivation {
+                name = "zome_call_single_value_happs";
+                src = lib.fileset.toSource {
+                    root = ./.;
+                    fileset = ./happs/zome_call_single_value;
+                };
+                postInstall = ''
+                    mkdir -p $out
+                    cp -R ./happs/zome_call_single_value/ $out/
+                '';
+            };
+
+            zome_call_single_value_package = derivation {
+                name = "zome_call_single_value";
+                builder = "/bin/bash";
+                system = system;
+                buildInputs = [ zome_call_single_value zome_call_single_value_happs ];
+
+                args = [ "-c" "/bin/mkdir -p $out/bin && /bin/cp \"${lib.getBin zome_call_single_value}/bin/zome_call_single_value\" $out/bin/ && /bin/mkdir -p $out/happs && /bin/cp ${zome_call_single_value_happs}/zome_call_single_value/*.happ $out/happs" ];
+            };
         in
          {
             devShells.default = pkgs.mkShell {
@@ -96,9 +117,14 @@
                 '';
             };
 
+            packages = {
+                zome_call_single_value_p = zome_call_single_value_package;
+                zome_call_single_value_happs = zome_call_single_value_happs;
+            };
+
             apps = {
                 zome_call_single_value = {
-                    program = "${lib.getBin zome_call_single_value}/bin/zome_call_single_value";
+                    program = zome_call_single_value_package;
                 };
             };
         };
