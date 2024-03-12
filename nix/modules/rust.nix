@@ -1,3 +1,5 @@
+# Module to configure Rust and Crane for use in other modules.
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let

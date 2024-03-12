@@ -1,3 +1,5 @@
+# Module to build the happ_builder crate as a package that can be used in other modules.
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let

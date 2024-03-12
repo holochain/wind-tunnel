@@ -1,3 +1,5 @@
+# Module to build scenarios and their required hApps into a single derivation
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let
@@ -66,6 +68,12 @@
             src = ./../..;
 
             buildInputs = [ scenarioBinary scenarioHapps ];
+
+            # To tell `nix run` which binary to run. It gets it right anyway because there is only one binary but
+            # it prints an annoying warning message.
+            meta = {
+                mainProgram = name;
+            };
 
             postInstall = ''
               mkdir -p $out/bin
