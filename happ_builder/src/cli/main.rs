@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
 use anyhow::Context;
 use happ_builder::{build_happs, BuildOptions};
+use std::path::PathBuf;
 
 /// For example: `cargo run --bin hb zome_call_single_value $(pwd)/scenarios/zome_call_single_value $(pwd)/zomes $(pwd)/wasm-target $(pwd)/test_build`
 fn main() -> anyhow::Result<()> {

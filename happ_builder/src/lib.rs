@@ -1,7 +1,7 @@
-use std::env;
 use anyhow::Context;
 use holochain_types::dna::ZomeDependency;
 use holochain_types::prelude::Timestamp;
+use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use toml::Table;
@@ -21,14 +21,14 @@ pub struct BuildOptions {
 impl Default for BuildOptions {
     fn default() -> Self {
         BuildOptions {
-                package_name: env::var("CARGO_PKG_NAME").unwrap(),
-                manifest_dir: env::var("CARGO_MANIFEST_DIR").unwrap().into(),
-                out_dir: env::var("OUT_DIR").unwrap().into(),
-                target_dir: None,
-                zomes_dir: None,
-                dna_target_dir: None,
-                happ_target_dir: None,
-            }
+            package_name: env::var("CARGO_PKG_NAME").unwrap(),
+            manifest_dir: env::var("CARGO_MANIFEST_DIR").unwrap().into(),
+            out_dir: env::var("OUT_DIR").unwrap().into(),
+            target_dir: None,
+            zomes_dir: None,
+            dna_target_dir: None,
+            happ_target_dir: None,
+        }
     }
 }
 
@@ -46,11 +46,19 @@ impl Default for BuildOptions {
 pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
     print_rerun_for_package(&build_options.manifest_dir);
 
-    let target_dir = build_options.target_dir.unwrap_or_else(|| find_target_dir(&build_options.manifest_dir).unwrap());
+    let target_dir = build_options
+        .target_dir
+        .unwrap_or_else(|| find_target_dir(&build_options.manifest_dir).unwrap());
 
-    let zomes_dir = build_options.zomes_dir.unwrap_or_else(|| build_options.manifest_dir.join("../../zomes"));
-    let dna_target_dir = build_options.dna_target_dir.unwrap_or_else(|| build_options.manifest_dir.join("../../dnas"));
-    let happ_target_dir = build_options.happ_target_dir.unwrap_or_else(|| build_options.manifest_dir.join("../../happs"));
+    let zomes_dir = build_options
+        .zomes_dir
+        .unwrap_or_else(|| build_options.manifest_dir.join("../../zomes"));
+    let dna_target_dir = build_options
+        .dna_target_dir
+        .unwrap_or_else(|| build_options.manifest_dir.join("../../dnas"));
+    let happ_target_dir = build_options
+        .happ_target_dir
+        .unwrap_or_else(|| build_options.manifest_dir.join("../../happs"));
 
     let cargo_toml = build_options.manifest_dir.join("Cargo.toml");
     if !cargo_toml.exists() {
@@ -86,7 +94,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
             &dna_name,
             &zome_names,
         )
-            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+        .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
 
         built_dnas.push((dna_name, built_path));
     }
@@ -112,7 +120,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
                 &dna_name,
                 &zome_names,
             )
-                .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
 
             built_dnas.push((dna_name, built_path));
         }
@@ -133,7 +141,6 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
 
         build_required_happ(
             &build_options.out_dir,
-            &build_options.manifest_dir,
             &build_options.package_name,
             &happ_target_dir,
             &happ_name,
@@ -156,7 +163,6 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
 
             build_required_happ(
                 &build_options.out_dir,
-                &build_options.manifest_dir,
                 &build_options.package_name,
                 &happ_target_dir,
                 &happ_name,
@@ -227,10 +233,7 @@ fn build_required_dna(
     let mut integrity_manifests = vec![];
 
     for zome_name in zome_names {
-        let zome_dir = zomes_dir
-            .join(zome_name)
-            .canonicalize()
-            .unwrap();
+        let zome_dir = zomes_dir.join(zome_name).canonicalize().unwrap();
         if !zome_dir.exists() {
             anyhow::bail!("Zome directory not found at {}", zome_dir.display());
         }
@@ -305,8 +308,7 @@ fn build_required_dna(
         serde_yaml::to_string(&manifest).context("Failed to serialize DNA manifest")?;
     std::fs::write(dna_manifest_path, dna_manifest_str).context("Failed to write DNA manifest")?;
 
-    let dna_out_dir = dna_target_dir
-        .join(scenario_package_name);
+    let dna_out_dir = dna_target_dir.join(scenario_package_name);
     if !dna_out_dir.exists() {
         std::fs::create_dir_all(&dna_out_dir).context("Failed to create DNA out dir")?;
     }
@@ -382,8 +384,6 @@ fn wasm_build_command(build_dir: &str, target_dir: &Path) -> std::process::Comma
         .arg("--target")
         .arg("wasm32-unknown-unknown");
 
-    println!("Will run cmd {:?}", cmd);
-
     cmd
 }
 
@@ -416,7 +416,6 @@ fn print_rerun_for_package(package_dir: &Path) {
 
 fn build_required_happ(
     out_dir: &Path,
-    scenario_manifest_dir: &Path,
     scenario_package_name: &str,
     happ_target_dir: &Path,
     happ_name: &str,
