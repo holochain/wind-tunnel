@@ -1,0 +1,24 @@
+[package]
+name = "happ_builder"
+description = "A tool for building happs from TOML configuration"
+license = "MIT"
+authors = ["ThetaSinner"]
+edition = "2021"
+version = "0.1.0"
+categories = ["development-tools::build-utils"]
+homepage = "https://github.com/holochain/wind-tunnel"
+repository = "https://github.com/holochain/wind-tunnel"
+
+[[bin]]
+name = "hb"
+path = "src/cli/main.rs"
+
+[dependencies]
+toml = { workspace = true }
+anyhow = { workspace = true }
+holochain_types = { workspace = true }
+serde_yaml = { workspace = true }
+walkdir = { workspace = true }
+
+[lints]
+workspace = true
