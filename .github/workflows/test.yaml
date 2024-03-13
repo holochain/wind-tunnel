@@ -22,13 +22,17 @@ jobs:
         with:
           name: holochain-ci
 
-      - name: Lint
+      - name: Check Nix formatting
         run: |
-          nix develop --command bash -c "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+          nix fmt ./nix flake.nix -- --check
 
       - name: Check formatting
         run: |
           nix develop --command bash -c "cargo fmt --all -- --check"
+
+      - name: Lint
+        run: |
+          nix develop --command bash -c "cargo clippy --workspace --all-targets --all-features -- -D warnings"
 
       - name: Unit tests
         run: |

@@ -72,7 +72,7 @@
             # To tell `nix run` which binary to run. It gets it right anyway because there is only one binary but
             # it prints an annoying warning message.
             meta = {
-                mainProgram = name;
+              mainProgram = name;
             };
 
             postInstall = ''
