@@ -24,27 +24,6 @@ jobs:
           extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
-      - name: Build scenario bundles
-        run: |
-          set -euxo pipefail
-
-          scenario_names() {
-            find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
-          }
-
-          # Disable sandbox because hApp builds aren't done by Nix and need network access.
-          scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
-
-          mkdir -p dist
-          scenario_names | xargs -I % cp % dist/
-
-      - name: Archive scenario bundles
-        uses: actions/upload-artifact@v4
-        with:
-          name: scenario-bundles
-          if-no-files-found: error
-          path: dist/*
-
       - name: Check scripts
         run: |
           nix develop --command bash -c "shellcheck scripts/*.sh"
@@ -105,3 +84,24 @@ jobs:
 #          pkill hc
 #          pkill holochain
 #          pkill lair-keystore
+
+      - name: Build scenario bundles
+        run: |
+          set -euxo pipefail
+
+          scenario_names() {
+            find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
+          }
+
+          # Disable sandbox because hApp builds aren't done by Nix and need network access.
+          scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
+
+          mkdir -p dist
+          scenario_names | xargs -I % cp % dist/
+
+      - name: Archive scenario bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-bundles
+          if-no-files-found: error
+          path: dist/*
