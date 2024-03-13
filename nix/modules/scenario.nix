@@ -20,19 +20,19 @@
         cargoExtraArgs = "-p ${name}";
         SKIP_HAPP_BUILD = "1";
 
-        buildInputs = (with pkgs; [
+        buildInputs = with pkgs; [
           # Some Holochain crates link against openssl
           openssl
           opensslStatic
-        ]);
+        ];
 
-        nativeBuildInputs = (with pkgs; [
+        nativeBuildInputs = with pkgs; [
           # To build openssl-sys
           perl
           pkg-config
           # Because the holochain_client depends on Kitsune/tx5
           go
-        ]);
+        ];
       };
 
       mkHapps = { name }: pkgs.stdenv.mkDerivation {
@@ -60,11 +60,11 @@
       config.scenarioHelper = {
         mkScenario = { name }:
           let
-            scenarioBinary = mkPackage { name = name; };
-            scenarioHapps = mkHapps { name = name; };
+            scenarioBinary = mkPackage { inherit name; };
+            scenarioHapps = mkHapps { inherit name; };
           in
           pkgs.stdenv.mkDerivation {
-            name = name;
+            inherit name;
             src = ./../..;
 
             buildInputs = [ scenarioBinary scenarioHapps ];

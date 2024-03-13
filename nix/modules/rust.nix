@@ -20,9 +20,9 @@
       options.rustHelper = lib.mkOption { type = lib.types.raw; };
 
       config.rustHelper = {
-        findCrateVersion = cargoToml: (craneLib.crateNameFromCargoToml { cargoToml = cargoToml; }).version;
+        findCrateVersion = cargoToml: (craneLib.crateNameFromCargoToml { inherit cargoToml; }).version;
 
-        mkCraneLib = {}: craneLib;
+        mkCraneLib = craneLib;
 
         rust = rustWithWasmTarget;
       };

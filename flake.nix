@@ -29,7 +29,7 @@
     nixpkgs.follows = "holochain/nixpkgs";
   };
 
-  outputs = inputs @ { ... }:
+  outputs = inputs:
 
     inputs.holochain.inputs.flake-parts.lib.mkFlake { inherit inputs; }
       {
@@ -52,6 +52,7 @@
                 pkgs.yq
                 pkgs.httpie
                 pkgs.shellcheck
+                pkgs.statix
               ];
 
               shellHook = ''
@@ -60,7 +61,7 @@
               '';
             };
 
-            apps = builtins.listToAttrs (builtins.map (name: { name = name; value = { program = self'.packages.${name}; }; }) scenario_package_names);
+            apps = builtins.listToAttrs (builtins.map (name: { inherit name; value = { program = self'.packages.${name}; }; }) scenario_package_names);
           };
       };
 }

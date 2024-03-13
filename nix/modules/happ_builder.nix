@@ -19,19 +19,19 @@
 
         cargoExtraArgs = "-p happ_builder --bin hb";
 
-        buildInputs = (with pkgs; [
+        buildInputs = with pkgs; [
           # Some Holochain crates link against openssl
           openssl
           opensslStatic
-        ]);
+        ];
 
-        nativeBuildInputs = (with pkgs; [
+        nativeBuildInputs = with pkgs; [
           # To build openssl-sys
           perl
           pkg-config
           # Depends on Kitsune/tx5
           go
-        ]);
+        ];
       };
     in
     {

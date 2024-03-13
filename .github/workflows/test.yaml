@@ -26,11 +26,15 @@ jobs:
         run: |
           nix fmt ./nix flake.nix -- --check
 
-      - name: Check formatting
+      - name: Lint Nix
+        run: |
+          nix develop --command bash -c "statix ./nix && statix ./flake.nix"
+
+      - name: Check Rust formatting
         run: |
           nix develop --command bash -c "cargo fmt --all -- --check"
 
-      - name: Lint
+      - name: Lint Rust
         run: |
           nix develop --command bash -c "cargo clippy --workspace --all-targets --all-features -- -D warnings"
 
