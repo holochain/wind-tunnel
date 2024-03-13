@@ -30,7 +30,7 @@ jobs:
 
       - name: Lint Nix
         run: |
-          nix develop --command bash -c "statix ./nix && statix ./flake.nix"
+          nix develop --command bash -c "statix check ./nix && statix check ./flake.nix"
 
       - name: Check Rust formatting
         run: |
