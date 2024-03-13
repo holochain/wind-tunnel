@@ -24,21 +24,25 @@ jobs:
           extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
+      - name: Check scripts
+        run: |
+          nix develop --command bash -c "shellcheck scripts/*.sh"
+
       - name: Check Nix formatting
         run: |
-          nix fmt ./nix flake.nix -- --check
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_fmt"
 
       - name: Lint Nix
         run: |
-          nix develop --command bash -c "statix check ./nix && statix check ./flake.nix"
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_static"
 
       - name: Check Rust formatting
         run: |
-          nix develop --command bash -c "cargo fmt --all -- --check"
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
       - name: Lint Rust
         run: |
-          nix develop --command bash -c "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+          nix develop --command bash -c "source ./scripts/checks.sh && check_rust_static"
 
       - name: Unit tests
         run: |
@@ -80,7 +84,3 @@ jobs:
 #          pkill hc
 #          pkill holochain
 #          pkill lair-keystore
-
-      - name: Check scripts
-        run: |
-          nix develop --command bash -c "shellcheck scripts/*.sh"

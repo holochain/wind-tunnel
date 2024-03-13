@@ -44,6 +44,7 @@
               inputsFrom = [
                 inputs.holochain.devShells.${system}.holonix
               ];
+
               packages = [
                 pkgs.influxdb2-cli
                 pkgs.influxdb2-server
@@ -58,7 +59,19 @@
               shellHook = ''
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
+                source ./scripts/checks.sh
               '';
+            };
+
+            devShells.ci = pkgs.mkShell {
+              inputsFrom = [
+                inputs.holochain.devShells.${system}.holochainBinaries
+              ];
+
+              packages = [
+                pkgs.shellcheck
+                pkgs.statix
+              ];
             };
 
             apps = builtins.listToAttrs (builtins.map (name: { inherit name; value = { program = self'.packages.${name}; }; }) scenario_package_names);
