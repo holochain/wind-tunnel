@@ -22,7 +22,7 @@
       config.rustHelper = {
         findCrateVersion = cargoToml: (craneLib.crateNameFromCargoToml { inherit cargoToml; }).version;
 
-        mkCraneLib = craneLib;
+        inherit craneLib;
 
         rust = rustWithWasmTarget;
       };

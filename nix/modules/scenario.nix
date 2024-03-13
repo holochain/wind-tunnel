@@ -8,7 +8,7 @@
         then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
         else pkgs.pkgsStatic.openssl;
 
-      craneLib = config.rustHelper.mkCraneLib { };
+      craneLib = config.rustHelper.craneLib;
 
       mkPackage = { name }: craneLib.buildPackage {
         pname = name;
@@ -37,7 +37,8 @@
 
       mkHapps = { name }: pkgs.stdenv.mkDerivation {
         name = "${name}-happs";
-        src = ./../..; # Really just needs root, zomes and scenarios
+        # This is all based on workspace code, so rely on the Crane filter to select the right sources.
+        src = craneLib.cleanCargoSource (craneLib.path ./../..);
         buildInputs = [
           self'.packages.happ_builder
           # Building DNAs requires `cargo`
@@ -65,7 +66,9 @@
           in
           pkgs.stdenv.mkDerivation {
             inherit name;
-            src = ./../..;
+
+            # No sources to copy, everything comes from the build inputs
+            unpackPhase = "true";
 
             buildInputs = [ scenarioBinary scenarioHapps ];
 
