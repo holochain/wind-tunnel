@@ -8,7 +8,7 @@
         then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
         else pkgs.pkgsStatic.openssl;
 
-      craneLib = config.rustHelper.craneLib;
+      inherit (config.rustHelper) craneLib;
 
       happ_builder = craneLib.buildPackage {
         pname = "happ_builder";
