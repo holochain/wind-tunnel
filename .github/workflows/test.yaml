@@ -32,7 +32,8 @@ jobs:
             find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
           }
 
-          scenario_names | xargs -I % nix bundle .#packages.x86_64-linux.%
+          # Disable sandbox because hApp builds aren't done by Nix and need network access.
+          scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
 
           mkdir -p dist
           scenario_names | xargs -I % cp % dist/
