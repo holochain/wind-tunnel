@@ -20,7 +20,9 @@ jobs:
 
       - uses: cachix/cachix-action@v14
         with:
-          name: holochain-ci
+          name: holochain-wind-tunnel
+          extraPullNames: holochain-ci
+          authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
       - name: Check Nix formatting
         run: |
