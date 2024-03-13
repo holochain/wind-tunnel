@@ -17,6 +17,6 @@
     {
       packages = builtins.listToAttrs scenarios;
 
-      apps = builtins.listToAttrs (builtins.map ({name, value}: { inherit name; value = { program = value; }; }) scenarios);
+      apps = builtins.listToAttrs (builtins.map ({ name, value }: { inherit name; value = { program = value; }; }) scenarios);
     };
 }
