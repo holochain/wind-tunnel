@@ -36,9 +36,6 @@
         systems = builtins.attrNames inputs.holochain.devShells;
         imports = [ ./nix/modules/formatter.nix ./nix/modules/happ_builder.nix ./nix/modules/rust.nix ./nix/modules/scenario.nix ./nix/modules/scenarios.nix ];
         perSystem = { lib, config, pkgs, system, self', ... }:
-          let
-            scenario_package_names = builtins.filter (lib.strings.hasPrefix "scenario_") (builtins.attrNames self'.packages);
-          in
           {
             devShells.default = pkgs.mkShell {
               inputsFrom = [
@@ -73,8 +70,6 @@
                 pkgs.statix
               ];
             };
-
-            apps = builtins.listToAttrs (builtins.map (name: { inherit name; value = { program = self'.packages.${name}; }; }) scenario_package_names);
           };
       };
 }

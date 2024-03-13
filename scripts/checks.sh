@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euxo pipefail
-
 check_scripts() {
   shellcheck scripts/*.sh
 }

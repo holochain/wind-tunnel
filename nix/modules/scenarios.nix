@@ -6,15 +6,17 @@
       scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name)) (builtins.attrNames (builtins.readDir ../../scenarios));
 
       scenarios = map
-        (scenario_name: {
-          name = "scenario_${scenario_name}";
+        (name: {
+          inherit name;
           value = config.scenarioHelper.mkScenario {
-            name = scenario_name;
+            inherit name;
           };
         })
         scenario_names;
     in
     {
       packages = builtins.listToAttrs scenarios;
+
+      apps = builtins.listToAttrs (builtins.map ({name, value}: { inherit name; value = { program = value; }; }) scenarios);
     };
 }
