@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euxo pipefail
+
 # Configure InfluxDB to store data within the repository
 INFLUXD_BOLT_PATH="$(pwd)/influx/.influxdbv2/influxd.bolt"
 export INFLUXD_BOLT_PATH
