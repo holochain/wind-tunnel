@@ -45,16 +45,14 @@ jobs:
         run: |
           nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
-      - name: Lint Rust
-        env:
-          SKIP_HAPP_BUILD: 1 # Prevent hApp builds from running when linting
-        run: |
-          # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
-          nix flake check
-
       - name: Build and unit tests
         run: |
           nix build .#workspace
+
+      - name: Lint Rust
+        run: |
+          # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
+          nix flake check
 
       - name: Smoke test - zome_call_single_value
         run: |
