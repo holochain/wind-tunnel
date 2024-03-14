@@ -70,10 +70,10 @@
             };
 
             mkDnaBuildScript = manifest: ''
-              mkdir -p $out/${manifest.name}
-              echo '${lib.generators.toYAML {} manifest}' > $out/${manifest.name}/dna.yaml
+              mkdir -p ./${manifest.name}
+              echo '${lib.generators.toYAML {} manifest}' > ./${manifest.name}/dna.yaml
 
-              hc dna pack --output $out/${manifest.name}.dna $out/${manifest.name}
+              hc dna pack --output ./${manifest.name}.dna ./${manifest.name}
             '';
 
             mkDnaBuildScripts = manifests:
@@ -128,10 +128,11 @@
             };
 
             mkHappBuildScript = manifest: ''
-              mkdir -p $out/${manifest.name}
-              echo '${lib.generators.toYAML {} manifest}' > $out/${manifest.name}/happ.yaml
+              mkdir -p ./${manifest.name}
+              echo '${lib.generators.toYAML {} manifest}' > ./${manifest.name}/happ.yaml
 
-              hc app pack --output $out/${manifest.name}.happ $out/${manifest.name}
+              mkdir -p $out/${manifest.name}
+              hc app pack --output $out/${manifest.name}.happ ./${manifest.name}
             '';
 
             mkHappBuildScripts = manifests:
