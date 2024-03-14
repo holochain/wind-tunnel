@@ -20,11 +20,9 @@ jobs:
       - name: Create more space
         run: |
           du -hs /usr/share/dotnet
-          du -hs "/usr/local/share/boost"
           du -hs "$AGENT_TOOLSDIRECTORY"
           
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Install nix
