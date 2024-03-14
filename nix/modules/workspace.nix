@@ -15,6 +15,9 @@
         src = craneLib.cleanCargoSource (craneLib.path ./../..);
         strictDeps = true;
 
+        cargoExtraArgs = "--locked --workspace";
+        SKIP_HAPP_BUILD = "1";
+
         buildInputs = with pkgs; [
           # Some Holochain crates link against openssl
           openssl
@@ -38,19 +41,16 @@
         inherit cargoArtifacts;
       });
 
-      workspaceClippy = craneLib.cargoClippy (commonArgs // {
+      workspace_clippy = craneLib.cargoClippy (commonArgs // {
         inherit cargoArtifacts;
         cargoClippyExtraArgs = "--all-targets --all-features -- --deny warnings";
       });
     in
     {
-      packages = {
-        default = workspace;
-        inherit workspace;
-      };
+      options.workspace = lib.mkOption { type = lib.types.raw; };
 
-      checks = {
-        inherit workspaceClippy;
+      config.workspace = {
+        inherit commonArgs cargoArtifacts workspace workspace_clippy;
       };
     };
 }

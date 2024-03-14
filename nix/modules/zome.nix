@@ -13,16 +13,16 @@
           let
             packageName = if kind == "integrity" then "${name}_${kind}" else name;
           in
-          craneLib.buildPackage {
+          craneLib.buildPackage (config.workspace.commonArgs // {
             pname = "${name}_${kind}";
             version = config.rustHelper.findCrateVersion ../../zomes/${name}/${kind}/Cargo.toml;
 
-            src = craneLib.cleanCargoSource (craneLib.path ./../..);
-            strictDeps = true;
+            inherit (config.workspace) cargoArtifacts;
+
             doCheck = false;
 
             cargoExtraArgs = "-p ${packageName} --lib --target wasm32-unknown-unknown";
-          };
+          });
       };
     };
 }

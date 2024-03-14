@@ -78,6 +78,15 @@
                 pkgs.statix
               ];
             };
+
+            packages = {
+              default = config.workspace.workspace;
+              inherit (config.workspace) workspace;
+            };
+
+            checks = {
+              inherit (config.workspace) workspace_clippy;
+            };
           };
       };
 }
