@@ -54,6 +54,11 @@ jobs:
           # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
           nix flake check
 
+      # Try to avoid running out of space by dropping all intermediate artifacts from previous steps and just download what's required in the next steps.
+      - name: Nix clean
+        run: |
+          nix store gc
+
       - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
