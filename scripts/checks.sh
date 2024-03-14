@@ -17,7 +17,7 @@ check_rust_fmt() {
 }
 
 check_rust_static() {
-  cargo clippy --workspace --all-targets --all-features -- -D warnings
+  cargo clippy --workspace --all-targets --all-features -- --deny warnings
 }
 
 check_all() {
