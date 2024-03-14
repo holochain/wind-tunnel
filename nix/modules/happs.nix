@@ -12,7 +12,7 @@
         mkHapps = { configToml }:
           let
             config = builtins.fromTOML (builtins.readFile configToml);
-            metadata = config.package.metadata;
+            inherit (config.package) metadata;
 
             requiredDnas =
               if builtins.hasAttr "required-dna" metadata then
@@ -149,7 +149,7 @@
             zomeDeps = builtins.map (zome_name: [ self'.packages."${zome_name}_coordinator" ] ++ (if zomeHasIntegrity zome_name then [ self'.packages."${zome_name}_integrity" ] else [ ])) requiredZomes;
           in
           pkgs.stdenv.mkDerivation {
-            name = config.package.name;
+            inherit (config.package) name;
 
             # This is all based on workspace code, so rely on the Crane filter to select the right sources.
             src = craneLib.cleanCargoSource (craneLib.path ./../..);
