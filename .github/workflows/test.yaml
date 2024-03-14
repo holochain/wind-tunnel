@@ -41,6 +41,8 @@ jobs:
           nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
       - name: Lint Rust
+        env:
+          SKIP_HAPP_BUILD: 1 # Prevent hApp builds from running when linting
         run: |
           nix develop --command bash -c "source ./scripts/checks.sh && check_rust_static"
 
