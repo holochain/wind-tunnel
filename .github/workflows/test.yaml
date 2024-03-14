@@ -16,14 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Based on a suggestion https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
-      - name: Create more space
-        run: |
-          du -hs /usr/share/dotnet
-          du -hs "$AGENT_TOOLSDIRECTORY"
-          
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v2
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
 
       - name: Install nix
         uses: cachix/install-nix-action@v25
