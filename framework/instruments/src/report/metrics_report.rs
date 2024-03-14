@@ -3,7 +3,7 @@ use crate::OperationRecord;
 use anyhow::Context;
 use influxdb::{Client, InfluxDbWriteable, Timestamp, WriteQuery};
 use influxive_core::DataType;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::runtime::Runtime;
@@ -58,6 +58,19 @@ impl MetricsReportCollector {
             flush_complete,
         })
     }
+
+    fn try_send(&self, query: WriteQuery) {
+        if let Err(e) = self.writer.send(query) {
+            if self.flush_complete.load(Ordering::Relaxed) {
+                log::info!(
+                    "Failed to record metric because the write task has finished: {}",
+                    e
+                );
+            } else {
+                log::warn!("Failed to record metric: {}", e);
+            }
+        }
+    }
 }
 
 impl ReportCollector for MetricsReportCollector {
@@ -65,7 +78,7 @@ impl ReportCollector for MetricsReportCollector {
         let mut query = Timestamp::Nanoseconds(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
+                .expect("SystemTime before UNIX_EPOCH")
                 .as_nanos(),
         )
         .into_query("wt.instruments.operation_duration")
@@ -84,7 +97,7 @@ impl ReportCollector for MetricsReportCollector {
             query = query.add_tag(k, v.to_string());
         }
 
-        self.writer.send(query).unwrap();
+        self.try_send(query);
     }
 
     fn add_custom(&mut self, metric: ReportMetric) {
@@ -94,7 +107,7 @@ impl ReportCollector for MetricsReportCollector {
             metric
                 .timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
+                .expect("SystemTime before UNIX_EPOCH")
                 .as_nanos(),
         )
         .into_query(metric.name.into_string());
@@ -107,7 +120,7 @@ impl ReportCollector for MetricsReportCollector {
             query = query.add_tag(k.into_string(), v.into_type());
         }
 
-        self.writer.send(query).unwrap();
+        self.try_send(query);
     }
 
     fn finalize(&self) {
@@ -178,7 +191,7 @@ fn start_metrics_write_task(
 
         log::debug!("Drained {} remaining metrics", drain_count);
 
-        flush_complete.store(true, std::sync::atomic::Ordering::Relaxed);
+        flush_complete.store(true, Ordering::Relaxed);
     });
 
     writer
