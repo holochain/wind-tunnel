@@ -58,9 +58,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
-          pkill hc
-          pkill holochain
-          pkill lair-keystore
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -70,9 +68,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
-          pkill hc
-          pkill holochain
-          pkill lair-keystore
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
       - name: Smoke test - dht_sync_lag
         run: |
@@ -82,9 +78,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics
 
-          pkill hc
-          pkill holochain
-          pkill lair-keystore
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
       - name: Build scenario bundles
         run: |
