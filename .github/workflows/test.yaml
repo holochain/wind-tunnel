@@ -1,15 +1,28 @@
 name: "test"
+
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v2
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
 
       - name: Install nix
         uses: cachix/install-nix-action@v25
@@ -20,19 +33,34 @@ jobs:
 
       - uses: cachix/cachix-action@v14
         with:
-          name: holochain-ci
+          name: holochain-wind-tunnel
+          extraPullNames: holochain-ci
+          authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
-      - name: Lint
+      - name: Check scripts
         run: |
-          nix develop --command bash -c "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+          nix develop --command bash -c "shellcheck scripts/*.sh"
 
-      - name: Check formatting
+      - name: Check Nix formatting
         run: |
-          nix develop --command bash -c "cargo fmt --all -- --check"
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_fmt"
 
-      - name: Unit tests
+      - name: Lint Nix
         run: |
-          nix develop --command bash -c "cargo test"
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_static"
+
+      - name: Check Rust formatting
+        run: |
+          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_rust_fmt"
+
+      - name: Build and unit tests
+        run: |
+          nix build .#workspace
+
+      - name: Lint Rust
+        run: |
+          # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
+          nix flake check
 
       - name: Smoke test - zome_call_single_value
         run: |
@@ -40,11 +68,9 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
-          pkill hc
-          pkill holochain
-          pkill lair-keystore
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -52,25 +78,37 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          nix develop --command bash -c "RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
-          pkill hc
-          pkill holochain
-          pkill lair-keystore
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
-# Failed on CI with ` error: linking with `cc` failed: exit status: 1`
-#      - name: Smoke test - dht_sync_lag
-#        run: |
-#          # Start a sandbox conductor and run it in the background
-#          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-#
-#          # Run the scenario for 5 seconds
-#          nix develop --command bash -c "RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics"
-#
-#          pkill hc
-#          pkill holochain
-#          pkill lair-keystore
-
-      - name: Check scripts
+      - name: Smoke test - dht_sync_lag
         run: |
-          nix develop --command bash -c "shellcheck scripts/*.sh"
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics
+
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+
+      - name: Build scenario bundles
+        run: |
+          set -euxo pipefail
+
+          scenario_names() {
+            find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
+          }
+
+          # Disable sandbox because hApp builds aren't done by Nix and need network access.
+          scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
+
+          mkdir -p dist
+          scenario_names | xargs -I % cp % dist/
+
+      - name: Archive scenario bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-bundles
+          if-no-files-found: error
+          path: dist/*
