@@ -46,9 +46,9 @@ jobs:
         run: |
           nix develop --command bash -c "source ./scripts/checks.sh && check_rust_static"
 
-      - name: Unit tests
+      - name: Build and unit tests
         run: |
-          nix develop --command bash -c "cargo test"
+          nix build .#workspace
 
       - name: Smoke test - zome_call_single_value
         run: |
@@ -56,7 +56,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          nix develop --command bash -c "RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          RUST_LOG=info nix run .#zome_call_single_value --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
           pkill hc
           pkill holochain
@@ -68,7 +68,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          nix develop --command bash -c "RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics"
+          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --no-metrics
           
           pkill hc
           pkill holochain
@@ -80,7 +80,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
-          nix develop --command bash -c "RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics"
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --no-metrics
 
           pkill hc
           pkill holochain

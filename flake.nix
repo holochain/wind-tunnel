@@ -39,6 +39,7 @@
           ./nix/modules/rust.nix
           ./nix/modules/scenario.nix
           ./nix/modules/scenarios.nix
+          ./nix/modules/workspace.nix
           ./nix/modules/zome.nix
           ./nix/modules/zomes.nix
         ];

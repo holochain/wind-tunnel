@@ -3,12 +3,12 @@
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let
+      inherit (config.rustHelper) craneLib;
+
       opensslStatic =
         if system == "x86_64-darwin"
         then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
         else pkgs.pkgsStatic.openssl;
-
-      inherit (config.rustHelper) craneLib;
 
       mkPackage = { name }: craneLib.buildPackage {
         pname = name;
