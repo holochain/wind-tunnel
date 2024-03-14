@@ -16,15 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Based on a suggestion https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
       - name: Create more space
         run: |
           du -hs /usr/share/dotnet
-          du -hs /opt/ghc
           du -hs "/usr/local/share/boost"
           du -hs "$AGENT_TOOLSDIRECTORY"
           
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
