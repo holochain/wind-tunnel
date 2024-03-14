@@ -10,7 +10,7 @@ macro_rules! scenario_happ_path {
             path
         }
         else {
-            // Looking for a Nix store path, which will look something like `/nix/store/xxx/bin/scenario_name/../happs/$name.happ`
+            // Looking for a Nix store path, which will look something like `/nix/store/xxx/bin/../happs/$name.happ`
             let nix_path = std::env::current_exe().expect("Could not get current executable path").parent().and_then(|p| p.parent()).map(|p| p.join("happs").join(format!("{}.happ", $name)));
             if let Some(nix_path) = nix_path {
                 if let Ok(path) = nix_path.canonicalize() {

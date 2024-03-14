@@ -1,3 +1,5 @@
+# Module for building zome WASMs
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let

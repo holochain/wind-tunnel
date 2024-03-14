@@ -1,3 +1,5 @@
+# Module for building hApps and DNAs from the requirements specified in the metadata section of a Cargo.toml
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let

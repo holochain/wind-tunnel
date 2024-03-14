@@ -1,3 +1,5 @@
+# Helper module to discover all the zomes in the zomes directory and create a package for each one
+
 { self, inputs, lib, ... }@flake: {
   perSystem = { config, self', inputs', system, pkgs, ... }:
     let

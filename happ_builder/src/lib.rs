@@ -313,10 +313,6 @@ fn build_required_dna(
         std::fs::create_dir_all(&dna_out_dir).context("Failed to create DNA out dir")?;
     }
 
-    println!("Working in our dir {}", out_dir.display());
-    println!("Will package DNA to {}", dna_out_dir.display());
-    println!("Building from source in {}", dna_manifest_workdir.display());
-
     let mut pack_cmd = std::process::Command::new("hc");
     pack_cmd
         .current_dir(out_dir)
