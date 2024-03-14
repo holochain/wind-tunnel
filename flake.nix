@@ -30,11 +30,18 @@
   };
 
   outputs = inputs:
-
     inputs.holochain.inputs.flake-parts.lib.mkFlake { inherit inputs; }
       {
         systems = builtins.attrNames inputs.holochain.devShells;
-        imports = [ ./nix/modules/formatter.nix ./nix/modules/happ_builder.nix ./nix/modules/rust.nix ./nix/modules/scenario.nix ./nix/modules/scenarios.nix ];
+        imports = [
+          ./nix/modules/formatter.nix
+          ./nix/modules/happs.nix
+          ./nix/modules/rust.nix
+          ./nix/modules/scenario.nix
+          ./nix/modules/scenarios.nix
+          ./nix/modules/zome.nix
+          ./nix/modules/zomes.nix
+        ];
         perSystem = { lib, config, pkgs, system, self', ... }:
           {
             devShells.default = pkgs.mkShell {

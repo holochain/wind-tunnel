@@ -34,26 +34,6 @@
           go
         ];
       };
-
-      mkHapps = { name }: pkgs.stdenv.mkDerivation {
-        name = "${name}-happs";
-        # This is all based on workspace code, so rely on the Crane filter to select the right sources.
-        src = craneLib.cleanCargoSource (craneLib.path ./../..);
-        buildInputs = [
-          self'.packages.happ_builder
-          # Building DNAs requires `cargo`
-          config.rustHelper.rust
-          # The `happ_builder` needs `hc` provided
-          inputs.holochain.packages.${system}.holochain
-        ];
-        postInstall = ''
-          export CARGO_HOME=$(pwd)/.cargo
-          hb ${name} $(pwd)/scenarios/${name} $(pwd)/zomes $(pwd)/wasm-target $(pwd)/built
-
-          mkdir -p $out
-          cp ./built/happs/${name}/*.happ $out/
-        '';
-      };
     in
     {
       options.scenarioHelper = lib.mkOption { type = lib.types.raw; };
@@ -62,7 +42,7 @@
         mkScenario = { name }:
           let
             scenarioBinary = mkPackage { inherit name; };
-            scenarioHapps = mkHapps { inherit name; };
+            scenarioHapps = config.happHelper.mkHapps { configToml = ../../scenarios/${name}/Cargo.toml; };
           in
           pkgs.stdenv.mkDerivation {
             inherit name;
