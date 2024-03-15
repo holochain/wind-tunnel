@@ -130,7 +130,6 @@ where
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
             let mut client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
 
-            // TODO kills the test if it fails, that is not intentional. The error should be reported but not unwrapped
             let key = client
                 .generate_agent_pub_key()
                 .await
