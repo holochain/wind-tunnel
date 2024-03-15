@@ -1,5 +1,7 @@
 # Wind Tunnel
 
+[![test](https://github.com/holochain/wind-tunnel/actions/workflows/test.yaml/badge.svg)](https://github.com/holochain/wind-tunnel/actions/workflows/test.yaml)
+
 Performance testing for Holochain, modelled as load tests. The name is a reference to aerodynamics testing and is a good
 way to refer to this project but the language does not extend to the code.
 
