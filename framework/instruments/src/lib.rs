@@ -14,7 +14,7 @@ pub mod prelude {
 }
 
 pub struct ReportConfig {
-    pub dir: PathBuf,
+    pub dir: Option<PathBuf>,
     pub scenario_name: String,
     pub enable_in_memory: bool,
     pub enable_influx_client: bool,
@@ -22,9 +22,9 @@ pub struct ReportConfig {
 }
 
 impl ReportConfig {
-    pub fn new(dir: PathBuf, scenario_name: String) -> Self {
+    pub fn new(scenario_name: String) -> Self {
         ReportConfig {
-            dir,
+            dir: None,
             scenario_name,
             enable_in_memory: false,
             enable_influx_client: false,
@@ -42,7 +42,8 @@ impl ReportConfig {
         self
     }
 
-    pub fn enable_influx_file(mut self) -> Self {
+    pub fn enable_influx_file(mut self, dir: PathBuf) -> Self {
+        self.dir = Some(dir);
         self.enable_influx_file = true;
         self
     }
@@ -72,7 +73,7 @@ impl ReportConfig {
                     None
                 },
                 if self.enable_influx_file {
-                    let influx_file_reporter = report::InfluxFileReportCollector::new(runtime, shutdown_listener, self.dir, self.scenario_name);
+                    let influx_file_reporter = report::InfluxFileReportCollector::new(runtime, shutdown_listener, self.dir.unwrap(), self.scenario_name);
                     Some(RwLock::new(Box::new(influx_file_reporter)
                         as Box<(dyn ReportCollector + Send + Sync)>))
                 } else {

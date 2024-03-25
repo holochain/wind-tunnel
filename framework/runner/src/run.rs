@@ -14,6 +14,7 @@ use crate::{
     executor::Executor,
     shutdown::start_shutdown_listener,
 };
+use crate::cli::Reporter;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -28,10 +29,22 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::new(PathBuf::from(std::env::var("WT_METRICS_DIR").context("Missing environment variable WT_METRICS_DIR".to_string())?), definition.name.clone()).enable_in_memory();
+        let mut report_config = ReportConfig::new(definition.name.clone());
 
-        if !definition.no_metrics {
-            report_config = report_config.enable_influx_file();
+        match definition.reporter {
+            Reporter::InMemory => {
+                report_config = report_config.enable_in_memory();
+            }
+            Reporter::InfluxClient => {
+                report_config = report_config.enable_influx_client();
+            }
+            Reporter::InfluxFile => {
+                let dir = PathBuf::from(std::env::var("WT_METRICS_DIR").context("Missing environment variable WT_METRICS_DIR".to_string())?);
+                report_config = report_config.enable_influx_file(dir);
+            }
+            Reporter::Noop => {
+                log::info!("No reporter enabled");
+            }
         }
 
         Arc::new(report_config.init_reporter(&runtime, shutdown_handle.new_listener())?)
