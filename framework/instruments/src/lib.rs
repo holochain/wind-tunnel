@@ -1,6 +1,7 @@
 use crate::report::ReportCollector;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
@@ -12,20 +13,37 @@ pub mod prelude {
     pub use crate::{report_operation, OperationRecord, ReportConfig, Reporter};
 }
 
-#[derive(Default)]
 pub struct ReportConfig {
-    pub enable_metrics: bool,
-    pub enable_summary: bool,
+    pub dir: PathBuf,
+    pub scenario_name: String,
+    pub enable_in_memory: bool,
+    pub enable_influx_client: bool,
+    pub enable_influx_file: bool,
 }
 
 impl ReportConfig {
-    pub fn enable_metrics(mut self) -> Self {
-        self.enable_metrics = true;
+    pub fn new(dir: PathBuf, scenario_name: String) -> Self {
+        ReportConfig {
+            dir,
+            scenario_name,
+            enable_in_memory: false,
+            enable_influx_client: false,
+            enable_influx_file: false,
+        }
+    }
+
+    pub fn enable_in_memory(mut self) -> Self {
+        self.enable_in_memory = true;
         self
     }
 
-    pub fn enable_summary(mut self) -> Self {
-        self.enable_summary = true;
+    pub fn enable_influx_client(mut self) -> Self {
+        self.enable_influx_client = true;
+        self
+    }
+
+    pub fn enable_influx_file(mut self) -> Self {
+        self.enable_influx_file = true;
         self
     }
 
@@ -34,21 +52,32 @@ impl ReportConfig {
         runtime: &Runtime,
         shutdown_listener: DelegatedShutdownListener,
     ) -> anyhow::Result<Reporter> {
+        if self.enable_influx_client && self.enable_influx_file {
+            log::warn!("Influx client metrics and Influx file metrics are enabled at the same time. This is not recommended!");
+        }
+
         Ok(Reporter {
             inner: [
-                if self.enable_metrics {
+                self.enable_in_memory.then(|| {
+                    RwLock::new(Box::new(report::InMemoryReporter::new())
+                        as Box<(dyn ReportCollector + Send + Sync)>)
+                }),
+                if self.enable_influx_client {
                     let metrics_collector =
-                        report::MetricsReportCollector::new(runtime, shutdown_listener)?;
+                        report::InfluxClientReportCollector::new(runtime, shutdown_listener.clone())?;
                     Some(RwLock::new(
                         Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
                     ))
                 } else {
                     None
                 },
-                self.enable_summary.then(|| {
-                    RwLock::new(Box::new(report::SummaryReportCollector::new())
-                        as Box<(dyn ReportCollector + Send + Sync)>)
-                }),
+                if self.enable_influx_file {
+                    let influx_file_reporter = report::InfluxFileReportCollector::new(runtime, shutdown_listener, self.dir, self.scenario_name);
+                    Some(RwLock::new(Box::new(influx_file_reporter)
+                        as Box<(dyn ReportCollector + Send + Sync)>))
+                } else {
+                    None
+                },
             ]
             .into_iter()
             .flatten()

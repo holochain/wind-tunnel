@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -27,10 +28,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::default().enable_summary();
+        let mut report_config = ReportConfig::new(PathBuf::from(std::env::var("WT_METRICS_DIR").context("Missing environment variable WT_METRICS_DIR".to_string())?), definition.name.clone()).enable_in_memory();
 
         if !definition.no_metrics {
-            report_config = report_config.enable_metrics();
+            report_config = report_config.enable_influx_file();
         }
 
         Arc::new(report_config.init_reporter(&runtime, shutdown_handle.new_listener())?)
