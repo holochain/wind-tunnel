@@ -64,8 +64,10 @@ impl ReportConfig {
                         as Box<(dyn ReportCollector + Send + Sync)>)
                 }),
                 if self.enable_influx_client {
-                    let metrics_collector =
-                        report::InfluxClientReportCollector::new(runtime, shutdown_listener.clone())?;
+                    let metrics_collector = report::InfluxClientReportCollector::new(
+                        runtime,
+                        shutdown_listener.clone(),
+                    )?;
                     Some(RwLock::new(
                         Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
                     ))
@@ -73,9 +75,15 @@ impl ReportConfig {
                     None
                 },
                 if self.enable_influx_file {
-                    let influx_file_reporter = report::InfluxFileReportCollector::new(runtime, shutdown_listener, self.dir.unwrap(), self.scenario_name);
-                    Some(RwLock::new(Box::new(influx_file_reporter)
-                        as Box<(dyn ReportCollector + Send + Sync)>))
+                    let influx_file_reporter = report::InfluxFileReportCollector::new(
+                        runtime,
+                        shutdown_listener,
+                        self.dir.unwrap(),
+                        self.scenario_name,
+                    );
+                    Some(RwLock::new(
+                        Box::new(influx_file_reporter) as Box<(dyn ReportCollector + Send + Sync)>
+                    ))
                 } else {
                     None
                 },

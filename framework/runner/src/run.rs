@@ -6,6 +6,7 @@ use anyhow::Context;
 use wind_tunnel_core::prelude::ShutdownSignalError;
 use wind_tunnel_instruments::ReportConfig;
 
+use crate::cli::Reporter;
 use crate::monitor::start_monitor;
 use crate::progress::start_progress;
 use crate::{
@@ -14,7 +15,6 @@ use crate::{
     executor::Executor,
     shutdown::start_shutdown_listener,
 };
-use crate::cli::Reporter;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -39,7 +39,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                 report_config = report_config.enable_influx_client();
             }
             Reporter::InfluxFile => {
-                let dir = PathBuf::from(std::env::var("WT_METRICS_DIR").context("Missing environment variable WT_METRICS_DIR".to_string())?);
+                let dir = PathBuf::from(
+                    std::env::var("WT_METRICS_DIR")
+                        .context("Missing environment variable WT_METRICS_DIR".to_string())?,
+                );
                 report_config = report_config.enable_influx_file(dir);
             }
             Reporter::Noop => {

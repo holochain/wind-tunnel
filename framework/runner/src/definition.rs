@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
+use crate::cli::Reporter;
 use crate::init::init;
 use crate::{
     cli::WindTunnelScenarioCli,
     context::{AgentContext, RunnerContext, UserValuesConstraint},
 };
-use crate::cli::Reporter;
 
 /// The result type that is required to be returned from all hooks.
 pub type HookResult = anyhow::Result<()>;

@@ -1,5 +1,3 @@
-
-
 use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use anyhow::Context;
@@ -8,12 +6,12 @@ use influxdb::{Client, WriteQuery};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use crate::report::influx_reporter_base::InfluxReporterBase;
 use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
-use crate::report::influx_reporter_base::InfluxReporterBase;
 
 /// Write metrics directly to InfluxDB using the InfluxDB client.
 ///
