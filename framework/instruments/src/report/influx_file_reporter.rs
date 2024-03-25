@@ -1,22 +1,22 @@
 use crate::report::influx_reporter_base::InfluxReporterBase;
 use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
-use anyhow::Context;
-use influxdb::{Client, InfluxDbWriteable, Query, Timestamp, WriteQuery};
-use influxive_core::DataType;
+
+use influxdb::{Query, WriteQuery};
+
 use std::fmt::Debug;
-use std::ops::Deref;
+
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
-use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::io::{AsyncWriteExt};
 use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
-use wind_tunnel_core::prelude::{DelegatedShutdownListener, ShutdownHandle};
+use wind_tunnel_core::prelude::{DelegatedShutdownListener};
 
 /// Write metrics to disk in the InfluxDB line protocol format.
 /// Metrics can then be sent to InfluxDB by Telegraf.
@@ -135,7 +135,7 @@ where
 {
     let query_str = query.build()?.get();
     writer.write_all(query_str.as_bytes()).await?;
-    writer.write(b"\n").await?;
+    writer.write_all(b"\n").await?;
 
     Ok(())
 }

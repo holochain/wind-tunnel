@@ -1,13 +1,13 @@
-use std::fmt::Debug;
-use std::ops::Deref;
+
+
 use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use anyhow::Context;
-use influxdb::{Client, InfluxDbWriteable, Timestamp, WriteQuery};
-use influxive_core::DataType;
+use influxdb::{Client, WriteQuery};
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
+
 use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
