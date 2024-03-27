@@ -287,6 +287,10 @@ Each scenario is expected to provide a README.md with at least:
 
 For example, see the [zome_call_single_value](https://github.com/holochain/wind-tunnel/blob/main/scenarios/zome_call_single_value/README.md) scenario.
 
+As well as the command you use to run the scenario, you will need to select an appropriate reporter. Try running the scenario with the `--help` flag to see the available options.
+For local development, the default `in-memory` reporter will do. If you have influx running then you can use the `influx-client` option. If you have both Influx and Telegraf running
+then you can use the `influx-file` option.
+
 ### Developer guide (for wind-tunnel)
 
 There is a Nix environment provided, and it is recommended that you use its shell for development:
