@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use wind_tunnel_runner::prelude::{
-    run, AgentContext, HookResult, RunnerContext, ScenarioDefinitionBuilder, UserValuesConstraint,
-    WindTunnelScenarioCli, ReporterOpt,
+    run, AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
+    UserValuesConstraint, WindTunnelScenarioCli,
 };
 
 #[derive(Default, Debug)]

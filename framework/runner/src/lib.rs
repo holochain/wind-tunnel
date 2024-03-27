@@ -10,7 +10,7 @@ mod shutdown;
 mod types;
 
 pub mod prelude {
-    pub use crate::cli::{WindTunnelScenarioCli, ReporterOpt};
+    pub use crate::cli::{ReporterOpt, WindTunnelScenarioCli};
     pub use crate::context::UserValuesConstraint;
     pub use crate::context::{AgentContext, RunnerContext};
     pub use crate::definition::{HookResult, ScenarioDefinitionBuilder};
