@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use wind_tunnel_runner::prelude::{
     run, AgentContext, HookResult, RunnerContext, ScenarioDefinitionBuilder, UserValuesConstraint,
-    WindTunnelScenarioCli,
+    WindTunnelScenarioCli, ReporterOpt,
 };
 
 #[derive(Default, Debug)]
@@ -24,7 +24,7 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
         duration: None,
         soak: false,
         no_progress: true,
-        no_metrics: true,
+        reporter: ReporterOpt::Noop,
     }
 }
 

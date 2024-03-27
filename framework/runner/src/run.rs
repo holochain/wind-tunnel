@@ -6,7 +6,7 @@ use anyhow::Context;
 use wind_tunnel_core::prelude::ShutdownSignalError;
 use wind_tunnel_instruments::ReportConfig;
 
-use crate::cli::Reporter;
+use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
 use crate::progress::start_progress;
 use crate::{
@@ -32,20 +32,20 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let mut report_config = ReportConfig::new(definition.name.clone());
 
         match definition.reporter {
-            Reporter::InMemory => {
+            ReporterOpt::InMemory => {
                 report_config = report_config.enable_in_memory();
             }
-            Reporter::InfluxClient => {
+            ReporterOpt::InfluxClient => {
                 report_config = report_config.enable_influx_client();
             }
-            Reporter::InfluxFile => {
+            ReporterOpt::InfluxFile => {
                 let dir = PathBuf::from(
                     std::env::var("WT_METRICS_DIR")
                         .context("Missing environment variable WT_METRICS_DIR".to_string())?,
                 );
                 report_config = report_config.enable_influx_file(dir);
             }
-            Reporter::Noop => {
+            ReporterOpt::Noop => {
                 log::info!("No reporter enabled");
             }
         }

@@ -41,12 +41,12 @@ pub struct WindTunnelScenarioCli {
     pub no_progress: bool,
 
     /// The reporter to use.
-    #[arg(long, value_enum, default_value_t = Reporter::InMemory)]
-    pub reporter: Reporter,
+    #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
+    pub reporter: ReporterOpt,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-pub enum Reporter {
+pub enum ReporterOpt {
     /// Disable reporting.
     Noop,
     /// Recommended during scenario development for quick feedback with no extra services needed.
