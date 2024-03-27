@@ -1,17 +1,19 @@
 mod operations_table;
 
-use crate::report::summary_report::operations_table::OperationRow;
+use crate::report::in_memory_reporter::operations_table::OperationRow;
 use crate::report::ReportCollector;
 use crate::OperationRecord;
 use std::collections::HashMap;
 use tabled::settings::Style;
 use tabled::Table;
 
-pub struct SummaryReportCollector {
+/// A very basic reporter that is useful while developing scenarios. It keeps all of the operations
+/// and custom metrics in memory and prints a summary of the operations at the end of the run.
+pub struct InMemoryReporter {
     operation_records: Vec<OperationRecord>,
 }
 
-impl SummaryReportCollector {
+impl InMemoryReporter {
     pub fn new() -> Self {
         Self {
             operation_records: Vec::new(),
@@ -76,7 +78,7 @@ impl SummaryReportCollector {
     }
 }
 
-impl ReportCollector for SummaryReportCollector {
+impl ReportCollector for InMemoryReporter {
     fn add_operation(&mut self, operation_record: &OperationRecord) {
         self.operation_records.push(operation_record.clone());
     }

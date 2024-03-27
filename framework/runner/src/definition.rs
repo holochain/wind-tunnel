@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
+use crate::cli::ReporterOpt;
 use crate::init::init;
 use crate::{
     cli::WindTunnelScenarioCli,
@@ -42,7 +43,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) duration_s: Option<u64>,
     pub(crate) connection_string: String,
     pub(crate) no_progress: bool,
-    pub(crate) no_metrics: bool,
+    pub(crate) reporter: ReporterOpt,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
     pub(crate) setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -205,7 +206,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,
             no_progress: self.cli.no_progress,
-            no_metrics: self.cli.no_metrics,
+            reporter: self.cli.reporter,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,
@@ -245,6 +246,7 @@ fn build_assigned_behaviours(
 
 #[cfg(test)]
 mod tests {
+    use crate::cli::ReporterOpt;
     use crate::definition::build_assigned_behaviours;
 
     #[test]
@@ -257,7 +259,7 @@ mod tests {
                 duration: None,
                 soak: false,
                 no_progress: true,
-                no_metrics: true,
+                reporter: ReporterOpt::Noop,
             },
             5,
         )
@@ -278,7 +280,7 @@ mod tests {
                 duration: None,
                 soak: false,
                 no_progress: true,
-                no_metrics: true,
+                reporter: ReporterOpt::Noop,
             },
             5,
         )
@@ -299,7 +301,7 @@ mod tests {
                 duration: None,
                 soak: false,
                 no_progress: true,
-                no_metrics: true,
+                reporter: ReporterOpt::Noop,
             },
             5,
         )
@@ -322,7 +324,7 @@ mod tests {
                 duration: None,
                 soak: false,
                 no_progress: true,
-                no_metrics: true,
+                reporter: ReporterOpt::Noop,
             },
             5,
         );

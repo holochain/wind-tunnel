@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
 #[command(about, long_about = None)]
@@ -40,9 +40,21 @@ pub struct WindTunnelScenarioCli {
     #[clap(long, default_value = "false")]
     pub no_progress: bool,
 
-    /// Disable the metrics reporter.
-    #[clap(long, default_value = "false")]
-    pub no_metrics: bool,
+    /// The reporter to use.
+    #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
+    pub reporter: ReporterOpt,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum ReporterOpt {
+    /// Disable reporting.
+    Noop,
+    /// Recommended during scenario development for quick feedback with no extra services needed.
+    InMemory,
+    /// Recommended for running tests locally where you need to see the metrics in InfluxDB.
+    InfluxClient,
+    /// Recommended for running distributed tests and requires both InfluxDB and Telegraf.
+    InfluxFile,
 }
 
 fn parse_agent_behaviour(s: &str) -> anyhow::Result<(String, usize)> {

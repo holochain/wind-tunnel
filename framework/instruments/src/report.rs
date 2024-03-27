@@ -1,12 +1,15 @@
-mod metrics_report;
-mod summary_report;
+mod in_memory_reporter;
+mod influx_client_reporter;
+mod influx_file_reporter;
+mod influx_reporter_base;
 
 use crate::OperationRecord;
 use influxive_core::{Metric, StringType};
 use std::ops::Deref;
 
-pub use metrics_report::MetricsReportCollector;
-pub use summary_report::SummaryReportCollector;
+pub use in_memory_reporter::InMemoryReporter;
+pub use influx_client_reporter::InfluxClientReportCollector;
+pub use influx_file_reporter::InfluxFileReportCollector;
 
 /// A simple, opinionated, newtype for the influxive_core::Metric type.
 ///
