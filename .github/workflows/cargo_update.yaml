@@ -3,8 +3,8 @@ name: "cargo_update"
 on:
   workflow_dispatch:
   schedule:
-    # At 7:00am on Monday
-    - cron: "0 7 * * 1"
+    # At 7:00am on Wednesday
+    - cron: "0 7 * * 3"
 
 jobs:
   flake_update:
@@ -16,19 +16,17 @@ jobs:
         uses: cachix/install-nix-action@v25
         with:
           install_url: https://releases.nixos.org/nix/nix-2.20.4/install
-          extra_nix_config: |
-            experimental-features = flakes nix-command
 
       - name: Flake update
         run: |
-          nix flake update
+          nix develop .#ci --command cargo update
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-            commit-message: "Update flake.lock"
-            title: "Update flake.lock"
-            body: "This PR updates the flake.lock file."
-            branch: "update-flake-lock"
+            commit-message: "Update Cargo.lock"
+            title: "Update Cargo.lock"
+            body: "This PR updates the Cargo.lock file."
+            branch: "update-cargo-lock"
             branch-suffix: "short-commit-hash"
             base: "main"
