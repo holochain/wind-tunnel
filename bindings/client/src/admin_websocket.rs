@@ -21,7 +21,9 @@ pub struct AdminWebsocketInstrumented {
 
 impl AdminWebsocketInstrumented {
     pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
-        AdminWebsocket::connect(admin_url.to_socket_addr()?)
+        let addr = admin_url.to_socket_addr()?;
+        println!("Connecting to admin websocket at {}", addr);
+        AdminWebsocket::connect(addr)
             .await
             .map(|inner| Self { inner, reporter })
     }
