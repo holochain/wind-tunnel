@@ -3,13 +3,13 @@ use holochain_client::{
     AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload,
     ConductorApiResult, EnableAppResponse, InstallAppPayload, SigningCredentials,
 };
-use holochain_types::prelude::{DeleteCloneCellPayload, Record};
+use holochain_types::prelude::{CellId, DeleteCloneCellPayload, Record};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
 use std::sync::Arc;
 
 use anyhow::Result;
 use holochain_conductor_api::StorageInfo;
-use holochain_zome_types::CellId;
+use holochain_types::websocket::AllowedOrigins;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
@@ -25,10 +25,6 @@ impl AdminWebsocketInstrumented {
             .map(|inner| Self { inner, reporter })
     }
 
-    pub fn close(&mut self) {
-        self.inner.close();
-    }
-
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn generate_agent_pub_key(&mut self) -> ConductorApiResult<AgentPubKey> {
         self.inner.generate_agent_pub_key().await
@@ -40,8 +36,12 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn attach_app_interface(&mut self, port: u16) -> ConductorApiResult<u16> {
-        self.inner.attach_app_interface(port).await
+    pub async fn attach_app_interface(
+        &mut self,
+        port: u16,
+        allowed_origins: AllowedOrigins,
+    ) -> ConductorApiResult<u16> {
+        self.inner.attach_app_interface(port, allowed_origins).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]

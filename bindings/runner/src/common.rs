@@ -6,6 +6,7 @@ use holochain_client_instrumented::prelude::{
 };
 use holochain_conductor_api::CellInfo;
 use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
+use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
 use wind_tunnel_runner::prelude::{
     AgentContext, RunnerContext, UserValuesConstraint, WindTunnelResult,
@@ -50,7 +51,7 @@ pub fn configure_app_ws_url(
             } else {
                 let attached_app_port = admin_client
                     // Don't specify the port, let the conductor pick one
-                    .attach_app_interface(0)
+                    .attach_app_interface(0, AllowedOrigins::Any)
                     .await
                     .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
                 Ok(attached_app_port)
