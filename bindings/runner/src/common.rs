@@ -40,7 +40,9 @@ pub fn configure_app_ws_url(
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await.context("Unable to connect admin client")?;
+            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
+                .await
+                .context("Unable to connect admin client")?;
 
             let existing_app_ports = admin_client
                 .list_app_interfaces()

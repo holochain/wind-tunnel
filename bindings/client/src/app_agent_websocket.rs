@@ -1,4 +1,5 @@
 use crate::app_websocket::AppWebsocketInstrumented;
+use crate::ToSocketAddr;
 use anyhow::Result;
 use holochain_client::{
     AgentSigner, AppAgentWebsocket, AppWebsocket, ConductorApiResult, ZomeCallTarget,
@@ -10,7 +11,6 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
-use crate::ToSocketAddr;
 
 #[derive(Clone)]
 pub struct AppAgentWebsocketInstrumented {

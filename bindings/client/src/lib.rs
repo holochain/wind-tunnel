@@ -30,7 +30,7 @@ impl ToSocketAddr for &str {
             .try_into()
             .map_err(|e| anyhow::anyhow!("Failed to convert to URL: {:?}", e))?;
 
-        Ok((
+        (
             url.host()
                 .ok_or_else(|| anyhow::anyhow!("Missing host in URL"))?
                 .to_string(),
@@ -40,7 +40,7 @@ impl ToSocketAddr for &str {
             .to_socket_addrs()
             .map_err(|e| anyhow::anyhow!("Failed to resolve host: {:?}", e))?
             .next()
-            .ok_or_else(|| anyhow::anyhow!("Failed to resolve host"))?)
+            .ok_or_else(|| anyhow::anyhow!("Failed to resolve host"))
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::ToSocketAddr;
 use anyhow::Result;
 use holochain_client::{AppWebsocket, ConductorApiResult};
 use holochain_conductor_api::{AppInfo, NetworkInfo, ZomeCall};
@@ -9,7 +10,6 @@ use holochain_zome_types::clone::ClonedCell;
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
-use crate::ToSocketAddr;
 
 #[derive(Clone)]
 pub struct AppWebsocketInstrumented {
