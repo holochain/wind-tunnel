@@ -68,7 +68,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=debug hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          RUST_LOG=debug nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=debug nix run .#zome_call_single_value -- --connection-string ws://127.0.0.1:8888 --duration 5 --no-progress
           
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
@@ -78,7 +78,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://127.0.0.1:8888 --duration 5 --no-progress
           
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
@@ -88,7 +88,7 @@ jobs:
           nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://127.0.0.1:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
