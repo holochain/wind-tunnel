@@ -8,5 +8,5 @@ fn create_sample_entry(value: String) -> ExternResult<ActionHash> {
 
 #[hdk_extern]
 fn get_sample_entry(hash: ActionHash) -> ExternResult<Option<Record>> {
-    get(hash, GetOptions::content())
+    get(hash, GetOptions::local())
 }
