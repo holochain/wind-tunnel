@@ -9,6 +9,7 @@ use holochain_zome_types::clone::ClonedCell;
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
+use crate::ToSocketAddr;
 
 #[derive(Clone)]
 pub struct AppWebsocketInstrumented {
@@ -17,8 +18,8 @@ pub struct AppWebsocketInstrumented {
 }
 
 impl AppWebsocketInstrumented {
-    pub async fn connect(app_url: String, reporter: Arc<Reporter>) -> Result<Self> {
-        AppWebsocket::connect(app_url)
+    pub async fn connect(app_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
+        AppWebsocket::connect(app_url.to_socket_addr()?)
             .await
             .map(|inner| Self { inner, reporter })
     }

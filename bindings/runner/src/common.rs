@@ -40,7 +40,7 @@ pub fn configure_app_ws_url(
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await.context("Unable to connect admin client")?;
 
             let existing_app_ports = admin_client
                 .list_app_interfaces()
@@ -57,7 +57,7 @@ pub fn configure_app_ws_url(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed set up app port")?;
+        .context("Failed to set up app port")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();

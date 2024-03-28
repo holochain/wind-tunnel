@@ -12,6 +12,7 @@ use holochain_conductor_api::StorageInfo;
 use holochain_types::websocket::AllowedOrigins;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
+use crate::ToSocketAddr;
 
 pub struct AdminWebsocketInstrumented {
     inner: AdminWebsocket,
@@ -19,8 +20,8 @@ pub struct AdminWebsocketInstrumented {
 }
 
 impl AdminWebsocketInstrumented {
-    pub async fn connect(admin_url: String, reporter: Arc<Reporter>) -> Result<Self> {
-        AdminWebsocket::connect(admin_url)
+    pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
+        AdminWebsocket::connect(admin_url.to_socket_addr()?)
             .await
             .map(|inner| Self { inner, reporter })
     }
