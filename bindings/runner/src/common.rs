@@ -6,6 +6,7 @@ use holochain_client_instrumented::prelude::{
 };
 use holochain_conductor_api::CellInfo;
 use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
+use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
 use wind_tunnel_runner::prelude::{
     AgentContext, RunnerContext, UserValuesConstraint, WindTunnelResult,
@@ -39,7 +40,9 @@ pub fn configure_app_ws_url(
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
+                .await
+                .context("Unable to connect admin client")?;
 
             let existing_app_ports = admin_client
                 .list_app_interfaces()
@@ -50,13 +53,13 @@ pub fn configure_app_ws_url(
             } else {
                 let attached_app_port = admin_client
                     // Don't specify the port, let the conductor pick one
-                    .attach_app_interface(0)
+                    .attach_app_interface(0, AllowedOrigins::Any)
                     .await
                     .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
                 Ok(attached_app_port)
             }
         })
-        .context("Failed set up app port")?;
+        .context("Failed to set up app port")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();

@@ -1,4 +1,5 @@
 use crate::app_websocket::AppWebsocketInstrumented;
+use crate::ToSocketAddr;
 use anyhow::Result;
 use holochain_client::{
     AgentSigner, AppAgentWebsocket, AppWebsocket, ConductorApiResult, ZomeCallTarget,
@@ -23,12 +24,12 @@ pub struct AppAgentWebsocketInstrumented {
 
 impl AppAgentWebsocketInstrumented {
     pub async fn connect(
-        url: String,
+        url: impl ToSocketAddr,
         app_id: InstalledAppId,
         signer: Arc<Box<dyn AgentSigner + Send + Sync>>,
         reporter: Arc<Reporter>,
     ) -> Result<Self> {
-        let app_ws = AppWebsocket::connect(url).await?;
+        let app_ws = AppWebsocket::connect(url.to_socket_addr()?).await?;
         let inner =
             AppAgentWebsocket::from_existing(app_ws.clone(), app_id.clone(), signer.clone())
                 .await?;

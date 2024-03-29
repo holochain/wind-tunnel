@@ -1,11 +1,12 @@
+use crate::ToSocketAddr;
 use anyhow::Result;
 use holochain_client::{AppWebsocket, ConductorApiResult};
-use holochain_conductor_api::{AppInfo, ClonedCell, NetworkInfo, ZomeCall};
+use holochain_conductor_api::{AppInfo, NetworkInfo, ZomeCall};
 use holochain_types::app::{
     DisableCloneCellPayload, EnableCloneCellPayload, NetworkInfoRequestPayload,
 };
-use holochain_types::prelude::{CreateCloneCellPayload, InstalledAppId};
-use holochain_zome_types::ExternIO;
+use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, InstalledAppId};
+use holochain_zome_types::clone::ClonedCell;
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
@@ -17,8 +18,8 @@ pub struct AppWebsocketInstrumented {
 }
 
 impl AppWebsocketInstrumented {
-    pub async fn connect(app_url: String, reporter: Arc<Reporter>) -> Result<Self> {
-        AppWebsocket::connect(app_url)
+    pub async fn connect(app_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
+        AppWebsocket::connect(app_url.to_socket_addr()?)
             .await
             .map(|inner| Self { inner, reporter })
     }

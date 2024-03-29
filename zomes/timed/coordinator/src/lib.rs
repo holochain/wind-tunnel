@@ -18,9 +18,13 @@ fn created_timed_entry(timed: TimedEntry) -> ExternResult<ActionHash> {
 }
 
 #[hdk_extern]
-fn get_timed_entries_local(_: ()) -> ExternResult<Vec<Record>> {
+fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
     // No way to control whether this goes to the network at this HDK version
-    let links = get_links(fixed_base(), LinkTypes::FixedToTimedEntry, None)?;
+    let links = get_links(
+        GetLinksInputBuilder::try_new(fixed_base(), LinkTypes::FixedToTimedEntry)
+            .unwrap()
+            .build(),
+    )?;
 
     let mut records = Vec::new();
     for link in links {
@@ -29,7 +33,7 @@ fn get_timed_entries_local(_: ()) -> ExternResult<Vec<Record>> {
             .try_into()
             .map_err(|_| wasm_error!(WasmErrorInner::Guest("Not an action hash".to_string())))?;
         // Try to stay local
-        let record = get(action_hash, GetOptions::content())?;
+        let record = get(action_hash, GetOptions::local())?;
         if let Some(record) = record {
             records.push(record);
         }
