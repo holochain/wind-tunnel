@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [0.2.0-alpha.1] - 2024-03-29
+
+### Added
 
 - A new option `--reporter` has been added to the scenario CLI. Run with `--help` to see available options. It defaults
   to the `in-memory` implementation which will print a basic report to the console.
@@ -18,10 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Specifically everything has been bumped to the 0.3.0-beta-dev.43 release of Holochain.
   This marks the end of 0.2 support for Wind Tunnel.
 
-### Deprecated
 ### Removed
 
-- The `--no-metrics` flag has been removed from the scenario CLI. 
-
-### Fixed
-### Security
+- The `--no-metrics` flag has been removed from the scenario CLI.
