@@ -317,6 +317,7 @@ RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://local
 ### Published crates
 
 Framework crates:
+- [![crates.io](https://img.shields.io/crates/v/wind_tunnel_core)](https://crates.io/crates/wind_tunnel_core) Core functionality for use by other Wind Tunnel crates - [wind_tunnel_core](https://github.com/holochain/wind-tunnel/tree/main/framework/core)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments)](https://crates.io/crates/wind_tunnel_instruments) Instruments for measuring performance with Wind Tunnel - [wind_tunnel_instruments](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments_derive)](https://crates.io/crates/wind_tunnel_instruments_derive) Derive macros for the wind_tunnel_instruments crate - [wind_tunnel_instruments_derive](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments_derive)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_runner)](https://crates.io/crates/wind_tunnel_runner) The Wind Tunnel runner - [wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/framework/runner)
