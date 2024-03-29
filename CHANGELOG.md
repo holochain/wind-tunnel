@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the `in-memory` implementation which will print a basic report to the console.
 
 ### Changed
+
+- **BREAKING** The `holochain_client_instrumented`, `holochain_wind_tunnel_runner` and zomes have been upgraded to use Holochain 0.3.
+  Specifically everything has been bumped to the 0.3.0-beta-dev.43 release of Holochain.
+  This marks the end of 0.2 support for Wind Tunnel.
+
 ### Deprecated
 ### Removed
 
