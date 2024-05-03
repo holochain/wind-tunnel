@@ -1,4 +1,4 @@
-use holochain_client_instrumented::prelude::AppAgentWebsocket;
+use holochain_client_instrumented::prelude::AppWebsocket;
 use holochain_types::prelude::CellId;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -16,7 +16,7 @@ impl UserValuesConstraint for DefaultScenarioValues {}
 pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues> {
     pub(crate) installed_app_id: Option<String>,
     pub(crate) cell_id: Option<CellId>,
-    pub(crate) app_agent_client: Option<AppAgentWebsocket>,
+    pub(crate) app_client: Option<AppWebsocket>,
     pub scenario_values: T,
 }
 
@@ -35,8 +35,10 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
             .expect("cell_id is not set, did you forget to call `install_app` in your agent_setup?")
     }
 
-    /// Get the `app_agent_client` that was configured during agent setup.
-    pub fn app_agent_client(&self) -> AppAgentWebsocket {
-        self.app_agent_client.clone().expect("app_agent_client is not set, did you forget to call `install_app` in your agent_setup?")
+    /// Get the `app_client` that was configured during agent setup.
+    pub fn app_client(&self) -> AppWebsocket {
+        self.app_client.clone().expect(
+            "app_client is not set, did you forget to call `install_app` in your agent_setup?",
+        )
     }
 }

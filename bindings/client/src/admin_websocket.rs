@@ -9,7 +9,10 @@ use std::sync::Arc;
 
 use crate::ToSocketAddr;
 use anyhow::Result;
-use holochain_conductor_api::StorageInfo;
+use holochain_conductor_api::{
+    AppAuthenticationTokenIssued, AppInterfaceInfo, IssueAppAuthenticationTokenPayload, StorageInfo,
+};
+use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
@@ -34,7 +37,7 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn list_app_interfaces(&mut self) -> ConductorApiResult<Vec<u16>> {
+    pub async fn list_app_interfaces(&mut self) -> ConductorApiResult<Vec<AppInterfaceInfo>> {
         self.inner.list_app_interfaces().await
     }
 
@@ -43,8 +46,11 @@ impl AdminWebsocketInstrumented {
         &mut self,
         port: u16,
         allowed_origins: AllowedOrigins,
+        installed_app_id: Option<InstalledAppId>,
     ) -> ConductorApiResult<u16> {
-        self.inner.attach_app_interface(port, allowed_origins).await
+        self.inner
+            .attach_app_interface(port, allowed_origins, installed_app_id)
+            .await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
@@ -128,6 +134,14 @@ impl AdminWebsocketInstrumented {
         request: AuthorizeSigningCredentialsPayload,
     ) -> Result<SigningCredentials> {
         self.inner.authorize_signing_credentials(request).await
+    }
+
+    #[wind_tunnel_instrument(prefix = "admin_")]
+    pub async fn issue_app_auth_token(
+        &mut self,
+        payload: IssueAppAuthenticationTokenPayload,
+    ) -> ConductorApiResult<AppAuthenticationTokenIssued> {
+        self.inner.issue_app_auth_token(payload).await
     }
 }
 

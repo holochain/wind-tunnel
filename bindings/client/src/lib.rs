@@ -1,12 +1,10 @@
 use std::net::{SocketAddr, ToSocketAddrs};
 
 mod admin_websocket;
-mod app_agent_websocket;
 mod app_websocket;
 
 pub mod prelude {
     pub use crate::admin_websocket::AdminWebsocketInstrumented as AdminWebsocket;
-    pub use crate::app_agent_websocket::AppAgentWebsocketInstrumented as AppAgentWebsocket;
     pub use crate::app_websocket::AppWebsocketInstrumented as AppWebsocket;
 
     // Types defined in other crates should be fetched directly, but types defined in the client

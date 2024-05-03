@@ -1,12 +1,13 @@
 use crate::ToSocketAddr;
 use anyhow::Result;
-use holochain_client::{AppWebsocket, ConductorApiResult};
-use holochain_conductor_api::{AppInfo, NetworkInfo, ZomeCall};
+use holochain_client::{AgentSigner, AppWebsocket, ConductorApiResult, ZomeCallTarget};
+use holochain_conductor_api::{AppAuthenticationToken, AppInfo, NetworkInfo};
 use holochain_types::app::{
     DisableCloneCellPayload, EnableCloneCellPayload, NetworkInfoRequestPayload,
 };
-use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, InstalledAppId};
+use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, FunctionName, ZomeName};
 use holochain_zome_types::clone::ClonedCell;
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
@@ -18,30 +19,33 @@ pub struct AppWebsocketInstrumented {
 }
 
 impl AppWebsocketInstrumented {
-    pub async fn connect(app_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
-        AppWebsocket::connect(app_url.to_socket_addr()?)
+    pub async fn connect(
+        app_url: impl ToSocketAddr,
+        token: AppAuthenticationToken,
+        signer: Arc<dyn AgentSigner + Send + Sync>,
+        reporter: Arc<Reporter>,
+    ) -> Result<Self> {
+        AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone())
             .await
             .map(|inner| Self { inner, reporter })
     }
 
-    pub async fn from_existing(app_ws: AppWebsocket, reporter: Arc<Reporter>) -> Result<Self> {
-        Ok(Self {
-            inner: app_ws,
-            reporter,
-        })
-    }
-
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn app_info(
-        &mut self,
-        app_id: InstalledAppId,
-    ) -> ConductorApiResult<Option<AppInfo>> {
-        self.inner.app_info(app_id).await
+    pub async fn app_info(&mut self) -> ConductorApiResult<Option<AppInfo>> {
+        self.inner.app_info().await
     }
 
     #[wind_tunnel_instrument(prefix = "app_", pre_hook = pre_call_zome)]
-    pub async fn call_zome(&mut self, msg: ZomeCall) -> ConductorApiResult<ExternIO> {
-        self.inner.call_zome(msg).await
+    pub async fn call_zome(
+        &mut self,
+        target: ZomeCallTarget,
+        zome_name: impl Into<ZomeName> + Clone,
+        fn_name: impl Into<FunctionName> + Clone,
+        payload: ExternIO,
+    ) -> ConductorApiResult<ExternIO> {
+        self.inner
+            .call_zome(target, zome_name.into(), fn_name.into(), payload)
+            .await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -77,7 +81,21 @@ impl AppWebsocketInstrumented {
     }
 }
 
-fn pre_call_zome(operation_record: &mut OperationRecord, msg: &ZomeCall) {
-    operation_record.add_attr("zome_name", msg.zome_name.0.to_string());
-    operation_record.add_attr("fn_name", msg.fn_name.0.to_string());
+fn pre_call_zome(
+    operation_record: &mut OperationRecord,
+    _target: &ZomeCallTarget,
+    zome_name: &(impl Into<ZomeName> + Clone),
+    fn_name: &(impl Into<FunctionName> + Clone),
+    _payload: &ExternIO,
+) {
+    let zome_name: ZomeName = zome_name.clone().into();
+    let fn_name: FunctionName = fn_name.clone().into();
+    operation_record.add_attr("zome_name", zome_name.0.to_string());
+    operation_record.add_attr("fn_name", fn_name.0.to_string());
+}
+
+impl Debug for AppWebsocketInstrumented {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppWebsocketInstrumented").finish()
+    }
 }

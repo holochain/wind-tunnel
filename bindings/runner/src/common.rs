@@ -2,7 +2,7 @@ use crate::context::HolochainAgentContext;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
 use holochain_client_instrumented::prelude::{
-    AdminWebsocket, AppAgentWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
+    AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
 };
 use holochain_conductor_api::CellInfo;
 use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
@@ -44,16 +44,30 @@ pub fn configure_app_ws_url(
                 .await
                 .context("Unable to connect admin client")?;
 
-            let existing_app_ports = admin_client
+            let existing_app_interfaces = admin_client
                 .list_app_interfaces()
                 .await
                 .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+
+            let existing_app_ports = existing_app_interfaces
+                .into_iter()
+                .filter_map(|interface| {
+                    if interface.allowed_origins == AllowedOrigins::Any
+                        && interface.installed_app_id.is_none()
+                    {
+                        Some(interface.port)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+
             if !existing_app_ports.is_empty() {
                 Ok(*existing_app_ports.first().context("No app ports found")?)
             } else {
                 let attached_app_port = admin_client
                     // Don't specify the port, let the conductor pick one
-                    .attach_app_interface(0, AllowedOrigins::Any)
+                    .attach_app_interface(0, AllowedOrigins::Any, None)
                     .await
                     .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
                 Ok(attached_app_port)
@@ -99,7 +113,7 @@ pub fn configure_app_ws_url(
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     let installed_app_id = ctx.get().installed_app_id();
 ///     let cell_id = ctx.get().cell_id();
-///     let app_agent_client = ctx.get().app_agent_client();
+///     let app_agent_client = ctx.get().app_client();
 ///
 ///     Ok(())
 /// }
@@ -182,13 +196,15 @@ where
             let mut signer = ClientAgentSigner::default();
             signer.add_credentials(cell_id.clone(), credentials);
 
-            let app_agent_client = AppAgentWebsocket::connect(
-                app_ws_url,
-                installed_app_id.clone(),
-                signer.into(),
-                reporter,
-            )
-            .await?;
+            let issued = client
+                .issue_app_auth_token(installed_app_id.clone().into())
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
+                })?;
+
+            let app_agent_client =
+                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
 
             Ok((installed_app_id, cell_id, app_agent_client))
         })
@@ -196,7 +212,7 @@ where
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
-    ctx.get_mut().app_agent_client = Some(app_agent_client);
+    ctx.get_mut().app_client = Some(app_agent_client);
 
     Ok(())
 }
@@ -242,13 +258,13 @@ where
     SV: UserValuesConstraint,
 {
     let cell_id = ctx.get().cell_id();
-    let mut app_agent_client = ctx.get().app_agent_client();
+    let mut app_agent_client = ctx.get().app_client();
     ctx.runner_context().executor().execute_in_place(async {
         let result = app_agent_client
             .call_zome(
                 cell_id.into(),
-                zome_name.into(),
-                fn_name.into(),
+                zome_name,
+                fn_name,
                 ExternIO::encode(payload).context("Encoding failure")?,
             )
             .await
