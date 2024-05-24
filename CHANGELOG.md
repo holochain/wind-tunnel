@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+## [0.2.0-alpha.2] - 2024-05-25
+
+### Changed
+
+- Updated Holochain version to 0.3.1-rc.0 and updated all other dependencies to their corresponding versions.
+
 ## [0.2.0-alpha.1] - 2024-03-29
 
 ### Added
