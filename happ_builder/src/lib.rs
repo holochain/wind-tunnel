@@ -512,11 +512,11 @@ roles:
 
 /// Checks whether the required tools for this builder are available.
 pub fn required_tools_available() -> bool {
-    if !which::which("hc").is_ok() {
+    if which::which("hc").is_err() {
         return false;
     }
 
-    if !which::which("cargo").is_ok() {
+    if which::which("cargo").is_err() {
         return false;
     }
 
