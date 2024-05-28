@@ -75,14 +75,16 @@ fn start_metrics_file_write_task(
             tokio::fs::create_dir_all(&dir).await.unwrap();
         }
 
+        let out_path = dir.join(format!(
+            "{}-{}.influx",
+            scenario_name,
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+        ));
+        log::debug!("Influx file reporter starting, using file {:?}", out_path);
         let mut file = File::options()
             .create_new(true)
             .write(true)
-            .open(dir.join(format!(
-                "{}-{}.influx",
-                scenario_name,
-                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
-            )))
+            .open(out_path)
             .await
             .unwrap();
 

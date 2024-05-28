@@ -153,6 +153,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 
 [[package]]
+name = "app_install"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "happ_builder",
+ "holochain_types",
+ "holochain_wind_tunnel_runner",
+ "timed_integrity",
+]
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -386,6 +397,22 @@ name = "bytes"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "514de17de45fdb8dc022b1a7975556c53c86f9f0aa5f534b98977b171857c2c9"
+
+[[package]]
+name = "callback"
+version = "0.1.0"
+dependencies = [
+ "callback_integrity",
+ "hdk",
+]
+
+[[package]]
+name = "callback_integrity"
+version = "0.1.0"
+dependencies = [
+ "hdi",
+ "serde",
+]
 
 [[package]]
 name = "camino"
@@ -1642,9 +1669,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_client"
-version = "0.5.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "850d41651b155a465043fa17821d4552ead19188d244e5b2b6ffdd9fccc825de"
+version = "0.5.0-rc.3"
 dependencies = [
  "again",
  "anyhow",
@@ -2531,6 +2556,15 @@ dependencies = [
  "url",
  "winapi",
  "zeroize",
+]
+
+[[package]]
+name = "large"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "hdk",
+ "regex",
 ]
 
 [[package]]

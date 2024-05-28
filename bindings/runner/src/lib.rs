@@ -17,4 +17,7 @@ pub mod prelude {
     ///
     /// This is for convenience so that you can depend on a single crate for the runner in your scenarios.
     pub use wind_tunnel_runner::prelude::*;
+
+    /// Re-export of the instrumented client for convenience.
+    pub use holochain_client_instrumented::prelude::*;
 }
