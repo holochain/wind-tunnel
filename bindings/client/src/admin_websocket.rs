@@ -25,25 +25,24 @@ pub struct AdminWebsocketInstrumented {
 impl AdminWebsocketInstrumented {
     pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        println!("Connecting to admin websocket at {}", addr);
         AdminWebsocket::connect(addr)
             .await
             .map(|inner| Self { inner, reporter })
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn generate_agent_pub_key(&mut self) -> ConductorApiResult<AgentPubKey> {
+    pub async fn generate_agent_pub_key(&self) -> ConductorApiResult<AgentPubKey> {
         self.inner.generate_agent_pub_key().await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn list_app_interfaces(&mut self) -> ConductorApiResult<Vec<AppInterfaceInfo>> {
+    pub async fn list_app_interfaces(&self) -> ConductorApiResult<Vec<AppInterfaceInfo>> {
         self.inner.list_app_interfaces().await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn attach_app_interface(
-        &mut self,
+        &self,
         port: u16,
         allowed_origins: AllowedOrigins,
         installed_app_id: Option<InstalledAppId>,
@@ -55,43 +54,43 @@ impl AdminWebsocketInstrumented {
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn list_apps(
-        &mut self,
+        &self,
         status_filter: Option<AppStatusFilter>,
     ) -> ConductorApiResult<Vec<AppInfo>> {
         self.inner.list_apps(status_filter).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn install_app(&mut self, payload: InstallAppPayload) -> ConductorApiResult<AppInfo> {
+    pub async fn install_app(&self, payload: InstallAppPayload) -> ConductorApiResult<AppInfo> {
         self.inner.install_app(payload).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn uninstall_app(&mut self, installed_app_id: String) -> ConductorApiResult<()> {
+    pub async fn uninstall_app(&self, installed_app_id: String) -> ConductorApiResult<()> {
         self.inner.uninstall_app(installed_app_id).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn enable_app(
-        &mut self,
+        &self,
         installed_app_id: String,
     ) -> ConductorApiResult<EnableAppResponse> {
         self.inner.enable_app(installed_app_id).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn disable_app(&mut self, installed_app_id: String) -> ConductorApiResult<()> {
+    pub async fn disable_app(&self, installed_app_id: String) -> ConductorApiResult<()> {
         self.inner.disable_app(installed_app_id).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")] // post = post_process_response
-    pub async fn get_dna_definition(&mut self, dna_hash: DnaHash) -> ConductorApiResult<DnaDef> {
+    pub async fn get_dna_definition(&self, dna_hash: DnaHash) -> ConductorApiResult<DnaDef> {
         self.inner.get_dna_definition(dna_hash).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn grant_zome_call_capability(
-        &mut self,
+        &self,
         capability: GrantZomeCallCapabilityPayload,
     ) -> ConductorApiResult<()> {
         self.inner.grant_zome_call_capability(capability).await
@@ -99,25 +98,25 @@ impl AdminWebsocketInstrumented {
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn delete_clone_cell(
-        &mut self,
+        &self,
         payload: DeleteCloneCellPayload,
     ) -> ConductorApiResult<()> {
         self.inner.delete_clone_cell(payload).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn storage_info(&mut self) -> ConductorApiResult<StorageInfo> {
+    pub async fn storage_info(&self) -> ConductorApiResult<StorageInfo> {
         self.inner.storage_info().await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn dump_network_stats(&mut self) -> ConductorApiResult<String> {
+    pub async fn dump_network_stats(&self) -> ConductorApiResult<String> {
         self.inner.dump_network_stats().await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn graft_records(
-        &mut self,
+        &self,
         cell_id: CellId,
         validate: bool,
         records: Vec<Record>,
@@ -130,7 +129,7 @@ impl AdminWebsocketInstrumented {
     // this and include the time taken to do the client side logic for setting up signing credentials.
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn authorize_signing_credentials(
-        &mut self,
+        &self,
         request: AuthorizeSigningCredentialsPayload,
     ) -> Result<SigningCredentials> {
         self.inner.authorize_signing_credentials(request).await
@@ -138,7 +137,7 @@ impl AdminWebsocketInstrumented {
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn issue_app_auth_token(
-        &mut self,
+        &self,
         payload: IssueAppAuthenticationTokenPayload,
     ) -> ConductorApiResult<AppAuthenticationTokenIssued> {
         self.inner.issue_app_auth_token(payload).await

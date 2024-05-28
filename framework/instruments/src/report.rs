@@ -73,7 +73,7 @@ impl Deref for ReportMetric {
 pub trait ReportCollector {
     fn add_operation(&mut self, operation_record: &OperationRecord);
 
-    /// Record a custom metric that
+    /// Record a custom metric
     fn add_custom(&mut self, metric: ReportMetric);
 
     fn finalize(&self);

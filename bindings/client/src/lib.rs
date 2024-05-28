@@ -2,10 +2,13 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 mod admin_websocket;
 mod app_websocket;
+mod error;
 
 pub mod prelude {
     pub use crate::admin_websocket::AdminWebsocketInstrumented as AdminWebsocket;
     pub use crate::app_websocket::AppWebsocketInstrumented as AppWebsocket;
+
+    pub use crate::error::handle_api_err;
 
     // Types defined in other crates should be fetched directly, but types defined in the client
     // need to be re-exported here to avoid confusion from depending on this client wrapper and

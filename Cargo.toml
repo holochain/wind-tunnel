@@ -11,15 +11,19 @@ members = [
 
     "happ_builder",
 
-    "scenarios/zome_call_single_value",
-    "scenarios/single_write_many_read",
+    "scenarios/app_install",
     "scenarios/dht_sync_lag",
+    "scenarios/single_write_many_read",
+    "scenarios/zome_call_single_value",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
     "zomes/crud/integrity",
     "zomes/timed/coordinator",
     "zomes/timed/integrity",
+    "zomes/callback/coordinator",
+    "zomes/callback/integrity",
+    "zomes/large/coordinator",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -60,7 +64,7 @@ influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", default-features
 influxive-core = "0.0.2-alpha.1"
 
 # Deps for Holochain
-holochain_client = { version = "=0.5.0-rc.1" }
+holochain_client = { version = "=0.5.0-rc.3", path = "../holochain-client-rust" }
 holochain_zome_types = { version = "0.3.1-rc.0" }
 holo_hash = { version = "0.3.1-rc.0" }
 holochain_types = { version = "0.3.1-rc.0" }
@@ -85,6 +89,7 @@ happ_builder = { path = "./happ_builder", version = "0.1.0" }
 # Zomes for coorindator dependencies
 crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
+callback_integrity = { path = "./zomes/callback/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

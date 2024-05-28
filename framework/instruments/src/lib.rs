@@ -13,6 +13,7 @@ pub mod prelude {
     pub use crate::{report_operation, OperationRecord, ReportConfig, Reporter};
 }
 
+#[derive(Debug)]
 pub struct ReportConfig {
     pub dir: Option<PathBuf>,
     pub scenario_name: String,

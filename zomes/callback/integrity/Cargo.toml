@@ -1,0 +1,21 @@
+[package]
+name = "callback_integrity"
+version = "0.1.0"
+edition = "2021"
+description = "A Holochain integrity zome with callbacks implemented"
+
+[lib]
+name = "callback_integrity"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdi = { workspace = true }
+serde = { workspace = true }
+
+## TODO watiing for a fix in 0.2.7-rc.1+
+#[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+#getrandom = { version = "0.2", features = ["custom"] }
+
+[lints]
+workspace = true

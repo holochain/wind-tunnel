@@ -65,7 +65,7 @@ impl ReportCollector for InfluxReporterBase {
             operation_record
                 .elapsed
                 .expect("OperationRecord must have an elapsed time")
-                .as_micros() as f64
+                .as_micros() as f64 // TODO use as_secs_f64 and let influx handle ms
                 / 1000.0,
         )
         .add_tag("operation_id", operation_record.operation_id.to_string())

@@ -1,9 +1,7 @@
 use crate::context::HolochainAgentContext;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
-use holochain_client_instrumented::prelude::{
-    AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
-};
+use holochain_client_instrumented::prelude::{AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner, handle_api_err};
 use holochain_conductor_api::CellInfo;
 use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
 use holochain_types::websocket::AllowedOrigins;
@@ -40,7 +38,7 @@ pub fn configure_app_ws_url(
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let mut admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
+            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
                 .await
                 .context("Unable to connect admin client")?;
 
@@ -145,12 +143,12 @@ where
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let mut client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
 
             let key = client
                 .generate_agent_pub_key()
                 .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                .map_err(handle_api_err)?;
             log::debug!("Generated agent pub key: {:}", key);
 
             let installed_app_id = format!("{}-app", agent_id).to_string();
@@ -163,13 +161,13 @@ where
                     network_seed: None,
                 })
                 .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                .map_err(handle_api_err)?;
             log::debug!("Installed app: {:}", installed_app_id);
 
             client
                 .enable_app(installed_app_id.clone())
                 .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                .map_err(handle_api_err)?;
             log::debug!("Enabled app: {:}", installed_app_id);
 
             let cell_id = match app_info
@@ -189,8 +187,7 @@ where
                     cell_id: cell_id.clone(),
                     functions: None,
                 })
-                .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                .await?;
             log::debug!("Authorized signing credentials");
 
             let mut signer = ClientAgentSigner::default();
@@ -258,7 +255,7 @@ where
     SV: UserValuesConstraint,
 {
     let cell_id = ctx.get().cell_id();
-    let mut app_agent_client = ctx.get().app_client();
+    let app_agent_client = ctx.get().app_client();
     ctx.runner_context().executor().execute_in_place(async {
         let result = app_agent_client
             .call_zome(
