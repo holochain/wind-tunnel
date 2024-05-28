@@ -4,18 +4,16 @@ use wind_tunnel_core::prelude::ShutdownHandle;
 pub(crate) fn start_shutdown_listener(
     runtime: &tokio::runtime::Runtime,
 ) -> anyhow::Result<ShutdownHandle> {
-    let (tx, _) = tokio::sync::broadcast::channel(1);
+    let handle = ShutdownHandle::new();
 
-    let sender = tx.clone();
+    let listener_handle = handle.clone();
     runtime.spawn(async move {
         signal::ctrl_c()
             .await
             .expect("Failed to receive Ctrl-C signal");
-        sender
-            .send(())
-            .expect("Received shutdown signal but failed to notify listeners");
+        listener_handle.shutdown();
         println!("Received shutdown signal, shutting down...");
     });
 
-    Ok(ShutdownHandle::new(tx))
+    Ok(handle)
 }

@@ -1,7 +1,10 @@
 use crate::context::HolochainAgentContext;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
-use holochain_client_instrumented::prelude::{AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner, handle_api_err};
+use holochain_client_instrumented::prelude::{
+    handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
+    ClientAgentSigner,
+};
 use holochain_conductor_api::CellInfo;
 use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
 use holochain_types::websocket::AllowedOrigins;
@@ -45,7 +48,7 @@ pub fn configure_app_ws_url(
             let existing_app_interfaces = admin_client
                 .list_app_interfaces()
                 .await
-                .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                .map_err(handle_api_err)?;
 
             let existing_app_ports = existing_app_interfaces
                 .into_iter()
@@ -67,7 +70,7 @@ pub fn configure_app_ws_url(
                     // Don't specify the port, let the conductor pick one
                     .attach_app_interface(0, AllowedOrigins::Any, None)
                     .await
-                    .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+                    .map_err(handle_api_err)?;
                 Ok(attached_app_port)
             }
         })
@@ -138,7 +141,7 @@ where
     let agent_id = ctx.agent_id().to_string();
     let reporter = ctx.runner_context().reporter();
 
-    let (installed_app_id, cell_id, app_agent_client) = ctx
+    let (installed_app_id, cell_id, app_client) = ctx
         .runner_context()
         .executor()
         .execute_in_place(async move {
@@ -209,7 +212,7 @@ where
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
-    ctx.get_mut().app_client = Some(app_agent_client);
+    ctx.get_mut().app_client = Some(app_client);
 
     Ok(())
 }
@@ -265,7 +268,7 @@ where
                 ExternIO::encode(payload).context("Encoding failure")?,
             )
             .await
-            .map_err(|e| anyhow::anyhow!("Conductor API error: {:?}", e))?;
+            .map_err(handle_api_err)?;
 
         result
             .decode()

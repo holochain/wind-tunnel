@@ -15,6 +15,7 @@ members = [
     "scenarios/dht_sync_lag",
     "scenarios/single_write_many_read",
     "scenarios/zome_call_single_value",
+    "scenarios/first_call",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -62,14 +63,16 @@ indicatif = "0.17.8"
 # TODO waiting for Holochain 0.3 to add the feature `serde` back here, conflicts at 0.2
 influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", default-features = false, features = ["reqwest-client-native-tls-vendored"] }
 influxive-core = "0.0.2-alpha.1"
+nanoid = "0.4.0"
+which = "6.0.1"
 
 # Deps for Holochain
-holochain_client = { version = "=0.5.0-rc.3", path = "../holochain-client-rust" }
+holochain_client = { version = "=0.5.0-rc.4", path = "../holochain-client-rust" }
 holochain_zome_types = { version = "0.3.1-rc.0" }
 holo_hash = { version = "0.3.1-rc.0" }
 holochain_types = { version = "0.3.1-rc.0" }
 holochain_conductor_api = { version = "0.3.1-rc.0" }
-hdk = { version = "0.3.1-rc.0", features = [] }
+hdk = { version = "0.3.1-rc.0" }
 hdi = "0.4.1-rc.0"
 mr_bundle = "0.3.1-rc.0"
 

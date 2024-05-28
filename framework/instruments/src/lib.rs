@@ -16,6 +16,7 @@ pub mod prelude {
 #[derive(Debug)]
 pub struct ReportConfig {
     pub dir: Option<PathBuf>,
+    pub run_id: String,
     pub scenario_name: String,
     pub enable_in_memory: bool,
     pub enable_influx_client: bool,
@@ -23,9 +24,10 @@ pub struct ReportConfig {
 }
 
 impl ReportConfig {
-    pub fn new(scenario_name: String) -> Self {
+    pub fn new(run_id: String, scenario_name: String) -> Self {
         ReportConfig {
             dir: None,
+            run_id,
             scenario_name,
             enable_in_memory: false,
             enable_influx_client: false,
@@ -68,6 +70,8 @@ impl ReportConfig {
                     let metrics_collector = report::InfluxClientReportCollector::new(
                         runtime,
                         shutdown_listener.clone(),
+                        self.run_id.clone(),
+                        self.scenario_name.clone(),
                     )?;
                     Some(RwLock::new(
                         Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
@@ -80,6 +84,7 @@ impl ReportConfig {
                         runtime,
                         shutdown_listener,
                         self.dir.unwrap(),
+                        self.run_id,
                         self.scenario_name,
                     );
                     Some(RwLock::new(

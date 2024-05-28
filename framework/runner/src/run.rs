@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use wind_tunnel_core::prelude::ShutdownSignalError;
+use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 
 use crate::cli::ReporterOpt;
@@ -19,6 +19,9 @@ use crate::{
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
 ) -> anyhow::Result<()> {
+    let run_id = nanoid::nanoid!();
+    println!("#RunId: [{}]", run_id);
+
     let definition = definition.build()?;
 
     log::info!("Running scenario: {}", definition.name);
@@ -26,10 +29,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
 
     let shutdown_handle = start_shutdown_listener(&runtime)?;
+    let report_shutdown_handle = ShutdownHandle::new();
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::new(definition.name.clone());
+        let mut report_config = ReportConfig::new(run_id, definition.name.clone());
 
         match definition.reporter {
             ReporterOpt::InMemory => {
@@ -50,7 +54,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             }
         }
 
-        Arc::new(report_config.init_reporter(&runtime, shutdown_handle.new_listener())?)
+        Arc::new(report_config.init_reporter(&runtime, report_shutdown_handle.new_listener())?)
     };
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(
@@ -169,6 +173,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         }
     }
 
+    // Manually shutdown the reporting once all the teardown steps are complete, this doesn't
+    // respond to Ctrl+C like the user-provided code does.
+    report_shutdown_handle.shutdown();
+    // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
 
     Ok(())

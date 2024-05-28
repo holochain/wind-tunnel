@@ -27,6 +27,8 @@ impl InfluxClientReportCollector {
     pub fn new(
         runtime: &Runtime,
         shutdown_listener: DelegatedShutdownListener,
+        run_id: String,
+        scenario_name: String,
     ) -> anyhow::Result<Self> {
         let client = Client::new(
             std::env::var("INFLUX_HOST").context(
@@ -45,7 +47,13 @@ impl InfluxClientReportCollector {
             start_metrics_write_task(runtime, shutdown_listener, client, flush_complete.clone());
 
         Ok(Self {
-            inner: InfluxReporterBase::new(join_handle, writer, flush_complete),
+            inner: InfluxReporterBase::new(
+                run_id,
+                scenario_name,
+                join_handle,
+                writer,
+                flush_complete,
+            ),
         })
     }
 }

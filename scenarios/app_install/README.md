@@ -7,6 +7,8 @@ This scenario has two roles:
 - **large**: Installs a larger app that contains some dependencies and some generated data as padding to make the bundle larger.
   These are intended to catch a compilation slowdown or issues with copying around large WASMs (e.g. accidental cloning or tracing).
 
+In each case, the behaviour will uninstall the app it installed so that it can re-install it on the next iteration.
+
 ### Suggested command
 
 You can run the scenario locally with the following command:
