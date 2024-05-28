@@ -9,8 +9,10 @@ pub struct ShutdownHandle {
 }
 
 impl ShutdownHandle {
-    pub fn new(sender: Sender<()>) -> Self {
-        Self { sender }
+    pub fn new() -> Self {
+        Self {
+            sender: tokio::sync::broadcast::channel(1).0,
+        }
     }
 
     pub fn shutdown(&self) {

@@ -1,7 +1,7 @@
+use holochain_types::prelude::ActionHash;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
-use std::path::{Path, PathBuf};
-use std::time::Instant;
+use std::path::Path;
 
 #[derive(Debug, Default)]
 struct ScenarioValues {
@@ -33,36 +33,14 @@ fn agent_setup(
     Ok(())
 }
 
-fn agent_behaviour_minimal(
+fn agent_behaviour_local(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    install_app_behaviour(ctx, scenario_happ_path!("callback"), "callback")?;
+    install_app(ctx, scenario_happ_path!("crud"), &"crud".into())?;
 
-    Ok(())
-}
-
-fn agent_behaviour_large(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-) -> HookResult {
-    install_app_behaviour(ctx, scenario_happ_path!("large"), "large")?;
-    Ok(())
-}
-
-fn install_app_behaviour(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-    happ_path: PathBuf,
-    happ_name: &str,
-) -> HookResult {
-    let start = Instant::now();
-    install_app(ctx, happ_path, &happ_name.to_string())?;
-    let install_time_s = start.elapsed().as_secs_f64();
+    let _: ActionHash = call_zome(ctx, "crud", "create_sample_entry", "a value")?;
 
     uninstall_app(ctx)?;
-
-    let metric = ReportMetric::new("app_install")
-        .with_tag("happ", happ_name.to_string())
-        .with_field("value", install_time_s);
-    ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
 }
@@ -70,9 +48,8 @@ fn install_app_behaviour(
 fn uninstall_app(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let installed_app_id = ctx.get().installed_app_id();
     let admin_client = ctx.get().scenario_values.admin_client.as_ref().unwrap();
-
+    let installed_app_id = ctx.get().installed_app_id();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
@@ -80,7 +57,6 @@ fn uninstall_app(
                 .uninstall_app(installed_app_id)
                 .await
                 .map_err(handle_api_err)?;
-
             Ok(())
         })
         // Discard the error here, the behaviour may uninstall the app. The state will depend when
@@ -98,8 +74,7 @@ fn main() -> WindTunnelResult<()> {
     .with_default_duration_s(60)
     .use_setup(setup)
     .use_agent_setup(agent_setup)
-    .use_named_agent_behaviour("minimal", agent_behaviour_minimal)
-    .use_named_agent_behaviour("large", agent_behaviour_large)
+    .use_named_agent_behaviour("local", agent_behaviour_local)
     .use_agent_teardown(uninstall_app);
 
     run(builder)?;

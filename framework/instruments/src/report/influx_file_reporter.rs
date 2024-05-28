@@ -31,6 +31,7 @@ impl InfluxFileReportCollector {
         runtime: &Runtime,
         shutdown_listener: DelegatedShutdownListener,
         dir: PathBuf,
+        run_id: String,
         scenario_name: String,
     ) -> Self {
         let flush_complete = Arc::new(AtomicBool::new(false));
@@ -38,12 +39,18 @@ impl InfluxFileReportCollector {
             runtime,
             shutdown_listener,
             dir,
-            scenario_name,
+            scenario_name.clone(),
             flush_complete.clone(),
         );
 
         Self {
-            inner: InfluxReporterBase::new(join_handle, writer, flush_complete),
+            inner: InfluxReporterBase::new(
+                run_id,
+                scenario_name,
+                join_handle,
+                writer,
+                flush_complete,
+            ),
         }
     }
 }
@@ -78,7 +85,10 @@ fn start_metrics_file_write_task(
         let out_path = dir.join(format!(
             "{}-{}.influx",
             scenario_name,
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
         ));
         log::debug!("Influx file reporter starting, using file {:?}", out_path);
         let mut file = File::options()

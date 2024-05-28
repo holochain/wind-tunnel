@@ -509,3 +509,16 @@ roles:
 
     Ok(())
 }
+
+/// Checks whether the required tools for this builder are available.
+pub fn required_tools_available() -> bool {
+    if !which::which("hc").is_ok() {
+        return false;
+    }
+
+    if !which::which("cargo").is_ok() {
+        return false;
+    }
+
+    true
+}

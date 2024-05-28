@@ -11,6 +11,8 @@ use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 
 pub(crate) struct InfluxReporterBase {
+    run_id: String,
+    scenario_name: String,
     join_handle: JoinHandle<()>,
     writer: UnboundedSender<WriteQuery>,
     flush_complete: Arc<AtomicBool>,
@@ -18,11 +20,15 @@ pub(crate) struct InfluxReporterBase {
 
 impl InfluxReporterBase {
     pub fn new(
+        run_id: String,
+        scenario_name: String,
         join_handle: JoinHandle<()>,
         writer: UnboundedSender<WriteQuery>,
         flush_complete: Arc<AtomicBool>,
     ) -> Self {
         Self {
+            run_id,
+            scenario_name,
             join_handle,
             writer,
             flush_complete,
@@ -68,6 +74,8 @@ impl ReportCollector for InfluxReporterBase {
                 .as_micros() as f64 // TODO use as_secs_f64 and let influx handle ms
                 / 1000.0,
         )
+        .add_tag("run_id", self.run_id.clone())
+        .add_tag("scenario_name", self.scenario_name.clone())
         .add_tag("operation_id", operation_record.operation_id.to_string())
         .add_tag("is_error", operation_record.is_error.to_string());
 
@@ -99,6 +107,9 @@ impl ReportCollector for InfluxReporterBase {
         for (k, v) in metric.tags {
             query = query.add_tag(k.into_string(), v.into_type());
         }
+
+        query = query.add_tag("run_id", self.run_id.clone());
+        query = query.add_tag("scenario_name", self.scenario_name.clone());
 
         self.try_send(query);
     }
