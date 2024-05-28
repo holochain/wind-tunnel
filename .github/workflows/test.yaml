@@ -94,6 +94,16 @@ jobs:
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
+      - name: Smoke test - app_install
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
+
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+
       - name: Build scenario bundles
         run: |
           set -euxo pipefail
