@@ -40,28 +40,7 @@ fn agent_behaviour_local(
 
     let _: ActionHash = call_zome(ctx, "crud", "create_sample_entry", "a value")?;
 
-    uninstall_app(ctx)?;
-
-    Ok(())
-}
-
-fn uninstall_app(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-) -> HookResult {
-    let admin_client = ctx.get().scenario_values.admin_client.as_ref().unwrap();
-    let installed_app_id = ctx.get().installed_app_id();
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            admin_client
-                .uninstall_app(installed_app_id)
-                .await
-                .map_err(handle_api_err)?;
-            Ok(())
-        })
-        // Discard the error here, the behaviour may uninstall the app. The state will depend when
-        // the shutdown signal is received.
-        .ok();
+    uninstall_app(ctx, None)?;
 
     Ok(())
 }
@@ -75,7 +54,10 @@ fn main() -> WindTunnelResult<()> {
     .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("local", agent_behaviour_local)
-    .use_agent_teardown(uninstall_app);
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
     run(builder)?;
 

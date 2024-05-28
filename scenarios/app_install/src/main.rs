@@ -57,35 +57,12 @@ fn install_app_behaviour(
     install_app(ctx, happ_path, &happ_name.to_string())?;
     let install_time_s = start.elapsed().as_secs_f64();
 
-    uninstall_app(ctx)?;
+    uninstall_app(ctx, None)?;
 
     let metric = ReportMetric::new("app_install")
         .with_tag("happ", happ_name.to_string())
         .with_field("value", install_time_s);
     ctx.runner_context().reporter().clone().add_custom(metric);
-
-    Ok(())
-}
-
-fn uninstall_app(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-) -> HookResult {
-    let installed_app_id = ctx.get().installed_app_id();
-    let admin_client = ctx.get().scenario_values.admin_client.as_ref().unwrap();
-
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            admin_client
-                .uninstall_app(installed_app_id)
-                .await
-                .map_err(handle_api_err)?;
-
-            Ok(())
-        })
-        // Discard the error here, the behaviour may uninstall the app. The state will depend when
-        // the shutdown signal is received.
-        .ok();
 
     Ok(())
 }
@@ -100,7 +77,10 @@ fn main() -> WindTunnelResult<()> {
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("minimal", agent_behaviour_minimal)
     .use_named_agent_behaviour("large", agent_behaviour_large)
-    .use_agent_teardown(uninstall_app);
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
     run(builder)?;
 
