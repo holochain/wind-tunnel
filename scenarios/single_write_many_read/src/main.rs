@@ -57,7 +57,11 @@ fn main() -> WindTunnelResult<()> {
     .with_default_duration_s(60)
     .use_setup(setup)
     .use_agent_setup(agent_setup)
-    .use_agent_behaviour(agent_behaviour);
+    .use_agent_behaviour(agent_behaviour)
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
     run(builder)?;
 

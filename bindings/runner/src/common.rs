@@ -6,11 +6,13 @@ use holochain_client_instrumented::prelude::{
     ClientAgentSigner,
 };
 use holochain_conductor_api::CellInfo;
-use holochain_types::prelude::{AppBundleSource, ExternIO, InstallAppPayload, RoleName};
+use holochain_types::prelude::{
+    AppBundleSource, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
+};
 use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
 use wind_tunnel_runner::prelude::{
-    AgentContext, RunnerContext, UserValuesConstraint, WindTunnelResult,
+    AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
@@ -213,6 +215,73 @@ where
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
+
+    Ok(())
+}
+
+/// Uninstall an application. Intended to be used by scenarios that clean up after themselves or
+/// need to uninstall and re-install the same application.
+///
+/// Requires:
+/// - Either you provide the `installed_app_id` or the [HolochainAgentContext] must have an `installed_app_id`.
+///   Note that this means that when passing `None`, only the last app that was installed using [install_app] will be uninstalled.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, uninstall_app, AgentContext, HookResult};
+///
+/// fn agent_teardown(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     uninstall_app(ctx, None)?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Or if you are uninstalling in the agent behaviour and in the teardown:
+/// ```rust
+/// use std::path::Path;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, uninstall_app, AgentContext, HookResult, install_app};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///    install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///    uninstall_app(ctx, None)?;
+///    Ok(())
+/// }
+///
+/// fn agent_teardown(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     // The app may have already been uninstalled if the scenario stopped after uninstalling the app but the agent behaviour is
+///     // not guaranteed to complete so we don't error when uninstalling here.
+///     uninstall_app(ctx, None).ok();
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Either uses the provided `installed_app_id` or gets the `installed_app_id` from the agent context.
+/// - Connects to an admin port using the connection string from the runner context.
+/// - Uninstalls the specified app and returns the result.
+pub fn uninstall_app<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    installed_app_id: Option<InstalledAppId>,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let installed_app_id = installed_app_id.unwrap_or_else(|| ctx.get().installed_app_id());
+    let reporter = ctx.runner_context().reporter();
+
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+
+            admin_client
+                .uninstall_app(installed_app_id)
+                .await
+                .map_err(handle_api_err)?;
+            Ok(())
+        })?;
 
     Ok(())
 }

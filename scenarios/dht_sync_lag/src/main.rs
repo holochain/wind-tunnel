@@ -107,7 +107,11 @@ fn main() -> WindTunnelResult<()> {
     .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("write", agent_behaviour_write)
-    .use_named_agent_behaviour("record_lag", agent_behaviour_record_lag);
+    .use_named_agent_behaviour("record_lag", agent_behaviour_record_lag)
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
     run(builder)?;
 

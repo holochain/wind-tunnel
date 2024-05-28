@@ -1,3 +1,4 @@
+use holochain_types::prelude::{ActionHash, Record};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::path::Path;
@@ -10,11 +11,7 @@ fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    install_app(
-        ctx,
-        scenario_happ_path!("return_single_value"),
-        &"return_single_value".to_string(),
-    )?;
+    install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
 
     Ok(())
 }
@@ -22,7 +19,16 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    let _: usize = call_zome(ctx, "return_single_value", "get_value", ())?;
+    let action_hash: ActionHash = call_zome(
+        ctx,
+        "crud",
+        "create_sample_entry",
+        "this is a test entry value",
+    )?;
+
+    let response: Option<Record> = call_zome(ctx, "crud", "get_sample_entry", action_hash)?;
+
+    assert!(response.is_some(), "Expected record to be found");
 
     Ok(())
 }
