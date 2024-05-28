@@ -29,7 +29,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
 
     let shutdown_handle = start_shutdown_listener(&runtime)?;
-    let report_shutdown_handle = ShutdownHandle::new();
+    let report_shutdown_handle = ShutdownHandle::default();
 
     let reporter = {
         let _h = runtime.handle().enter();

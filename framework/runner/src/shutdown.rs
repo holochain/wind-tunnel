@@ -4,7 +4,7 @@ use wind_tunnel_core::prelude::ShutdownHandle;
 pub(crate) fn start_shutdown_listener(
     runtime: &tokio::runtime::Runtime,
 ) -> anyhow::Result<ShutdownHandle> {
-    let handle = ShutdownHandle::new();
+    let handle = ShutdownHandle::default();
 
     let listener_handle = handle.clone();
     runtime.spawn(async move {

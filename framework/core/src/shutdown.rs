@@ -8,6 +8,12 @@ pub struct ShutdownHandle {
     sender: Sender<()>,
 }
 
+impl Default for ShutdownHandle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShutdownHandle {
     pub fn new() -> Self {
         Self {
