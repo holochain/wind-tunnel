@@ -10,7 +10,6 @@ struct ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
-
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;
     Ok(())
@@ -41,24 +40,28 @@ fn agent_behaviour(
 
     // Minimal check that we're querying the right content and getting the expected result from the
     // calculation in this zome function.
-    assert_eq!(values.call_count * 26, response, "Expected call count to match response");
+    assert_eq!(
+        values.call_count * 26,
+        response,
+        "Expected call count to match response"
+    );
 
     Ok(())
 }
 
 fn main() -> WindTunnelResult<()> {
-    let builder =
-        ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>::new_with_init(
-            env!("CARGO_PKG_NAME"),
-        )
-        .with_default_duration_s(60)
-        .use_setup(setup)
-        .use_agent_setup(agent_setup)
-        .use_agent_behaviour(agent_behaviour)
-        .use_agent_teardown(|ctx| {
-            uninstall_app(ctx, None).ok();
-            Ok(())
-        });
+    let builder = ScenarioDefinitionBuilder::<
+        HolochainRunnerContext,
+        HolochainAgentContext<ScenarioValues>,
+    >::new_with_init(env!("CARGO_PKG_NAME"))
+    .with_default_duration_s(60)
+    .use_setup(setup)
+    .use_agent_setup(agent_setup)
+    .use_agent_behaviour(agent_behaviour)
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
     run(builder)?;
 
