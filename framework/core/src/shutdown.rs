@@ -22,9 +22,11 @@ impl ShutdownHandle {
     }
 
     pub fn shutdown(&self) {
-        self.sender
-            .send(())
-            .expect("Failed to send shutdown signal");
+        if let Err(e) = self.sender.send(()) {
+            // Will fail if nobody is listening for a shutdown signal, in which case the log message
+            // can be ignored.
+            log::warn!("Failed to send shutdown signal: {:?}", e);
+        }
     }
 
     pub fn new_listener(&self) -> DelegatedShutdownListener {
