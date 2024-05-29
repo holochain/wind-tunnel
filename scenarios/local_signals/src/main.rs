@@ -54,7 +54,9 @@ fn agent_behaviour(
                         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
                     }
                 }
-            }).await.ok();
+            })
+            .await
+            .ok();
 
             Ok(())
         }
