@@ -1,0 +1,25 @@
+[package]
+name = "local_signals"
+version = "0.1.0"
+edition = "2021"
+build = "../scenario_build.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+holochain_types = { workspace = true }
+holochain_wind_tunnel_runner = { workspace = true }
+
+[build-dependencies]
+happ_builder = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.required-dna]
+name = "signal"
+zomes = ["signal"]
+
+[package.metadata.required-happ]
+name = "signal"
+dnas = ["signal"]
