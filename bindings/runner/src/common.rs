@@ -114,7 +114,7 @@ pub fn configure_app_ws_url(
 /// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
 ///
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
-///     let installed_app_id = ctx.get().installed_app_id();
+///     let installed_app_id = ctx.get().installed_app_id()?;
 ///     let cell_id = ctx.get().cell_id();
 ///     let app_agent_client = ctx.get().app_client();
 ///
@@ -268,7 +268,14 @@ where
     SV: UserValuesConstraint,
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let installed_app_id = installed_app_id.unwrap_or_else(|| ctx.get().installed_app_id());
+
+    let installed_app_id = installed_app_id.or_else(|| ctx.get().installed_app_id().ok());
+    if installed_app_id.is_none() {
+        // If there is no installed app id, we can't uninstall anything
+        log::info!("No installed app id found, skipping uninstall");
+        return Ok(());
+    }
+
     let reporter = ctx.runner_context().reporter();
 
     ctx.runner_context()
@@ -277,7 +284,7 @@ where
             let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
 
             admin_client
-                .uninstall_app(installed_app_id)
+                .uninstall_app(installed_app_id.unwrap())
                 .await
                 .map_err(handle_api_err)?;
             Ok(())

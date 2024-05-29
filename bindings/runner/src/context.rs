@@ -24,8 +24,8 @@ impl<T: UserValuesConstraint> UserValuesConstraint for HolochainAgentContext<T> 
 
 impl<T: UserValuesConstraint> HolochainAgentContext<T> {
     /// Get the `installed_app_id` that was configured during agent setup.
-    pub fn installed_app_id(&self) -> String {
-        self.installed_app_id.clone().expect("installed_app_id is not set, did you forget to call `install_app` in your agent_setup?")
+    pub fn installed_app_id(&self) -> anyhow::Result<String> {
+        self.installed_app_id.clone().ok_or_else(|| anyhow::anyhow!("installed_app_id is not set, did you forget to call `install_app` in your agent_setup?"))
     }
 
     /// Get the `cell_id` that was configured during agent setup.
