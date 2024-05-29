@@ -1,4 +1,4 @@
-use crud_integrity::{EntryTypes, UnitEntryTypes, SampleEntry};
+use crud_integrity::{EntryTypes, SampleEntry, UnitEntryTypes};
 use hdk::prelude::*;
 
 #[hdk_extern]
@@ -32,10 +32,14 @@ fn chain_query_count_len() -> ExternResult<u32> {
         .entry_type(UnitEntryTypes::SampleEntry.try_into()?);
     let results = query(q)?;
 
-    let sum = results.into_iter().filter_map(|r| {
-        let se: SampleEntry = r.entry.into_option().unwrap().try_into().ok()?;
-        Some(se)
-    }).map(|se| se.value.len()).fold(0, |acc, len| acc + len);
+    let sum = results
+        .into_iter()
+        .filter_map(|r| {
+            let se: SampleEntry = r.entry.into_option().unwrap().try_into().ok()?;
+            Some(se)
+        })
+        .map(|se| se.value.len())
+        .fold(0, |acc, len| acc + len);
 
     Ok(sum as u32)
 }
