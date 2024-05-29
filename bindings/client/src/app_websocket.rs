@@ -5,7 +5,7 @@ use holochain_conductor_api::{AppAuthenticationToken, AppInfo, NetworkInfo};
 use holochain_types::app::{
     DisableCloneCellPayload, EnableCloneCellPayload, NetworkInfoRequestPayload,
 };
-use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, FunctionName, ZomeName};
+use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, FunctionName, Signal, ZomeName};
 use holochain_zome_types::clone::ClonedCell;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
@@ -28,6 +28,13 @@ impl AppWebsocketInstrumented {
         AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone())
             .await
             .map(|inner| Self { inner, reporter })
+    }
+
+    pub async fn on_signal<F>(&self, handler: F) -> Result<String>
+    where
+        F: Fn(Signal) + 'static + Sync + Send,
+    {
+        self.inner.on_signal(handler).await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]

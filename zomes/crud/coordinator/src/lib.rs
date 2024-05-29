@@ -39,7 +39,7 @@ fn chain_query_count_len() -> ExternResult<u32> {
             Some(se)
         })
         .map(|se| se.value.len())
-        .fold(0, |acc, len| acc + len);
+        .sum::<usize>();
 
     Ok(sum as u32)
 }
