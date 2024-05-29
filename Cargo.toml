@@ -17,6 +17,7 @@ members = [
     "scenarios/zome_call_single_value",
     "scenarios/first_call",
     "scenarios/write_read",
+    "scenarios/write_query",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -61,8 +62,7 @@ url = "2.5.0"
 tabled = "0.15.0"
 indicatif = "0.17.8"
 # TODO waiting for 0.7.3+ relase to use the new reqwest-client-native-tls-vendored feature
-# TODO waiting for Holochain 0.3 to add the feature `serde` back here, conflicts at 0.2
-influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", default-features = false, features = ["reqwest-client-native-tls-vendored"] }
+influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = ["reqwest-client-native-tls-vendored"] }
 influxive-core = "0.0.2-alpha.1"
 nanoid = "0.4.0"
 which = "6.0.1"
