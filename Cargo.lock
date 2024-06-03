@@ -4838,9 +4838,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.37.0"
+version = "1.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1adbebffeca75fcfd058afa480fb6c0b81e165a0323f9c9d39c9697e37c46787"
+checksum = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a"
 dependencies = [
  "backtrace",
  "bytes",
@@ -4857,9 +4857,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
+checksum = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5117,6 +5117,53 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "trycp_api"
+version = "0.16.0-dev.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2fa96e0ffb9db0b166eb802ef4cc2e790d8d890fbdf316ee829a09148723ab4"
+dependencies = [
+ "serde",
+ "serde_bytes",
+ "serde_json",
+]
+
+[[package]]
+name = "trycp_client"
+version = "0.16.0-dev.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f7e8087b9aa5f8d1f53538c8e2ce2b2a28fb652e0deed3a7d5a85bfdf9ab19e"
+dependencies = [
+ "futures",
+ "rmp-serde 0.15.5",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "trycp_api",
+]
+
+[[package]]
+name = "trycp_client_instrumented"
+version = "0.2.0-alpha.2"
+dependencies = [
+ "ed25519-dalek",
+ "holo_hash",
+ "holochain_client",
+ "holochain_conductor_api",
+ "holochain_nonce",
+ "holochain_types",
+ "holochain_zome_types",
+ "rand 0.8.5",
+ "rmp-serde 1.1.2",
+ "serde",
+ "tokio-tungstenite",
+ "trycp_api",
+ "trycp_client",
+ "url",
+ "wind_tunnel_instruments",
+ "wind_tunnel_instruments_derive",
+]
 
 [[package]]
 name = "ts_influxdb"
