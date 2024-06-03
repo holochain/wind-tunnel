@@ -38,6 +38,17 @@ jobs:
           extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cargo/bin/
+            .cargo/registry/index/
+            .cargo/registry/cache/
+            .cargo/git/db/
+            target/
+            wasm-target/
+          key: "${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}"
+
       - name: Check scripts
         run: |
           nix develop --command bash -c "shellcheck scripts/*.sh"
