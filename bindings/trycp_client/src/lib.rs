@@ -24,8 +24,8 @@ pub struct TryCPClientInstrumented {
 }
 
 mod control_impl {
-    use trycp_client::Signal;
     use super::*;
+    use trycp_client::Signal;
 
     impl TryCPClientInstrumented {
         pub async fn connect<R>(
@@ -796,9 +796,11 @@ pub(crate) async fn sign_zome_call(
 ) -> io::Result<ZomeCall> {
     let pub_key = zome_call_unsigned.provenance.clone();
 
-    let data_to_sign = zome_call_unsigned
-        .data_to_sign()
-        .map_err(|e| io::Error::other(format!("Failed to get data to sign from unsigned zome call: {e:?}")))?;
+    let data_to_sign = zome_call_unsigned.data_to_sign().map_err(|e| {
+        io::Error::other(format!(
+            "Failed to get data to sign from unsigned zome call: {e:?}"
+        ))
+    })?;
 
     let signature = signer
         .sign(&zome_call_unsigned.cell_id, pub_key, data_to_sign)
