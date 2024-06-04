@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use wind_tunnel_core::prelude::AgentBailError;
 use wind_tunnel_runner::prelude::{
     run, AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
     UserValuesConstraint, WindTunnelScenarioCli,
@@ -90,6 +91,37 @@ fn capture_error_in_agent_setup_and_continue() {
     let result = run(scenario);
 
     assert!(result.is_ok());
+}
+
+#[test]
+fn bail_error_stops_agent_behaviour() {
+    fn agent_behaviour_1(
+        _ctx: &mut AgentContext<RunnerContextValue, AgentContextValue>,
+    ) -> HookResult {
+        Err(AgentBailError::default().into())
+    }
+
+    fn agent_behaviour_2(
+        _ctx: &mut AgentContext<RunnerContextValue, AgentContextValue>,
+    ) -> HookResult {
+        Ok(())
+    }
+
+    let mut cfg = sample_cli_cfg();
+    cfg.agents = Some(2);
+    cfg.behaviour = vec![("bail".to_string(), 1), ("continue".to_string(), 1)];
+    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
+        "bail_error_stops_agent_behaviour",
+        cfg,
+    )
+        .with_default_duration_s(1)
+        .use_named_agent_behaviour("bail", agent_behaviour_1)
+        .use_named_agent_behaviour("continue", agent_behaviour_2);
+
+    let result = run(scenario);
+
+    assert!(result.is_ok());
+    assert_eq!(1, result.unwrap());
 }
 
 #[test]
