@@ -45,6 +45,22 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
     Ok(())
 }
 
+/// Asks the TryCP server to reset all state for managed Holochain instances.
+///
+/// You must call `connect_trycp_client` before calling this function. Or otherwise ensure that the
+/// [TryCPAgentContext] has a TryCPClient set.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use trycp_wind_tunnel_runner::prelude::{AgentContext, connect_trycp_client, HookResult, reset_trycp_remote, TryCPAgentContext, TryCPRunnerContext};
+///
+/// fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     connect_trycp_client(ctx)?;
+///     reset_trycp_remote(ctx)?;
+///     Ok(())
+/// }
+/// ```
 pub fn reset_trycp_remote(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>,
 ) -> HookResult {
@@ -60,6 +76,29 @@ pub fn reset_trycp_remote(
     Ok(())
 }
 
+/// Disconnects the TryCP client.
+///
+/// You must call `connect_trycp_client` before calling this function. Or otherwise ensure that the
+/// [TryCPAgentContext] has a TryCPClient set.
+///
+/// Note that you *must* call this function in the agent teardown, otherwise the `Drop`
+/// implementation for the TrycpClient will panic when the runner drops the agent context.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use trycp_wind_tunnel_runner::prelude::{AgentContext, connect_trycp_client, disconnect_trycp_client, HookResult, reset_trycp_remote, TryCPAgentContext, TryCPRunnerContext};
+///
+/// fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     connect_trycp_client(ctx)?;
+///     Ok(())
+/// }
+///
+/// fn agent_teardown(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     disconnect_trycp_client(ctx)?;
+///     Ok(())
+/// }
+/// ```
 pub fn disconnect_trycp_client<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
 ) -> HookResult {

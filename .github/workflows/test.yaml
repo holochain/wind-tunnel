@@ -72,7 +72,7 @@ jobs:
       - name: Lint Rust
         run: |
           # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
-          nix flake check
+          nix flake check --all-systems
 
       - name: Smoke test - zome_call_single_value
         run: |
