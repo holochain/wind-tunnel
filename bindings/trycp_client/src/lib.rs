@@ -65,7 +65,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::SaveDna { id, content },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -83,7 +83,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::DownloadDna { url },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -104,7 +104,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::ConfigurePlayer { id, partial_config },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -125,7 +125,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::Startup { id, log_level },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -147,7 +147,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::Shutdown { id, signal },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -159,10 +159,7 @@ mod control_impl {
         pub async fn reset(&self, timeout: Option<Duration>) -> io::Result<()> {
             let response = self
                 .trycp_client
-                .request(
-                    Request::Reset,
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
-                )
+                .request(Request::Reset, timeout.unwrap_or(self.timeout))
                 .await?;
 
             check_empty_response(response)
@@ -183,7 +180,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::ConnectAppInterface { token, port },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -203,7 +200,7 @@ mod control_impl {
                 .trycp_client
                 .request(
                     Request::DisconnectAppInterface { port },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -243,7 +240,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AgentPubKeyGenerated(agent_pub_key) => Ok(agent_pub_key),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -259,7 +259,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppInterfacesListed(info) => Ok(info),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -286,7 +289,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppInterfaceAttached { port } => Ok(port),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -303,7 +309,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppsListed(apps) => Ok(apps),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -324,7 +333,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppInstalled(app) => Ok(app),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -341,7 +353,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppUninstalled => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -358,7 +373,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppEnabled { app, errors } => Ok(EnableAppResponse { app, errors }),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -375,7 +393,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppDisabled => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -396,7 +417,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::DnaDefinitionReturned(dna_def) => Ok(dna_def),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -417,7 +441,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::ZomeCallCapabilityGranted => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -438,7 +465,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::CloneCellDeleted => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -454,7 +484,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::StorageInfo(info) => Ok(info),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -470,7 +503,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::NetworkStatsDumped(stats) => Ok(stats),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -497,7 +533,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::RecordsGrafted => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -561,7 +600,10 @@ mod admin_impl {
 
             match response {
                 AdminResponse::AppAuthenticationTokenIssued(token) => Ok(token),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected admin response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected admin response",
+                )),
             }
         }
 
@@ -579,7 +621,7 @@ mod admin_impl {
                         message: rmp_serde::to_vec(&request)
                             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
                     },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
@@ -611,7 +653,10 @@ mod app_impl {
 
             match response {
                 AppResponse::AppInfo(info) => Ok(info),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected app response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected app response",
+                )),
             }
         }
 
@@ -669,7 +714,10 @@ mod app_impl {
 
             match response {
                 AppResponse::CloneCellCreated(cell) => Ok(cell),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected app response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected app response",
+                )),
             }
         }
 
@@ -690,7 +738,10 @@ mod app_impl {
 
             match response {
                 AppResponse::CloneCellEnabled(cell) => Ok(cell),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected app response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected app response",
+                )),
             }
         }
 
@@ -711,7 +762,10 @@ mod app_impl {
 
             match response {
                 AppResponse::CloneCellDisabled => Ok(()),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected app response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected app response",
+                )),
             }
         }
 
@@ -728,7 +782,10 @@ mod app_impl {
 
             match response {
                 AppResponse::NetworkInfo(info) => Ok(info),
-                _ => Err(io::Error::new(io::ErrorKind::Other, "Unexpected app response").into()),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unexpected app response",
+                )),
             }
         }
 
@@ -746,7 +803,7 @@ mod app_impl {
                         message: rmp_serde::to_vec(&request)
                             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
                     },
-                    timeout.unwrap_or_else(|| self.timeout.clone()),
+                    timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
