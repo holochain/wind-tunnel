@@ -49,6 +49,11 @@ jobs:
             wasm-target/
           key: "${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}"
 
+      - name: Cargo sweep mark for files
+        run: |
+          cargo install cargo-sweep
+          cargo sweep --stamp
+
       - name: Check scripts
         run: |
           nix develop --command bash -c "shellcheck scripts/*.sh"
@@ -191,3 +196,7 @@ jobs:
           name: scenario-bundles
           if-no-files-found: error
           path: dist/*
+
+      - name: Apply cargo sweep
+        run: |
+          cargo sweep --file
