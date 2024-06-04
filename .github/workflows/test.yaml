@@ -155,6 +155,22 @@ jobs:
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
+      - name: Smoke test - remote_call
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Start a TryCP instance
+          nix develop --command bash -c "start_trycp"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#remote_call -- --targets targets-ci.yaml --duration 5 --no-progress
+
+          # Stop the TryCP instance
+          nix develop --command bash -c "stop_trycp"
+
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+
       - name: Build scenario bundles
         run: |
           set -euxo pipefail
