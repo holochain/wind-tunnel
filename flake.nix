@@ -65,6 +65,7 @@
               shellHook = ''
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
+                source ./scripts/trycp.sh
                 source ./scripts/checks.sh
               '';
             };
