@@ -114,9 +114,9 @@ fn bail_error_stops_agent_behaviour() {
         "bail_error_stops_agent_behaviour",
         cfg,
     )
-        .with_default_duration_s(1)
-        .use_named_agent_behaviour("bail", agent_behaviour_1)
-        .use_named_agent_behaviour("continue", agent_behaviour_2);
+    .with_default_duration_s(1)
+    .use_named_agent_behaviour("bail", agent_behaviour_1)
+    .use_named_agent_behaviour("continue", agent_behaviour_2);
 
     let result = run(scenario);
 

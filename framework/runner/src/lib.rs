@@ -9,6 +9,8 @@ mod run;
 mod shutdown;
 mod types;
 
+pub use cli::parse_agent_behaviour;
+
 pub mod prelude {
     pub use crate::cli::{ReporterOpt, WindTunnelScenarioCli};
     pub use crate::context::UserValuesConstraint;

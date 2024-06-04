@@ -1,15 +1,22 @@
-use clap::{Parser, ValueEnum};
+use clap::Parser;
+use serde::Deserialize;
+use std::path::PathBuf;
+use wind_tunnel_runner::parse_agent_behaviour;
+use wind_tunnel_runner::prelude::{ReporterOpt, WindTunnelScenarioCli};
+
+#[derive(Deserialize)]
+struct Targets {
+    nodes: Vec<String>,
+}
 
 #[derive(Parser)]
 #[command(about, long_about = None)]
-pub struct WindTunnelScenarioCli {
-    /// A connection string for the service to test
-    #[clap(short, long)]
-    pub connection_string: String,
-
-    /// The number of agents to run
+pub struct WindTunnelTryCPScenarioCli {
+    /// Path to the targets file to use.
+    ///
+    /// Should be a YAML file with a `nodes` field containing a list of TryCP targets.
     #[clap(long)]
-    pub agents: Option<usize>,
+    pub targets: PathBuf,
 
     /// Assign a behaviour to a number of agents. Specify the behaviour and number of agents to assign
     /// it to in the format `behaviour:count`. For example `--behaviour=login:5`.
@@ -45,29 +52,23 @@ pub struct WindTunnelScenarioCli {
     pub reporter: ReporterOpt,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-pub enum ReporterOpt {
-    /// Disable reporting.
-    Noop,
-    /// Recommended during scenario development for quick feedback with no extra services needed.
-    InMemory,
-    /// Recommended for running tests locally where you need to see the metrics in InfluxDB.
-    InfluxClient,
-    /// Recommended for running distributed tests and requires both InfluxDB and Telegraf.
-    InfluxFile,
-}
+impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
+    type Error = anyhow::Error;
 
-pub fn parse_agent_behaviour(s: &str) -> anyhow::Result<(String, usize)> {
-    let mut parts = s.split(':');
-    let name = parts
-        .next()
-        .map(|s| s.to_string())
-        .ok_or(anyhow::anyhow!("No name specified for behaviour"))?;
+    fn try_into(self) -> Result<WindTunnelScenarioCli, Self::Error> {
+        let targets = std::fs::read_to_string(&self.targets)?;
+        let targets: Targets = serde_yaml::from_str(&targets)?;
 
-    let count = parts
-        .next()
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(1);
-
-    Ok((name, count))
+        Ok(WindTunnelScenarioCli {
+            // Connection string is already forwarded but is supposed to be a single value.
+            // Pack values together and extract by agent id in helpers.
+            connection_string: targets.nodes.join(","),
+            agents: Some(targets.nodes.len()),
+            behaviour: self.behaviour,
+            duration: self.duration,
+            soak: self.soak,
+            no_progress: self.no_progress,
+            reporter: self.reporter,
+        })
+    }
 }

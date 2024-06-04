@@ -1,26 +1,35 @@
-use std::io;
-use std::sync::Arc;
-use std::time::Duration;
-
 use holochain_client::AgentSigner;
 use holochain_conductor_api::ZomeCall;
 use holochain_types::prelude::{ExternIO, FunctionName, ZomeName};
 use holochain_zome_types::cell::CellId;
 use holochain_zome_types::prelude::ZomeCallUnsigned;
 use serde::de::DeserializeOwned;
+use std::io;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use trycp_api::MessageResponse;
 use trycp_client::{Request, SignalRecv, TrycpClient};
-
 use wind_tunnel_instruments::{OperationRecord, Reporter};
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
+pub mod prelude {
+    pub use super::TryCPClientInstrumented as TryCPClient;
+}
+
+#[derive(Clone)]
 pub struct TryCPClientInstrumented {
-    trycp_client: TrycpClient,
-    signal_recv: SignalRecv,
+    trycp_client: Arc<TrycpClient>,
+    signal_recv: Arc<tokio::sync::Mutex<SignalRecv>>,
     signer: Arc<dyn AgentSigner + Send + Sync>,
     reporter: Arc<Reporter>,
     timeout: Duration,
+}
+
+impl std::fmt::Debug for TryCPClientInstrumented {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TryCPClient").finish()
+    }
 }
 
 mod control_impl {
@@ -38,8 +47,8 @@ mod control_impl {
         {
             let (trycp_client, signal_recv) = TrycpClient::connect(request).await?;
             Ok(Self {
-                trycp_client,
-                signal_recv,
+                trycp_client: Arc::new(trycp_client),
+                signal_recv: Arc::new(tokio::sync::Mutex::new(signal_recv)),
                 signer,
                 reporter,
                 timeout: Duration::from_secs(30),
@@ -47,7 +56,8 @@ mod control_impl {
         }
 
         pub async fn recv_signal(&mut self) -> Option<Signal> {
-            self.signal_recv.recv().await
+            let mut recv = self.signal_recv.lock().await;
+            recv.recv().await
         }
 
         /// Given a DNA file, stores the DNA and returns the path at which it is stored.

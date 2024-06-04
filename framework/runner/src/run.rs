@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -122,6 +122,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                 .spawn(move || {
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context = AgentContext::new(
+                        agent_index,
                         agent_id.clone(),
                         runner_context,
                         delegated_shutdown_listener,
