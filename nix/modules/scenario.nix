@@ -43,7 +43,7 @@
               cp "${scenarioBinary}/bin/${name}" $out/bin/
 
               mkdir -p $out/happs
-              cp ${scenarioHapps}/*.happ $out/happs
+              cp ${scenarioHapps}/.happ-build ${scenarioHapps}/*.happ $out/happs
             '';
           };
       };
