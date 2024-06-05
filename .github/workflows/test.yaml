@@ -51,8 +51,7 @@ jobs:
 
       - name: Cargo sweep mark for files
         run: |
-          cargo install cargo-sweep
-          cargo sweep --time 5
+          nix develop -c bash -c "cargo install cargo-sweep && cargo sweep --time 5"
 
       - name: Check scripts
         run: |
