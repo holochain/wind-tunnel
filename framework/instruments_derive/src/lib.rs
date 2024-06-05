@@ -59,8 +59,7 @@ impl Parse for InstrumentArgs {
 pub fn wind_tunnel_instrument(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ItemFn);
 
-    // // Use a syntax tree traversal to transform the function body.
-    // let output = args.fold_item_fn(input);
+    // Use a syntax tree traversal to transform the function body.
     let InstrumentArgs { prefix, pre_hook } = parse_macro_input!(args as InstrumentArgs);
 
     let target_name = prefix.unwrap_or("".to_string()) + &input.sig.ident.to_string();

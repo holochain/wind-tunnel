@@ -1,9 +1,10 @@
 use std::path::PathBuf;
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
+use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 
 use crate::cli::ReporterOpt;
@@ -18,7 +19,7 @@ use crate::{
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     let run_id = nanoid::nanoid!();
     println!("#RunId: [{}]", run_id);
 
@@ -95,6 +96,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let assigned_behaviours = definition.assigned_behaviours_flat();
 
+    let agents_run_to_completion = Arc::new(AtomicUsize::new(0));
+
     let mut handles = Vec::new();
     for (agent_index, assigned_behaviour) in assigned_behaviours.iter().enumerate() {
         // Read access to the runner context for each agent
@@ -103,6 +106,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let setup_agent_fn = definition.setup_agent_fn;
         let agent_behaviour_fn = definition.agent_behaviour.get(assigned_behaviour).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
+
+        let agents_run_to_completion = agents_run_to_completion.clone();
 
         // For us to check if the agent should shut down between behaviour cycles
         let mut cycle_shutdown_receiver = shutdown_handle.new_listener();
@@ -117,6 +122,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                 .spawn(move || {
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context = AgentContext::new(
+                        agent_index,
                         agent_id.clone(),
                         runner_context,
                         delegated_shutdown_listener,
@@ -129,6 +135,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     }
 
                     // TODO implement warmup
+                    let mut behaviour_ran_to_complete = true;
                     if let Some(behaviour) = agent_behaviour_fn {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
@@ -142,6 +149,13 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                     // Do nothing, this is expected if the agent is being shutdown.
                                     // The check at the top of the loop will catch this and break out.
                                 }
+                                Err(e) if e.is::<AgentBailError>() => {
+                                    // A single agent has failed, we don't want to stop the whole
+                                    // scenario so warn and exit the loop.
+                                    log::warn!("Agent {} bailed: {:?}", agent_id, e);
+                                    behaviour_ran_to_complete = false;
+                                    break;
+                                }
                                 Err(e) => {
                                     log::error!("Agent behaviour failed: {:?}", e);
                                 }
@@ -153,6 +167,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         if let Err(e) = teardown_agent_fn(&mut context) {
                             log::error!("Agent teardown failed for agent {}: {:?}", agent_id, e);
                         }
+                    }
+
+                    if behaviour_ran_to_complete {
+                        agents_run_to_completion.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     }
                 })
                 .expect("Failed to spawn thread for test agent"),
@@ -179,5 +197,5 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
 
-    Ok(())
+    Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }

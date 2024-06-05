@@ -1,7 +1,7 @@
 [package]
-name = "holochain_client_instrumented"
+name = "trycp_wind_tunnel_runner"
 version = "0.2.0-alpha.2"
-description = "An instrumented wrapper around the holochain_client"
+description = "Customises the wind_tunnel_runner for Holochain testing"
 license = "MIT"
 authors = ["ThetaSinner"]
 edition = "2021"
@@ -10,18 +10,19 @@ homepage = "https://github.com/holochain/wind-tunnel"
 repository = "https://github.com/holochain/wind-tunnel"
 
 [dependencies]
+clap = { workspace = true }
 anyhow = { workspace = true }
-url = { workspace = true }
+derive_more = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
 
-wind_tunnel_instruments = { workspace = true }
-wind_tunnel_instruments_derive = { workspace = true }
-wind_tunnel_core = { workspace = true }
-
+wind_tunnel_runner = { workspace = true }
+trycp_client_instrumented = { workspace = true }
 holochain_client = { workspace = true }
-holochain_zome_types = { workspace = true }
-holo_hash = { workspace = true }
 holochain_types = { workspace = true }
-holochain_conductor_api = { workspace = true }
+wind_tunnel_core = { workspace = true }
 
 [lints]
 workspace = true

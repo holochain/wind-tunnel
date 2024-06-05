@@ -9,6 +9,8 @@
       inputs.versions.follows = "versions";
     };
 
+    tryorama.url = "github:holochain/tryorama/main";
+
     crane = {
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "holochain/nixpkgs";
@@ -57,11 +59,13 @@
                 pkgs.httpie
                 pkgs.shellcheck
                 pkgs.statix
+                inputs.tryorama.packages.${system}.trycp-server
               ];
 
               shellHook = ''
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
+                source ./scripts/trycp.sh
                 source ./scripts/checks.sh
               '';
             };

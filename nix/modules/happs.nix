@@ -162,6 +162,10 @@
             ];
 
             postInstall = ''
+              # Ensure the derivation is not empty if there are ne hApps requested
+              mkdir -p $out
+              touch $out/.happ-build
+
               ${mkDnaBuildScripts (map mkDnaManifest requiredDnas)}
               ${mkHappBuildScripts (map mkHappManifest requiredHapps)}
             '';

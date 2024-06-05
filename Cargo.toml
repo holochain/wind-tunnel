@@ -8,6 +8,8 @@ members = [
 
     "bindings/client",
     "bindings/runner",
+    "bindings/trycp_client",
+    "bindings/trycp_runner",
 
     "happ_builder",
 
@@ -19,6 +21,7 @@ members = [
     "scenarios/write_read",
     "scenarios/write_query",
     "scenarios/local_signals",
+    "scenarios/remote_call",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -42,6 +45,8 @@ default-members = [
 
     "bindings/client",
     "bindings/runner",
+    "bindings/trycp_client",
+    "bindings/trycp_runner",
 
     "happ_builder",
 ]
@@ -68,15 +73,22 @@ influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = ["req
 influxive-core = "0.0.2-alpha.1"
 nanoid = "0.4.0"
 which = "6.0.1"
+tokio-tungstenite = "0.21"
+rmp-serde = "1"
+rand = "0.8"
+ed25519-dalek = "2.1"
 
 # Deps for Holochain
 holochain_client = { version = "=0.5.0-rc.4" }
-holochain_zome_types = { version = "0.3.1-rc.0" }
-holo_hash = { version = "0.3.1-rc.0" }
-holochain_types = { version = "0.3.1-rc.0" }
-holochain_conductor_api = { version = "0.3.1-rc.0" }
-hdk = { version = "0.3.1-rc.0" }
-hdi = "0.4.1-rc.0"
+trycp_client = { version = "0.16.0-dev.7" }
+trycp_api = { version = "0.16.0-dev.7" }
+holochain_zome_types = { version = "0.3.1-rc.1" }
+holo_hash = { version = "0.3.1-rc.1" }
+holochain_types = { version = "0.3.1-rc.1" }
+holochain_conductor_api = { version = "0.3.1-rc.1" }
+holochain_nonce = { version = "0.3.1-rc.0" }
+hdk = { version = "0.3.1-rc.1" }
+hdi = "0.4.1-rc.1"
 mr_bundle = "0.3.1-rc.0"
 
 # Framework
@@ -88,6 +100,8 @@ wind_tunnel_runner = { path = "./framework/runner", version = "0.2.0-alpha.2" }
 # Bindings
 holochain_client_instrumented = { path = "./bindings/client", version = "0.2.0-alpha.2" }
 holochain_wind_tunnel_runner = { path = "./bindings/runner", version = "0.2.0-alpha.2" }
+trycp_client_instrumented = { path = "./bindings/trycp_client", version = "0.2.0-alpha.2" }
+trycp_wind_tunnel_runner = { path = "./bindings/trycp_runner", version = "0.2.0-alpha.2" }
 
 # hApp Builder
 happ_builder = { path = "./happ_builder", version = "0.1.0" }

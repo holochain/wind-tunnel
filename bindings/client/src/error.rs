@@ -1,5 +1,6 @@
 use holochain_client::ConductorApiError;
 use std::io::ErrorKind;
+use wind_tunnel_core::prelude::AgentBailError;
 
 /// Handle a Conductor API error, returning an `anyhow::Error`.
 ///
@@ -9,10 +10,11 @@ use std::io::ErrorKind;
 pub fn handle_api_err(err: ConductorApiError) -> anyhow::Error {
     match err {
         // Handle websocket closed errors by shutting down the process, as this is a fatal error
+        // for this agent.
         ConductorApiError::WebsocketError(e)
             if e.kind() == ErrorKind::Other && e.to_string() == "ConnectionClosed" =>
         {
-            panic!("Conductor API connection closed unexpectedly: {:?}", e)
+            AgentBailError::default().into()
         }
         _ => anyhow::anyhow!("Conductor API error: {:?}", err),
     }
