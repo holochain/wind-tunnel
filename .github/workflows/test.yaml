@@ -52,23 +52,23 @@ jobs:
       - name: Cargo sweep mark for files
         run: |
           cargo install cargo-sweep
-          cargo sweep --stamp
+          cargo sweep --time 5
 
       - name: Check scripts
         run: |
-          nix develop --command bash -c "shellcheck scripts/*.sh"
+          nix develop -c bash -c "shellcheck scripts/*.sh"
 
       - name: Check Nix formatting
         run: |
-          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_fmt"
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_fmt"
 
       - name: Lint Nix
         run: |
-          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_nix_static"
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_static"
 
       - name: Check Rust formatting
         run: |
-          nix develop .#ci --command bash -c "source ./scripts/checks.sh && check_rust_fmt"
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
       - name: Build and unit tests
         run: |
@@ -82,7 +82,7 @@ jobs:
       - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # TODO using `localhost` is resolving to an IPv6 address, but why is that giving a connection refused?
           # Run the scenario for 5 seconds
@@ -93,7 +93,7 @@ jobs:
       - name: Smoke test - single_write_many_read
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -103,7 +103,7 @@ jobs:
       - name: Smoke test - dht_sync_lag
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
@@ -113,7 +113,7 @@ jobs:
       - name: Smoke test - app_install
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
@@ -123,7 +123,7 @@ jobs:
       - name: Smoke test - first_call
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 5 --no-progress
@@ -133,7 +133,7 @@ jobs:
       - name: Smoke test - write_read
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -143,7 +143,7 @@ jobs:
       - name: Smoke test - write_query
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -153,7 +153,7 @@ jobs:
       - name: Smoke test - local_signals
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -163,16 +163,16 @@ jobs:
       - name: Smoke test - remote_call
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop --command bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Start a TryCP instance
-          nix develop --command bash -c "source ./scripts/trycp.sh && start_trycp"
+          nix develop -c bash -c "source ./scripts/trycp.sh && start_trycp"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#remote_call -- --targets targets-ci.yaml --duration 5 --no-progress
 
           # Stop the TryCP instance
-          nix develop --command bash -c "source ./scripts/trycp.sh && stop_trycp"
+          nix develop -c bash -c "source ./scripts/trycp.sh && stop_trycp"
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
@@ -196,7 +196,3 @@ jobs:
           name: scenario-bundles
           if-no-files-found: error
           path: dist/*
-
-      - name: Apply cargo sweep
-        run: |
-          cargo sweep --file
