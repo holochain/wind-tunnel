@@ -21,7 +21,7 @@ members = [
     "scenarios/write_read",
     "scenarios/write_query",
     "scenarios/local_signals",
-    "scenarios/remote_call",
+    "scenarios/remote_call_rate",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -32,6 +32,8 @@ members = [
     "zomes/callback/integrity",
     "zomes/large/coordinator",
     "zomes/signal/coordinator",
+    "zomes/remote_call/coordinator",
+    "zomes/remote_call/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -110,6 +112,7 @@ happ_builder = { path = "./happ_builder", version = "0.1.0" }
 crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
+remote_call_integrity = { path = "./zomes/remote_call/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

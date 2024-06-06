@@ -159,7 +159,7 @@ jobs:
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
-      - name: Smoke test - remote_call
+      - name: Smoke test - remote_call_rate
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"

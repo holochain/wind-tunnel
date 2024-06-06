@@ -11,5 +11,5 @@ This scenario tests the throughput of `remote_call` operations.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info cargo run --package remote_call -- --targets targets.yaml --duration 300
+RUST_LOG=info cargo run --package remote_call_rate -- --targets targets.yaml --duration 300
 ```
