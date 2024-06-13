@@ -11,6 +11,8 @@ pub mod prelude {
     pub use crate::definition::TryCPScenarioDefinitionBuilder;
     pub use crate::runner_context::TryCPRunnerContext;
 
+    pub use trycp_client_instrumented::prelude::*;
+
     /// Re-export of the `wind_tunnel_runner` prelude.
     ///
     /// This is for convenience so that you can depend on a single crate for the runner in your scenarios.
@@ -22,4 +24,7 @@ pub mod prelude {
     /// the TryCP runner. It doesn't make sense to include both in scenarios, so this is a way to
     /// make functionality available without coping it.
     pub use holochain_wind_tunnel_runner::scenario_happ_path;
+
+    /// Re-export types from the Holochain crates that shouldn't need to be imported into every scenario
+    pub use holochain_conductor_api::{IssueAppAuthenticationTokenPayload, CellInfo};
 }

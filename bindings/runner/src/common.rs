@@ -195,7 +195,7 @@ where
                 .await?;
             log::debug!("Authorized signing credentials");
 
-            let mut signer = ClientAgentSigner::default();
+            let signer = ClientAgentSigner::default();
             signer.add_credentials(cell_id.clone(), credentials);
 
             let issued = client

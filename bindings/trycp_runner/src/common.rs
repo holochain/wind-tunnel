@@ -62,8 +62,8 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
 ///     Ok(())
 /// }
 /// ```
-pub fn reset_trycp_remote(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>,
+pub fn reset_trycp_remote<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
 ) -> HookResult {
     let client = ctx.get().trycp_client();
 
