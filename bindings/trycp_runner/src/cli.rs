@@ -18,6 +18,12 @@ pub struct WindTunnelTryCPScenarioCli {
     #[clap(long)]
     pub targets: PathBuf,
 
+    /// The number of Holochain conductor instances to run on each target node.
+    ///
+    /// Max value: 255
+    #[clap(long, default_value = "1")]
+    pub instances_per_target: u8,
+
     /// Assign a behaviour to a number of agents. Specify the behaviour and number of agents to assign
     /// it to in the format `behaviour:count`. For example `--behaviour=login:5`.
     ///
@@ -63,7 +69,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
             // Connection string is already forwarded but is supposed to be a single value.
             // Pack values together and extract by agent id in helpers.
             connection_string: targets.nodes.join(","),
-            agents: Some(targets.nodes.len()),
+            agents: Some(targets.nodes.len() * self.instances_per_target as usize),
             behaviour: self.behaviour,
             duration: self.duration,
             soak: self.soak,

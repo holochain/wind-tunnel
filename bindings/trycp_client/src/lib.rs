@@ -42,8 +42,8 @@ mod control_impl {
             signer: Arc<dyn AgentSigner + Send + Sync>,
             reporter: Arc<Reporter>,
         ) -> io::Result<Self>
-        where
-            R: IntoClientRequest + Unpin,
+            where
+                R: IntoClientRequest + Unpin,
         {
             let (trycp_client, signal_recv) = TrycpClient::connect(request).await?;
             Ok(Self {
@@ -228,6 +228,7 @@ mod admin_impl {
         AdminRequest, AdminResponse, AppAuthenticationTokenIssued, AppInfo, AppInterfaceInfo,
         AppStatusFilter, IssueAppAuthenticationTokenPayload, StorageInfo,
     };
+    use holochain_serialized_bytes::encode;
     use holochain_types::app::{DeleteCloneCellPayload, InstallAppPayload, InstalledAppId};
     use holochain_types::prelude::{GrantedFunctions, Record};
     use holochain_types::websocket::AllowedOrigins;
@@ -465,6 +466,24 @@ mod admin_impl {
             }
         }
 
+        pub async fn dump_network_metrics(
+            &self,
+            id: String,
+            dna_hash: Option<DnaHash>,
+            timeout: Option<Duration>,
+        ) -> io::Result<String> {
+            let response = self
+                .call_admin(id, AdminRequest::DumpNetworkMetrics {
+                    dna_hash,
+                }, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::NetworkMetricsDumped(metrics) => Ok(metrics),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
         #[wind_tunnel_instrument(prefix = "trycp_admin_")]
         pub async fn dump_network_stats(
             &self,
@@ -542,7 +561,7 @@ mod admin_impl {
                 })),
                 timeout,
             )
-            .await?;
+                .await?;
 
             Ok(SigningCredentials {
                 signing_agent_key,
@@ -578,12 +597,14 @@ mod admin_impl {
             request: AdminRequest,
             timeout: Option<Duration>,
         ) -> io::Result<AdminResponse> {
+            let message = encode(&request).map_err(io::Error::other)?;
+
             let response = self
                 .trycp_client
                 .request(
                     Request::CallAdminInterface {
                         id,
-                        message: rmp_serde::to_vec(&request).map_err(io::Error::other)?,
+                        message,
                     },
                     timeout.unwrap_or(self.timeout),
                 )
@@ -598,6 +619,7 @@ mod app_impl {
     use super::*;
     use holochain_conductor_api::{AppInfo, AppRequest, AppResponse, NetworkInfo};
     use holochain_nonce::fresh_nonce;
+    use holochain_serialized_bytes::encode;
     use holochain_types::app::{
         CreateCloneCellPayload, DisableCloneCellPayload, EnableCloneCellPayload,
         NetworkInfoRequestPayload,
@@ -744,12 +766,14 @@ mod app_impl {
             request: AppRequest,
             timeout: Option<Duration>,
         ) -> io::Result<AppResponse> {
+            let message = encode(&request).map_err(io::Error::other)?;
+
             let response = self
                 .trycp_client
                 .request(
                     Request::CallAppInterface {
                         port,
-                        message: rmp_serde::to_vec(&request).map_err(io::Error::other)?,
+                        message,
                     },
                     timeout.unwrap_or(self.timeout),
                 )

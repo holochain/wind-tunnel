@@ -21,11 +21,15 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
 ) -> HookResult {
     let agent_index = ctx.agent_index();
 
+    let nodes =ctx
+        .runner_context()
+        .get_connection_string()
+        .split(',');
     let target = ctx
         .runner_context()
         .get_connection_string()
         .split(',')
-        .nth(agent_index);
+        .nth(agent_index % nodes.count());
 
     // This should never happen because the behaviour assignment should have checked that there were enough agents.
     let target = target

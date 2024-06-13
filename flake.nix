@@ -9,7 +9,7 @@
       inputs.versions.follows = "versions";
     };
 
-    tryorama.url = "github:holochain/tryorama/main";
+    tryorama.url = "github:holochain/tryorama/bump-0.3-deps";
 
     crane = {
       url = "github:ipetkov/crane";

@@ -34,7 +34,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::new(run_id, definition.name.clone());
+        let mut report_config = ReportConfig::new(run_id.clone(), definition.name.clone());
 
         match definition.reporter {
             ReporterOpt::InMemory => {
@@ -62,6 +62,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         executor,
         reporter,
         shutdown_handle.clone(),
+        run_id,
         definition.connection_string.clone(),
     );
 

@@ -15,4 +15,11 @@ pub mod prelude {
     ///
     /// This is for convenience so that you can depend on a single crate for the runner in your scenarios.
     pub use wind_tunnel_runner::prelude::*;
+
+    /// Re-export some of the `holochain_wind_tunnel_runner`.
+    ///
+    /// This is really a runner for a separate purpose but some of its functionality is useful for
+    /// the TryCP runner. It doesn't make sense to include both in scenarios, so this is a way to
+    /// make functionality available without coping it.
+    pub use holochain_wind_tunnel_runner::scenario_happ_path;
 }

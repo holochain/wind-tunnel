@@ -15,6 +15,7 @@ pub struct RunnerContext<RV: UserValuesConstraint> {
     executor: Arc<Executor>,
     reporter: Arc<Reporter>,
     shutdown_handle: ShutdownHandle,
+    run_id: String,
     connection_string: String,
     value: RV,
 }
@@ -24,12 +25,14 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
         executor: Arc<Executor>,
         reporter: Arc<Reporter>,
         shutdown_handle: ShutdownHandle,
+        run_id: String,
         connection_string: String,
     ) -> Self {
         Self {
             executor,
             reporter,
             shutdown_handle,
+            run_id,
             connection_string,
             value: Default::default(),
         }
@@ -56,6 +59,11 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
     /// In general, please consider using [Executor::execute_in_place] which automatically handles shutdown.
     pub fn new_shutdown_listener(&self) -> DelegatedShutdownListener {
         self.shutdown_handle.new_listener()
+    }
+
+    /// The unique identifier for the scenario run.
+    pub fn get_run_id(&self) -> &str {
+        &self.run_id
     }
 
     /// Connection string for the target service of the scenario, supplied by the user via the CLI.
