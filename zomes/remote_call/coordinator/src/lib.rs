@@ -8,7 +8,7 @@ fn init() -> ExternResult<InitCallbackResult> {
         access: CapAccess::Unrestricted,
         functions: GrantedFunctions::Listed(BTreeSet::from([(
             zome_info()?.name,
-            "create_sample_entry".into(),
+            "echo_timestamp".into(),
         )])),
     })?;
 

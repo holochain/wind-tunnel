@@ -226,7 +226,11 @@ mod admin_impl {
     use holochain_client::{
         AuthorizeSigningCredentialsPayload, EnableAppResponse, SigningCredentials,
     };
-    use holochain_conductor_api::{AdminRequest, AdminResponse, AppAuthenticationToken, AppAuthenticationTokenIssued, AppInfo, AppInterfaceInfo, AppStatusFilter, FullStateDump, IssueAppAuthenticationTokenPayload, StorageInfo};
+    use holochain_conductor_api::{
+        AdminRequest, AdminResponse, AppAuthenticationToken, AppAuthenticationTokenIssued, AppInfo,
+        AppInterfaceInfo, AppStatusFilter, FullStateDump, IssueAppAuthenticationTokenPayload,
+        StorageInfo,
+    };
     use holochain_serialized_bytes::encode;
     use holochain_types::app::{DeleteCloneCellPayload, InstallAppPayload, InstalledAppId};
     use holochain_types::prelude::{GrantedFunctions, Record};
@@ -304,9 +308,7 @@ mod admin_impl {
             id: String,
             timeout: Option<Duration>,
         ) -> io::Result<Vec<DnaHash>> {
-            let response = self
-                .call_admin(id, AdminRequest::ListDnas, timeout)
-                .await?;
+            let response = self.call_admin(id, AdminRequest::ListDnas, timeout).await?;
 
             match response {
                 AdminResponse::DnasListed(dnas) => Ok(dnas),
@@ -448,7 +450,13 @@ mod admin_impl {
             timeout: Option<Duration>,
         ) -> io::Result<String> {
             let response = self
-                .call_admin(id, AdminRequest::DumpState { cell_id: Box::new(cell_id) }, timeout)
+                .call_admin(
+                    id,
+                    AdminRequest::DumpState {
+                        cell_id: Box::new(cell_id),
+                    },
+                    timeout,
+                )
                 .await?;
 
             match response {
@@ -482,7 +490,14 @@ mod admin_impl {
             timeout: Option<Duration>,
         ) -> io::Result<FullStateDump> {
             let response = self
-                .call_admin(id, AdminRequest::DumpFullState { cell_id: Box::new(cell_id), dht_ops_cursor }, timeout)
+                .call_admin(
+                    id,
+                    AdminRequest::DumpFullState {
+                        cell_id: Box::new(cell_id),
+                        dht_ops_cursor,
+                    },
+                    timeout,
+                )
                 .await?;
 
             match response {
@@ -719,7 +734,7 @@ mod admin_impl {
                 })),
                 timeout,
             )
-                .await?;
+            .await?;
 
             Ok(SigningCredentials {
                 signing_agent_key,
@@ -744,7 +759,14 @@ mod admin_impl {
                 )
                 .await?;
 
-            read_response(response)
+            match read_response(response) {
+                Ok(AdminResponse::Error(e)) => {
+                    // Explicitly map the error response to an error to prevent crashes when
+                    // checking the expected response types.
+                    Err(io::Error::other(format!("{e:?}")))
+                }
+                other => other,
+            }
         }
     }
 }
@@ -910,7 +932,14 @@ mod app_impl {
                 )
                 .await?;
 
-            read_response(response)
+            match read_response(response) {
+                Ok(AppResponse::Error(r)) => {
+                    // Explicitly map the error response to an error to prevent crashes when
+                    // checking the expected response types.
+                    Err(io::Error::other(format!("{r:?}")))
+                }
+                other => other,
+            }
         }
     }
 }

@@ -26,5 +26,5 @@ pub mod prelude {
     pub use holochain_wind_tunnel_runner::scenario_happ_path;
 
     /// Re-export types from the Holochain crates that shouldn't need to be imported into every scenario
-    pub use holochain_conductor_api::{IssueAppAuthenticationTokenPayload, CellInfo};
+    pub use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
 }

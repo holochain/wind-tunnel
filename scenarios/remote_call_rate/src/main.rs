@@ -183,8 +183,6 @@ fn agent_behaviour(
                         .decode()
                         .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
-                    println!("Got response from remote call: {:?}", response);
-
                     // Add no new agents, that should only happen when we exhaust the list.
                     Ok(Vec::with_capacity(0))
                 }
@@ -202,6 +200,15 @@ fn agent_behaviour(
 fn agent_teardown(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    let client = ctx.get().trycp_client();
+    let agent_id = ctx.agent_id().to_string();
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            client.shutdown(agent_id, None, None).await?;
+            Ok(())
+        })?;
+
     disconnect_trycp_client(ctx)?;
     Ok(())
 }
