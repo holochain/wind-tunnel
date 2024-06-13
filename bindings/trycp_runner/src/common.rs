@@ -21,10 +21,7 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
 ) -> HookResult {
     let agent_index = ctx.agent_index();
 
-    let nodes =ctx
-        .runner_context()
-        .get_connection_string()
-        .split(',');
+    let nodes = ctx.runner_context().get_connection_string().split(',');
     let target = ctx
         .runner_context()
         .get_connection_string()

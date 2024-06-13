@@ -19,32 +19,49 @@ fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) ->
                 .configure_player("test".to_string(), CONDUCTOR_CONFIG.to_string(), None)
                 .await?;
 
-            client.startup("test".to_string(), Some("info".to_string()), None).await?;
+            client
+                .startup("test".to_string(), Some("info".to_string()), None)
+                .await?;
 
             println!("Started agent");
 
-            let agent_key = client.generate_agent_pub_key("test".to_string(), None).await?;
+            let agent_key = client
+                .generate_agent_pub_key("test".to_string(), None)
+                .await?;
 
             let path = scenario_happ_path!("remote_call");
             let content = tokio::fs::read(path).await?;
 
-            let app_info = client.install_app("test".to_string(), InstallAppPayload {
-                source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
-                agent_key,
-                installed_app_id: Some("remote_call".into()),
-                membrane_proofs: Default::default(),
-                network_seed: Some(run_id),
-            }, None).await?;
+            let app_info = client
+                .install_app(
+                    "test".to_string(),
+                    InstallAppPayload {
+                        source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
+                        agent_key,
+                        installed_app_id: Some("remote_call".into()),
+                        membrane_proofs: Default::default(),
+                        network_seed: Some(run_id),
+                    },
+                    None,
+                )
+                .await?;
 
-            let enable_result = client.enable_app("test".to_string(), app_info.installed_app_id.clone(), None).await?;
+            let enable_result = client
+                .enable_app("test".to_string(), app_info.installed_app_id.clone(), None)
+                .await?;
             if !enable_result.errors.is_empty() {
-                return Err(anyhow::anyhow!("Failed to enable app: {:?}", enable_result.errors));
+                return Err(anyhow::anyhow!(
+                    "Failed to enable app: {:?}",
+                    enable_result.errors
+                ));
             }
 
             println!("Installed app: {:?}", app_info);
 
             for _ in 0..10 {
-                let dump = client.dump_network_metrics("test".to_string(), None, None).await?;
+                let dump = client
+                    .dump_network_metrics("test".to_string(), None, None)
+                    .await?;
                 println!("agent: {}, dump: {:?}", agent_id, dump);
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
@@ -83,10 +100,10 @@ fn main() -> WindTunnelResult<()> {
         TryCPScenarioDefinitionBuilder::<TryCPRunnerContext, TryCPAgentContext>::new_with_init(
             env!("CARGO_PKG_NAME"),
         )?
-            .into_std()
-            .use_agent_setup(agent_setup)
-            .use_agent_behaviour(agent_behaviour)
-            .use_agent_teardown(agent_teardown);
+        .into_std()
+        .use_agent_setup(agent_setup)
+        .use_agent_behaviour(agent_behaviour)
+        .use_agent_teardown(agent_teardown);
 
     run(builder)?;
 

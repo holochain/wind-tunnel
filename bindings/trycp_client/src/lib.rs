@@ -42,8 +42,8 @@ mod control_impl {
             signer: Arc<dyn AgentSigner + Send + Sync>,
             reporter: Arc<Reporter>,
         ) -> io::Result<Self>
-            where
-                R: IntoClientRequest + Unpin,
+        where
+            R: IntoClientRequest + Unpin,
         {
             let (trycp_client, signal_recv) = TrycpClient::connect(request).await?;
             Ok(Self {
@@ -473,9 +473,7 @@ mod admin_impl {
             timeout: Option<Duration>,
         ) -> io::Result<String> {
             let response = self
-                .call_admin(id, AdminRequest::DumpNetworkMetrics {
-                    dna_hash,
-                }, timeout)
+                .call_admin(id, AdminRequest::DumpNetworkMetrics { dna_hash }, timeout)
                 .await?;
 
             match response {
@@ -561,7 +559,7 @@ mod admin_impl {
                 })),
                 timeout,
             )
-                .await?;
+            .await?;
 
             Ok(SigningCredentials {
                 signing_agent_key,
@@ -602,10 +600,7 @@ mod admin_impl {
             let response = self
                 .trycp_client
                 .request(
-                    Request::CallAdminInterface {
-                        id,
-                        message,
-                    },
+                    Request::CallAdminInterface { id, message },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;
@@ -771,10 +766,7 @@ mod app_impl {
             let response = self
                 .trycp_client
                 .request(
-                    Request::CallAppInterface {
-                        port,
-                        message,
-                    },
+                    Request::CallAppInterface { port, message },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;

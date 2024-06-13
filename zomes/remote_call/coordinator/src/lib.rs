@@ -1,5 +1,5 @@
-use remote_call_integrity::*;
 use hdk::prelude::*;
+use remote_call_integrity::*;
 
 #[hdk_extern]
 fn init() -> ExternResult<InitCallbackResult> {
@@ -22,18 +22,13 @@ fn call_echo_timestamp(to: AgentPubKey) -> ExternResult<TimedResponse> {
         zome_info()?.name,
         "echo_timestamp".into(),
         None,
-        &TimedRequest {
-            value: sys_time()?,
-        },
+        &TimedRequest { value: sys_time()? },
     )?;
 
     match response {
         ZomeCallResponse::Ok(extern_io) => Ok(extern_io.decode().map_err(|e| wasm_error!(e))?),
-        e => {
-            Err(wasm_error!(WasmErrorInner::Guest(format!("{:?}", e))))
-        }
+        e => Err(wasm_error!(WasmErrorInner::Guest(format!("{:?}", e)))),
     }
-
 }
 
 #[hdk_extern]
