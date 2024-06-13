@@ -161,14 +161,11 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
           # Start a TryCP instance
           nix develop -c bash -c "source ./scripts/trycp.sh && start_trycp"
 
           # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#remote_call -- --targets targets-ci.yaml --duration 5 --no-progress
+          RUST_LOG=info nix run .#remote_call -- --targets targets-ci.yaml --instances-per-target 2 --duration 5 --no-progress
 
           # Stop the TryCP instance
           nix develop -c bash -c "source ./scripts/trycp.sh && stop_trycp"
