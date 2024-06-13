@@ -39,8 +39,6 @@ fn agent_setup(
                     .startup(agent_id.clone(), Some("info".to_string()), None)
                     .await?;
 
-                println!("Started agent");
-
                 let agent_key = client
                     .generate_agent_pub_key(agent_id.clone(), None)
                     .await?;
@@ -72,13 +70,11 @@ fn agent_setup(
                     ));
                 }
 
-                println!("Installed app: {:?}", app_info);
-
                 let start_discovery = Instant::now();
                 for _ in 0..60 {
                     let agent_list = client.agent_info(agent_id.clone(), None, None).await?;
 
-                    println!("Agent list: {:?}", agent_list);
+                    // TODO Configure how many peers are required before starting
                     if agent_list.len() > 1 {
                         break;
                     }
@@ -149,6 +145,7 @@ fn agent_behaviour(
     let app_port = ctx.get().scenario_values.app_port;
     let cell_id = ctx.get().scenario_values.cell_id.clone().unwrap();
     let next_remote_call_peer = ctx.get_mut().scenario_values.remote_call_peers.pop();
+    let reporter = ctx.runner_context().reporter();
 
     let new_peers = ctx
         .runner_context()
@@ -168,6 +165,7 @@ fn agent_behaviour(
                 }
                 Some(agent_pub_key) => {
                     // Send a remote call to this agent
+                    let start = Instant::now();
                     let response = client
                         .call_zome(
                             app_port,
@@ -178,10 +176,23 @@ fn agent_behaviour(
                             None,
                         )
                         .await?;
+                    let round_trip_time_s = start.elapsed();
 
                     let response: TimedResponse = response
                         .decode()
                         .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
+
+                    let dispatch_time_s = response.request_value.as_micros() as f64 / 1_000_000.0;
+                    let receive_time_s = response.value.as_micros() as f64 / 1_000_000.0;
+
+                    reporter.add_custom(
+                        ReportMetric::new("remote_call_dispatch")
+                            .with_field("value", receive_time_s - dispatch_time_s),
+                    );
+                    reporter.add_custom(
+                        ReportMetric::new("remote_call_round_trip")
+                            .with_field("value", round_trip_time_s.as_secs_f64()),
+                    );
 
                     // Add no new agents, that should only happen when we exhaust the list.
                     Ok(Vec::with_capacity(0))
