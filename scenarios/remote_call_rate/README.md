@@ -11,5 +11,7 @@ This scenario tests the throughput of `remote_call` operations.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info cargo run --package remote_call_rate -- --targets targets.yaml --duration 300
+RUST_LOG=info cargo run --package remote_call_rate -- --targets targets.yaml --instances-per-target 2 --duration 300
 ```
+
+This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` and run with `start_trycp`.
