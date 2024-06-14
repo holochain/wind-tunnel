@@ -22,7 +22,7 @@ fn call_echo_timestamp(to: AgentPubKey) -> ExternResult<TimedResponse> {
         zome_info()?.name,
         "echo_timestamp".into(),
         None,
-        &TimedRequest { value: sys_time()? },
+        TimedRequest { value: sys_time()? },
     )?;
 
     match response {

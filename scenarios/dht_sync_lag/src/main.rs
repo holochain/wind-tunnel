@@ -3,7 +3,6 @@ use holochain_types::prelude::{ActionHash, Record, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashSet;
-use std::path::Path;
 use std::time::SystemTime;
 use timed_integrity::TimedEntry;
 
