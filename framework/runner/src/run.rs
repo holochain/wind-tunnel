@@ -131,6 +131,17 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         if let Err(e) = setup_agent_fn(&mut context) {
                             log::error!("Agent setup failed for agent {}: {:?}", agent_id, e);
+
+                            // Attempt to run the shutdown hook if the agent setup was cancelled.
+                            if e.is::<ShutdownSignalError>() {
+                                log::info!("Agent setup was cancelled, running teardown.");
+                                if let Some(teardown_agent_fn) = teardown_agent_fn {
+                                    if let Err(e) = teardown_agent_fn(&mut context) {
+                                        log::error!("Agent teardown failed for agent {}: {:?}", agent_id, e);
+                                    }
+                                }
+                            }
+
                             return;
                         }
                     }
