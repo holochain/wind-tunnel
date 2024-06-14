@@ -3,10 +3,13 @@ use holochain_types::app::{AppBundleSource, InstallAppPayload};
 use holochain_types::prelude::{AgentPubKey, AppBundle, CellId, ExternIO};
 use holochain_types::websocket::AllowedOrigins;
 use remote_call_integrity::TimedResponse;
+use std::sync::OnceLock;
 use std::time::Instant;
 use trycp_wind_tunnel_runner::prelude::*;
 
 const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
+
+const MIN_PEERS: OnceLock<usize> = OnceLock::new();
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
@@ -70,12 +73,17 @@ fn agent_setup(
                     ));
                 }
 
+                let min_peers = *MIN_PEERS.get_or_init(|| {
+                    std::env::var("MIN_PEERS")
+                        .ok()
+                        .map(|s| s.parse().expect("MIN_PEERS must be a number"))
+                        .unwrap_or(2)
+                });
                 let start_discovery = Instant::now();
-                for _ in 0..60 {
+                for _ in 0..120 {
                     let agent_list = client.agent_info(agent_id.clone(), None, None).await?;
 
-                    // TODO Configure how many peers are required before starting
-                    if agent_list.len() > 1 {
+                    if agent_list.len() >= min_peers {
                         break;
                     }
 
