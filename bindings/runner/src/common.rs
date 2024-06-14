@@ -93,7 +93,8 @@ pub fn configure_app_ws_url(
 
 /// Opinionated app installation which will give you what you need in most cases.
 ///
-/// The [RoleName] you provide is used to find the cell id of the installed app.
+/// The [RoleName] you provide is used to find the cell id within the installed app that you want
+/// to call during your scenario.
 ///
 /// Requires:
 /// - The [HolochainRunnerContext] to have a valid `app_ws_url`. Consider calling [configure_app_ws_url] in your setup before using this function.

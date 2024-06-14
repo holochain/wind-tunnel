@@ -1,8 +1,18 @@
 use crate::context::TryCPAgentContext;
 use crate::runner_context::TryCPRunnerContext;
-use std::sync::Arc;
+use anyhow::Context;
+use holochain_client::AuthorizeSigningCredentialsPayload;
+use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
+use holochain_types::app::{AppBundle, AppBundleSource, InstallAppPayload};
+use holochain_types::prelude::RoleName;
+use holochain_types::websocket::AllowedOrigins;
+use std::path::PathBuf;
+use std::sync::{Arc, OnceLock};
+use std::time::{Duration, Instant};
 use trycp_client_instrumented::prelude::TryCPClient;
-use wind_tunnel_runner::prelude::{AgentContext, HookResult, UserValuesConstraint};
+use wind_tunnel_runner::prelude::{
+    AgentContext, HookResult, UserValuesConstraint, WindTunnelResult,
+};
 
 /// Connects to a TryCP server using the current agent index and the list of targets.
 ///
@@ -42,6 +52,216 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
 
     ctx.get_mut().trycp_client = Some(client);
     ctx.get_mut().signer = Some(signer);
+
+    Ok(())
+}
+
+/// Opinionated app installation which will give you what you need in most cases.
+///
+/// The [RoleName] you provide is used to find the cell id within the installed app that you want
+/// to call during your scenario.
+///
+/// Requires:
+/// - The [TryCPAgentContext] must already have a connected TryCP client. You can use
+///   `connect_trycp_client` to do this.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use trycp_wind_tunnel_runner::prelude::{TryCPAgentContext, TryCPRunnerContext, AgentContext, HookResult, install_app};
+///
+/// fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     Ok(())
+/// }
+/// ```
+///
+/// After calling this function you will be able to use the `app_port` and `cell_id` in your agent hooks:
+/// ```rust
+///
+/// use trycp_wind_tunnel_runner::prelude::{TryCPAgentContext, TryCPRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     let app_agent_client = ctx.get().app_port();
+///     let cell_id = ctx.get().cell_id();
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Uses the existing connection to a TryCP server.
+/// - Generates an agent public key.
+/// - Installs the app using the provided `app_path` and the agent public key.
+/// - Enables the app.
+/// - Attaches an app interface.
+/// - Authorizes signing credentials.
+/// - Registers the signing credentials so that they will be available for zome calls.
+/// - Sets the `app_port` and `cell_id` values in [TryCPAgentContext].
+pub fn install_app<SV>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
+    app_path: PathBuf,
+    role_name: &RoleName,
+) -> WindTunnelResult<()>
+where
+    SV: UserValuesConstraint,
+{
+    let run_id = ctx.runner_context().get_run_id().to_string();
+    let client = ctx.get().trycp_client();
+    let agent_id = ctx.agent_id().to_string();
+
+    let (app_port, cell_id, credentials) = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let agent_key = client
+                .generate_agent_pub_key(agent_id.clone(), None)
+                .await?;
+
+            let content = std::fs::read(app_path)?;
+
+            let installed_app_id = format!("{}-app", agent_id).to_string();
+            let app_info = client
+                .install_app(
+                    agent_id.clone(),
+                    InstallAppPayload {
+                        source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
+                        agent_key,
+                        installed_app_id: Some(installed_app_id.clone()),
+                        membrane_proofs: Default::default(),
+                        network_seed: Some(run_id),
+                    },
+                    None,
+                )
+                .await?;
+
+            let enable_result = client
+                .enable_app(agent_id.clone(), app_info.installed_app_id.clone(), None)
+                .await?;
+            if !enable_result.errors.is_empty() {
+                return Err(anyhow::anyhow!(
+                    "Failed to enable app: {:?}",
+                    enable_result.errors
+                ));
+            }
+
+            let app_port = client
+                .attach_app_interface(agent_id.clone(), None, AllowedOrigins::Any, None, None)
+                .await?;
+
+            let issued = client
+                .issue_app_auth_token(
+                    agent_id.clone(),
+                    IssueAppAuthenticationTokenPayload {
+                        installed_app_id,
+                        expiry_seconds: 30,
+                        single_use: true,
+                    },
+                    None,
+                )
+                .await?;
+
+            client
+                .connect_app_interface(issued.token, app_port, None)
+                .await?;
+
+            let cell_id = match app_info
+                .cell_info
+                .get(role_name)
+                .ok_or(anyhow::anyhow!("Role not found"))?
+                .first()
+                .ok_or(anyhow::anyhow!("Cell not found"))?
+            {
+                CellInfo::Provisioned(pc) => pc.cell_id.clone(),
+                _ => anyhow::bail!("Cell not provisioned"),
+            };
+            log::debug!("Got cell id: {:}", cell_id);
+
+            let credentials = client
+                .authorize_signing_credentials(
+                    agent_id.clone(),
+                    AuthorizeSigningCredentialsPayload {
+                        cell_id: cell_id.clone(),
+                        functions: None, // Equivalent to all functions
+                    },
+                    None,
+                )
+                .await?;
+
+            Ok((app_port, cell_id, credentials))
+        })
+        .context("Failed to install app")?;
+
+    ctx.get_mut().app_port = Some(app_port);
+    ctx.get_mut().cell_id = Some(cell_id.clone());
+    ctx.get_mut().signer().add_credentials(cell_id, credentials);
+
+    Ok(())
+}
+
+/// Tries to wait for a minimum number of peers to be discovered.
+///
+/// If you call this function in you agent setup then the scenario will become configurable using
+/// the `MIN_PEERS` environment variable. The default value is 2.
+///
+/// Note that the number of peers seen by each node includes itself. So having two nodes means that
+/// each node will immediately see one peer after app installation.
+///
+/// Example:
+/// ```rust
+/// use std::path::Path;
+/// use std::time::Duration;
+/// use trycp_wind_tunnel_runner::prelude::{TryCPAgentContext, TryCPRunnerContext, AgentContext, HookResult, install_app, try_wait_for_min_peers};
+///
+/// fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     try_wait_for_min_peers(ctx, Duration::from_secs(60))?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Note that if no apps have been installed, you are waiting for too many peers, or anything else
+/// prevents enough peers being discovered then the function will wait up to the `wait_for` duration
+/// before continuing. It will not fail if too few peers were discovered.
+///
+/// Note that the smallest resolution is 1s. This is because the function will sleep between
+/// querying peers from the conductor. You could probably not use this function for performance
+/// testing peer discovery!
+pub fn try_wait_for_min_peers<SV>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
+    wait_for: Duration,
+) -> HookResult {
+    static MIN_PEERS: OnceLock<usize> = OnceLock::new();
+
+    let client = ctx.get().trycp_client();
+    let agent_id = ctx.agent_id().to_string();
+
+    let min_peers = *MIN_PEERS.get_or_init(|| {
+        std::env::var("MIN_PEERS")
+            .ok()
+            .map(|s| s.parse().expect("MIN_PEERS must be a number"))
+            .unwrap_or(2)
+    });
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let start_discovery = Instant::now();
+            for _ in 0..wait_for.as_secs() {
+                let agent_list = client.agent_info(agent_id.clone(), None, None).await?;
+
+                if agent_list.len() >= min_peers {
+                    break;
+                }
+
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+
+            println!(
+                "Discovery for agent {} took: {}s",
+                agent_id,
+                start_discovery.elapsed().as_secs()
+            );
+        })?;
 
     Ok(())
 }
