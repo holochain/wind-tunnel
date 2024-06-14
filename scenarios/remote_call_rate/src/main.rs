@@ -1,15 +1,10 @@
 use anyhow::Context;
-use holochain_types::app::{AppBundleSource, InstallAppPayload};
-use holochain_types::prelude::{AgentPubKey, AppBundle, ExternIO};
-use holochain_types::websocket::AllowedOrigins;
+use holochain_types::prelude::{AgentPubKey, ExternIO};
 use remote_call_integrity::TimedResponse;
-use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
 
 const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
-
-const MIN_PEERS: OnceLock<usize> = OnceLock::new();
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
@@ -24,7 +19,6 @@ fn agent_setup(
     connect_trycp_client(ctx)?;
     reset_trycp_remote(ctx)?;
 
-    let run_id = ctx.runner_context().get_run_id().to_string();
     let client = ctx.get().trycp_client();
     let agent_id = ctx.agent_id().to_string();
 
@@ -36,8 +30,10 @@ fn agent_setup(
                 .await?;
 
             client
-                .startup(agent_id.clone(), Some("info".to_string()), None)
+                .startup(agent_id.clone(), Some("warn".to_string()), None)
                 .await?;
+
+            Ok(())
         })?;
 
     install_app(
