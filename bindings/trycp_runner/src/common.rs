@@ -230,7 +230,10 @@ where
 pub fn try_wait_for_min_peers<SV>(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
     wait_for: Duration,
-) -> HookResult {
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
     static MIN_PEERS: OnceLock<usize> = OnceLock::new();
 
     let client = ctx.get().trycp_client();
@@ -261,6 +264,40 @@ pub fn try_wait_for_min_peers<SV>(
                 agent_id,
                 start_discovery.elapsed().as_secs()
             );
+
+            Ok(())
+        })?;
+
+    Ok(())
+}
+
+/// Shuts down the Holochain conductor managed by the TryCP server for the current agent.
+///
+/// You *MUST* call this function in your agent teardown. Otherwise, dropping the agent context will
+/// panic when the TryCP client is dropped.
+///
+/// ```rust
+/// use trycp_wind_tunnel_runner::prelude::{TryCPRunnerContext, AgentContext, TryCPAgentContext, HookResult, shutdown_remote};
+///
+/// fn agent_teardown(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     shutdown_remote(ctx)?;
+///     Ok(())
+/// }
+/// ```
+pub fn shutdown_remote<SV>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    let client = ctx.get().trycp_client();
+    let agent_id = ctx.agent_id().to_string();
+
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            client.shutdown(agent_id.clone(), None, None).await?;
+            Ok(())
         })?;
 
     Ok(())

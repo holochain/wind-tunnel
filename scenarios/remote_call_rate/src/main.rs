@@ -1,10 +1,10 @@
 use anyhow::Context;
 use holochain_types::app::{AppBundleSource, InstallAppPayload};
-use holochain_types::prelude::{AgentPubKey, AppBundle, CellId, ExternIO};
+use holochain_types::prelude::{AgentPubKey, AppBundle, ExternIO};
 use holochain_types::websocket::AllowedOrigins;
 use remote_call_integrity::TimedResponse;
 use std::sync::OnceLock;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
 
 const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
@@ -13,8 +13,6 @@ const MIN_PEERS: OnceLock<usize> = OnceLock::new();
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
-    app_port: u16,
-    cell_id: Option<CellId>,
     remote_call_peers: Vec<AgentPubKey>,
 }
 
@@ -30,116 +28,24 @@ fn agent_setup(
     let client = ctx.get().trycp_client();
     let agent_id = ctx.agent_id().to_string();
 
-    let (app_port, cell_id, credentials) =
-        ctx.runner_context()
-            .executor()
-            .execute_in_place(async move {
-                client
-                    .configure_player(agent_id.clone(), CONDUCTOR_CONFIG.to_string(), None)
-                    .await?;
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            client
+                .configure_player(agent_id.clone(), CONDUCTOR_CONFIG.to_string(), None)
+                .await?;
 
-                client
-                    .startup(agent_id.clone(), Some("info".to_string()), None)
-                    .await?;
+            client
+                .startup(agent_id.clone(), Some("info".to_string()), None)
+                .await?;
+        })?;
 
-                let agent_key = client
-                    .generate_agent_pub_key(agent_id.clone(), None)
-                    .await?;
-
-                let path = scenario_happ_path!("remote_call");
-                let content = tokio::fs::read(path).await?;
-
-                let app_info = client
-                    .install_app(
-                        agent_id.clone(),
-                        InstallAppPayload {
-                            source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
-                            agent_key,
-                            installed_app_id: Some("remote_call".into()),
-                            membrane_proofs: Default::default(),
-                            network_seed: Some(run_id),
-                        },
-                        None,
-                    )
-                    .await?;
-
-                let enable_result = client
-                    .enable_app(agent_id.clone(), app_info.installed_app_id.clone(), None)
-                    .await?;
-                if !enable_result.errors.is_empty() {
-                    return Err(anyhow::anyhow!(
-                        "Failed to enable app: {:?}",
-                        enable_result.errors
-                    ));
-                }
-
-                let min_peers = *MIN_PEERS.get_or_init(|| {
-                    std::env::var("MIN_PEERS")
-                        .ok()
-                        .map(|s| s.parse().expect("MIN_PEERS must be a number"))
-                        .unwrap_or(2)
-                });
-                let start_discovery = Instant::now();
-                for _ in 0..120 {
-                    let agent_list = client.agent_info(agent_id.clone(), None, None).await?;
-
-                    if agent_list.len() >= min_peers {
-                        break;
-                    }
-
-                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                }
-
-                println!(
-                    "Discovery for agent {} took: {}s",
-                    agent_id,
-                    start_discovery.elapsed().as_secs()
-                );
-
-                let app_port = client
-                    .attach_app_interface(agent_id.clone(), None, AllowedOrigins::Any, None, None)
-                    .await?;
-
-                let issued = client
-                    .issue_app_auth_token(
-                        agent_id.clone(),
-                        IssueAppAuthenticationTokenPayload {
-                            installed_app_id: "remote_call".to_string(),
-                            expiry_seconds: 30,
-                            single_use: true,
-                        },
-                        None,
-                    )
-                    .await?;
-
-                client
-                    .connect_app_interface(issued.token, app_port, None)
-                    .await?;
-
-                let cell_id = match app_info.cell_info.values().next().unwrap().first().unwrap() {
-                    CellInfo::Provisioned(pc) => pc.cell_id.clone(),
-                    _ => panic!("Could not find cell id in app info: {app_info:?}"),
-                };
-
-                let credentials = client
-                    .authorize_signing_credentials(
-                        agent_id.clone(),
-                        AuthorizeSigningCredentialsPayload {
-                            cell_id: cell_id.clone(),
-                            functions: None, // Equivalent to all functions
-                        },
-                        None,
-                    )
-                    .await?;
-
-                Ok((app_port, cell_id, credentials))
-            })?;
-
-    ctx.get_mut().scenario_values.app_port = app_port;
-    ctx.get_mut()
-        .signer()
-        .add_credentials(cell_id.clone(), credentials);
-    ctx.get_mut().scenario_values.cell_id = Some(cell_id);
+    install_app(
+        ctx,
+        scenario_happ_path!("remote_call"),
+        &"remote_call".to_string(),
+    )?;
+    try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
 
     Ok(())
 }
@@ -150,8 +56,8 @@ fn agent_behaviour(
     let client = ctx.get().trycp_client();
 
     let agent_id = ctx.agent_id().to_string();
-    let app_port = ctx.get().scenario_values.app_port;
-    let cell_id = ctx.get().scenario_values.cell_id.clone().unwrap();
+    let app_port = ctx.get().app_port();
+    let cell_id = ctx.get().cell_id();
     let next_remote_call_peer = ctx.get_mut().scenario_values.remote_call_peers.pop();
     let reporter = ctx.runner_context().reporter();
 
@@ -219,15 +125,7 @@ fn agent_behaviour(
 fn agent_teardown(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let client = ctx.get().trycp_client();
-    let agent_id = ctx.agent_id().to_string();
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            client.shutdown(agent_id, None, None).await?;
-            Ok(())
-        })?;
-
+    shutdown_remote(ctx)?;
     disconnect_trycp_client(ctx)?;
     Ok(())
 }
