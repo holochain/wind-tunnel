@@ -8,11 +8,18 @@
         then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
         else pkgs.pkgsStatic.openssl;
 
+      nonCargoBuildFiles = path: _type: builtins.match ".*yaml$" path != null;
+      includeFilesFilter = path: type:
+        (craneLib.filterCargoSources path type) || (nonCargoBuildFiles path type);
+
       commonArgs = {
         pname = "workspace";
         version = "0.1.0";
 
-        src = craneLib.cleanCargoSource (craneLib.path ./../..);
+        src = pkgs.lib.cleanSourceWith {
+          src = ./../..;
+          filter = includeFilesFilter;
+        };
         strictDeps = true;
 
         cargoExtraArgs = "--locked --workspace";
