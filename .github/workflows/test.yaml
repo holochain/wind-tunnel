@@ -165,7 +165,7 @@ jobs:
           nix develop -c bash -c "source ./scripts/trycp.sh && start_trycp"
 
           # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#remote_call -- --targets targets-ci.yaml --instances-per-target 2 --duration 5 --no-progress
+          RUST_LOG=info nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 5 --no-progress
 
           # Stop the TryCP instance
           nix develop -c bash -c "source ./scripts/trycp.sh && stop_trycp"
