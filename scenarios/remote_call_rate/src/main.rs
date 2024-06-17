@@ -127,6 +127,11 @@ fn agent_teardown(
 ) -> HookResult {
     shutdown_remote(ctx)?;
     disconnect_trycp_client(ctx)?;
+
+    // Best effort to remove data and cleanup.
+    // You should comment out this line if you want to examine the result of the scenario run!
+    let _ = reset_trycp_remote(ctx);
+
     Ok(())
 }
 
