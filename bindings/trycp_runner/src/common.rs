@@ -108,22 +108,22 @@ where
 {
     let run_id = ctx.runner_context().get_run_id().to_string();
     let client = ctx.get().trycp_client();
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
 
     let (app_port, cell_id, credentials) = ctx
         .runner_context()
         .executor()
         .execute_in_place(async move {
             let agent_key = client
-                .generate_agent_pub_key(agent_id.clone(), None)
+                .generate_agent_pub_key(agent_name.clone(), None)
                 .await?;
 
             let content = std::fs::read(app_path)?;
 
-            let installed_app_id = format!("{}-app", agent_id).to_string();
+            let installed_app_id = format!("{}-app", agent_name).to_string();
             let app_info = client
                 .install_app(
-                    agent_id.clone(),
+                    agent_name.clone(),
                     InstallAppPayload {
                         source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
                         agent_key,
@@ -136,7 +136,7 @@ where
                 .await?;
 
             let enable_result = client
-                .enable_app(agent_id.clone(), app_info.installed_app_id.clone(), None)
+                .enable_app(agent_name.clone(), app_info.installed_app_id.clone(), None)
                 .await?;
             if !enable_result.errors.is_empty() {
                 return Err(anyhow::anyhow!(
@@ -146,12 +146,12 @@ where
             }
 
             let app_port = client
-                .attach_app_interface(agent_id.clone(), None, AllowedOrigins::Any, None, None)
+                .attach_app_interface(agent_name.clone(), None, AllowedOrigins::Any, None, None)
                 .await?;
 
             let issued = client
                 .issue_app_auth_token(
-                    agent_id.clone(),
+                    agent_name.clone(),
                     IssueAppAuthenticationTokenPayload {
                         installed_app_id,
                         expiry_seconds: 30,
@@ -179,7 +179,7 @@ where
 
             let credentials = client
                 .authorize_signing_credentials(
-                    agent_id.clone(),
+                    agent_name.clone(),
                     AuthorizeSigningCredentialsPayload {
                         cell_id: cell_id.clone(),
                         functions: None, // Equivalent to all functions
@@ -237,7 +237,7 @@ where
     static MIN_PEERS: OnceLock<usize> = OnceLock::new();
 
     let client = ctx.get().trycp_client();
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
 
     let min_peers = *MIN_PEERS.get_or_init(|| {
         std::env::var("MIN_PEERS")
@@ -250,7 +250,7 @@ where
         .execute_in_place(async move {
             let start_discovery = Instant::now();
             for _ in 0..wait_for.as_secs() {
-                let agent_list = client.agent_info(agent_id.clone(), None, None).await?;
+                let agent_list = client.agent_info(agent_name.clone(), None, None).await?;
 
                 if agent_list.len() >= min_peers {
                     break;
@@ -261,7 +261,7 @@ where
 
             println!(
                 "Discovery for agent {} took: {}s",
-                agent_id,
+                agent_name,
                 start_discovery.elapsed().as_secs()
             );
 
@@ -291,12 +291,12 @@ where
     SV: UserValuesConstraint,
 {
     let client = ctx.get().trycp_client();
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
 
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
-            client.shutdown(agent_id.clone(), None, None).await?;
+            client.shutdown(agent_name.clone(), None, None).await?;
             Ok(())
         })?;
 

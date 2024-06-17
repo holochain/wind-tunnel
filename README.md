@@ -182,7 +182,7 @@ Before you can run this, you'll need to provide the agent behaviour hook. Add th
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    println!("Hello from, {}", ctx.agent_id());
+    println!("Hello from, {}", ctx.agent_name());
     std::thread::sleep(std::time::Duration::from_secs(1));
     Ok(())
 }

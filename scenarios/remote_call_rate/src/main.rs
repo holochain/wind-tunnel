@@ -22,17 +22,17 @@ fn agent_setup(
     reset_trycp_remote(ctx)?;
 
     let client = ctx.get().trycp_client();
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
 
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
             client
-                .configure_player(agent_id.clone(), CONDUCTOR_CONFIG.to_string(), None)
+                .configure_player(agent_name.clone(), CONDUCTOR_CONFIG.to_string(), None)
                 .await?;
 
             client
-                .startup(agent_id.clone(), Some("warn".to_string()), None)
+                .startup(agent_name.clone(), Some("warn".to_string()), None)
                 .await?;
 
             Ok(())
@@ -53,7 +53,7 @@ fn agent_behaviour(
 ) -> HookResult {
     let client = ctx.get().trycp_client();
 
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
     let app_port = ctx.get().app_port();
     let cell_id = ctx.get().cell_id();
     let next_remote_call_peer = ctx.get_mut().scenario_values.remote_call_peers.pop();
@@ -68,7 +68,7 @@ fn agent_behaviour(
                     // No more agents available to call, get a new list.
                     // This is also the initial condition.
                     let mut new_peer_list = client
-                        .agent_info(agent_id, None, None)
+                        .agent_info(agent_name, None, None)
                         .await?
                         .into_iter()
                         .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
