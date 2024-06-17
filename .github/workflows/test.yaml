@@ -170,8 +170,6 @@ jobs:
           # Stop the TryCP instance
           nix develop -c bash -c "source ./scripts/trycp.sh && stop_trycp"
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
-
       - name: Build scenario bundles
         run: |
           set -euxo pipefail
