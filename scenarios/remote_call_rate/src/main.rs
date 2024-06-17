@@ -1,10 +1,10 @@
 use anyhow::Context;
 use holochain_types::prelude::{AgentPubKey, ExternIO};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use remote_call_integrity::TimedResponse;
 use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 
 const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
 
@@ -126,11 +126,12 @@ fn agent_teardown(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
     shutdown_remote(ctx)?;
-    disconnect_trycp_client(ctx)?;
 
     // Best effort to remove data and cleanup.
     // You should comment out this line if you want to examine the result of the scenario run!
     let _ = reset_trycp_remote(ctx);
+
+    disconnect_trycp_client(ctx)?;
 
     Ok(())
 }
