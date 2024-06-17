@@ -3,6 +3,8 @@ use holochain_types::prelude::{AgentPubKey, ExternIO};
 use remote_call_integrity::TimedResponse;
 use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
 
@@ -65,13 +67,15 @@ fn agent_behaviour(
                 None => {
                     // No more agents available to call, get a new list.
                     // This is also the initial condition.
-                    Ok(client
+                    let mut new_peer_list = client
                         .agent_info(agent_id, None, None)
                         .await?
                         .into_iter()
                         .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
                         .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
-                        .collect::<Vec<_>>())
+                        .collect::<Vec<_>>();
+                    new_peer_list.shuffle(&mut thread_rng());
+                    Ok(new_peer_list)
                 }
                 Some(agent_pub_key) => {
                     // Send a remote call to this agent
