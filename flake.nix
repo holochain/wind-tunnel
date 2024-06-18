@@ -78,6 +78,7 @@
               packages = [
                 pkgs.shellcheck
                 pkgs.statix
+                inputs.tryorama.packages.${system}.trycp-server
               ];
             };
 
