@@ -93,7 +93,8 @@ pub fn configure_app_ws_url(
 
 /// Opinionated app installation which will give you what you need in most cases.
 ///
-/// The [RoleName] you provide is used to find the cell id of the installed app.
+/// The [RoleName] you provide is used to find the cell id within the installed app that you want
+/// to call during your scenario.
 ///
 /// Requires:
 /// - The [HolochainRunnerContext] to have a valid `app_ws_url`. Consider calling [configure_app_ws_url] in your setup before using this function.
@@ -140,7 +141,7 @@ where
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let app_ws_url = ctx.runner_context().get().app_ws_url();
-    let agent_id = ctx.agent_id().to_string();
+    let agent_name = ctx.agent_name().to_string();
     let reporter = ctx.runner_context().reporter();
 
     let (installed_app_id, cell_id, app_client) = ctx
@@ -156,7 +157,7 @@ where
                 .map_err(handle_api_err)?;
             log::debug!("Generated agent pub key: {:}", key);
 
-            let installed_app_id = format!("{}-app", agent_id).to_string();
+            let installed_app_id = format!("{}-app", agent_name).to_string();
             let app_info = client
                 .install_app(InstallAppPayload {
                     source: AppBundleSource::Path(app_path),
@@ -195,7 +196,7 @@ where
                 .await?;
             log::debug!("Authorized signing credentials");
 
-            let mut signer = ClientAgentSigner::default();
+            let signer = ClientAgentSigner::default();
             signer.add_credentials(cell_id.clone(), credentials);
 
             let issued = client

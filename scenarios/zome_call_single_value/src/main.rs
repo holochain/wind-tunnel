@@ -1,6 +1,5 @@
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
-use std::path::Path;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;

@@ -15,6 +15,8 @@ use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
 pub mod prelude {
     pub use super::TryCPClientInstrumented as TryCPClient;
+
+    pub use holochain_client::AuthorizeSigningCredentialsPayload;
 }
 
 #[derive(Clone)]
@@ -225,91 +227,39 @@ mod admin_impl {
         AuthorizeSigningCredentialsPayload, EnableAppResponse, SigningCredentials,
     };
     use holochain_conductor_api::{
-        AdminRequest, AdminResponse, AppAuthenticationTokenIssued, AppInfo, AppInterfaceInfo,
-        AppStatusFilter, IssueAppAuthenticationTokenPayload, StorageInfo,
+        AdminRequest, AdminResponse, AppAuthenticationToken, AppAuthenticationTokenIssued, AppInfo,
+        AppInterfaceInfo, AppStatusFilter, FullStateDump, IssueAppAuthenticationTokenPayload,
+        StorageInfo,
     };
+    use holochain_serialized_bytes::encode;
     use holochain_types::app::{DeleteCloneCellPayload, InstallAppPayload, InstalledAppId};
     use holochain_types::prelude::{GrantedFunctions, Record};
     use holochain_types::websocket::AllowedOrigins;
     use holochain_zome_types::capability::GrantZomeCallCapabilityPayload;
     use holochain_zome_types::cell::CellId;
     use holochain_zome_types::dna_def::DnaDef;
+    use kitsune_p2p_types::agent_info::AgentInfoSigned;
 
     use super::*;
 
     impl TryCPClientInstrumented {
         #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn generate_agent_pub_key(
+        pub async fn get_dna_definition(
             &self,
             id: String,
+            dna_hash: DnaHash,
             timeout: Option<Duration>,
-        ) -> io::Result<AgentPubKey> {
-            let response = self
-                .call_admin(id, AdminRequest::GenerateAgentPubKey, timeout)
-                .await?;
-
-            match response {
-                AdminResponse::AgentPubKeyGenerated(agent_pub_key) => Ok(agent_pub_key),
-                _ => Err(io::Error::other("Unexpected admin response")),
-            }
-        }
-
-        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn list_app_interfaces(
-            &self,
-            id: String,
-            timeout: Option<Duration>,
-        ) -> io::Result<Vec<AppInterfaceInfo>> {
-            let response = self
-                .call_admin(id, AdminRequest::ListAppInterfaces, timeout)
-                .await?;
-
-            match response {
-                AdminResponse::AppInterfacesListed(info) => Ok(info),
-                _ => Err(io::Error::other("Unexpected admin response")),
-            }
-        }
-
-        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn attach_app_interface(
-            &self,
-            id: String,
-            port: Option<u16>,
-            allowed_origins: AllowedOrigins,
-            installed_app_id: Option<InstalledAppId>,
-            timeout: Option<Duration>,
-        ) -> io::Result<u16> {
+        ) -> io::Result<DnaDef> {
             let response = self
                 .call_admin(
                     id,
-                    AdminRequest::AttachAppInterface {
-                        port,
-                        allowed_origins,
-                        installed_app_id,
-                    },
+                    AdminRequest::GetDnaDefinition(Box::new(dna_hash)),
                     timeout,
                 )
                 .await?;
 
             match response {
-                AdminResponse::AppInterfaceAttached { port } => Ok(port),
-                _ => Err(io::Error::other("Unexpected admin response")),
-            }
-        }
-
-        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn list_apps(
-            &self,
-            id: String,
-            status_filter: Option<AppStatusFilter>,
-            timeout: Option<Duration>,
-        ) -> io::Result<Vec<AppInfo>> {
-            let response = self
-                .call_admin(id, AdminRequest::ListApps { status_filter }, timeout)
-                .await?;
-
-            match response {
-                AdminResponse::AppsListed(apps) => Ok(apps),
+                AdminResponse::DnaDefinitionReturned(dna_def) => Ok(dna_def),
                 _ => Err(io::Error::other("Unexpected admin response")),
             }
         }
@@ -353,6 +303,69 @@ mod admin_impl {
         }
 
         #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn list_dnas(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<Vec<DnaHash>> {
+            let response = self.call_admin(id, AdminRequest::ListDnas, timeout).await?;
+
+            match response {
+                AdminResponse::DnasListed(dnas) => Ok(dnas),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn generate_agent_pub_key(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<AgentPubKey> {
+            let response = self
+                .call_admin(id, AdminRequest::GenerateAgentPubKey, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::AgentPubKeyGenerated(agent_pub_key) => Ok(agent_pub_key),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn list_cell_ids(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<Vec<CellId>> {
+            let response = self
+                .call_admin(id, AdminRequest::ListCellIds, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::CellIdsListed(ids) => Ok(ids),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn list_apps(
+            &self,
+            id: String,
+            status_filter: Option<AppStatusFilter>,
+            timeout: Option<Duration>,
+        ) -> io::Result<Vec<AppInfo>> {
+            let response = self
+                .call_admin(id, AdminRequest::ListApps { status_filter }, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::AppsListed(apps) => Ok(apps),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
         pub async fn enable_app(
             &self,
             id: String,
@@ -387,22 +400,202 @@ mod admin_impl {
         }
 
         #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn get_dna_definition(
+        pub async fn attach_app_interface(
             &self,
             id: String,
-            dna_hash: DnaHash,
+            port: Option<u16>,
+            allowed_origins: AllowedOrigins,
+            installed_app_id: Option<InstalledAppId>,
             timeout: Option<Duration>,
-        ) -> io::Result<DnaDef> {
+        ) -> io::Result<u16> {
             let response = self
                 .call_admin(
                     id,
-                    AdminRequest::GetDnaDefinition(Box::new(dna_hash)),
+                    AdminRequest::AttachAppInterface {
+                        port,
+                        allowed_origins,
+                        installed_app_id,
+                    },
                     timeout,
                 )
                 .await?;
 
             match response {
-                AdminResponse::DnaDefinitionReturned(dna_def) => Ok(dna_def),
+                AdminResponse::AppInterfaceAttached { port } => Ok(port),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn list_app_interfaces(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<Vec<AppInterfaceInfo>> {
+            let response = self
+                .call_admin(id, AdminRequest::ListAppInterfaces, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::AppInterfacesListed(info) => Ok(info),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn dump_state(
+            &self,
+            id: String,
+            cell_id: CellId,
+            timeout: Option<Duration>,
+        ) -> io::Result<String> {
+            let response = self
+                .call_admin(
+                    id,
+                    AdminRequest::DumpState {
+                        cell_id: Box::new(cell_id),
+                    },
+                    timeout,
+                )
+                .await?;
+
+            match response {
+                AdminResponse::StateDumped(s) => Ok(s),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn dump_conductor_state(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<String> {
+            let response = self
+                .call_admin(id, AdminRequest::DumpConductorState, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::ConductorStateDumped(s) => Ok(s),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn dump_full_state(
+            &self,
+            id: String,
+            cell_id: CellId,
+            dht_ops_cursor: Option<u64>,
+            timeout: Option<Duration>,
+        ) -> io::Result<FullStateDump> {
+            let response = self
+                .call_admin(
+                    id,
+                    AdminRequest::DumpFullState {
+                        cell_id: Box::new(cell_id),
+                        dht_ops_cursor,
+                    },
+                    timeout,
+                )
+                .await?;
+
+            match response {
+                AdminResponse::FullStateDumped(fds) => Ok(fds),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn dump_network_metrics(
+            &self,
+            id: String,
+            dna_hash: Option<DnaHash>,
+            timeout: Option<Duration>,
+        ) -> io::Result<String> {
+            let response = self
+                .call_admin(id, AdminRequest::DumpNetworkMetrics { dna_hash }, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::NetworkMetricsDumped(metrics) => Ok(metrics),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn dump_network_stats(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<String> {
+            let response = self
+                .call_admin(id, AdminRequest::DumpNetworkStats, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::NetworkStatsDumped(stats) => Ok(stats),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn add_agent_info(
+            &self,
+            id: String,
+            agent_infos: Vec<AgentInfoSigned>,
+            timeout: Option<Duration>,
+        ) -> io::Result<()> {
+            let response = self
+                .call_admin(id, AdminRequest::AddAgentInfo { agent_infos }, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::AgentInfoAdded => Ok(()),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn agent_info(
+            &self,
+            id: String,
+            cell_id: Option<CellId>,
+            timeout: Option<Duration>,
+        ) -> io::Result<Vec<AgentInfoSigned>> {
+            let response = self
+                .call_admin(id, AdminRequest::AgentInfo { cell_id }, timeout)
+                .await?;
+
+            match response {
+                AdminResponse::AgentInfo(agents) => Ok(agents),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn graft_records(
+            &self,
+            id: String,
+            cell_id: CellId,
+            validate: bool,
+            records: Vec<Record>,
+            timeout: Option<Duration>,
+        ) -> io::Result<()> {
+            let response = self
+                .call_admin(
+                    id,
+                    AdminRequest::GraftRecords {
+                        cell_id,
+                        validate,
+                        records,
+                    },
+                    timeout,
+                )
+                .await?;
+
+            match response {
+                AdminResponse::RecordsGrafted => Ok(()),
                 _ => Err(io::Error::other("Unexpected admin response")),
             }
         }
@@ -466,44 +659,43 @@ mod admin_impl {
         }
 
         #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn dump_network_stats(
+        pub async fn issue_app_auth_token(
             &self,
             id: String,
+            payload: IssueAppAuthenticationTokenPayload,
             timeout: Option<Duration>,
-        ) -> io::Result<String> {
-            let response = self
-                .call_admin(id, AdminRequest::DumpNetworkStats, timeout)
-                .await?;
-
-            match response {
-                AdminResponse::NetworkStatsDumped(stats) => Ok(stats),
-                _ => Err(io::Error::other("Unexpected admin response")),
-            }
-        }
-
-        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn graft_records(
-            &self,
-            id: String,
-            cell_id: CellId,
-            validate: bool,
-            records: Vec<Record>,
-            timeout: Option<Duration>,
-        ) -> io::Result<()> {
+        ) -> io::Result<AppAuthenticationTokenIssued> {
             let response = self
                 .call_admin(
                     id,
-                    AdminRequest::GraftRecords {
-                        cell_id,
-                        validate,
-                        records,
-                    },
+                    AdminRequest::IssueAppAuthenticationToken(payload),
                     timeout,
                 )
                 .await?;
 
             match response {
-                AdminResponse::RecordsGrafted => Ok(()),
+                AdminResponse::AppAuthenticationTokenIssued(token) => Ok(token),
+                _ => Err(io::Error::other("Unexpected admin response")),
+            }
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
+        pub async fn revoke_app_auth_token(
+            &self,
+            id: String,
+            token: AppAuthenticationToken,
+            timeout: Option<Duration>,
+        ) -> io::Result<()> {
+            let response = self
+                .call_admin(
+                    id,
+                    AdminRequest::RevokeAppAuthenticationToken(token),
+                    timeout,
+                )
+                .await?;
+
+            match response {
+                AdminResponse::AppAuthenticationTokenRevoked => Ok(()),
                 _ => Err(io::Error::other("Unexpected admin response")),
             }
         }
@@ -551,45 +743,30 @@ mod admin_impl {
             })
         }
 
-        #[wind_tunnel_instrument(prefix = "trycp_admin_")]
-        pub async fn issue_app_auth_token(
-            &self,
-            id: String,
-            payload: IssueAppAuthenticationTokenPayload,
-            timeout: Option<Duration>,
-        ) -> io::Result<AppAuthenticationTokenIssued> {
-            let response = self
-                .call_admin(
-                    id,
-                    AdminRequest::IssueAppAuthenticationToken(payload),
-                    timeout,
-                )
-                .await?;
-
-            match response {
-                AdminResponse::AppAuthenticationTokenIssued(token) => Ok(token),
-                _ => Err(io::Error::other("Unexpected admin response")),
-            }
-        }
-
         async fn call_admin(
             &self,
             id: String,
             request: AdminRequest,
             timeout: Option<Duration>,
         ) -> io::Result<AdminResponse> {
+            let message = encode(&request).map_err(io::Error::other)?;
+
             let response = self
                 .trycp_client
                 .request(
-                    Request::CallAdminInterface {
-                        id,
-                        message: rmp_serde::to_vec(&request).map_err(io::Error::other)?,
-                    },
+                    Request::CallAdminInterface { id, message },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
-            read_response(response)
+            match read_response(response) {
+                Ok(AdminResponse::Error(e)) => {
+                    // Explicitly map the error response to an error to prevent crashes when
+                    // checking the expected response types.
+                    Err(io::Error::other(format!("{e:?}")))
+                }
+                other => other,
+            }
         }
     }
 }
@@ -598,6 +775,7 @@ mod app_impl {
     use super::*;
     use holochain_conductor_api::{AppInfo, AppRequest, AppResponse, NetworkInfo};
     use holochain_nonce::fresh_nonce;
+    use holochain_serialized_bytes::encode;
     use holochain_types::app::{
         CreateCloneCellPayload, DisableCloneCellPayload, EnableCloneCellPayload,
         NetworkInfoRequestPayload,
@@ -744,18 +922,24 @@ mod app_impl {
             request: AppRequest,
             timeout: Option<Duration>,
         ) -> io::Result<AppResponse> {
+            let message = encode(&request).map_err(io::Error::other)?;
+
             let response = self
                 .trycp_client
                 .request(
-                    Request::CallAppInterface {
-                        port,
-                        message: rmp_serde::to_vec(&request).map_err(io::Error::other)?,
-                    },
+                    Request::CallAppInterface { port, message },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;
 
-            read_response(response)
+            match read_response(response) {
+                Ok(AppResponse::Error(r)) => {
+                    // Explicitly map the error response to an error to prevent crashes when
+                    // checking the expected response types.
+                    Err(io::Error::other(format!("{r:?}")))
+                }
+                other => other,
+            }
         }
     }
 }

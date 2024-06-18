@@ -34,7 +34,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::new(run_id, definition.name.clone());
+        let mut report_config = ReportConfig::new(run_id.clone(), definition.name.clone());
 
         match definition.reporter {
             ReporterOpt::InMemory => {
@@ -62,6 +62,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         executor,
         reporter,
         shutdown_handle.clone(),
+        run_id,
         definition.connection_string.clone(),
     );
 
@@ -114,22 +115,37 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         // For the behaviour implementation to listen for shutdown and respond appropriately
         let delegated_shutdown_listener = shutdown_handle.new_listener();
 
-        let agent_id = format!("agent-{}", agent_index);
+        let agent_name = format!("agent-{}", agent_index);
 
         handles.push(
             std::thread::Builder::new()
-                .name(agent_id.clone())
+                .name(agent_name.clone())
                 .spawn(move || {
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context = AgentContext::new(
                         agent_index,
-                        agent_id.clone(),
+                        agent_name.clone(),
                         runner_context,
                         delegated_shutdown_listener,
                     );
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         if let Err(e) = setup_agent_fn(&mut context) {
-                            log::error!("Agent setup failed for agent {}: {:?}", agent_id, e);
+                            log::error!("Agent setup failed for agent {}: {:?}", agent_name, e);
+
+                            // Attempt to run the shutdown hook if the agent setup was cancelled.
+                            if e.is::<ShutdownSignalError>() {
+                                log::info!("Agent setup was cancelled, running teardown.");
+                                if let Some(teardown_agent_fn) = teardown_agent_fn {
+                                    if let Err(e) = teardown_agent_fn(&mut context) {
+                                        log::error!(
+                                            "Agent teardown failed for agent {}: {:?}",
+                                            agent_name,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
+
                             return;
                         }
                     }
@@ -139,7 +155,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     if let Some(behaviour) = agent_behaviour_fn {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
-                                log::debug!("Stopping agent {}", agent_id);
+                                log::debug!("Stopping agent {}", agent_name);
                                 break;
                             }
 
@@ -152,7 +168,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                 Err(e) if e.is::<AgentBailError>() => {
                                     // A single agent has failed, we don't want to stop the whole
                                     // scenario so warn and exit the loop.
-                                    log::warn!("Agent {} bailed: {:?}", agent_id, e);
+                                    log::warn!("Agent {} bailed: {:?}", agent_name, e);
                                     behaviour_ran_to_complete = false;
                                     break;
                                 }
@@ -165,7 +181,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
                     if let Some(teardown_agent_fn) = teardown_agent_fn {
                         if let Err(e) = teardown_agent_fn(&mut context) {
-                            log::error!("Agent teardown failed for agent {}: {:?}", agent_id, e);
+                            log::error!("Agent teardown failed for agent {}: {:?}", agent_name, e);
                         }
                     }
 

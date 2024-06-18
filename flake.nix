@@ -2,14 +2,14 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    versions.url = "github:holochain/holochain?dir=versions/0_3_rc";
+    versions.url = "github:holochain/holochain?dir=versions/0_3";
 
     holochain = {
       url = "github:holochain/holochain";
       inputs.versions.follows = "versions";
     };
 
-    tryorama.url = "github:holochain/tryorama/main";
+    tryorama.url = "github:holochain/tryorama/v0.16.0";
 
     crane = {
       url = "github:ipetkov/crane";

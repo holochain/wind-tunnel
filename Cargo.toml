@@ -21,7 +21,7 @@ members = [
     "scenarios/write_read",
     "scenarios/write_query",
     "scenarios/local_signals",
-    "scenarios/remote_call",
+    "scenarios/remote_call_rate",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -32,6 +32,8 @@ members = [
     "zomes/callback/integrity",
     "zomes/large/coordinator",
     "zomes/signal/coordinator",
+    "zomes/remote_call/coordinator",
+    "zomes/remote_call/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -79,17 +81,19 @@ rand = "0.8"
 ed25519-dalek = "2.1"
 
 # Deps for Holochain
-holochain_client = { version = "=0.5.0-rc.4" }
-trycp_client = { version = "0.16.0-dev.7" }
-trycp_api = { version = "0.16.0-dev.7" }
-holochain_zome_types = { version = "0.3.1-rc.1" }
-holo_hash = { version = "0.3.1-rc.1" }
-holochain_types = { version = "0.3.1-rc.1" }
-holochain_conductor_api = { version = "0.3.1-rc.1" }
-holochain_nonce = { version = "0.3.1-rc.0" }
-hdk = { version = "0.3.1-rc.1" }
-hdi = "0.4.1-rc.1"
-mr_bundle = "0.3.1-rc.0"
+holochain_client = { version = "=0.5.0-rc.5" }
+trycp_client = { version = "0.16.0" }
+trycp_api = { version = "0.16.0" }
+holochain_zome_types = { version = "0.3.1" }
+holo_hash = { version = "0.3.1" }
+holochain_types = { version = "0.3.1" }
+holochain_conductor_api = { version = "0.3.1" }
+holochain_nonce = { version = "0.3.1" }
+kitsune_p2p_types = { version = "0.3.1" }
+hdk = { version = "0.3.1" }
+hdi = "0.4.1"
+mr_bundle = "0.3.1"
+holochain_serialized_bytes = "0.0.54"
 
 # Framework
 wind_tunnel_core = { path = "./framework/core", version = "0.2.0-alpha.2" }
@@ -110,6 +114,7 @@ happ_builder = { path = "./happ_builder", version = "0.1.0" }
 crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
+remote_call_integrity = { path = "./zomes/remote_call/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

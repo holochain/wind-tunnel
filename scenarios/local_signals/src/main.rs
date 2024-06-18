@@ -1,6 +1,5 @@
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
-use std::path::Path;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::Instant;
