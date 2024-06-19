@@ -26,6 +26,11 @@
       };
     };
 
+    amber = {
+        url = "github:Ph0enixKM/Amber";
+        inputs.nixpkgs.follows = "holochain/nixpkgs";
+    };
+
     nixpkgs.follows = "holochain/nixpkgs";
   };
 
@@ -60,6 +65,7 @@
                 pkgs.shellcheck
                 pkgs.statix
                 inputs.tryorama.packages.${system}.trycp-server
+                inputs.amber.packages.${system}.default
               ];
 
               shellHook = ''
