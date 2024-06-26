@@ -27,8 +27,8 @@
     };
 
     amber = {
-        url = "github:Ph0enixKM/Amber";
-        inputs.nixpkgs.follows = "holochain/nixpkgs";
+      url = "github:Ph0enixKM/Amber";
+      inputs.nixpkgs.follows = "holochain/nixpkgs";
     };
 
     nixpkgs.follows = "holochain/nixpkgs";
