@@ -130,19 +130,15 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     );
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         if let Err(e) = setup_agent_fn(&mut context) {
-                            log::error!("Agent setup failed for agent {}: {:?}", agent_name, e);
+                            log::error!("Agent setup failed for agent {agent_name}: {:?}", e);
 
-                            // Attempt to run the shutdown hook if the agent setup was cancelled.
-                            if e.is::<ShutdownSignalError>() {
-                                log::info!("Agent setup was cancelled, running teardown.");
-                                if let Some(teardown_agent_fn) = teardown_agent_fn {
-                                    if let Err(e) = teardown_agent_fn(&mut context) {
-                                        log::error!(
-                                            "Agent teardown failed for agent {}: {:?}",
-                                            agent_name,
-                                            e
-                                        );
-                                    }
+                            if let Some(teardown_agent_fn) = teardown_agent_fn {
+                                if let Err(e) = teardown_agent_fn(&mut context) {
+                                    log::error!(
+                                        "Agent teardown failed for agent {}: {:?}",
+                                        agent_name,
+                                        e
+                                    );
                                 }
                             }
 
@@ -173,7 +169,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                     break;
                                 }
                                 Err(e) => {
-                                    log::error!("Agent behaviour failed: {:?}", e);
+                                    log::error!("Agent behaviour failed for agent {agent_name}: {:?}", e);
                                 }
                             }
                         }
@@ -193,10 +189,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         );
     }
 
-    for handle in handles {
-        handle
-            .join()
-            .map_err(|e| anyhow::anyhow!("Error joining thread for test agent: {:?}", e))?;
+    for (index, handle) in handles.into_iter().enumerate() {
+        if let Err(e) = handle
+            .join() {
+            log::error!("Could not join thread for test agent {index}: {:?}", e)
+        }
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {
