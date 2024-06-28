@@ -116,7 +116,7 @@ where
         .execute_in_place(async move {
             let agent_key = client
                 .generate_agent_pub_key(agent_name.clone(), None)
-                .await?;
+                .await.context("Failed to generate a new agent pub key")?;
 
             let content = std::fs::read(app_path)?;
 
@@ -131,13 +131,15 @@ where
                         membrane_proofs: Default::default(),
                         network_seed: Some(run_id),
                     },
-                    None,
+                    // Allow more time to install the app when running many agents. The upload of
+                    // the app bundle can take some time when targeting many nodes.
+                    Some(Duration::from_secs(180)),
                 )
-                .await?;
+                .await.context("App install request failed")?;
 
             let enable_result = client
                 .enable_app(agent_name.clone(), app_info.installed_app_id.clone(), None)
-                .await?;
+                .await.context("Enable app failed")?;
             if !enable_result.errors.is_empty() {
                 return Err(anyhow::anyhow!(
                     "Failed to enable app: {:?}",
@@ -147,7 +149,7 @@ where
 
             let app_port = client
                 .attach_app_interface(agent_name.clone(), None, AllowedOrigins::Any, None, None)
-                .await?;
+                .await.context("Could not attach an app interface")?;
 
             let issued = client
                 .issue_app_auth_token(
@@ -159,11 +161,11 @@ where
                     },
                     None,
                 )
-                .await?;
+                .await.context("Request to issue an app authentication token failed")?;
 
             client
                 .connect_app_interface(issued.token, app_port, None)
-                .await?;
+                .await.context("App interface connection failed")?;
 
             let cell_id = match app_info
                 .cell_info
@@ -186,7 +188,7 @@ where
                     },
                     None,
                 )
-                .await?;
+                .await.context("Could not authorize signing credentials")?;
 
             Ok((app_port, cell_id, credentials))
         })
