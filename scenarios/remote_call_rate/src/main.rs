@@ -69,7 +69,7 @@ fn agent_behaviour(
                     // This is also the initial condition.
                     let mut new_peer_list = client
                         .agent_info(agent_name, None, None)
-                        .await?
+                        .await.context("Failed to get agent info")?
                         .into_iter()
                         .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
                         .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
@@ -86,10 +86,12 @@ fn agent_behaviour(
                             cell_id,
                             "remote_call",
                             "call_echo_timestamp",
-                            ExternIO::encode(agent_pub_key).context("Encoding failure")?,
-                            None,
+                            ExternIO::encode(agent_pub_key.clone()).context("Encoding failure")?,
+                            // Better to keep this higher than the Kitsune timeout so that when this fails we get a
+                            // clear error back, rather than timing out here.
+                            Some(Duration::from_secs(80)),
                         )
-                        .await?;
+                        .await.with_context(|| format!("Failed to make remote call to: {:?}", agent_pub_key))?;
                     let round_trip_time_s = start.elapsed();
 
                     let response: TimedResponse = response
@@ -147,7 +149,9 @@ fn main() -> WindTunnelResult<()> {
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);
 
-    run(builder)?;
+    let agents_at_completion = run(builder)?;
+
+    println!("Finished with {} agents", agents_at_completion);
 
     Ok(())
 }
