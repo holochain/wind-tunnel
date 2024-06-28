@@ -69,7 +69,8 @@ fn agent_behaviour(
                     // This is also the initial condition.
                     let mut new_peer_list = client
                         .agent_info(agent_name, None, None)
-                        .await.context("Failed to get agent info")?
+                        .await
+                        .context("Failed to get agent info")?
                         .into_iter()
                         .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
                         .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
@@ -91,7 +92,10 @@ fn agent_behaviour(
                             // clear error back, rather than timing out here.
                             Some(Duration::from_secs(80)),
                         )
-                        .await.with_context(|| format!("Failed to make remote call to: {:?}", agent_pub_key))?;
+                        .await
+                        .with_context(|| {
+                            format!("Failed to make remote call to: {:?}", agent_pub_key)
+                        })?;
                     let round_trip_time_s = start.elapsed();
 
                     let response: TimedResponse = response

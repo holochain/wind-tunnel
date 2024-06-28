@@ -169,7 +169,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                     break;
                                 }
                                 Err(e) => {
-                                    log::error!("Agent behaviour failed for agent {agent_name}: {:?}", e);
+                                    log::error!(
+                                        "Agent behaviour failed for agent {agent_name}: {:?}",
+                                        e
+                                    );
                                 }
                             }
                         }
@@ -190,8 +193,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     for (index, handle) in handles.into_iter().enumerate() {
-        if let Err(e) = handle
-            .join() {
+        if let Err(e) = handle.join() {
             log::error!("Could not join thread for test agent {index}: {:?}", e)
         }
     }
