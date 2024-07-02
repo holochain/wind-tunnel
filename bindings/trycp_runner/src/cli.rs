@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -62,7 +63,8 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<WindTunnelScenarioCli, Self::Error> {
-        let targets = std::fs::read_to_string(&self.targets)?;
+        let targets =
+            std::fs::read_to_string(&self.targets).context("Could not load targets file")?;
         let targets: Targets = serde_yaml::from_str(&targets)?;
 
         Ok(WindTunnelScenarioCli {

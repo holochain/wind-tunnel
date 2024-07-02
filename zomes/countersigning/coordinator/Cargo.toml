@@ -1,0 +1,17 @@
+[package]
+name = "countersigning"
+version = "0.1.0"
+edition = "2021"
+description = "A Holochain coordinator zome for countersigning"
+
+[lib]
+name = "countersigning_coordinator"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdk = { workspace = true }
+countersigning_integrity = { workspace = true }
+
+[lints]
+workspace = true

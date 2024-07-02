@@ -87,7 +87,7 @@ fn agent_behaviour(
                             cell_id,
                             "remote_call",
                             "call_echo_timestamp",
-                            ExternIO::encode(agent_pub_key.clone()).context("Encoding failure")?,
+                            agent_pub_key.clone(),
                             // Better to keep this higher than the Kitsune timeout so that when this fails we get a
                             // clear error back, rather than timing out here.
                             Some(Duration::from_secs(80)),

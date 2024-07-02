@@ -47,7 +47,7 @@ pub fn connect_trycp_client<SV: UserValuesConstraint>(
 
     let client = ctx.runner_context().executor().execute_in_place({
         let signer = signer.clone();
-        async move { Ok(TryCPClient::connect(target, signer.clone(), reporter).await?) }
+        async move { TryCPClient::connect(target, signer.clone(), reporter).await.with_context(|| format!("Could not connect TryCP client, is there a server running and reachable at {}?", target)) }
     })?;
 
     ctx.get_mut().trycp_client = Some(client);

@@ -14,7 +14,7 @@ starting the agent behaviour. It will wait up to two minutes then proceed regard
 The scenario is not able to check that you have configured more peers than the minimum you have set, so you should
 ensure that you have configured enough peers to meet the minimum.
 
-Note that the number of peers seen by each node includes itself. So having two nodes means that each node will 
+Note that the number of peers seen by each node includes itself. So having two nodes means that each node will
 immediately see one peer after app installation.
 
 This configuration defaults to 2 peers.
@@ -24,7 +24,7 @@ This configuration defaults to 2 peers.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_PEERS=2 cargo run --package remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
+RUST_LOG=info MIN_PEERS=2 cargo run --package two_party_countersigning -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
 ```
 
 This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` and run with `start_trycp`.
@@ -32,5 +32,5 @@ This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` a
 To run the scenario against the current target list, you can run:
 
 ```bash
-RUST_LOG=info MIN_PEERS=40 cargo run --package remote_call_rate -- --targets targets.yaml --duration 500
+RUST_LOG=info MIN_PEERS=40 cargo run --package two_party_countersigning -- --targets targets.yaml --duration 500
 ```
