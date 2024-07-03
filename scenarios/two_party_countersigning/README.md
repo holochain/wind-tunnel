@@ -24,7 +24,7 @@ This configuration defaults to 2 peers.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_PEERS=2 cargo run --package two_party_countersigning -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
+RUST_LOG=info MIN_PEERS=2 cargo run --package two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 300
 ```
 
 This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` and run with `start_trycp`.
@@ -32,5 +32,5 @@ This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` a
 To run the scenario against the current target list, you can run:
 
 ```bash
-RUST_LOG=info MIN_PEERS=40 cargo run --package two_party_countersigning -- --targets targets.yaml --duration 500
+RUST_LOG=info MIN_PEERS=40 cargo run --package two_party_countersigning -- --targets targets.yaml --behaviour initiate:1 --behaviour participate:1 --duration 500
 ```
