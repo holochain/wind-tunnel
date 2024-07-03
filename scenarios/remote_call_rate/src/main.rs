@@ -1,5 +1,5 @@
 use anyhow::Context;
-use holochain_types::prelude::{AgentPubKey, ExternIO};
+use holochain_types::prelude::AgentPubKey;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use remote_call_integrity::TimedResponse;
