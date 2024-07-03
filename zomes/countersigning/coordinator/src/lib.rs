@@ -35,8 +35,35 @@ fn recv_remote_signal(signal: Signals) -> ExternResult<()> {
 }
 
 #[hdk_extern]
-fn hello() -> ExternResult<String> {
+fn initiator_hello() -> ExternResult<String> {
     Ok("Hello!".to_string())
+}
+
+#[hdk_extern]
+fn participant_hello() -> ExternResult<()> {
+    create_link(
+        hash_entry(EntryTypes::ParticipantBase(ParticipantBase))?,
+        agent_info()?.agent_initial_pubkey,
+        LinkTypes::Participant,
+        (),
+    )?;
+
+    Ok(())
+}
+
+#[hdk_extern]
+fn list_participants() -> ExternResult<Vec<AgentPubKey>> {
+    let links = get_links(
+        GetLinksInputBuilder::try_new(
+            hash_entry(EntryTypes::ParticipantBase(ParticipantBase))?,
+            LinkTypes::Participant,
+        )?
+        .build(),
+    )?;
+    Ok(links
+        .into_iter()
+        .map(|link| link.target.clone().try_into().unwrap())
+        .collect())
 }
 
 #[hdk_extern]
@@ -49,7 +76,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
 
     let entry_hash = hash_entry(EntryTypes::ImportantAgreement(entry.clone()))?;
 
-    let session_times = session_times_from_millis(30_000)?;
+    let session_times = session_times_from_millis(2_000)?;
     let request = PreflightRequest::try_new(
         entry_hash,
         vec![

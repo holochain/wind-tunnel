@@ -55,12 +55,40 @@ fn agent_setup(
     let client = ctx.get().trycp_client();
     let app_port = ctx.get().app_port();
     let cell_id = ctx.get().cell_id();
+    let assigned_behaviour = ctx.assigned_behaviour().to_string();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
-            client
-                .call_zome(app_port, cell_id, "countersigning", "hello", (), None)
-                .await?;
+            if assigned_behaviour == "initiate" {
+                // As an initiator we just need to call a zome so that `init` will run.
+                client
+                    .call_zome(
+                        app_port,
+                        cell_id,
+                        "countersigning",
+                        "initiator_hello",
+                        (),
+                        None,
+                    )
+                    .await?;
+            } else if assigned_behaviour == "participate" {
+                // As a participant we need to advertise our role by publishing a link to our agent key
+                client
+                    .call_zome(
+                        app_port,
+                        cell_id,
+                        "countersigning",
+                        "participant_hello",
+                        (),
+                        None,
+                    )
+                    .await?;
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Unknown assigned behaviour: {}",
+                    assigned_behaviour
+                ));
+            }
 
             Ok(())
         })?;
@@ -93,14 +121,18 @@ fn agent_behaviour_initiate(
                     None => {
                         // No more agents available to call, get a new list.
                         // This is also the initial condition.
-                        let mut new_peer_list = client
-                            .agent_info(agent_name, None, None)
+                        let response = client
+                            .call_zome(
+                                app_port,
+                                cell_id.clone(),
+                                "countersigning",
+                                "list_participants",
+                                (),
+                                None,
+                            )
                             .await
-                            .context("Failed to get agent info")?
-                            .into_iter()
-                            .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
-                            .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
-                            .collect::<Vec<_>>();
+                            .context("Failed to list participants")?;
+                        let mut new_peer_list = response.decode::<Vec<AgentPubKey>>().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
                         new_peer_list.shuffle(&mut thread_rng());
                         Ok(new_peer_list)
                     }

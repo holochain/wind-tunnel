@@ -115,6 +115,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         // For the behaviour implementation to listen for shutdown and respond appropriately
         let delegated_shutdown_listener = shutdown_handle.new_listener();
 
+        let assigned_behaviour = assigned_behaviour.clone();
         let agent_name = format!("agent-{}", agent_index);
 
         handles.push(
@@ -125,6 +126,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     let mut context = AgentContext::new(
                         agent_index,
                         agent_name.clone(),
+                        assigned_behaviour,
                         runner_context,
                         delegated_shutdown_listener,
                     );

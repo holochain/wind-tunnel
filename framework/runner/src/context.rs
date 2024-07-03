@@ -1,8 +1,7 @@
+use crate::executor::Executor;
 use std::{fmt::Debug, sync::Arc};
 use wind_tunnel_core::prelude::{DelegatedShutdownListener, ShutdownHandle};
 use wind_tunnel_instruments::Reporter;
-
-use crate::executor::Executor;
 
 pub trait UserValuesConstraint: Default + Debug + Send + Sync + 'static {}
 
@@ -103,6 +102,7 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
 pub struct AgentContext<RV: UserValuesConstraint, V: UserValuesConstraint> {
     agent_index: usize,
     agent_name: String,
+    assigned_behaviour: String,
     runner_context: Arc<RunnerContext<RV>>,
     shutdown_listener: DelegatedShutdownListener,
     value: V,
@@ -112,12 +112,14 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
     pub(crate) fn new(
         agent_index: usize,
         agent_name: String,
+        assigned_behaviour: String,
         runner_context: Arc<RunnerContext<RV>>,
         shutdown_listener: DelegatedShutdownListener,
     ) -> Self {
         Self {
             agent_index,
             agent_name,
+            assigned_behaviour,
             runner_context,
             shutdown_listener,
             value: Default::default(),
@@ -134,6 +136,15 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
     /// This value is unique within the runner but *not* unique across multiple runners.
     pub fn agent_name(&self) -> &str {
         &self.agent_name
+    }
+
+    /// The user-supplied value from [ScenarioDefinitionBuilder::use_named_agent_behaviour].
+    ///
+    /// From within the behaviour, you know which behaviour you are assigned to. This is useful for
+    /// the setup and teardown hooks where you may need to adjust the actions your agent takes
+    /// based on the behaviour you are assigned.
+    pub fn assigned_behaviour(&self) -> &str {
+        &self.assigned_behaviour
     }
 
     /// A handle to the runner context for the scenario.
