@@ -131,7 +131,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
         Signals::AcceptedRequest(AcceptedRequest {
             preflight_request: request.clone(),
             preflight_response: response.clone(),
-        })
+        }),
     )?;
 
     if let ZomeCallResponse::Ok(_) = result {

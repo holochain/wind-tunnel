@@ -1,7 +1,7 @@
 use anyhow::Context;
 use countersigning_integrity::Signals;
-use holochain_types::prelude::{AgentPubKey, PreflightResponse};
-use holochain_types::signal::Signal;
+use holochain_types::prelude::{AgentPubKey, CounterSigningSessionTimes, PreflightResponse};
+use holochain_types::signal::{Signal, SystemSignal};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::ops::Add;
@@ -171,6 +171,7 @@ fn agent_behaviour_initiate(
 
                         let my_preflight_response: PreflightResponse = response.decode().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
+                        let session_times = my_preflight_response.request.session_times.clone();
                         let session_timeout = Instant::now().add(Duration::from_millis((my_preflight_response.request.session_times.end.as_millis() - my_preflight_response.request.session_times.start.as_millis()) as u64));
                         loop {
                             // Now listen for a signal from the remote with their acceptance
@@ -213,6 +214,11 @@ fn agent_behaviour_initiate(
                                         vec![my_preflight_response, other_response],
                                         None,
                                     ).await.context("Initiator failed to commit countersigned entry")?;
+
+                                    // Wait for the session to complete before recording the time taken and the successful result.
+                                    // This also prevents a new session starting while our chain is locked!
+                                    await_countersigning_success(client.clone(), session_times).await.context("Initiated session did not complete within the session time")?;
+
                                     let elapsed = start.elapsed();
 
                                     log::debug!("Completed the countersigning session with agent {:?}", agent_pub_key);
@@ -308,6 +314,9 @@ fn agent_behaviour_participate(
                                 .with_field("value", accepted as i64),
                         );
 
+                        // Capture session times so that we know how long to wait for successful completion.
+                        let session_times = request.preflight_request.session_times.clone();
+
                         log::debug!("Another party has initiated a countersigning session.");
 
                         let response = client.call_zome(
@@ -331,6 +340,11 @@ fn agent_behaviour_participate(
                             vec![request.preflight_response, my_accept_response],
                             None,
                         ).await.context("Participant failed to commit countersigned entry")?;
+
+                        // Wait for the session to complete before recording the time taken and the successful result.
+                        // This also prevents a new session starting while our chain is locked!
+                        await_countersigning_success(client.clone(), session_times).await.context("Accepted session did not complete within the session time")?;
+
                         let elapsed = start.elapsed();
 
                         log::debug!("Completed the countersigning session with the initiating party.");
@@ -373,6 +387,40 @@ fn agent_teardown(
     // shutdown_remote(ctx)?;
 
     disconnect_trycp_client(ctx)?;
+
+    Ok(())
+}
+
+async fn await_countersigning_success(
+    client: TryCPClient,
+    session_times: CounterSigningSessionTimes,
+) -> HookResult {
+    let session_timeout = Instant::now().add(Duration::from_millis(
+        (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
+    ));
+    loop {
+        let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await?;
+        match signal {
+            Some(signal) => {
+                match rmp_serde::decode::from_slice::<Signal>(&signal.data).map_err(|e| {
+                    anyhow::anyhow!("Decoding failure, appears to not be a signal: {:?}", e)
+                })? {
+                    Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
+                        log::debug!("Countersigning session completed successfully.");
+                        break;
+                    }
+                    // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
+                    signal => {
+                        log::debug!("Received a signal that is not a successful countersigning signal, listening for other signals. {:?}", signal);
+                        continue;
+                    }
+                };
+            }
+            None => {
+                log::warn!("No signal received, problem with the remote? Will try again.");
+            }
+        }
+    }
 
     Ok(())
 }
