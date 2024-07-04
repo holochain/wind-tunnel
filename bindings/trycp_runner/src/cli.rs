@@ -71,11 +71,10 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
             .behaviour
             .iter()
             .map(|(_, count)| *count)
-            .sum::<usize>()
-            * self.instances_per_target as usize;
+            .sum::<usize>();
         if required_agents == 0 {
             required_agents = targets.nodes.len() * self.instances_per_target as usize;
-        } else if required_agents > targets.nodes.len() {
+        } else if required_agents > targets.nodes.len() * self.instances_per_target as usize {
             anyhow::bail!(
                 "The number of agents assigned to behaviours is greater than the number of nodes * instances per target. \
                 Agents assigned to behaviours: {}, nodes: {}, instances per target: {}",
