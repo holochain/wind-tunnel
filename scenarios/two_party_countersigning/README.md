@@ -1,8 +1,8 @@
-## remote_call
+## two_party_countersigning
 
 ### Description
 
-This scenario tests the throughput of `remote_call` operations.
+This scenario tests the performance of `countersigning` operations.
 
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
