@@ -1,6 +1,6 @@
 use anyhow::Context;
 use countersigning_integrity::Signals;
-use holochain_types::prelude::{AgentPubKey, CounterSigningSessionTimes, PreflightResponse};
+use holochain_types::prelude::{AgentPubKey, PreflightResponse};
 use holochain_types::signal::{Signal, SystemSignal};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -93,7 +93,7 @@ fn agent_setup(
             Ok(())
         })?;
 
-    log::debug!("Agent setup complete for: {}", ctx.agent_name().to_string());
+    log::debug!("Agent setup complete for {}, with agent pub key {:?}", ctx.agent_name().to_string(), ctx.get().cell_id().agent_pubkey());
 
     Ok(())
 }
@@ -150,7 +150,7 @@ fn agent_behaviour_initiate(
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_initiated")
                                 .with_tag("agent", agent_name.clone())
-                                .with_field("value", initiated as i64),
+                                .with_field("value", initiated as u64),
                         );
 
                         // Start a countersigning session with the next agent in the list.
@@ -172,10 +172,12 @@ fn agent_behaviour_initiate(
                         let my_preflight_response: PreflightResponse = response.decode().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
                         let session_times = my_preflight_response.request.session_times.clone();
-                        let session_timeout = Instant::now().add(Duration::from_millis((my_preflight_response.request.session_times.end.as_millis() - my_preflight_response.request.session_times.start.as_millis()) as u64));
+                        let session_timeout = Instant::now().add(Duration::from_millis(
+                            (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
+                        ));
                         loop {
                             // Now listen for a signal from the remote with their acceptance
-                            let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await.context("Agent did not respond to the countersigning request in time, abandoning")?;
+                            let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await.with_context(|| format!("Agent [{agent_pub_key:?}] did not respond to the countersigning request in time, abandoning"))?;
 
                             match signal {
                                 Some(signal) => {
@@ -217,7 +219,7 @@ fn agent_behaviour_initiate(
 
                                     // Wait for the session to complete before recording the time taken and the successful result.
                                     // This also prevents a new session starting while our chain is locked!
-                                    await_countersigning_success(client.clone(), session_times).await.context("Initiated session did not complete within the session time")?;
+                                    await_countersigning_success(client.clone(), session_timeout).await.with_context(|| format!("Initiated session with [{agent_pub_key:?}] did not complete within the session time"))?;
 
                                     let elapsed = start.elapsed();
 
@@ -227,7 +229,7 @@ fn agent_behaviour_initiate(
                                     reporter.add_custom(
                                         ReportMetric::new("countersigning_session_initiated_success")
                                             .with_tag("agent", agent_name.clone())
-                                            .with_field("value", initiated_success as i64),
+                                            .with_field("value", initiated_success as u64),
                                     );
                                     reporter.add_custom(
                                         ReportMetric::new("countersigning_session_initiated_duration")
@@ -311,11 +313,17 @@ fn agent_behaviour_participate(
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_accepted")
                                 .with_tag("agent", agent_name.clone())
-                                .with_field("value", accepted as i64),
+                                .with_field("value", accepted as u64),
                         );
 
-                        // Capture session times so that we know how long to wait for successful completion.
+                        let initiating_agent = request.preflight_request.signing_agents.first().unwrap().0.clone();
+
+                        // Figure out the session end time, so we can stop waiting for the session to complete when
+                        // retrying or listening for signals.
                         let session_times = request.preflight_request.session_times.clone();
+                        let session_timeout = Instant::now().add(Duration::from_millis(
+                            (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
+                        ));
 
                         log::debug!("Another party has initiated a countersigning session.");
 
@@ -332,18 +340,35 @@ fn agent_behaviour_participate(
 
                         let my_accept_response: PreflightResponse = response.decode().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
-                        client.call_zome(
-                            app_port,
-                            cell_id.clone(),
-                            "countersigning",
-                            "commit_two_party",
-                            vec![request.preflight_response, my_accept_response],
-                            None,
-                        ).await.context("Participant failed to commit countersigned entry")?;
+                        // Need to retry this to wait for the commit from the initiator to be received.
+                        // Until that arrives, this will just fail with a missing DHT op error.
+                        let mut retry_count = 0;
+                        loop {
+                            match client.call_zome(
+                                app_port,
+                                cell_id.clone(),
+                                "countersigning",
+                                "commit_two_party",
+                                vec![request.preflight_response.clone(), my_accept_response.clone()],
+                                None,
+                            ).await {
+                                Ok(_) => {
+                                    break;
+                                }
+                                Err(e) => {
+                                    if retry_count >= 2 || Instant::now() > session_timeout {
+                                        return Err(e).with_context(|| format!("Participant failed to commit countersigned entry after {} tries. The session was with [{initiating_agent:?}]", retry_count + 1));
+                                    }
+                                }
+                            }
+
+                            retry_count += 1;
+                            tokio::time::sleep(Duration::from_millis(100)).await;
+                        }
 
                         // Wait for the session to complete before recording the time taken and the successful result.
                         // This also prevents a new session starting while our chain is locked!
-                        await_countersigning_success(client.clone(), session_times).await.context("Accepted session did not complete within the session time")?;
+                        await_countersigning_success(client.clone(), session_timeout).await.context("Accepted session did not complete within the session time")?;
 
                         let elapsed = start.elapsed();
 
@@ -353,7 +378,8 @@ fn agent_behaviour_participate(
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_accepted_success")
                                 .with_tag("agent", agent_name.clone())
-                                .with_field("value", accepted_success as i64),
+                                .with_field("retries", retry_count as u64)
+                                .with_field("value", accepted_success as u64),
                         );
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_accepted_duration")
@@ -393,11 +419,8 @@ fn agent_teardown(
 
 async fn await_countersigning_success(
     client: TryCPClient,
-    session_times: CounterSigningSessionTimes,
+    session_timeout: Instant
 ) -> HookResult {
-    let session_timeout = Instant::now().add(Duration::from_millis(
-        (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
-    ));
     loop {
         let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await?;
         match signal {

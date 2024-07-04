@@ -83,7 +83,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
 
     let entry_hash = hash_entry(EntryTypes::ImportantAgreement(entry.clone()))?;
 
-    let session_times = session_times_from_millis(2_000)?;
+    let session_times = session_times_from_millis(5_000)?;
     let request = PreflightRequest::try_new(
         entry_hash,
         vec![
@@ -187,6 +187,19 @@ fn commit_two_party(responses: Vec<PreflightResponse>) -> ExternResult<()> {
     let inner = ImportantAgreement {
         best_ice_cream_flavour: "strawberry".to_string(),
     };
+
+    // TODO This doesn't belong here, we're asking for agent activity creates when Holochain should
+    //      know that we need this and send it to us...
+    let my_key = agent_info()?.agent_initial_pubkey;
+    let signing_agents = &responses.first().unwrap().request.signing_agents;
+    for (agent, _) in signing_agents {
+        // No need to check our own activity, only the remote.
+        if agent == &my_key {
+            continue;
+        }
+
+        get_agent_activity(agent.clone(), ChainQueryFilter::new(), ActivityRequest::Full)?;
+    }
 
     let entry = Entry::CounterSign(
         Box::new(
