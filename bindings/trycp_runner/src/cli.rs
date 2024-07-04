@@ -67,7 +67,12 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
             std::fs::read_to_string(&self.targets).context("Could not load targets file")?;
         let targets: Targets = serde_yaml::from_str(&targets)?;
 
-        let mut required_agents = self.behaviour.iter().map(|(_, count)| *count).sum::<usize>() * self.instances_per_target as usize;
+        let mut required_agents = self
+            .behaviour
+            .iter()
+            .map(|(_, count)| *count)
+            .sum::<usize>()
+            * self.instances_per_target as usize;
         if required_agents == 0 {
             required_agents = targets.nodes.len() * self.instances_per_target as usize;
         } else if required_agents > targets.nodes.len() {
