@@ -17,6 +17,7 @@ impl From<Roles> for Role {
 fn init() -> ExternResult<InitCallbackResult> {
     let mut fns = BTreeSet::new();
     fns.insert((zome_info()?.name, "recv_remote_signal".into()));
+    fns.insert((zome_info()?.name, "call_remote_signal".into()));
     let functions = GrantedFunctions::Listed(fns);
     create_cap_grant(CapGrantEntry {
         tag: "".into(),
@@ -31,6 +32,12 @@ fn init() -> ExternResult<InitCallbackResult> {
 #[hdk_extern]
 fn recv_remote_signal(signal: Signals) -> ExternResult<()> {
     // TODO we don't know who the remote signal came from?!
+    emit_signal(signal)
+}
+
+/// Send a remote signal to a specific agent by calling this zome function remotely.
+#[hdk_extern]
+fn call_remote_signal(signal: Signals) -> ExternResult<()> {
     emit_signal(signal)
 }
 
@@ -116,15 +123,24 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
     };
 
     // Let the other party know about the request
-    send_remote_signal(
+    let result = call_remote(
+        with_other,
+        zome_info()?.name,
+        "call_remote_signal".into(),
+        None,
         Signals::AcceptedRequest(AcceptedRequest {
             preflight_request: request.clone(),
             preflight_response: response.clone(),
-        }),
-        vec![with_other],
+        })
     )?;
 
-    Ok(response)
+    if let ZomeCallResponse::Ok(_) = result {
+        Ok(response)
+    } else {
+        Err(wasm_error!(WasmErrorInner::Guest(
+            "Failed to send remote signal".to_string()
+        )))
+    }
 }
 
 #[hdk_extern]
@@ -143,8 +159,21 @@ fn accept_two_party(request: PreflightRequest) -> ExternResult<PreflightResponse
     let my_accept = accept_countersigning_preflight_request(request)?;
     match my_accept {
         PreflightRequestAcceptance::Accepted(response) => {
-            send_remote_signal(Signals::Response(response.clone()), vec![initiating_agent])?;
-            Ok(response)
+            let result = call_remote(
+                initiating_agent,
+                zome_info()?.name,
+                "call_remote_signal".into(),
+                None,
+                Signals::Response(response.clone()),
+            )?;
+
+            if let ZomeCallResponse::Ok(_) = result {
+                Ok(response)
+            } else {
+                Err(wasm_error!(WasmErrorInner::Guest(
+                    "Failed to send remote signal".to_string()
+                )))
+            }
         }
         e => Err(wasm_error!(WasmErrorInner::Guest(format!(
             "Unexpected response: {:?}",

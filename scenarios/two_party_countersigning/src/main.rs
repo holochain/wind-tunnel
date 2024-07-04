@@ -134,6 +134,12 @@ fn agent_behaviour_initiate(
                             .context("Failed to list participants")?;
                         let mut new_peer_list = response.decode::<Vec<AgentPubKey>>().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
                         new_peer_list.shuffle(&mut thread_rng());
+
+                        // Pause to let Holochain receive more agent links if none are found yet.
+                        if new_peer_list.is_empty() {
+                            tokio::time::sleep(Duration::from_millis(100)).await;
+                        }
+
                         Ok(new_peer_list)
                     }
                     Some(agent_pub_key) => {
