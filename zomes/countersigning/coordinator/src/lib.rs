@@ -198,7 +198,11 @@ fn commit_two_party(responses: Vec<PreflightResponse>) -> ExternResult<()> {
             continue;
         }
 
-        get_agent_activity(agent.clone(), ChainQueryFilter::new(), ActivityRequest::Full)?;
+        get_agent_activity(
+            agent.clone(),
+            ChainQueryFilter::new(),
+            ActivityRequest::Full,
+        )?;
     }
 
     let entry = Entry::CounterSign(

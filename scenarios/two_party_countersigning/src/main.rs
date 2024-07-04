@@ -93,7 +93,11 @@ fn agent_setup(
             Ok(())
         })?;
 
-    log::debug!("Agent setup complete for {}, with agent pub key {:?}", ctx.agent_name().to_string(), ctx.get().cell_id().agent_pubkey());
+    log::debug!(
+        "Agent setup complete for {}, with agent pub key {:?}",
+        ctx.agent_name().to_string(),
+        ctx.get().cell_id().agent_pubkey()
+    );
 
     Ok(())
 }
@@ -417,10 +421,7 @@ fn agent_teardown(
     Ok(())
 }
 
-async fn await_countersigning_success(
-    client: TryCPClient,
-    session_timeout: Instant
-) -> HookResult {
+async fn await_countersigning_success(client: TryCPClient, session_timeout: Instant) -> HookResult {
     loop {
         let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await?;
         match signal {
