@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -62,14 +63,32 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<WindTunnelScenarioCli, Self::Error> {
-        let targets = std::fs::read_to_string(&self.targets)?;
+        let targets =
+            std::fs::read_to_string(&self.targets).context("Could not load targets file")?;
         let targets: Targets = serde_yaml::from_str(&targets)?;
+
+        let mut required_agents = self
+            .behaviour
+            .iter()
+            .map(|(_, count)| *count)
+            .sum::<usize>();
+        if required_agents == 0 {
+            required_agents = targets.nodes.len() * self.instances_per_target as usize;
+        } else if required_agents > targets.nodes.len() * self.instances_per_target as usize {
+            anyhow::bail!(
+                "The number of agents assigned to behaviours is greater than the number of nodes * instances per target. \
+                Agents assigned to behaviours: {}, nodes: {}, instances per target: {}",
+                required_agents,
+                targets.nodes.len(),
+                self.instances_per_target
+            );
+        }
 
         Ok(WindTunnelScenarioCli {
             // Connection string is already forwarded but is supposed to be a single value.
             // Pack values together and extract by agent id in helpers.
             connection_string: targets.nodes.join(","),
-            agents: Some(targets.nodes.len() * self.instances_per_target as usize),
+            agents: Some(required_agents),
             behaviour: self.behaviour,
             duration: self.duration,
             soak: self.soak,

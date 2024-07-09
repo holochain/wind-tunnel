@@ -1,6 +1,6 @@
 use holochain_client::AgentSigner;
 use holochain_conductor_api::ZomeCall;
-use holochain_types::prelude::{ExternIO, FunctionName, ZomeName};
+use holochain_types::prelude::{FunctionName, ZomeName};
 use holochain_zome_types::cell::CellId;
 use holochain_zome_types::prelude::ZomeCallUnsigned;
 use serde::de::DeserializeOwned;
@@ -800,15 +800,18 @@ mod app_impl {
         }
 
         #[wind_tunnel_instrument(prefix = "trycp_app_", pre_hook = pre_call_zome)]
-        pub async fn call_zome(
+        pub async fn call_zome<I>(
             &self,
             port: u16,
             cell_id: CellId,
             zome_name: impl Into<ZomeName> + Clone,
             fn_name: impl Into<FunctionName> + Clone,
-            payload: ExternIO,
+            payload: I,
             timeout: Option<Duration>,
-        ) -> io::Result<ExternIO> {
+        ) -> io::Result<ExternIO>
+        where
+            I: serde::Serialize + std::fmt::Debug,
+        {
             let (nonce, expires_at) = fresh_nonce(Timestamp::now()).map_err(io::Error::other)?;
 
             let zome_call_unsigned = ZomeCallUnsigned {
@@ -820,7 +823,7 @@ mod app_impl {
                 cell_id: cell_id.clone(),
                 zome_name: zome_name.into(),
                 fn_name: fn_name.into(),
-                payload,
+                payload: ExternIO::encode(payload).map_err(io::Error::other)?,
                 expires_at,
                 nonce,
             };
@@ -962,15 +965,17 @@ fn check_empty_response(response: MessageResponse) -> io::Result<()> {
     }
 }
 
-fn pre_call_zome(
+fn pre_call_zome<I>(
     operation_record: &mut OperationRecord,
     _port: &u16,
     _cell_id: &CellId,
     zome_name: &(impl Into<ZomeName> + Clone),
     fn_name: &(impl Into<FunctionName> + Clone),
-    _payload: &ExternIO,
+    _payload: &I,
     _timeout: &Option<Duration>,
-) {
+) where
+    I: serde::Serialize + std::fmt::Debug,
+{
     let zome_name: ZomeName = zome_name.clone().into();
     let fn_name: FunctionName = fn_name.clone().into();
     operation_record.add_attr("zome_name", zome_name.0.to_string());
