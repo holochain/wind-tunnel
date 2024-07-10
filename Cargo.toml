@@ -23,6 +23,7 @@ members = [
     "scenarios/local_signals",
     "scenarios/remote_call_rate",
     "scenarios/two_party_countersigning",
+    "scenarios/write_validated",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -37,6 +38,8 @@ members = [
     "zomes/remote_call/integrity",
     "zomes/countersigning/coordinator",
     "zomes/countersigning/integrity",
+    "zomes/validated/coordinator",
+    "zomes/validated/integrity"
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -119,6 +122,7 @@ timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
 remote_call_integrity = { path = "./zomes/remote_call/integrity" }
 countersigning_integrity = { path = "./zomes/countersigning/integrity" }
+validated_integrity = { path = "./zomes/validated/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

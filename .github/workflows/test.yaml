@@ -159,6 +159,16 @@ jobs:
 
           pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
 
+      - name: Smoke test - write_validated
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+
       - name: Smoke test - remote_call_rate
         run: |
           # Start a TryCP instance
