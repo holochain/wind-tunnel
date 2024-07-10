@@ -28,7 +28,11 @@ macro_rules! handle_error {
     ($e:expr) => {
         match $e {
             Ok(v) => v,
-            Err(e) => return Ok(ValidateCallbackResult::Invalid(format!("Validation logic error: ${e:?}"))),
+            Err(e) => {
+                return Ok(ValidateCallbackResult::Invalid(format!(
+                    "Validation logic error: ${e:?}"
+                )))
+            }
         }
     };
 }
@@ -46,7 +50,7 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     ))
                 }
             }
-        }
+        },
         FlatOp::StoreEntry(OpEntry::UpdateEntry { app_entry, .. }) => match app_entry {
             EntryTypes::SampleEntry(entry) => {
                 if entry.value.len() > 15 && &entry.value[0..7] == "update:" {
@@ -57,34 +61,53 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     ))
                 }
             }
-        }
-        FlatOp::RegisterCreateLink { link_type, action, base_address, target_address, .. } => {
+        },
+        FlatOp::RegisterCreateLink {
+            link_type,
+            action,
+            base_address,
+            target_address,
+            ..
+        } => {
             match link_type {
                 LinkTypes::SampleLink => {
                     let base = must_get_valid_record(handle_error!(base_address.try_into()))?;
                     let target = must_get_valid_record(handle_error!(target_address.try_into()))?;
 
-                    let sample_entry_type: AppEntryDef = handle_error!(UnitEntryTypes::SampleEntry.try_into());
+                    let sample_entry_type: AppEntryDef =
+                        handle_error!(UnitEntryTypes::SampleEntry.try_into());
                     match base.action() {
-                        Action::Create(create) if create.entry_type == EntryType::App(sample_entry_type.clone()) => {
+                        Action::Create(create)
+                            if create.entry_type == EntryType::App(sample_entry_type.clone()) =>
+                        {
                             // Okay, base should be a create, sample entry
                         }
                         _ => {
-                            return Ok(ValidateCallbackResult::Invalid("Base must be a create, sample entry".to_string()));
+                            return Ok(ValidateCallbackResult::Invalid(
+                                "Base must be a create, sample entry".to_string(),
+                            ));
                         }
                     }
 
                     match target.action() {
-                        Action::Update(update) if update.entry_type == EntryType::App(sample_entry_type) => {
+                        Action::Update(update)
+                            if update.entry_type == EntryType::App(sample_entry_type) =>
+                        {
                             // Okay, target should be an update, sample entry
                         }
                         _ => {
-                            return Ok(ValidateCallbackResult::Invalid("Target must be an update, sample entry".to_string()));
+                            return Ok(ValidateCallbackResult::Invalid(
+                                "Target must be an update, sample entry".to_string(),
+                            ));
                         }
                     }
 
-                    if &action.author != base.action().author() ||  base.action().author() != target.action().author() {
-                        return Ok(ValidateCallbackResult::Invalid("Can only create links to your own updates".to_string()));
+                    if &action.author != base.action().author()
+                        || base.action().author() != target.action().author()
+                    {
+                        return Ok(ValidateCallbackResult::Invalid(
+                            "Can only create links to your own updates".to_string(),
+                        ));
                     }
 
                     Ok(ValidateCallbackResult::Valid)

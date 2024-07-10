@@ -11,7 +11,11 @@ fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    install_app(ctx, scenario_happ_path!("validated"), &"validated".to_string())?;
+    install_app(
+        ctx,
+        scenario_happ_path!("validated"),
+        &"validated".to_string(),
+    )?;
 
     Ok(())
 }
@@ -26,10 +30,15 @@ fn agent_behaviour(
         "this is a test entry value",
     )?;
 
-    let _: ActionHash = call_zome(ctx, "validated", "update_sample_entry", UpdateSampleEntryInput {
-        original: action_hash,
-        new_value: "the old string was a bit boring".to_string(),
-    })?;
+    let _: ActionHash = call_zome(
+        ctx,
+        "validated",
+        "update_sample_entry",
+        UpdateSampleEntryInput {
+            original: action_hash,
+            new_value: "the old string was a bit boring".to_string(),
+        },
+    )?;
 
     Ok(())
 }
