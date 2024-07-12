@@ -1,0 +1,17 @@
+[package]
+name = "validated"
+version = "0.1.0"
+edition = "2021"
+description = "A Holochain coordinator zome with validation"
+
+[lib]
+name = "validated_coordinator"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdk = { workspace = true }
+validated_integrity = { workspace = true }
+
+[lints]
+workspace = true

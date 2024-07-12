@@ -64,7 +64,7 @@
                 pkgs.shellcheck
                 pkgs.statix
                 inputs.tryorama.packages.${system}.trycp-server
-                inputs.amber.packages.${system}.default
+                # inputs.amber.packages.${system}.default
               ];
 
               shellHook = ''
