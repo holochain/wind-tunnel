@@ -131,6 +131,7 @@ where
                         installed_app_id: Some(installed_app_id.clone()),
                         membrane_proofs: Default::default(),
                         network_seed: Some(run_id),
+                        ignore_genesis_failure: false,
                     },
                     // Allow more time to install the app when running many agents. The upload of
                     // the app bundle can take some time when targeting many nodes.
