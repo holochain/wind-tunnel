@@ -79,6 +79,7 @@
           packages = [
             pkgs.shellcheck
             pkgs.statix
+            inputs'.holonix.packages.holochain
             inputs.tryorama.packages.${system}.trycp-server
           ];
         };
