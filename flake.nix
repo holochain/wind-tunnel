@@ -8,11 +8,11 @@
     flake-parts.follows = "holonix/flake-parts";
 
     tryorama = {
-        url = "github:holochain/tryorama/v0.17.0-dev.1";
-        inputs = {
-            nixpkgs.follows = "holonix/nixpkgs";
+      url = "github:holochain/tryorama/v0.17.0-dev.1";
+      inputs = {
+        nixpkgs.follows = "holonix/nixpkgs";
 
-        };
+      };
     };
 
     rust-overlay = {

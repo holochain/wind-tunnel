@@ -9,5 +9,5 @@ let
   named_zomes = builtins.map ({ name, kind } @ input: { name = "${name}_${kind}"; value = config.zomeHelper.mkZome input; }) (lib.lists.flatten zome_names_with_types);
 in
 {
-   packages = builtins.listToAttrs named_zomes;
+  packages = builtins.listToAttrs named_zomes;
 }
