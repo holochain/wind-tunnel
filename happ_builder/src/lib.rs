@@ -296,6 +296,7 @@ fn build_required_dna(
         coordinator: holochain_types::dna::CoordinatorManifest {
             zomes: coordinator_manifests,
         },
+        lineage: Vec::with_capacity(0),
     });
 
     let dna_manifest_workdir = dna_target_dir.join(scenario_package_name).join(dna_name);
