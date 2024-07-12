@@ -17,8 +17,8 @@
     };
 
     crane = {
-        url = "github:ipetkov/crane";
-        inputs.nixpkgs.follows = "holonix/nixpkgs";
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "holonix/nixpkgs";
     };
 
     rust-overlay = {
