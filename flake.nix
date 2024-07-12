@@ -11,8 +11,14 @@
       url = "github:holochain/tryorama/v0.17.0-dev.1";
       inputs = {
         nixpkgs.follows = "holonix/nixpkgs";
-
+        crane.follows = "holonix/crane";
+        rust-overlay.follows = "holonix/rust-overlay";
       };
+    };
+
+    crane = {
+        url = "github:ipetkov/crane";
+        inputs.nixpkgs.follows = "holonix/nixpkgs";
     };
 
     rust-overlay = {
@@ -28,11 +34,11 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, holonix, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
+  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
-        rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit (holonix.inputs) crane; inherit (inputs) nixpkgs rust-overlay; };
+        rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
       in
       {
         imports = [
@@ -49,10 +55,7 @@
         devShells.default = pkgs.mkShell {
           inputsFrom = [ inputs'.holonix.devShells ];
 
-          packages = (with inputs'.holonix.packages; [
-            holochain
-            rust # For Rust development, with the WASM target included for zome builds
-          ]) ++ (with pkgs; [
+          packages = with pkgs; [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
             # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
@@ -61,9 +64,11 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
-            inputs.tryorama.packages.${system}.trycp-server
-            # inputs.amber.packages.${system}.default
-          ]);
+            inputs'.holonix.packages.holochain
+            inputs'.holonix.packages.lair-keystore
+            inputs'.tryorama.packages.trycp-server
+            inputs'.amber.packages.default
+          ];
 
           shellHook = ''
             source ./scripts/influx.sh
@@ -80,7 +85,8 @@
             pkgs.shellcheck
             pkgs.statix
             inputs'.holonix.packages.holochain
-            inputs.tryorama.packages.${system}.trycp-server
+            inputs'.holonix.packages.lair-keystore
+            inputs'.tryorama.packages.trycp-server
           ];
         };
 
