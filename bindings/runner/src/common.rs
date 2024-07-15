@@ -440,8 +440,7 @@ where
     SV: UserValuesConstraint,
 {
     let agent_name = ctx.agent_name().to_string();
-    let installed_app_id = format!("{}-app", agent_name).to_string();
-    installed_app_id
+    format!("{}-app", agent_name).to_string()
 }
 
 fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow::Result<CellId> {
