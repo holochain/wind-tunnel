@@ -5,9 +5,9 @@ use holochain_client_instrumented::prelude::{
     handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
 };
-use holochain_conductor_api::CellInfo;
+use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
 use holochain_types::prelude::{
-    AppBundleSource, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
+    AppBundleSource, CellId, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
 };
 use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
@@ -141,7 +141,7 @@ where
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let app_ws_url = ctx.runner_context().get().app_ws_url();
-    let agent_name = ctx.agent_name().to_string();
+    let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
 
     let (installed_app_id, cell_id, app_client) = ctx
@@ -157,7 +157,6 @@ where
                 .map_err(handle_api_err)?;
             log::debug!("Generated agent pub key: {:}", key);
 
-            let installed_app_id = format!("{}-app", agent_name).to_string();
             let app_info = client
                 .install_app(InstallAppPayload {
                     source: AppBundleSource::Path(app_path),
@@ -177,16 +176,7 @@ where
                 .map_err(handle_api_err)?;
             log::debug!("Enabled app: {:}", installed_app_id);
 
-            let cell_id = match app_info
-                .cell_info
-                .get(role_name)
-                .ok_or(anyhow::anyhow!("Role not found"))?
-                .first()
-                .ok_or(anyhow::anyhow!("Cell not found"))?
-            {
-                CellInfo::Provisioned(c) => c.cell_id.clone(),
-                _ => anyhow::bail!("Cell not provisioned"),
-            };
+            let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
             log::debug!("Got cell id: {:}", cell_id);
 
             let credentials = client
@@ -207,12 +197,101 @@ where
                     anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
                 })?;
 
-            let app_agent_client =
+            let app_client =
                 AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
 
-            Ok((installed_app_id, cell_id, app_agent_client))
+            Ok((installed_app_id, cell_id, app_client))
         })
         .context("Failed to install app")?;
+
+    ctx.get_mut().installed_app_id = Some(installed_app_id);
+    ctx.get_mut().cell_id = Some(cell_id);
+    ctx.get_mut().app_client = Some(app_client);
+
+    Ok(())
+}
+
+/// Used an installed app as though it had been installed by [install_app].
+///
+/// It doesn't matter whether the app was installed by [install_app], but if it wasn't then it is
+/// your responsibility to make sure the naming expectations are met. Namely, the app is installed
+/// under `<agent_name>-app`.
+///
+/// Once this function has run, you should be able to use any functions that would normally use the
+/// outputs of [install_app]. This makes it a useful drop-in if you want to run further code against
+/// an installed app after a scenario has finished.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, use_installed_app, AgentContext, HookResult};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     use_installed_app(ctx, &"your_role_name".to_string())?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Connects to an admin port using the connection string from the runner context.
+/// - Generates the expected installed_app_id for this agent.
+/// - Gets a list of installed apps and tries to find the matching one by app id.
+/// - If the app is not found, or is not in the Running state, then error.
+/// - Authorizes signing credentials.
+/// - Connects to the app websocket.
+/// - Sets the `installed_app_id`, `cell_id` and `app_agent_client` values in [HolochainAgentContext].
+pub fn use_installed_app<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    role_name: &RoleName,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let reporter = ctx.runner_context().reporter();
+    let installed_app_id = installed_app_id_for_agent(ctx);
+
+    let (installed_app_id, cell_id, app_client) = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+
+            let app_infos = client.list_apps(None).await.map_err(handle_api_err)?;
+            let app_info = app_infos
+                .into_iter()
+                .find(|app_info| app_info.installed_app_id == installed_app_id)
+                .ok_or(anyhow::anyhow!("App not found: {installed_app_id:?}"))?;
+
+            if app_info.status != AppInfoStatus::Running {
+                anyhow::bail!("App is not running: {installed_app_id:?}");
+            }
+
+            let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
+
+            let credentials = client
+                .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
+                    cell_id: cell_id.clone(),
+                    functions: None,
+                })
+                .await?;
+
+            let signer = ClientAgentSigner::default();
+            signer.add_credentials(cell_id.clone(), credentials);
+
+            let issued = client
+                .issue_app_auth_token(installed_app_id.clone().into())
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
+                })?;
+
+            let app_client =
+                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
+
+            Ok((installed_app_id, cell_id, app_client))
+        })?;
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
@@ -352,4 +431,28 @@ where
             .decode()
             .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
+}
+
+fn installed_app_id_for_agent<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> String
+where
+    SV: UserValuesConstraint,
+{
+    let agent_name = ctx.agent_name().to_string();
+    let installed_app_id = format!("{}-app", agent_name).to_string();
+    installed_app_id
+}
+
+fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow::Result<CellId> {
+    match app_info
+        .cell_info
+        .get(role_name)
+        .ok_or(anyhow::anyhow!("Role not found"))?
+        .first()
+        .ok_or(anyhow::anyhow!("Cell not found"))?
+    {
+        CellInfo::Provisioned(c) => Ok(c.cell_id.clone()),
+        _ => anyhow::bail!("Cell not provisioned"),
+    }
 }
