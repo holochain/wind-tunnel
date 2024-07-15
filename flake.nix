@@ -29,7 +29,7 @@
     };
 
     amber = {
-      url = "github:Ph0enixKM/Amber";
+      url = "github:Ph0enixKM/Amber/0.3.4-alpha";
       inputs.nixpkgs.follows = "holonix/nixpkgs";
     };
   };
@@ -53,8 +53,6 @@
         ];
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ inputs'.holonix.devShells ];
-
           packages = with pkgs; [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
@@ -67,7 +65,7 @@
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
-            inputs'.amber.packages.default
+            # inputs'.amber.packages.default
           ];
 
           shellHook = ''
