@@ -95,7 +95,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
         ],
         Vec::with_capacity(0),
         0,
-        true,
+        false,
         session_times,
         ActionBase::Create(CreateBase::new(
             UnitEntryTypes::ImportantAgreement.try_into()?,
