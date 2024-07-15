@@ -165,6 +165,7 @@ where
                     installed_app_id: Some(installed_app_id.clone()),
                     membrane_proofs: Default::default(),
                     network_seed: None,
+                    ignore_genesis_failure: false,
                 })
                 .await
                 .map_err(handle_api_err)?;

@@ -38,20 +38,7 @@ jobs:
           extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            .cargo/bin/
-            .cargo/registry/index/
-            .cargo/registry/cache/
-            .cargo/git/db/
-            target/
-            wasm-target/
-          key: "${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}"
-
-      - name: Cargo sweep mark for files
-        run: |
-          nix develop .#ci -c bash -c "cargo install cargo-sweep --force && cargo sweep --time 5"
+      - uses: Swatinem/rust-cache@v2
 
       - name: Check scripts
         run: |

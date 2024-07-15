@@ -2,99 +2,102 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    versions.url = "github:holochain/holochain?dir=versions/0_3";
+    holonix.url = "github:holochain/holonix/main";
 
-    holochain = {
-      url = "github:holochain/holochain";
-      inputs.versions.follows = "versions";
+    nixpkgs.follows = "holonix/nixpkgs";
+    flake-parts.follows = "holonix/flake-parts";
+
+    tryorama = {
+      url = "github:holochain/tryorama/v0.17.0-dev.1";
+      inputs = {
+        nixpkgs.follows = "holonix/nixpkgs";
+        crane.follows = "holonix/crane";
+        rust-overlay.follows = "holonix/rust-overlay";
+      };
     };
-
-    tryorama.url = "github:holochain/tryorama/v0.16.0";
 
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "holochain/nixpkgs";
+      inputs.nixpkgs.follows = "holonix/nixpkgs";
     };
-
-    flake-utils.url = "github:numtide/flake-utils";
 
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
-        nixpkgs.follows = "holochain/nixpkgs";
+        nixpkgs.follows = "holonix/nixpkgs";
       };
     };
 
     amber = {
       url = "github:Ph0enixKM/Amber";
-      inputs.nixpkgs.follows = "holochain/nixpkgs";
+      inputs.nixpkgs.follows = "holonix/nixpkgs";
     };
-
-    nixpkgs.follows = "holochain/nixpkgs";
   };
 
-  outputs = inputs:
-    inputs.holochain.inputs.flake-parts.lib.mkFlake { inherit inputs; }
+  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
+    systems = builtins.attrNames inputs.holonix.devShells;
+    perSystem = { inputs', pkgs, system, config, ... }:
+      let
+        rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
+      in
       {
-        systems = builtins.attrNames inputs.holochain.devShells;
         imports = [
           ./nix/modules/formatter.nix
           ./nix/modules/happs.nix
-          ./nix/modules/rust.nix
+          rustMod
           ./nix/modules/scenario.nix
           ./nix/modules/scenarios.nix
           ./nix/modules/workspace.nix
           ./nix/modules/zome.nix
           ./nix/modules/zomes.nix
         ];
-        perSystem = { lib, config, pkgs, system, self', ... }:
-          {
-            devShells.default = pkgs.mkShell {
-              inputsFrom = [
-                inputs.holochain.devShells.${system}.holonix
-              ];
 
-              packages = [
-                pkgs.influxdb2-cli
-                pkgs.influxdb2-server
-                # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
-                pkgs.telegraf
-                pkgs.yq
-                pkgs.httpie
-                pkgs.shellcheck
-                pkgs.statix
-                inputs.tryorama.packages.${system}.trycp-server
-                # inputs.amber.packages.${system}.default
-              ];
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [ inputs'.holonix.devShells ];
 
-              shellHook = ''
-                source ./scripts/influx.sh
-                source ./scripts/telegraf.sh
-                source ./scripts/trycp.sh
-                source ./scripts/checks.sh
-              '';
-            };
+          packages = with pkgs; [
+            pkgs.influxdb2-cli
+            pkgs.influxdb2-server
+            # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
+            pkgs.telegraf
+            pkgs.yq
+            pkgs.httpie
+            pkgs.shellcheck
+            pkgs.statix
+            inputs'.holonix.packages.holochain
+            inputs'.holonix.packages.lair-keystore
+            inputs'.tryorama.packages.trycp-server
+            inputs'.amber.packages.default
+          ];
 
-            devShells.ci = pkgs.mkShell {
-              inputsFrom = [
-                inputs.holochain.devShells.${system}.holochainBinaries
-              ];
+          shellHook = ''
+            source ./scripts/influx.sh
+            source ./scripts/telegraf.sh
+            source ./scripts/trycp.sh
+            source ./scripts/checks.sh
+          '';
+        };
 
-              packages = [
-                pkgs.shellcheck
-                pkgs.statix
-                inputs.tryorama.packages.${system}.trycp-server
-              ];
-            };
+        devShells.ci = pkgs.mkShell {
+          inputsFrom = [ inputs'.holonix.devShells ];
 
-            packages = {
-              default = config.workspace.workspace;
-              inherit (config.workspace) workspace;
-            };
+          packages = [
+            pkgs.shellcheck
+            pkgs.statix
+            inputs'.holonix.packages.holochain
+            inputs'.holonix.packages.lair-keystore
+            inputs'.tryorama.packages.trycp-server
+          ];
+        };
 
-            checks = {
-              inherit (config.workspace) workspace_clippy;
-            };
-          };
+        packages = {
+          default = config.workspace.workspace;
+          inherit (config.workspace) workspace;
+        };
+
+        checks = {
+          inherit (config.workspace) workspace_clippy;
+        };
       };
+  });
 }

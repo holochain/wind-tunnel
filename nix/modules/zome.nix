@@ -1,28 +1,30 @@
 # Module for building zome WASMs
 
-{ self, inputs, lib, ... }@flake: {
-  perSystem = { config, self', inputs', system, pkgs, ... }:
-    let
-      inherit (config.rustHelper) craneLib;
-    in
-    {
-      options.zomeHelper = lib.mkOption { type = lib.types.raw; };
+{ config, lib, ... }:
+let
+  inherit (config.rustHelper) craneLib;
 
-      config.zomeHelper = {
-        mkZome = { name, kind }:
-          let
-            packageName = if kind == "integrity" then "${name}_${kind}" else name;
-          in
-          craneLib.buildPackage (config.workspace.commonArgs // {
-            pname = "${name}_${kind}";
-            version = config.rustHelper.findCrateVersion ../../zomes/${name}/${kind}/Cargo.toml;
+  x = builtins.trace craneLib craneLib;
+in
+{
+  options.zomeHelper = lib.mkOption { type = lib.types.raw; };
 
-            inherit (config.workspace) cargoArtifacts;
+  config.zomeHelper = {
+    mkZome = { name, kind }:
+      let
+        x = builtins.trace "hello" "hello";
 
-            doCheck = false;
+        packageName = if kind == "integrity" then "${name}_${kind}" else name;
+      in
+      craneLib.buildPackage (config.workspace.commonArgs // {
+        pname = "${name}_${kind}";
+        version = config.rustHelper.findCrateVersion ../../zomes/${name}/${kind}/Cargo.toml;
 
-            cargoExtraArgs = "-p ${packageName} --lib --target wasm32-unknown-unknown";
-          });
-      };
-    };
+        inherit (config.workspace) cargoArtifacts;
+
+        doCheck = false;
+
+        cargoExtraArgs = "-p ${packageName} --lib --target wasm32-unknown-unknown";
+      });
+  };
 }
