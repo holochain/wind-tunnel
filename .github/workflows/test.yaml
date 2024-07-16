@@ -169,7 +169,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          nix develop .#ci -c bash -c "pkill --echo hc-run-local-services"
+          pkill --echo hc-run-local-services
 
       - name: Smoke test - two_party_countersigning
         run: |
@@ -184,7 +184,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          nix develop .#ci -c bash -c "pkill --echo hc-run-local-services"
+          pkill --echo hc-run-local-services
 
       - name: Build scenario bundles
         run: |
