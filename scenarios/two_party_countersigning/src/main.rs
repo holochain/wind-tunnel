@@ -9,9 +9,10 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::Instant;
+use trycp_wind_tunnel_runner::embed_conductor_config;
 use trycp_wind_tunnel_runner::prelude::*;
 
-const CONDUCTOR_CONFIG: &str = include_str!("../../../conductor-config.yaml");
+embed_conductor_config!();
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
@@ -35,7 +36,7 @@ fn agent_setup(
         .executor()
         .execute_in_place(async move {
             client
-                .configure_player(agent_name.clone(), CONDUCTOR_CONFIG.to_string(), None)
+                .configure_player(agent_name.clone(), conductor_config().to_string(), None)
                 .await?;
 
             client

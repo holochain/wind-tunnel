@@ -2,6 +2,7 @@ mod cli;
 mod common;
 mod context;
 mod definition;
+mod macros;
 mod runner_context;
 
 pub mod prelude {
