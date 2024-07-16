@@ -158,6 +158,8 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
+          set -x
+          
           # Start local network services
           nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
           # Start a TryCP instance
@@ -169,7 +171,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local-services
+          pkill --echo hc-run-local
 
       - name: Smoke test - two_party_countersigning
         run: |
@@ -184,7 +186,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local-services
+          pkill --echo hc-run-local
 
       - name: Build scenario bundles
         run: |
