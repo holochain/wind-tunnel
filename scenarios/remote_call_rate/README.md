@@ -24,7 +24,7 @@ This configuration defaults to 2 peers.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info CONDUCTOR_CONFIG="CI" MIN_PEERS=2 cargo run --package remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
+RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
 ```
 
 This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` and run with `start_trycp`.

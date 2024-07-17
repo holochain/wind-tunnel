@@ -8,7 +8,7 @@
     flake-parts.follows = "holonix/flake-parts";
 
     tryorama = {
-      url = "github:holochain/tryorama/develop";
+      url = "github:holochain/tryorama/download-logs";
       inputs = {
         nixpkgs.follows = "holonix/nixpkgs";
         crane.follows = "holonix/crane";

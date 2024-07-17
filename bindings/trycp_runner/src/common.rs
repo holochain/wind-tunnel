@@ -281,6 +281,63 @@ where
     Ok(())
 }
 
+/// Dumps the logs from the Holochain conductor and lair keystore managed by the TryCP server for the current agent.
+///
+/// The stderr output for Lair keystore will be downloaded to `logs/{run_id}/{agent_name}/lair-stderr.log`.
+/// The stdout and stderr output for the Holochain conductor will be downloaded to `logs/{run_id}/{agent_name}/conductor-stdout.log` and `logs/{run_id}/{agent_name}/conductor-stderr.log` respectively.
+///
+/// Example:
+/// ```rust
+/// use trycp_wind_tunnel_runner::prelude::{TryCPAgentContext, TryCPRunnerContext, AgentContext, HookResult, dump_logs};
+///
+/// fn agent_teardown(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
+///     dump_logs(ctx)?;
+///     Ok(())
+/// }
+///```
+///
+/// Note that once you reset the TryCP server using [reset_trycp_remote] the logs will be deleted.
+/// You should call this function before resetting the server if you want to keep the logs.
+///
+pub fn dump_logs<SV>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    let client = ctx.get().trycp_client();
+    let agent_name = ctx.agent_name().to_string();
+    let run_id = ctx.runner_context().get_run_id();
+
+    let logs = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place({
+            let agent_name = agent_name.clone();
+            async move {
+                let logs = client
+                    .download_logs(agent_name, Some(Duration::from_secs(180)))
+                    .await
+                    .context("Failed to download logs")?;
+                Ok(logs)
+            }
+        })?;
+
+    let path = std::env::current_dir()
+        .context("Failed to get current directory")?
+        .join("logs")
+        .join(run_id)
+        .join(agent_name);
+    std::fs::create_dir_all(&path)
+        .with_context(|| format!("Failed to create log directory at {path:?}"))?;
+
+    std::fs::write(path.join("lair-stderr.log"), logs.lair_stderr)?;
+    std::fs::write(path.join("conductor-stdout.log"), logs.conductor_stdout)?;
+    std::fs::write(path.join("conductor-stderr.log"), logs.conductor_stderr)?;
+
+    Ok(())
+}
+
 /// Shuts down the Holochain conductor managed by the TryCP server for the current agent.
 ///
 /// You *MUST* call this function in your agent teardown. Otherwise, dropping the agent context will

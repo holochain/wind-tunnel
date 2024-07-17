@@ -40,7 +40,7 @@ fn agent_setup(
                 .await?;
 
             client
-                .startup(agent_name.clone(), Some("warn".to_string()), None)
+                .startup(agent_name.clone(), None)
                 .await?;
 
             Ok(())
@@ -410,6 +410,10 @@ fn agent_behaviour_participate(
 fn agent_teardown(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    if let Err(e) = dump_logs(ctx) {
+        log::warn!("Failed to dump logs: {:?}", e);
+    }
+
     // Best effort to remove data and cleanup.
     // You should comment out this line if you want to examine the result of the scenario run!
     let _ = reset_trycp_remote(ctx);

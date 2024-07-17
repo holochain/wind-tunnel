@@ -36,6 +36,7 @@ impl std::fmt::Debug for TryCPClientInstrumented {
 
 mod control_impl {
     use super::*;
+    use trycp_api::{DownloadLogsResponse, TryCpServerResponse};
     use trycp_client::Signal;
 
     impl TryCPClientInstrumented {
@@ -130,13 +131,14 @@ mod control_impl {
         pub async fn startup(
             &self,
             id: String,
-            log_level: Option<String>,
             timeout: Option<Duration>,
         ) -> io::Result<()> {
+            let log_level = std::env::var("TRYCP_RUST_LOG").unwrap_or("warn".to_string());
+
             let response = self
                 .trycp_client
                 .request(
-                    Request::Startup { id, log_level },
+                    Request::Startup { id, log_level: Some(log_level) },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;
@@ -217,6 +219,19 @@ mod control_impl {
                 .await?;
 
             check_empty_response(response)
+        }
+
+        #[wind_tunnel_instrument(prefix = "trycp_")]
+        pub async fn download_logs(&self, id: String, timeout: Option<Duration>) -> io::Result<DownloadLogsResponse> {
+            let response = self
+                .trycp_client
+                .request(Request::DownloadLogs { id }, timeout.unwrap_or(self.timeout))
+                .await?;
+
+            match read_response::<TryCpServerResponse>(response) {
+                Ok(TryCpServerResponse::DownloadLogs(response)) => Ok(response),
+                _ => Err(io::Error::other("Unexpected response")),
+            }
         }
     }
 }
