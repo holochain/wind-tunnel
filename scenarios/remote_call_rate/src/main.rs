@@ -32,9 +32,7 @@ fn agent_setup(
                 .configure_player(agent_name.clone(), conductor_config().to_string(), None)
                 .await?;
 
-            client
-                .startup(agent_name.clone(), None)
-                .await?;
+            client.startup(agent_name.clone(), None).await?;
 
             Ok(())
         })?;

@@ -309,19 +309,16 @@ where
     let agent_name = ctx.agent_name().to_string();
     let run_id = ctx.runner_context().get_run_id();
 
-    let logs = ctx
-        .runner_context()
-        .executor()
-        .execute_in_place({
-            let agent_name = agent_name.clone();
-            async move {
-                let logs = client
-                    .download_logs(agent_name, Some(Duration::from_secs(180)))
-                    .await
-                    .context("Failed to download logs")?;
-                Ok(logs)
-            }
-        })?;
+    let logs = ctx.runner_context().executor().execute_in_place({
+        let agent_name = agent_name.clone();
+        async move {
+            let logs = client
+                .download_logs(agent_name, Some(Duration::from_secs(180)))
+                .await
+                .context("Failed to download logs")?;
+            Ok(logs)
+        }
+    })?;
 
     let path = std::env::current_dir()
         .context("Failed to get current directory")?

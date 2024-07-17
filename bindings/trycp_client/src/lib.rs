@@ -128,17 +128,16 @@ mod control_impl {
         ///
         /// Provide a conductor `id` and optionally a `log_level` such as "info" or "warn".
         #[wind_tunnel_instrument(prefix = "trycp_")]
-        pub async fn startup(
-            &self,
-            id: String,
-            timeout: Option<Duration>,
-        ) -> io::Result<()> {
+        pub async fn startup(&self, id: String, timeout: Option<Duration>) -> io::Result<()> {
             let log_level = std::env::var("TRYCP_RUST_LOG").unwrap_or("warn".to_string());
 
             let response = self
                 .trycp_client
                 .request(
-                    Request::Startup { id, log_level: Some(log_level) },
+                    Request::Startup {
+                        id,
+                        log_level: Some(log_level),
+                    },
                     timeout.unwrap_or(self.timeout),
                 )
                 .await?;
@@ -222,10 +221,17 @@ mod control_impl {
         }
 
         #[wind_tunnel_instrument(prefix = "trycp_")]
-        pub async fn download_logs(&self, id: String, timeout: Option<Duration>) -> io::Result<DownloadLogsResponse> {
+        pub async fn download_logs(
+            &self,
+            id: String,
+            timeout: Option<Duration>,
+        ) -> io::Result<DownloadLogsResponse> {
             let response = self
                 .trycp_client
-                .request(Request::DownloadLogs { id }, timeout.unwrap_or(self.timeout))
+                .request(
+                    Request::DownloadLogs { id },
+                    timeout.unwrap_or(self.timeout),
+                )
                 .await?;
 
             match read_response::<TryCpServerResponse>(response) {

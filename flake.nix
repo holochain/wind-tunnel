@@ -2,36 +2,51 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    holonix.url = "github:holochain/holonix/main";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=24.05";
+    flake-parts.url = "github:hercules-ci/flake-parts";
 
-    nixpkgs.follows = "holonix/nixpkgs";
-    flake-parts.follows = "holonix/flake-parts";
+    holonix = {
+      url = "github:holochain/holonix/main";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
+      };
+
+
+    };
 
     tryorama = {
-      url = "github:holochain/tryorama/download-logs";
+      url = "github:holochain/tryorama/v0.17.0-dev.2";
       inputs = {
-        nixpkgs.follows = "holonix/nixpkgs";
-        crane.follows = "holonix/crane";
-        rust-overlay.follows = "holonix/rust-overlay";
+        nixpkgs.follows = "nixpkgs";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
         holonix.follows = "holonix";
       };
     };
 
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "holonix/nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "holonix/nixpkgs";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # TODO should be followed correctly by amber for nixpkgs, contribute upstream.
+    naersk = {
+      url = "github:nix-community/naersk/master";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     amber = {
       url = "github:Ph0enixKM/Amber/0.3.4-alpha";
-      inputs.nixpkgs.follows = "holonix/nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.naersk.follows = "naersk";
     };
   };
 
