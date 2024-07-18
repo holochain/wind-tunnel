@@ -1,0 +1,48 @@
+# Currently deployed to 95.216.26.19, with DNS host name ifdb.holochain.org
+#
+# Yes, there is a password checked in here, but if anybody else comes to re-deploy this
+# then please start only `influxdb` and change the default admin password. Only then
+# should `caddy` be started, since that will expose the influxdb to the internet.
+services:
+  influxdb:
+    image: influxdb:2.7
+    restart: on-failure
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=windtunnel
+      - DOCKER_INFLUXDB_INIT_PASSWORD=windtunnel
+      - DOCKER_INFLUXDB_INIT_ORG=holo
+      - DOCKER_INFLUXDB_INIT_BUCKET=windtunnel
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+  caddy:
+    image: caddy:2.8
+    depends_on:
+      - influxdb
+    restart: on-failure
+    command:
+      - caddy
+      - reverse-proxy
+      - --from
+      - ifdb.holochain.org
+      - --to
+      - influxdb:8086
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  influxdb_data:
+  influxdb_config:
+  caddy_data:
+  caddy_config:
