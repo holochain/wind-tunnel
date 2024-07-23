@@ -62,7 +62,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         executor,
         reporter,
         shutdown_handle.clone(),
-        run_id,
+        run_id.clone(),
         definition.connection_string.clone(),
     );
 
@@ -126,7 +126,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     let mut context = AgentContext::new(
                         agent_index,
                         agent_name.clone(),
-                        assigned_behaviour,
+                        assigned_behaviour.clone(),
                         runner_context,
                         delegated_shutdown_listener,
                     );
@@ -172,7 +172,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                 }
                                 Err(e) => {
                                     log::error!(
-                                        "Agent behaviour failed for agent {agent_name}: {:?}",
+                                        "Agent behaviour [{assigned_behaviour}] failed for agent {agent_name}: {:?}",
                                         e
                                     );
                                 }
@@ -213,6 +213,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     report_shutdown_handle.shutdown();
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
+
+    println!("#RunId: [{}]", run_id);
 
     Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }
