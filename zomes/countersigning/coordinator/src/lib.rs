@@ -31,7 +31,6 @@ fn init() -> ExternResult<InitCallbackResult> {
 
 #[hdk_extern]
 fn recv_remote_signal(signal: Signals) -> ExternResult<()> {
-    // TODO we don't know who the remote signal came from?!
     emit_signal(signal)
 }
 
@@ -74,16 +73,29 @@ fn list_participants() -> ExternResult<Vec<AgentPubKey>> {
 }
 
 #[hdk_extern]
+fn create_anything() -> ExternResult<()> {
+    let _ = create_entry(EntryTypes::ImportantAgreement(ImportantAgreement {
+        best_ice_cream_flavour: "vanilla".to_string(),
+    }));
+
+    Ok(())
+}
+
+#[hdk_extern]
 fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
     let my_agent_info = agent_info()?;
 
+    let me = my_agent_info.agent_initial_pubkey.clone();
+    let time = sys_time()?;
+
+    // Want a reasonably unique entry so that we can tell the sessions apart when debugging.
     let entry = ImportantAgreement {
-        best_ice_cream_flavour: "strawberry".to_string(),
+        best_ice_cream_flavour: format!("strawberry-{me:?}-{time:?}"),
     };
 
     let entry_hash = hash_entry(EntryTypes::ImportantAgreement(entry.clone()))?;
 
-    let session_times = session_times_from_millis(5_000)?;
+    let session_times = session_times_from_millis(20_000)?;
     let request = PreflightRequest::try_new(
         entry_hash,
         vec![
@@ -149,9 +161,9 @@ fn accept_two_party(request: PreflightRequest) -> ExternResult<PreflightResponse
 
     // Pre-flight check
     let flavour = String::from_utf8_lossy(&request.preflight_bytes.0);
-    if flavour != "strawberry" {
+    if !flavour.starts_with("strawberry") {
         return Err(wasm_error!(WasmErrorInner::Guest(
-            "Only chocolate is accepted".to_string()
+            "Only strawberry is accepted".to_string()
         )));
     }
 
@@ -184,8 +196,12 @@ fn accept_two_party(request: PreflightRequest) -> ExternResult<PreflightResponse
 
 #[hdk_extern]
 fn commit_two_party(responses: Vec<PreflightResponse>) -> ExternResult<()> {
+    let flavour = responses
+        .first()
+        .map(|r| r.request.preflight_bytes.0.clone())
+        .ok_or_else(|| wasm_error!(WasmErrorInner::Guest("No responses provided".to_string())))?;
     let inner = ImportantAgreement {
-        best_ice_cream_flavour: "strawberry".to_string(),
+        best_ice_cream_flavour: String::from_utf8_lossy(&flavour).to_string(),
     };
 
     // TODO This doesn't belong here, we're asking for agent activity creates when Holochain should

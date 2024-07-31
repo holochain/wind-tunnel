@@ -14,7 +14,7 @@
         rust-overlay.follows = "rust-overlay";
       };
 
-
+      inputs.holochain.url = "github:holochain/holochain/debug-countersigning-validation";
     };
 
     tryorama = {
@@ -80,6 +80,7 @@
             pkgs.statix
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
+            inputs'.holonix.packages.hn-introspect
             inputs'.tryorama.packages.trycp-server
             # inputs'.amber.packages.default
           ];

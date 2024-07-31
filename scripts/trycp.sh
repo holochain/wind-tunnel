@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 start_trycp() {
-  trycp_server --port 9000 &
+  trycp_server --port 9000
 }
 
 stop_trycp() {
