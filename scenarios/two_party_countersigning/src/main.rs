@@ -27,7 +27,6 @@ fn agent_setup(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
     connect_trycp_client(ctx)?;
-    reset_trycp_remote(ctx)?;
 
     let client = ctx.get().trycp_client();
     let agent_name = ctx.agent_name().to_string();
@@ -331,36 +330,6 @@ fn agent_behaviour_participate(
 
                         let my_accept_response: PreflightResponse = response.decode().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
-                        // Need to retry this to wait for the commit from the initiator to be received.
-                        // Until that arrives, this will just fail with a missing DHT op error.
-                        let mut retry_count = 0;
-                        loop {
-                            match client.call_zome(
-                                app_port,
-                                cell_id.clone(),
-                                "countersigning",
-                                "commit_two_party",
-                                vec![request.preflight_response.clone(), my_accept_response.clone()],
-                                None,
-                            ).await {
-                                Ok(_) => {
-                                    break;
-                                }
-                                Err(e) => {
-                                    if retry_count >= 2 || Instant::now() > session_timeout {
-                                        return Err(e).with_context(|| format!("Participant failed to commit countersigned entry after {} tries. The session was with [{initiating_agent:?}]", retry_count + 1));
-                                    }
-                                }
-                            }
-
-                            retry_count += 1;
-                            tokio::time::sleep(Duration::from_millis(100)).await;
-                        }
-
-                        // Wait for the session to complete before recording the time taken and the successful result.
-                        // This also prevents a new session starting while our chain is locked!
-                        await_countersigning_success(client.clone(), session_timeout).await.context("Accepted session did not complete within the session time")?;
-
                         let retry_count = match complete_session(client.clone(), app_port, cell_id.clone(), request.preflight_response, my_accept_response, session_timeout).await {
                             Ok(retry_count) => retry_count,
                             Err(e) => {
@@ -485,18 +454,22 @@ async fn complete_session(
         initiate_preflight_response.request.app_entry_hash,
         session_timeout,
     )
-    .await {
+    .await
+    {
         Ok(_) => {}
         Err(e) => {
             // Try to force unlock the chain
-            client.call_zome(
-                app_port,
-                cell_id.clone(),
-                "countersigning",
-                "create_anything",
-                (),
-                None,
-            ).await.ok();
+            client
+                .call_zome(
+                    app_port,
+                    cell_id.clone(),
+                    "countersigning",
+                    "create_anything",
+                    (),
+                    None,
+                )
+                .await
+                .ok();
 
             return Err(e).with_context(|| {
                 format!(
