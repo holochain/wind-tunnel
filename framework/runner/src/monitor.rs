@@ -1,4 +1,4 @@
-use sysinfo::{Pid, ProcessRefreshKind, System};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 /// Monitor the resource usage of the wind-tunnel process and report high usage.
@@ -15,7 +15,7 @@ pub(crate) fn start_monitor(mut shutdown_listener: DelegatedShutdownListener) {
             let this_process_pid = Pid::from_u32(std::process::id());
             let mut sys = System::new();
 
-            sys.refresh_cpu();
+            sys.refresh_cpu_all();
             let cpu_count = sys.cpus().len();
 
             loop {
@@ -23,7 +23,7 @@ pub(crate) fn start_monitor(mut shutdown_listener: DelegatedShutdownListener) {
                     break;
                 }
 
-                sys.refresh_process_specifics(this_process_pid, ProcessRefreshKind::new().with_cpu());
+                sys.refresh_processes_specifics(ProcessesToUpdate::Some(&[this_process_pid]), ProcessRefreshKind::new().with_cpu());
 
                 let process = sys.process(this_process_pid).expect("Failed to get process info");
 

@@ -6,7 +6,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
-      url = "github:holochain/holonix/main";
+      url = "github:holochain/holonix?ref=main";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
@@ -18,7 +18,7 @@
     };
 
     tryorama = {
-      url = "github:holochain/tryorama/v0.17.0-dev.2";
+      url = "github:holochain/tryorama?ref=v0.17.0-dev.2";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         crane.follows = "crane";
@@ -39,12 +39,12 @@
 
     # TODO should be followed correctly by amber for nixpkgs, contribute upstream.
     naersk = {
-      url = "github:nix-community/naersk/master";
+      url = "github:nix-community/naersk?ref=master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     amber = {
-      url = "github:Ph0enixKM/Amber/0.3.4-alpha";
+      url = "github:thetasinner/amber?ref=master";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.naersk.follows = "naersk";
     };
@@ -80,8 +80,10 @@
             pkgs.statix
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
+            inputs'.holonix.packages.hn-introspect
+            inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
-            # inputs'.amber.packages.default
+            inputs'.amber.packages.default
           ];
 
           shellHook = ''

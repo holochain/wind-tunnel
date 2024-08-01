@@ -31,7 +31,6 @@ fn init() -> ExternResult<InitCallbackResult> {
 
 #[hdk_extern]
 fn recv_remote_signal(signal: Signals) -> ExternResult<()> {
-    // TODO we don't know who the remote signal came from?!
     emit_signal(signal)
 }
 

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use countersigning_integrity::Signals;
-use holochain_types::prelude::{AgentPubKey, PreflightResponse};
+use holochain_types::prelude::{AgentPubKey, CellId, EntryHash, PreflightResponse};
 use holochain_types::signal::{Signal, SystemSignal};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -196,9 +196,9 @@ fn agent_behaviour_initiate(
                                     };
 
                                     let other_response = match signal.clone().into_inner().decode::<Signals>() {
-                                        Ok(Signals::Response(response)) => response,
+                                        Ok(Signals::Response(response)) if response.request.app_entry_hash == my_preflight_response.request.app_entry_hash => response,
                                         Ok(_) => {
-                                            log::debug!("Received a signal that is not a response, listening for other signals.");
+                                            log::debug!("Received a signal that is not a response for this countersigning session, listening for other signals.");
                                             continue;
                                         }
                                         Err(_) => {
@@ -211,18 +211,7 @@ fn agent_behaviour_initiate(
 
                                     log::debug!("The other party [{:?}] has accepted the countersigning session.", agent_pub_key);
 
-                                    client.call_zome(
-                                        app_port,
-                                        cell_id.clone(),
-                                        "countersigning",
-                                        "commit_two_party",
-                                        vec![my_preflight_response, other_response],
-                                        None,
-                                    ).await.context("Initiator failed to commit countersigned entry")?;
-
-                                    // Wait for the session to complete before recording the time taken and the successful result.
-                                    // This also prevents a new session starting while our chain is locked!
-                                    await_countersigning_success(client.clone(), session_timeout).await.with_context(|| format!("Initiated session with [{agent_pub_key:?}] did not complete within the session time"))?;
+                                    let retry_count = complete_session(client.clone(), app_port, cell_id.clone(), my_preflight_response, other_response, session_timeout).await.context("Initiator failed to complete session")?;
 
                                     let elapsed = start.elapsed();
 
@@ -232,6 +221,7 @@ fn agent_behaviour_initiate(
                                     reporter.add_custom(
                                         ReportMetric::new("countersigning_session_initiated_success")
                                             .with_tag("agent", agent_name.clone())
+                                            .with_field("retries", retry_count as u64)
                                             .with_field("value", initiated_success as u64),
                                     );
                                     reporter.add_custom(
@@ -319,8 +309,6 @@ fn agent_behaviour_participate(
                                 .with_field("value", accepted as u64),
                         );
 
-                        let initiating_agent = request.preflight_request.signing_agents.first().unwrap().0.clone();
-
                         // Figure out the session end time, so we can stop waiting for the session to complete when
                         // retrying or listening for signals.
                         let session_times = request.preflight_request.session_times.clone();
@@ -373,6 +361,14 @@ fn agent_behaviour_participate(
                         // This also prevents a new session starting while our chain is locked!
                         await_countersigning_success(client.clone(), session_timeout).await.context("Accepted session did not complete within the session time")?;
 
+                        let retry_count = match complete_session(client.clone(), app_port, cell_id.clone(), request.preflight_response, my_accept_response, session_timeout).await {
+                            Ok(retry_count) => retry_count,
+                            Err(e) => {
+                                // If we got a fatal error rather than a successful session, wait for the session to expire before trying again
+                                tokio::time::sleep_until(session_timeout).await;
+                                return Err(e).context("Acceptor failed to complete session");
+                            }
+                        };
                         let elapsed = start.elapsed();
 
                         log::debug!("Completed the countersigning session with the initiating party.");
@@ -424,7 +420,103 @@ fn agent_teardown(
     Ok(())
 }
 
-async fn await_countersigning_success(client: TryCPClient, session_timeout: Instant) -> HookResult {
+async fn complete_session(
+    client: TryCPClient,
+    app_port: u16,
+    cell_id: CellId,
+    initiate_preflight_response: PreflightResponse,
+    participate_preflight_response: PreflightResponse,
+    session_timeout: Instant,
+) -> anyhow::Result<usize> {
+    let mut retry_count = 0;
+    for i in 0.. {
+        let r = client
+            .call_zome(
+                app_port,
+                cell_id.clone(),
+                "countersigning",
+                "commit_two_party",
+                vec![
+                    initiate_preflight_response.clone(),
+                    participate_preflight_response.clone(),
+                ],
+                None,
+            )
+            .await
+            .context("Failed to commit countersigned entry");
+
+        match r {
+            Ok(_) => {
+                break;
+            }
+            Err(e) => {
+                if Instant::now() > session_timeout {
+                    return Err(e).context(format!(
+                        "Abandoning commit attempt because the session timed out on attempt {}",
+                        i
+                    ));
+                } else if e
+                    .chain()
+                    .any(|e| e.to_string().contains("was not found on the DHT"))
+                {
+                    // Skip logging this message, it's what we're expecting to take some time in this retry loop
+                } else if e.chain().any(|e| {
+                    e.to_string()
+                        .contains("countersigning session that has already expired")
+                }) {
+                    return Err(e).context(format!("Failed because the session expired on attempt {} and with {:?} expected time remaining", i, session_timeout - Instant::now()));
+                } else {
+                    log::warn!(
+                        "[{i}] Failed to commit countersigned entry, will retry. {:?}",
+                        e
+                    );
+                }
+
+                retry_count = i;
+                tokio::time::sleep(Duration::from_millis(250)).await;
+            }
+        }
+    }
+
+    // Wait for the session to complete before recording the time taken and the successful result.
+    // This also prevents a new session starting while our chain is locked!
+    match await_countersigning_success(
+        client.clone(),
+        initiate_preflight_response.request.app_entry_hash,
+        session_timeout,
+    )
+    .await {
+        Ok(_) => {}
+        Err(e) => {
+            // Try to force unlock the chain
+            client.call_zome(
+                app_port,
+                cell_id.clone(),
+                "countersigning",
+                "create_anything",
+                (),
+                None,
+            ).await.ok();
+
+            return Err(e).with_context(|| {
+                format!(
+                    "Session between [{:?}] did not complete within the session time",
+                    participate_preflight_response.request.signing_agents
+                )
+            });
+        }
+    }
+
+    log::info!("Completed countersigning session with retry count: {}", retry_count);
+
+    Ok(retry_count)
+}
+
+async fn await_countersigning_success(
+    client: TryCPClient,
+    session_entry_hash: EntryHash,
+    session_timeout: Instant,
+) -> HookResult {
     loop {
         let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await?;
         match signal {
@@ -432,9 +524,16 @@ async fn await_countersigning_success(client: TryCPClient, session_timeout: Inst
                 match rmp_serde::decode::from_slice::<Signal>(&signal.data).map_err(|e| {
                     anyhow::anyhow!("Decoding failure, appears to not be a signal: {:?}", e)
                 })? {
-                    Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
+                    Signal::System(SystemSignal::SuccessfulCountersigning(eh))
+                        if eh == session_entry_hash =>
+                    {
                         log::debug!("Countersigning session completed successfully.");
                         break;
+                    }
+                    Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
+                        // This shouldn't happen because the scenario should only be running one at a time. There's a bug if this log message shows up.
+                        log::warn!("Received a successful countersigning signal for a different session, listening for other signals.");
+                        continue;
                     }
                     // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
                     signal => {
