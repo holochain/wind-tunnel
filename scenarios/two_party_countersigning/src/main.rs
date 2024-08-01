@@ -480,7 +480,10 @@ async fn complete_session(
         }
     }
 
-    log::info!("Completed countersigning session with retry count: {}", retry_count);
+    log::info!(
+        "Completed countersigning session with retry count: {}",
+        retry_count
+    );
 
     Ok(retry_count)
 }
