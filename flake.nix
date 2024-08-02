@@ -14,7 +14,7 @@
         rust-overlay.follows = "rust-overlay";
       };
 
-
+      inputs.holochain.url = "github:holochain/holochain?ref=4118-countersigning-check-chain-lock-debug";
     };
 
     tryorama = {

@@ -82,7 +82,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
 
     let entry_hash = hash_entry(EntryTypes::ImportantAgreement(entry.clone()))?;
 
-    let session_times = session_times_from_millis(5_000)?;
+    let session_times = session_times_from_millis(20_000)?;
     let request = PreflightRequest::try_new(
         entry_hash,
         vec![
