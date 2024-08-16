@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::context::HolochainAgentContext;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
@@ -164,6 +165,7 @@ where
                     installed_app_id: Some(installed_app_id.clone()),
                     membrane_proofs: Default::default(),
                     network_seed: None,
+                    existing_cells: HashMap::new(),
                     ignore_genesis_failure: false,
                 })
                 .await

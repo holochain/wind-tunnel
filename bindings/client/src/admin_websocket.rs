@@ -67,7 +67,7 @@ impl AdminWebsocketInstrumented {
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn uninstall_app(&self, installed_app_id: String) -> ConductorApiResult<()> {
-        self.inner.uninstall_app(installed_app_id).await
+        self.inner.uninstall_app(installed_app_id, false).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]

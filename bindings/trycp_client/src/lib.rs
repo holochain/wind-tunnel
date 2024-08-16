@@ -311,10 +311,11 @@ mod admin_impl {
             &self,
             id: String,
             installed_app_id: String,
+            force: bool,
             timeout: Option<Duration>,
         ) -> io::Result<()> {
             let response = self
-                .call_admin(id, AdminRequest::UninstallApp { installed_app_id }, timeout)
+                .call_admin(id, AdminRequest::UninstallApp { installed_app_id, force }, timeout)
                 .await?;
 
             match response {

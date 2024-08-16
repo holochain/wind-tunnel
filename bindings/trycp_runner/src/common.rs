@@ -131,6 +131,7 @@ where
                         installed_app_id: Some(installed_app_id.clone()),
                         membrane_proofs: Default::default(),
                         network_seed: Some(run_id),
+                        existing_cells: Default::default(),
                         ignore_genesis_failure: false,
                     },
                     // Allow more time to install the app when running many agents. The upload of
