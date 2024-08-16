@@ -315,7 +315,14 @@ mod admin_impl {
             timeout: Option<Duration>,
         ) -> io::Result<()> {
             let response = self
-                .call_admin(id, AdminRequest::UninstallApp { installed_app_id, force }, timeout)
+                .call_admin(
+                    id,
+                    AdminRequest::UninstallApp {
+                        installed_app_id,
+                        force,
+                    },
+                    timeout,
+                )
                 .await?;
 
             match response {
