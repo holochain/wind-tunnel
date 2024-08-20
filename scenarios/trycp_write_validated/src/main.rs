@@ -45,62 +45,40 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let client = ctx.get().trycp_client();
-
-    let app_port = ctx.get().app_port();
-    let cell_id = ctx.get().cell_id();
     let reporter = ctx.runner_context().reporter();
 
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            let start = Instant::now();
+    let start = Instant::now();
 
-            let action_hash: ActionHash = client
-                .call_zome(
-                    app_port,
-                    cell_id.clone(),
-                    "validated",
-                    "create_sample_entry",
-                    "this is a test entry value",
-                    Some(Duration::from_secs(80)),
-                )
-                .await
-                .map_err(|e| anyhow::anyhow!("call failure: {:?}", e))?
-                .decode()
-                .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
+    let action_hash: ActionHash = call_zome(
+        ctx,
+        "validated",
+        "create_sample_entry",
+        "this is a test entry value",
+        Some(Duration::from_secs(80)),
+    )?;
 
-            reporter.add_custom(
-                ReportMetric::new("create_sample_entry_time")
-                    .with_field("value", start.elapsed().as_secs_f64()),
-            );
+    reporter.add_custom(
+        ReportMetric::new("create_sample_entry_time")
+            .with_field("value", start.elapsed().as_secs_f64()),
+    );
 
-            let start = Instant::now();
+    let start = Instant::now();
 
-            let _: ActionHash = client
-                .call_zome(
-                    app_port,
-                    cell_id,
-                    "validated",
-                    "update_sample_entry",
-                    UpdateSampleEntryInput {
-                        original: action_hash,
-                        new_value: "the old string was a bit boring".to_string(),
-                    },
-                    Some(Duration::from_secs(80)),
-                )
-                .await
-                .map_err(|e| anyhow::anyhow!("call failure: {:?}", e))?
-                .decode()
-                .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
+    let _: ActionHash = call_zome(
+        ctx,
+        "validated",
+        "update_sample_entry",
+        UpdateSampleEntryInput {
+            original: action_hash,
+            new_value: "the old string was a bit boring".to_string(),
+        },
+        Some(Duration::from_secs(80)),
+    )?;
 
-            reporter.add_custom(
-                ReportMetric::new("update_sample_entry_time")
-                    .with_field("value", start.elapsed().as_secs_f64()),
-            );
-
-            Ok(())
-        })?;
+    reporter.add_custom(
+        ReportMetric::new("update_sample_entry_time")
+            .with_field("value", start.elapsed().as_secs_f64()),
+    );
 
     Ok(())
 }

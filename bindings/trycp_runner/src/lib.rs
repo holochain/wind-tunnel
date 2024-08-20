@@ -8,8 +8,8 @@ mod runner_context;
 pub mod prelude {
     pub use crate::cli::WindTunnelTryCPScenarioCli;
     pub use crate::common::{
-        connect_trycp_client, disconnect_trycp_client, dump_logs, install_app, reset_trycp_remote,
-        shutdown_remote, try_wait_for_min_peers,
+        call_zome, connect_trycp_client, disconnect_trycp_client, dump_logs, install_app,
+        reset_trycp_remote, shutdown_remote, try_wait_for_min_peers,
     };
     pub use crate::context::{DefaultScenarioValues, TryCPAgentContext};
     pub use crate::definition::TryCPScenarioDefinitionBuilder;
