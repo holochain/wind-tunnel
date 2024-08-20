@@ -438,3 +438,31 @@ pub fn disconnect_trycp_client<SV: UserValuesConstraint>(
 
     Ok(())
 }
+
+/// Calls a zome function on the cell specified in `ctx.get().cell_id()`.
+///
+/// You must have a valid trycp_client in your context.
+pub fn call_zome<I, O, SV>(
+    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<SV>>,
+    zome_name: &str,
+    fn_name: &str,
+    payload: I,
+    timeout: Option<Duration>,
+) -> anyhow::Result<O>
+where
+    O: std::fmt::Debug + serde::de::DeserializeOwned,
+    I: serde::Serialize + std::fmt::Debug,
+    SV: UserValuesConstraint,
+{
+    let client = ctx.get().trycp_client();
+    let app_port = ctx.get().app_port();
+    let cell_id = ctx.get().cell_id();
+    ctx.runner_context().executor().execute_in_place(async {
+        client
+            .call_zome(app_port, cell_id, zome_name, fn_name, payload, timeout)
+            .await
+            .map_err(|e| anyhow::anyhow!("call failure: {:?}", e))?
+            .decode()
+            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
+    })
+}
