@@ -279,6 +279,17 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
+#### Running Holochain with TryCP server
+
+For tests that use TryCP, you can start a TryCP server with the following command:
+
+```bash
+start_trycp
+```
+
+This server does not need restarting. It can be left running and it will stop and start
+Holochain instances as required by the scenarios.
+
 #### Running network services
 
 There is an alternate conductor configuration that is used in CI and for development. This is found in `conductor-config-ci.yaml`.
@@ -312,14 +323,27 @@ There is a Nix environment provided, and it is recommended that you use its shel
 nix develop
 ```
 
-Start a sandbox for testing:
+Decide what type of test you are writing and pick one of the next two sections.
+Then you can move to writing and running the scenario.
 
+#### Standard Wind Tunnel tests
+
+For standard Wind Tunnel tests - start a sandbox for testing:
 ```bash
 hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
 ```
 
-It is recommended to stop and start this sandbox conductor between test runs because getting Holochain back to a clean 
+It is recommended to stop and start this sandbox conductor between test runs because getting Holochain back to a clean
 through its API is not yet implemented.
+
+#### TryCP Wind Tunnel tests
+
+For TryCP Wind Tunnel testing - start a trycp_server:
+```bash
+start_trycp
+```
+
+#### Running a scenario
 
 You can then start a second terminal and run one of the scenarios in the `scenarios` directory:
 
