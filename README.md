@@ -336,6 +336,12 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f
 It is recommended to stop and start this sandbox conductor between test runs because getting Holochain back to a clean
 through its API is not yet implemented.
 
+You can then start a second terminal and run one of the scenarios in the `scenarios` directory:
+
+```bash
+RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
+```
+
 #### TryCP Wind Tunnel tests
 
 For TryCP Wind Tunnel testing - start a trycp_server:
@@ -343,12 +349,10 @@ For TryCP Wind Tunnel testing - start a trycp_server:
 start_trycp
 ```
 
-#### Running a scenario
-
 You can then start a second terminal and run one of the scenarios in the `scenarios` directory:
 
 ```bash
-RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
+RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 60
 ```
 
 ### Published crates
