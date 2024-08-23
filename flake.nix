@@ -76,16 +76,17 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
-            pkgs.darwin.apple_sdk.frameworks.Security
-            pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-            pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
             inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
-          ];
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.darwin.apple_sdk.frameworks.Security
+              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+              pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+            ];
 
           shellHook = ''
             source ./scripts/influx.sh
