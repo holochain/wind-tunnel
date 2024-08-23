@@ -13,12 +13,10 @@
         crane.follows = "crane";
         rust-overlay.follows = "rust-overlay";
       };
-
-
     };
 
     tryorama = {
-      url = "github:holochain/tryorama?ref=v0.17.0-dev.2";
+      url = "github:holochain/tryorama?ref=v0.17.0-dev.5";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         crane.follows = "crane";
