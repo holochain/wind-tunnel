@@ -14,6 +14,7 @@ concurrency:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest ]
 
@@ -75,7 +76,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -85,7 +86,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - dht_sync_lag
         run: |
@@ -95,7 +96,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - app_install
         run: |
@@ -105,7 +106,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - first_call
         run: |
@@ -115,7 +116,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_read
         run: |
@@ -125,7 +126,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_query
         run: |
@@ -135,7 +136,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - local_signals
         run: |
@@ -145,7 +146,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_validated
         run: |
@@ -155,7 +156,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - trycp_write_validated
         run: |
@@ -172,7 +173,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Smoke test - remote_call_rate
         run: |
@@ -189,7 +190,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Smoke test - two_party_countersigning
         run: |
@@ -204,7 +205,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Build scenario bundles
         run: |
