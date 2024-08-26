@@ -13,12 +13,10 @@
         crane.follows = "crane";
         rust-overlay.follows = "rust-overlay";
       };
-
-
     };
 
     tryorama = {
-      url = "github:holochain/tryorama?ref=v0.17.0-dev.2";
+      url = "github:holochain/tryorama?ref=v0.17.0-dev.5";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         crane.follows = "crane";
@@ -84,6 +82,10 @@
             inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            pkgs.darwin.apple_sdk.frameworks.Security
+            pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+            pkgs.darwin.apple_sdk.frameworks.CoreFoundation
           ];
 
           shellHook = ''

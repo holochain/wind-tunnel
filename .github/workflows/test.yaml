@@ -13,11 +13,17 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Maximize build space
+        if: runner.os == 'Linux'
         uses: AdityaGarg8/remove-unwanted-software@v2
         with:
           remove-dotnet: 'true'
@@ -26,13 +32,9 @@ jobs:
           remove-docker-images: 'true'
 
       - name: Install nix
-        uses: cachix/install-nix-action@v26
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.20.4/install
-          extra_nix_config: |
-            experimental-features = flakes nix-command
+        uses: cachix/install-nix-action@v27
 
-      - uses: cachix/cachix-action@v14
+      - uses: cachix/cachix-action@v15
         with:
           name: holochain-wind-tunnel
           extraPullNames: holochain-ci
@@ -74,7 +76,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
@@ -84,7 +86,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - dht_sync_lag
         run: |
@@ -94,7 +96,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - app_install
         run: |
@@ -104,7 +106,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - first_call
         run: |
@@ -114,7 +116,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_read
         run: |
@@ -124,7 +126,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_query
         run: |
@@ -134,7 +136,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - local_signals
         run: |
@@ -144,7 +146,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_validated
         run: |
@@ -154,7 +156,7 @@ jobs:
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill --echo hc && pkill --echo holochain && pkill --echo lair-keystore
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - trycp_write_validated
         run: |
@@ -171,7 +173,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Smoke test - remote_call_rate
         run: |
@@ -188,7 +190,7 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Smoke test - two_party_countersigning
         run: |
@@ -203,9 +205,10 @@ jobs:
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
-          pkill --echo hc-run-local
+          pkill hc-run-local
 
       - name: Build scenario bundles
+        if: runner.os == 'Linux'
         run: |
           set -euxo pipefail
 
@@ -220,6 +223,7 @@ jobs:
           scenario_names | xargs -I % cp % dist/
 
       - name: Archive scenario bundles
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: scenario-bundles
