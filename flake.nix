@@ -25,6 +25,16 @@
       };
     };
 
+    chc-service = {
+      url = "github:holochain/hc-chc-service";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
+        holonix.follows = "holonix";
+      };
+    };
+
     crane = {
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -81,6 +91,7 @@
             inputs'.holonix.packages.hn-introspect
             inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
+            inputs'.chc-service.packages.hc-chc-service
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
