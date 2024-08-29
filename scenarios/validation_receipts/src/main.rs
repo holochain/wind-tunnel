@@ -71,17 +71,21 @@ fn agent_behaviour(
             Some(Duration::from_secs(80)),
         )?;
 
-        let mut all_complete = true;
+        // only check for complete if we actually get data back
+        // before any receipts are received, this is an empty vec
+        if !response.is_empty() {
+            let mut all_complete = true;
 
-        'inner: for set in response.iter() {
-            if !set.receipts_complete {
-                all_complete = false;
-                break 'inner;
+            'inner: for set in response.iter() {
+                if !set.receipts_complete {
+                    all_complete = false;
+                    break 'inner;
+                }
             }
-        }
 
-        if all_complete {
-            break 'outer;
+            if all_complete {
+                break 'outer;
+            }
         }
     }
 
