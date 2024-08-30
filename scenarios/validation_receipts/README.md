@@ -19,6 +19,16 @@ immediately see one peer after app installation.
 
 You need around at least 10 peers, or the nodes will never get the required number of validation receipts.
 
+### NO_VALIDATION_COMPLETE
+
+By default this scenario will wait for a complete set of validation receipts before moving on to commit the next record. If you want to publish new records on every round, building up an ever-growing list of action hashes to check for validation complete, run with the `NO_VALIDATION_COMPLETE=1` environment variable.
+
+Example:
+
+```bash
+NO_VALIDATION_COMPLETE=1 RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=10 cargo run --package validation_receipts -- --targets targets-ci.yaml --instances-per-target 10 --duration 300
+```
+
 ### Suggested command
 
 You can run the scenario locally with the following command:
