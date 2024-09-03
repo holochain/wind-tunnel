@@ -127,7 +127,7 @@ where
                     agent_name.clone(),
                     InstallAppPayload {
                         source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
-                        agent_key,
+                        agent_key: Some(agent_key),
                         installed_app_id: Some(installed_app_id.clone()),
                         membrane_proofs: Default::default(),
                         network_seed: Some(run_id),

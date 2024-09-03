@@ -161,7 +161,7 @@ where
             let app_info = client
                 .install_app(InstallAppPayload {
                     source: AppBundleSource::Path(app_path),
-                    agent_key: key,
+                    agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     membrane_proofs: Default::default(),
                     network_seed: None,
