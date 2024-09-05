@@ -75,8 +75,7 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
-            pkgs.pkg-config
-            pkgs.openssl
+            pkgs.perl
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
@@ -88,8 +87,6 @@
             pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
             pkgs.darwin.apple_sdk.frameworks.CoreFoundation
           ];
-
-          OPENSSL_NO_VENDOR = 1;
 
           shellHook = ''
             source ./scripts/influx.sh
