@@ -75,6 +75,7 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
+            pkgs.perl
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect

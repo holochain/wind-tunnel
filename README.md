@@ -132,7 +132,7 @@ behaviour by different agents.
 > Writing scenarios requires some knowledge of `wind-tunnel`'s methodology. That is assumed knowledge for this section!
 
 Writing a Wind Tunnel scenario is relatively straight forward. The complexity is mostly in the measurement and analysis of the system
-once the scenario is running. To begin, you need a Rust project that with a single binary target.
+once the scenario is running. To begin, you need a Rust project with a single binary target.
 
 `cargo new --bin --edition 2021 my_scenario`
 
