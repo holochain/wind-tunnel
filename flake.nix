@@ -12,6 +12,8 @@
         flake-parts.follows = "flake-parts";
         crane.follows = "crane";
         rust-overlay.follows = "rust-overlay";
+        # TODO: Revert when new release of holochain is made with updated hc-sandbox cli
+        holochain.url = "github:holochain/holochain?ref=develop";
       };
     };
 
