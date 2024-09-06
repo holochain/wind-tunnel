@@ -25,6 +25,7 @@ members = [
     "scenarios/two_party_countersigning",
     "scenarios/write_validated",
     "scenarios/trycp_write_validated",
+    "scenarios/validation_receipts",
 
     "zomes/return_single_value/coordinator",
     "zomes/crud/coordinator",
@@ -67,7 +68,7 @@ tokio = { version = "1.36.0", features = ["full"] }
 parking_lot = "0.12.1"
 log = "0.4.20"
 env_logger = "0.11.2"
-derive_more = "0.99.17"
+derive_more = { version = "1", features = ["error", "display", "debug"] }
 opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
 toml = "0.8.10"
 serde = "1"
@@ -75,7 +76,7 @@ serde_yaml = "0.9"
 walkdir = "2"
 sysinfo = "0.31"
 url = "2.5.0"
-tabled = "0.15.0"
+tabled = "0.16.0"
 indicatif = "0.17.8"
 # TODO waiting for 0.7.3+ relase to use the new reqwest-client-native-tls-vendored feature
 influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = ["reqwest-client-native-tls-vendored"] }
@@ -88,18 +89,18 @@ rand = "0.8"
 ed25519-dalek = "2.1"
 
 # Deps for Holochain
-holochain_client = { version = "=0.6.0-dev.4" }
+holochain_client = { version = "=0.6.0-dev.7" }
 trycp_client = { version = "0.17.0-dev.5" }
 trycp_api = { version = "0.17.0-dev.5" }
-holochain_zome_types = { version = "0.4.0-dev.12" }
-holo_hash = { version = "0.4.0-dev.9" }
-holochain_types = { version = "0.4.0-dev.18" }
-holochain_conductor_api = { version = "0.4.0-dev.18" }
-holochain_nonce = { version = "0.4.0-dev.4" }
-kitsune_p2p_types = { version = "0.4.0-dev.10" }
-hdk = { version = "0.4.0-dev.12" }
-hdi = "0.5.0-dev.10"
-mr_bundle = "0.4.0-dev.5"
+holochain_zome_types = { version = "0.4.0-dev.15" }
+holo_hash = { version = "0.4.0-dev.11" }
+holochain_types = { version = "0.4.0-dev.21" }
+holochain_conductor_api = { version = "0.4.0-dev.21" }
+holochain_nonce = { version = "0.4.0-dev.6" }
+kitsune_p2p_types = { version = "0.4.0-dev.12" }
+hdk = { version = "0.4.0-dev.15" }
+hdi = "0.5.0-dev.13"
+mr_bundle = "0.4.0-dev.7"
 holochain_serialized_bytes = "0.0.55"
 
 # Framework

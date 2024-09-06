@@ -26,6 +26,13 @@ fn get_sample_entry(hash: ActionHash) -> ExternResult<Option<Record>> {
 }
 
 #[hdk_extern]
+fn get_sample_entry_validation_receipts(
+    hash: ActionHash,
+) -> ExternResult<Vec<ValidationReceiptSet>> {
+    get_validation_receipts(GetValidationReceiptsInput::new(hash))
+}
+
+#[hdk_extern]
 fn chain_query_count_len() -> ExternResult<u32> {
     let q = ChainQueryFilter::new()
         .include_entries(true)

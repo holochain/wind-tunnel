@@ -39,7 +39,6 @@
 
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     rust-overlay = {
@@ -88,6 +87,7 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
+            pkgs.perl
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
@@ -131,4 +131,9 @@
         };
       };
   });
+
+  nixConfig = {
+    substituters = [ "https://cache.nixos.org" "https://holochain-ci.cachix.org" "https://holochain-wind-tunnel.cachix.org" ];
+    trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" "holochain-ci.cachix.org-1:5IUSkZc0aoRS53rfkvH9Kid40NpyjwCMCzwRTXy+QN8=" "holochain-wind-tunnel.cachix.org-1:tnSm+7Y3hDKOc9xLdoVMuInMA2AQ0R/99Ucz5edYGJw=" ];
+  };
 }
