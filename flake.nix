@@ -118,6 +118,7 @@
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
+            inputs'.chc-service.packages.hc-chc-service
           ];
         };
 
