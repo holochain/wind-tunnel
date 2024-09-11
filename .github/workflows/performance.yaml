@@ -14,8 +14,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -24,8 +23,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -34,8 +32,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -44,8 +41,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -54,8 +50,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -64,8 +59,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -74,8 +68,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -84,8 +77,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -94,8 +86,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -108,8 +99,7 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 10 seconds
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress --reporter influx-file
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
