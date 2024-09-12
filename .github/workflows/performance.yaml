@@ -34,7 +34,22 @@ jobs:
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Run Telegraf to upload influx metrics
-        run: nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once
+        run: |
+          if ! nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+          then
+            echo "::group::Telegraf errors"
+            status=1
+            # Print errors as such in GitHub logs.
+            grep "E!" logs/telegraf-stderr.log | xargs -l echo "::error ::"
+            echo "::endgroup::"
+          fi
+
+          echo "::group::Telegraf warnings"
+          # Print warnings as such in GitHub logs.
+          grep "W!" logs/telegraf-stderr.log | xargs -l echo "::warning ::"
+          echo "::endgroup::"
+
+          exit ${status-0}
 
   trycp-test:
     runs-on: [self-hosted, wind-tunnel]
@@ -65,4 +80,19 @@ jobs:
           pkill hc-run-local
 
       - name: Run Telegraf to upload influx metrics
-        run: nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once
+        run: |
+          if ! nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+          then
+            echo "::group::Telegraf errors"
+            status=1
+            # Print errors as such in GitHub logs.
+            grep "E!" logs/telegraf-stderr.log | xargs -l echo "::error ::"
+            echo "::endgroup::"
+          fi
+
+          echo "::group::Telegraf warnings"
+          # Print warnings as such in GitHub logs.
+          grep "W!" logs/telegraf-stderr.log | xargs -l echo "::warning ::"
+          echo "::endgroup::"
+
+          exit ${status-0}
