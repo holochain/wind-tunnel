@@ -1,0 +1,29 @@
+[package]
+name = "remote_signal"
+version = "0.1.0"
+edition = "2021"
+build = "../scenario_build.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+rand = { workspace = true }
+log = { workspace = true }
+
+holochain_types = { workspace = true }
+trycp_wind_tunnel_runner = { workspace = true }
+remote_signal_integrity = { workspace = true}
+
+[build-dependencies]
+happ_builder = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.required-dna]
+name = "remote_signal"
+zomes = ["remote_signal"]
+
+[package.metadata.required-happ]
+name = "remote_signal"
+dnas = ["remote_signal"]
