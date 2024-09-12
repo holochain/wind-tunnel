@@ -13,7 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scenario: [ zome_call_single_value ]
+        scenario: [ zome_call_single_value, single_write_many_read, write_read, write_query, local_signals, write_validated ]
+        include:
+          - scenario: dht_sync_lag
+            extra-args: "--agents 2 --behaviour write:1 --behaviour record_lag:1"
+          - scenario: app_install
+            extra-args: "--agents 2 --behaviour minimal:1 --behaviour large:1"
+          - scenario: first_call
+            extra-args: "--agents 1 --behaviour local:1"
     steps:
       - uses: actions/checkout@v4
 
