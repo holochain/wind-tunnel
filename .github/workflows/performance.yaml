@@ -22,7 +22,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          RUST_LOG=info nix run .#${{ matrix.scenario }} -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file
+          RUST_LOG=info nix run .#${{ matrix.scenario }} -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }}
 
           pkill hc && pkill holochain && pkill lair-keystore
 
