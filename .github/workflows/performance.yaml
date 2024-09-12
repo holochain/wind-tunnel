@@ -105,3 +105,49 @@ jobs:
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
           pkill hc-run-local
+
+      - name: Smoke test - remote_call_rate
+        run: |
+          set -x
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - two_party_countersigning
+        run: |
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 120 --no-progress --reporter influx-file
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - validation_receipts
+        run: |
+          set -x
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
