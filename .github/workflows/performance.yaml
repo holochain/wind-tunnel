@@ -35,3 +35,34 @@ jobs:
 
       - name: Run Telegraf to upload influx metrics
         run: nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once
+
+  trycp-test:
+    runs-on: [self-hosted, wind-tunnel]
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [ trycp_write_validated, remote_call_rate, validation_receipts ]
+        include:
+          - scenario: two_party_countersigning
+            extra-args: "--behaviour initiate:1 --behaviour participate:1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke test - ${{ matrix.scenario }}
+        run: |
+          set -x
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }}
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Run Telegraf to upload influx metrics
+        run: nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once
