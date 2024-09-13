@@ -25,13 +25,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Smoke test - ${{ matrix.scenario }}
+        id: run_test
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          RUST_LOG=info nix run .#${{ matrix.scenario }} -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }}
+          RUST_LOG=info nix run .#${{ matrix.scenario }} -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          RUN_ID=$(grep -m1 "#RunId" logs/scenario-stdout.log | sed 's/#RunId: \[\(.\+\)\]/\1/')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "# Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
 
       - name: Run Telegraf to upload influx metrics
         run: |
@@ -72,12 +77,16 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }}
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
           pkill hc-run-local
+
+          RUN_ID=$(grep -m1 "#RunId" logs/scenario-stdout.log | sed 's/#RunId: \[\(.\+\)\]/\1/')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "# Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
 
       - name: Run Telegraf to upload influx metrics
         run: |
