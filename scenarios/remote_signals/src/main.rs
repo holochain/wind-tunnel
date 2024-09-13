@@ -17,7 +17,6 @@ pub struct ScenarioValues {
     response_timeout: Duration,
     remote_signal_peers: Vec<AgentPubKey>,
     pending_set: Arc<Mutex<HashSet<TimedMessage>>>,
-    timeout_count: Arc<std::sync::atomic::AtomicU64>,
 }
 
 fn env_dur(n: &'static str, d: u64) -> Duration {
@@ -37,7 +36,6 @@ impl Default for ScenarioValues {
             response_timeout,
             remote_signal_peers: Vec::new(),
             pending_set: Arc::new(Mutex::new(HashSet::new())),
-            timeout_count: Arc::new(std::sync::atomic::AtomicU64::new(1)),
         }
     }
 }
@@ -111,10 +109,6 @@ fn agent_setup(
     )?;
     try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
 
-    ctx.runner_context()
-        .reporter()
-        .add_custom(ReportMetric::new("remote_signal_timeout_count").with_field("value", 0));
-
     Ok(())
 }
 
@@ -130,7 +124,6 @@ fn agent_behaviour(
     let signal_interval = ctx.get().scenario_values.signal_interval;
     let response_timeout = ctx.get().scenario_values.response_timeout;
     let pending_set = ctx.get().scenario_values.pending_set.clone();
-    let timeout_count = ctx.get().scenario_values.timeout_count.clone();
     let reporter = ctx.runner_context().reporter();
 
     let new_peers = ctx
@@ -143,9 +136,8 @@ fn agent_behaviour(
                 if now.as_millis() - msg.requested_at().as_millis()
                     > response_timeout.as_millis() as i64
                 {
-                    let value = timeout_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     reporter.add_custom(
-                        ReportMetric::new("remote_signal_timeout_count").with_field("value", value),
+                        ReportMetric::new("remote_signal_timeout").with_field("value", 1),
                     );
                     false
                 } else {
