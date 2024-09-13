@@ -58,6 +58,7 @@ jobs:
 
       - name: Upload logs as artifacts
         if: success() || failure()
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: "logs_${{ matrix.scenario }}"
@@ -66,6 +67,10 @@ jobs:
             logs/scenario-stderr.log
             logs/telegraf-stdout.log
             logs/telegraf-stderr.log
+
+      - name: Output Path to logs in summary
+        run: |
+          echo "# Logs: [${{ steps.upload-artifact.outputs.artifact-id }}](${{ steps.upload-artifact.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
 
   trycp-test:
     runs-on: [self-hosted, wind-tunnel]
@@ -120,6 +125,7 @@ jobs:
 
       - name: Upload logs as artifacts
         if: success() || failure()
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: "logs_${{ matrix.scenario }}"
@@ -129,3 +135,7 @@ jobs:
             logs/telegraf-stdout.log
             logs/telegraf-stderr.log
             logs/${{ steps.run_test.outputs.RUN_ID }}/
+
+      - name: Output Path to logs in summary
+        run: |
+          echo "# Logs: [${{ steps.upload-artifact.outputs.artifact-id }}](${{ steps.upload-artifact.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
