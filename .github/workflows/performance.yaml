@@ -56,6 +56,17 @@ jobs:
 
           exit ${status-0}
 
+      - name: Upload logs as artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "logs_${{ matrix.scenario }}"
+          path: |
+            logs/scenario-stdout.log
+            logs/scenario-stderr.log
+            logs/telegraf-stdout.log
+            logs/telegraf-stderr.log
+
   trycp-test:
     runs-on: [self-hosted, wind-tunnel]
     strategy:
@@ -69,6 +80,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Smoke test - ${{ matrix.scenario }}
+        id: run_test
         run: |
           set -x
 
@@ -105,3 +117,15 @@ jobs:
           echo "::endgroup::"
 
           exit ${status-0}
+
+      - name: Upload logs as artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "logs_${{ matrix.scenario }}"
+          path: |
+            logs/scenario-stdout.log
+            logs/scenario-stderr.log
+            logs/telegraf-stdout.log
+            logs/telegraf-stderr.log
+            logs/${{ steps.run_test.outputs.RUN_ID }}/
