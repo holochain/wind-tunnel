@@ -123,6 +123,9 @@ jobs:
           # start the CHC reference implementation service
           nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
 
+          # wait for the CHC service to be available
+          sleep 2
+
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
