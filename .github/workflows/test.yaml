@@ -70,33 +70,33 @@ jobs:
       - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # TODO using `localhost` is resolving to an IPv6 address, but why is that giving a connection refused?
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - dht_sync_lag
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - app_install
         run: |
@@ -120,43 +120,46 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_query
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - local_signals
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - write_validated
         run: |
           # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "./scripts/run.sh" &
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
-          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - trycp_write_validated
         run: |
