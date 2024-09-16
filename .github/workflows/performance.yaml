@@ -20,8 +20,13 @@ jobs:
           - scenario: dht_sync_lag
             extra-args: "--agents 2 --behaviour write:1 --behaviour record_lag:1"
 
+            # Test how long it takes to install a minimally-small hApp.
           - scenario: app_install
-            extra-args: "--agents 2 --behaviour minimal:1 --behaviour large:1"
+            extra-args: "--behaviour minimal:1"
+
+            # Test how long it takes to install a large hApp.
+          - scenario: app_install
+            extra-args: "--behaviour large:1"
 
           - scenario: first_call
             extra-args: "--agents 1 --behaviour local:1"
@@ -65,7 +70,7 @@ jobs:
         id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "logs_${{ matrix.scenario }}"
+          name: "logs_${{ matrix.scenario }}_${{ steps.run_test.outputs.RUN_ID }}"
           path: |
             logs/scenario-stdout.log
             logs/scenario-stderr.log
@@ -134,7 +139,7 @@ jobs:
         id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "logs_${{ matrix.scenario }}"
+          name: "logs_${{ matrix.scenario }}_${{ steps.run_test.outputs.RUN_ID }}"
           path: |
             logs/scenario-stdout.log
             logs/scenario-stderr.log
