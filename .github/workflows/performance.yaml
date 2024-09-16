@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Telegraf to upload influx metrics
         run: |
-          if ! nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+          if ! nix run .#ci-telegraf
           then
             echo "::group::Telegraf errors"
             status=1
@@ -111,7 +111,7 @@ jobs:
 
       - name: Run Telegraf to upload influx metrics
         run: |
-          if ! nix run nixpkgs#telegraf -- --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+          if ! nix run .#ci-telegraf
           then
             echo "::group::Telegraf errors"
             status=1
