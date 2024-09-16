@@ -19,8 +19,10 @@ jobs:
         include:
           - scenario: dht_sync_lag
             extra-args: "--agents 2 --behaviour write:1 --behaviour record_lag:1"
+
           - scenario: app_install
             extra-args: "--agents 2 --behaviour minimal:1 --behaviour large:1"
+
           - scenario: first_call
             extra-args: "--agents 1 --behaviour local:1"
     steps:
