@@ -1,0 +1,152 @@
+name: "Performance Tests"
+
+on:
+  workflow_dispatch:
+
+env:
+  INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+  WT_METRICS_DIR: "${{ github.workspace }}/telegraf/metrics"
+
+jobs:
+  local-test:
+    runs-on: [self-hosted, wind-tunnel]
+    strategy:
+      fail-fast: false
+      matrix:
+        # To run a local test with default configuration, add the scenario name to this array.
+        scenario: [ zome_call_single_value, single_write_many_read, write_read, write_query, local_signals, write_validated ]
+        # To run a local test with additional configuration, add the scenario name and `extra-args` as an `include` item.
+        include:
+          - scenario: dht_sync_lag
+            extra-args: "--agents 2 --behaviour write:1 --behaviour record_lag:1"
+
+            # Test how long it takes to install a minimally-small hApp.
+          - scenario: app_install
+            extra-args: "--behaviour minimal:1"
+
+            # Test how long it takes to install a large hApp.
+          - scenario: app_install
+            extra-args: "--behaviour large:1"
+
+          - scenario: first_call
+            extra-args: "--agents 1 --behaviour local:1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run - ${{ matrix.scenario }}
+        id: run_test
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          RUST_LOG=info nix run .#${{ matrix.scenario }} -- --connection-string ws://localhost:8888 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
+          RUN_ID=$(grep -m1 "#RunId" logs/scenario-stdout.log | sed 's/#RunId: \[\(.\+\)\]/\1/')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "# Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Telegraf to upload influx metrics
+        run: |
+          if ! nix run .#ci-telegraf
+          then
+            echo "::group::Telegraf errors"
+            status=1
+            # Print errors as such in GitHub logs.
+            grep "E!" logs/telegraf-stderr.log | xargs -l echo "::error ::"
+            echo "::endgroup::"
+          fi
+
+          echo "::group::Telegraf warnings"
+          # Print warnings as such in GitHub logs.
+          grep "W!" logs/telegraf-stderr.log | xargs -l echo "::warning ::"
+          echo "::endgroup::"
+
+          exit ${status-0}
+
+      - name: Upload logs as artifacts
+        if: success() || failure()
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "logs_${{ matrix.scenario }}_${{ steps.run_test.outputs.RUN_ID }}"
+          path: |
+            logs/scenario-stdout.log
+            logs/scenario-stderr.log
+            logs/telegraf-stdout.log
+            logs/telegraf-stderr.log
+
+      - name: Output Path to logs in summary
+        run: |
+          echo "# Logs: [${{ steps.upload-artifact.outputs.artifact-id }}](${{ steps.upload-artifact.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+
+  trycp-test:
+    runs-on: [self-hosted, wind-tunnel]
+    strategy:
+      fail-fast: false
+      matrix:
+        # To run a test with TryCP and default configuration, add the scenario name to this array.
+        scenario: [ trycp_write_validated, remote_call_rate, validation_receipts ]
+        # To run a test with TryCP and additional configuration, add the scenario name and `extra-args` as an `include` item.
+        include:
+          - scenario: two_party_countersigning
+            extra-args: "--behaviour initiate:1 --behaviour participate:1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run - ${{ matrix.scenario }}
+        id: run_test
+        run: |
+          set -x
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+          RUN_ID=$(grep -m1 "#RunId" logs/scenario-stdout.log | sed 's/#RunId: \[\(.\+\)\]/\1/')
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "# Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Telegraf to upload influx metrics
+        run: |
+          if ! nix run .#ci-telegraf
+          then
+            echo "::group::Telegraf errors"
+            status=1
+            # Print errors as such in GitHub logs.
+            grep "E!" logs/telegraf-stderr.log | xargs -l echo "::error ::"
+            echo "::endgroup::"
+          fi
+
+          echo "::group::Telegraf warnings"
+          # Print warnings as such in GitHub logs.
+          grep "W!" logs/telegraf-stderr.log | xargs -l echo "::warning ::"
+          echo "::endgroup::"
+
+          exit ${status-0}
+
+      - name: Upload logs as artifacts
+        if: success() || failure()
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "logs_${{ matrix.scenario }}_${{ steps.run_test.outputs.RUN_ID }}"
+          path: |
+            logs/scenario-stdout.log
+            logs/scenario-stderr.log
+            logs/telegraf-stdout.log
+            logs/telegraf-stderr.log
+            logs/${{ steps.run_test.outputs.RUN_ID }}/
+
+      - name: Output Path to logs in summary
+        run: |
+          echo "# Logs: [${{ steps.upload-artifact.outputs.artifact-id }}](${{ steps.upload-artifact.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
