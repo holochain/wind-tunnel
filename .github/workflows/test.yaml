@@ -120,6 +120,16 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
+      - name: Smoke test - write_read with CHC enabled
+        run: |
           # start the CHC reference implementation service
           nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
 
