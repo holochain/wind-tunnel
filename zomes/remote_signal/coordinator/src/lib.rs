@@ -18,10 +18,7 @@ fn init() -> ExternResult<InitCallbackResult> {
 #[hdk_extern]
 fn signal_request(msg: TimedMessage) -> ExternResult<()> {
     let to = vec![msg.responder().clone()];
-    send_remote_signal(
-        &ExternIO::encode(msg).map_err(|e| wasm_error!(e))?,
-        to,
-    )
+    send_remote_signal(&ExternIO::encode(msg).map_err(|e| wasm_error!(e))?, to)
 }
 
 #[hdk_extern]
@@ -33,10 +30,7 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
     if let TimedMessage::TimedRequest { .. } = r {
         let r = r.to_response(sys_time()?);
         let to = vec![r.requester().clone()];
-        send_remote_signal(
-            &ExternIO::encode(r).map_err(|e| wasm_error!(e))?,
-            to,
-        )?;
+        send_remote_signal(&ExternIO::encode(r).map_err(|e| wasm_error!(e))?, to)?;
     }
     Ok(())
 }

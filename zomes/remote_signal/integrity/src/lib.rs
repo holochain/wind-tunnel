@@ -1,6 +1,8 @@
 use hdi::prelude::*;
 
-#[derive(PartialEq, Eq, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize, SerializedBytes, Debug)]
+#[derive(
+    PartialEq, Eq, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize, SerializedBytes, Debug,
+)]
 #[serde(tag = "type")]
 pub enum TimedMessage {
     TimedRequest {

@@ -3,9 +3,9 @@ use holochain_types::prelude::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use remote_signal_integrity::TimedMessage;
-use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use trycp_wind_tunnel_runner::embed_conductor_config;
 use trycp_wind_tunnel_runner::prelude::*;
 
@@ -82,12 +82,11 @@ fn agent_setup(
 
                             match msg {
                                 TimedMessage::TimedRequest { .. } => (),
-                                TimedMessage::TimedResponse {
-                                    requested_at,
-                                    ..
-                                } => {
-                                    let dispatch_time_s = requested_at.as_micros() as f64 / 1_000_000.0;
-                                    let receive_time_s = Timestamp::now().as_micros() as f64 / 1_000_000.0;
+                                TimedMessage::TimedResponse { requested_at, .. } => {
+                                    let dispatch_time_s =
+                                        requested_at.as_micros() as f64 / 1_000_000.0;
+                                    let receive_time_s =
+                                        Timestamp::now().as_micros() as f64 / 1_000_000.0;
 
                                     reporter.add_custom(
                                         ReportMetric::new("remote_signal_round_trip")
@@ -134,10 +133,11 @@ fn agent_behaviour(
             let now = Timestamp::now();
 
             pending_set.lock().unwrap().retain(|msg| {
-                if now.as_millis() - msg.requested_at().as_millis() > response_timeout.as_millis() as i64 {
+                if now.as_millis() - msg.requested_at().as_millis()
+                    > response_timeout.as_millis() as i64
+                {
                     reporter.add_custom(
-                        ReportMetric::new("remote_signal_timeout")
-                            .with_field("value", 1),
+                        ReportMetric::new("remote_signal_timeout").with_field("value", 1),
                     );
                     false
                 } else {
