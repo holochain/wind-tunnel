@@ -10,8 +10,7 @@ pub fn handle_api_err(err: ConductorApiError) -> anyhow::Error {
     match err {
         // Handle websocket closed errors by shutting down the process, as this is a fatal error
         // for this agent.
-        ConductorApiError::WebsocketError(holochain_websocket::WebsocketError::Close(_)) =>
-        {
+        ConductorApiError::WebsocketError(holochain_websocket::WebsocketError::Close(_)) => {
             AgentBailError::default().into()
         }
         _ => anyhow::anyhow!("Conductor API error: {:?}", err),
