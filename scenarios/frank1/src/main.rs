@@ -4,8 +4,22 @@ use trycp_wind_tunnel_runner::prelude::*;
 
 embed_conductor_config!();
 
-mod common;
-pub use common::*;
+mod remote_signal {
+    include!("../../remote_signal/src/common.rs");
+}
+
+#[derive(Debug, Default)]
+pub struct ScenarioValues {
+    remote_signal: remote_signal::ScenarioValues,
+}
+
+impl UserValuesConstraint for ScenarioValues {}
+
+impl AsMut<remote_signal::ScenarioValues> for ScenarioValues {
+    fn as_mut(&mut self) -> &mut remote_signal::ScenarioValues {
+        &mut self.remote_signal
+    }
+}
 
 fn agent_setup(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
@@ -28,12 +42,12 @@ fn agent_setup(
             Ok(())
         })?;
 
-    agent_setup_post_startup_pre_install_hook(ctx)?;
+    remote_signal::agent_setup_post_startup_pre_install_hook(ctx)?;
 
     install_app(
         ctx,
-        scenario_happ_path!("remote_signal"),
-        &"remote_signal".to_string(),
+        scenario_happ_path!("frank1"),
+        &"frank1".to_string(),
     )?;
     try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
 
@@ -43,7 +57,9 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    agent_behaviour_hook(ctx)
+    remote_signal::agent_behaviour_hook(ctx)?;
+
+    Ok(())
 }
 
 fn agent_teardown(

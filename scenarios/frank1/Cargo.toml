@@ -1,0 +1,31 @@
+[package]
+name = "frank1"
+version = "0.1.0"
+edition = "2021"
+build = "../scenario_build.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+rand = { workspace = true }
+log = { workspace = true }
+
+holochain_types = { workspace = true }
+trycp_wind_tunnel_runner = { workspace = true }
+remote_signal_zome_integrity = { workspace = true}
+remote_call_integrity = { workspace = true}
+validated_integrity = { workspace = true}
+
+[build-dependencies]
+happ_builder = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.required-dna]
+name = "frank1"
+zomes = ["remote_signal_zome", "remote_call", "validated"]
+
+[package.metadata.required-happ]
+name = "frank1"
+dnas = ["frank1"]
