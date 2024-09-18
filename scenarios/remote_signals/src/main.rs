@@ -65,35 +65,36 @@ fn agent_setup(
 
             let _rcv_task = tokio::task::spawn(async move {
                 loop {
-                    match client.recv_signal().await {
-                        None => panic!("signal receiver ended"),
-                        Some(signal) => {
-                            let msg: Signal = ExternIO(signal.data).decode().unwrap();
-                            let msg = match msg {
-                                Signal::App { signal, .. } => {
-                                    let msg: Vec<u8> = signal.into_inner().decode().unwrap();
-                                    let msg: TimedMessage = ExternIO(msg).decode().unwrap();
-                                    msg
-                                }
-                                _ => continue,
-                            };
+                    let msg: Signal = ExternIO(
+                        client
+                            .recv_signal()
+                            .await
+                            .expect("signal receiver ended")
+                            .data,
+                    )
+                    .decode()
+                    .unwrap();
+                    let msg = match msg {
+                        Signal::App { signal, .. } => {
+                            let msg: Vec<u8> = signal.into_inner().decode().unwrap();
+                            let msg: TimedMessage = ExternIO(msg).decode().unwrap();
+                            msg
+                        }
+                        _ => continue,
+                    };
 
-                            pending_set.lock().unwrap().remove(&msg.to_request());
+                    pending_set.lock().unwrap().remove(&msg.to_request());
 
-                            match msg {
-                                TimedMessage::TimedRequest { .. } => (),
-                                TimedMessage::TimedResponse { requested_at, .. } => {
-                                    let dispatch_time_s =
-                                        requested_at.as_micros() as f64 / 1_000_000.0;
-                                    let receive_time_s =
-                                        Timestamp::now().as_micros() as f64 / 1_000_000.0;
+                    match msg {
+                        TimedMessage::TimedRequest { .. } => (),
+                        TimedMessage::TimedResponse { requested_at, .. } => {
+                            let dispatch_time_s = requested_at.as_micros() as f64 / 1_000_000.0;
+                            let receive_time_s = Timestamp::now().as_micros() as f64 / 1_000_000.0;
 
-                                    reporter.add_custom(
-                                        ReportMetric::new("remote_signal_round_trip")
-                                            .with_field("value", receive_time_s - dispatch_time_s),
-                                    );
-                                }
-                            }
+                            reporter.add_custom(
+                                ReportMetric::new("remote_signal_round_trip")
+                                    .with_field("value", receive_time_s - dispatch_time_s),
+                            );
                         }
                     }
                 }
