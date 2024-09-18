@@ -5,7 +5,7 @@ use trycp_wind_tunnel_runner::prelude::*;
 embed_conductor_config!();
 
 mod remote_signal {
-    include!("../../remote_signal/src/common.rs");
+    include!("../../remote_signal_scenario/src/common.rs");
 }
 
 #[derive(Debug, Default)]
