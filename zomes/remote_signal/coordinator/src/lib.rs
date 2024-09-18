@@ -1,5 +1,5 @@
 use hdk::prelude::*;
-use remote_signal_zome_integrity::*;
+use remote_signal_integrity::*;
 
 #[hdk_extern]
 fn init() -> ExternResult<InitCallbackResult> {

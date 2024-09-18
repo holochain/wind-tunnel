@@ -2,7 +2,7 @@ use anyhow::Context;
 use holochain_types::prelude::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use remote_signal_zome_integrity::TimedMessage;
+use remote_signal_integrity::TimedMessage;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
