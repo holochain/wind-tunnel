@@ -52,8 +52,11 @@
 
     amber = {
       url = "github:thetasinner/amber?ref=master";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.naersk.follows = "naersk";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        naersk.follows = "naersk";
+        rust-overlay.follows = "rust-overlay";
+      };
     };
   };
 
@@ -123,6 +126,11 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
+          ci-telegraf = pkgs.writeShellApplication {
+            name = "ci-telegraf";
+            runtimeInputs = [ pkgs.telegraf ];
+            text = "telegraf --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)";
+          };
         };
 
         checks = {

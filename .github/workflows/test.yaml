@@ -33,11 +33,14 @@ jobs:
 
       - name: Install nix
         uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.24.6/install
+          extra_nix_config: |
+            accept-flake-config = true
 
       - uses: cachix/cachix-action@v15
         with:
           name: holochain-wind-tunnel
-          extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
       - uses: Swatinem/rust-cache@v2
@@ -72,7 +75,6 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
           
-          # TODO using `localhost` is resolving to an IPv6 address, but why is that giving a connection refused?
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
           
