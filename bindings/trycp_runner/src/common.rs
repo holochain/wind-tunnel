@@ -133,6 +133,7 @@ where
                         network_seed: Some(run_id),
                         existing_cells: Default::default(),
                         ignore_genesis_failure: false,
+                        allow_throwaway_random_agent_key: false,
                     },
                     // Allow more time to install the app when running many agents. The upload of
                     // the app bundle can take some time when targeting many nodes.

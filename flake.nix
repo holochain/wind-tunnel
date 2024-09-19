@@ -42,8 +42,11 @@
 
     amber = {
       url = "github:thetasinner/amber?ref=master";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.naersk.follows = "naersk";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        naersk.follows = "naersk";
+        rust-overlay.follows = "rust-overlay";
+      };
     };
   };
 

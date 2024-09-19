@@ -3,8 +3,6 @@
 { config, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
-
-  x = builtins.trace craneLib craneLib;
 in
 {
   options.zomeHelper = lib.mkOption { type = lib.types.raw; };
@@ -12,8 +10,6 @@ in
   config.zomeHelper = {
     mkZome = { name, kind }:
       let
-        x = builtins.trace "hello" "hello";
-
         packageName = if kind == "integrity" then "${name}_${kind}" else name;
       in
       craneLib.buildPackage (config.workspace.commonArgs // {
