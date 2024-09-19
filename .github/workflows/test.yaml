@@ -33,11 +33,14 @@ jobs:
 
       - name: Install nix
         uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.24.6/install
+          extra_nix_config: |
+            accept-flake-config = true
 
       - uses: cachix/cachix-action@v15
         with:
           name: holochain-wind-tunnel
-          extraPullNames: holochain-ci
           authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
 
       - uses: Swatinem/rust-cache@v2
