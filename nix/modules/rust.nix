@@ -8,7 +8,7 @@ let
     overlays = [ (import rust-overlay) ];
   };
 
-  rustVersion = "1.78.0";
+  rustVersion = "1.80.0";
 
   rustWithWasmTarget = rustPkgs.rust-bin.stable."${rustVersion}".minimal.override {
     targets = [ "wasm32-unknown-unknown" ];

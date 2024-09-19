@@ -167,6 +167,7 @@ where
                     network_seed: None,
                     existing_cells: HashMap::new(),
                     ignore_genesis_failure: false,
+                    allow_throwaway_random_agent_key: false,
                 })
                 .await
                 .map_err(handle_api_err)?;
