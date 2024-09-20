@@ -14,6 +14,7 @@ pub struct ScenarioValues {
     pub response_timeout: Duration,
     pub remote_signal_peers: Vec<AgentPubKey>,
     pub pending_set: Arc<Mutex<HashSet<TimedMessage>>>,
+    pub last_signal_sent: Arc<Mutex<std::time::Instant>>,
 }
 
 fn env_dur(n: &'static str, d: u64) -> Duration {
@@ -33,6 +34,7 @@ impl Default for ScenarioValues {
             response_timeout,
             remote_signal_peers: Vec::new(),
             pending_set: Arc::new(Mutex::new(HashSet::new())),
+            last_signal_sent: Arc::new(Mutex::new(std::time::Instant::now())),
         }
     }
 }
@@ -69,6 +71,7 @@ where
                     )
                     .decode()
                     .unwrap();
+
                     let msg = match msg {
                         Signal::App { signal, .. } => {
                             let msg: Vec<u8> = signal.into_inner().decode().unwrap();
@@ -107,6 +110,19 @@ pub fn agent_behaviour_hook<Sv>(
 where
     Sv: UserValuesConstraint + AsMut<ScenarioValues>,
 {
+    let last_signal_sent = ctx.get_mut().scenario_values.as_mut().last_signal_sent.clone();
+    let signal_interval = ctx.get_mut().scenario_values.as_mut().signal_interval;
+
+    {
+        let now_inst = std::time::Instant::now();
+        let mut last_inst = last_signal_sent.lock().unwrap();
+        if now_inst - *last_inst < signal_interval {
+            // Don't hammer with signals
+            return Ok(());
+        }
+        *last_inst = now_inst;
+    }
+
     let client = ctx.get().trycp_client();
 
     let agent_name = ctx.agent_name().to_string();
@@ -118,7 +134,6 @@ where
         .as_mut()
         .remote_signal_peers
         .pop();
-    let signal_interval = ctx.get_mut().scenario_values.as_mut().signal_interval;
     let response_timeout = ctx.get_mut().scenario_values.as_mut().response_timeout;
     let pending_set = ctx.get_mut().scenario_values.as_mut().pending_set.clone();
     let reporter = ctx.runner_context().reporter();
@@ -147,7 +162,7 @@ where
                     // No more agents available to signal, get a new list.
                     // This is also the initial condition.
                     let mut new_peer_list = client
-                        .agent_info(agent_name, None, None)
+                        .agent_info(agent_name.clone(), None, None)
                         .await
                         .context("Failed to get agent info")?
                         .into_iter()
@@ -180,9 +195,6 @@ where
                         .with_context(|| {
                             format!("Failed to make remote signal to: {:?}", agent_pub_key)
                         })?;
-
-                    // Don't hammer with signals
-                    tokio::time::sleep(signal_interval).await;
 
                     // Add no new agents, that should only happen when we exhaust the list.
                     Ok(Vec::with_capacity(0))
