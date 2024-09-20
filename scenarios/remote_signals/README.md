@@ -2,7 +2,7 @@
 
 ### Description
 
-This scenario tests the throughput of `remote_signal_scenario` operations.
+This scenario tests the throughput of `remote_signals` operations.
 
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
@@ -24,7 +24,7 @@ This configuration defaults to 2 peers.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package remote_signal_scenario -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
+RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package remote_signals -- --targets targets-ci.yaml --instances-per-target 2 --duration 300
 ```
 
 This assumes that `trycp_server` is running. See the script `scripts/trycp.sh` and run with `start_trycp`.
