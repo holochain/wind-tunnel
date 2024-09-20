@@ -112,7 +112,12 @@ where
     let agent_name = ctx.agent_name().to_string();
     let app_port = ctx.get().app_port();
     let cell_id = ctx.get().cell_id();
-    let next_remote_signal_peer = ctx.get_mut().scenario_values.as_mut().remote_signal_peers.pop();
+    let next_remote_signal_peer = ctx
+        .get_mut()
+        .scenario_values
+        .as_mut()
+        .remote_signal_peers
+        .pop();
     let signal_interval = ctx.get_mut().scenario_values.as_mut().signal_interval;
     let response_timeout = ctx.get_mut().scenario_values.as_mut().response_timeout;
     let pending_set = ctx.get_mut().scenario_values.as_mut().pending_set.clone();

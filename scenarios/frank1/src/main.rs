@@ -4,20 +4,42 @@ use trycp_wind_tunnel_runner::prelude::*;
 
 embed_conductor_config!();
 
-mod remote_signal {
+mod remote_call_rate {
+    include!("../../remote_call_rate/src/common.rs");
+}
+
+mod remote_signals {
     include!("../../remote_signals/src/common.rs");
+}
+
+mod trycp_write_validated {
+    include!("../../trycp_write_validated/src/common.rs");
 }
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
-    remote_signal: remote_signal::ScenarioValues,
+    remote_call_rate: remote_call_rate::ScenarioValues,
+    remote_signals: remote_signals::ScenarioValues,
+    trycp_write_validated: trycp_write_validated::ScenarioValues,
 }
 
 impl UserValuesConstraint for ScenarioValues {}
 
-impl AsMut<remote_signal::ScenarioValues> for ScenarioValues {
-    fn as_mut(&mut self) -> &mut remote_signal::ScenarioValues {
-        &mut self.remote_signal
+impl AsMut<remote_call_rate::ScenarioValues> for ScenarioValues {
+    fn as_mut(&mut self) -> &mut remote_call_rate::ScenarioValues {
+        &mut self.remote_call_rate
+    }
+}
+
+impl AsMut<remote_signals::ScenarioValues> for ScenarioValues {
+    fn as_mut(&mut self) -> &mut remote_signals::ScenarioValues {
+        &mut self.remote_signals
+    }
+}
+
+impl AsMut<trycp_write_validated::ScenarioValues> for ScenarioValues {
+    fn as_mut(&mut self) -> &mut trycp_write_validated::ScenarioValues {
+        &mut self.trycp_write_validated
     }
 }
 
@@ -42,13 +64,11 @@ fn agent_setup(
             Ok(())
         })?;
 
-    remote_signal::agent_setup_post_startup_pre_install_hook(ctx)?;
+    remote_call_rate::agent_setup_post_startup_pre_install_hook(ctx)?;
+    remote_signals::agent_setup_post_startup_pre_install_hook(ctx)?;
+    trycp_write_validated::agent_setup_post_startup_pre_install_hook(ctx)?;
 
-    install_app(
-        ctx,
-        scenario_happ_path!("frank1"),
-        &"frank1".to_string(),
-    )?;
+    install_app(ctx, scenario_happ_path!("frank1"), &"frank1".to_string())?;
     try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
 
     Ok(())
@@ -57,7 +77,9 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    remote_signal::agent_behaviour_hook(ctx)?;
+    remote_call_rate::agent_behaviour_hook(ctx)?;
+    remote_signals::agent_behaviour_hook(ctx)?;
+    trycp_write_validated::agent_behaviour_hook(ctx)?;
 
     Ok(())
 }
