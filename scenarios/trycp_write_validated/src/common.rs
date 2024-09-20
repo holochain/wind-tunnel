@@ -2,9 +2,31 @@ use holochain_types::prelude::ActionHash;
 use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
 use validated_integrity::UpdateSampleEntryInput;
+use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Default)]
-pub struct ScenarioValues {}
+#[derive(Debug)]
+pub struct ScenarioValues {
+    pub write_interval: Duration,
+    pub last_write: Arc<Mutex<std::time::Instant>>,
+}
+
+fn env_dur(n: &'static str, d: u64) -> Duration {
+    match std::env::var(n) {
+        Ok(n) => Duration::from_millis(n.parse::<u64>().unwrap()),
+        _ => Duration::from_millis(d),
+    }
+}
+
+impl Default for ScenarioValues {
+    fn default() -> Self {
+        let write_interval = env_dur("WRITE_INTERVAL_MS", 0);
+
+        Self {
+            write_interval,
+            last_write: Arc::new(Mutex::new(std::time::Instant::now())),
+        }
+    }
+}
 
 impl UserValuesConstraint for ScenarioValues {}
 
@@ -29,6 +51,19 @@ pub fn agent_behaviour_hook<Sv>(
 where
     Sv: UserValuesConstraint + AsMut<ScenarioValues>,
 {
+    let last_write = ctx.get_mut().scenario_values.as_mut().last_write.clone();
+    let write_interval = ctx.get_mut().scenario_values.as_mut().write_interval;
+
+    {
+        let now_inst = std::time::Instant::now();
+        let mut last_inst = last_write.lock().unwrap();
+        if now_inst - *last_inst < write_interval {
+            // Don't hammer with signals
+            return Ok(());
+        }
+        *last_inst = now_inst;
+    }
+
     let reporter = ctx.runner_context().reporter();
 
     let start = Instant::now();

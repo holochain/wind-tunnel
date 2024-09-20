@@ -81,6 +81,15 @@ fn agent_behaviour(
     remote_signals::agent_behaviour_hook(ctx)?;
     trycp_write_validated::agent_behaviour_hook(ctx)?;
 
+    // Don't just hammer
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+            Ok(())
+        })?;
+
     Ok(())
 }
 

@@ -5,10 +5,32 @@ use rand::thread_rng;
 use remote_call_integrity::TimedResponse;
 use std::time::{Duration, Instant};
 use trycp_wind_tunnel_runner::prelude::*;
+use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ScenarioValues {
+    pub call_interval: Duration,
+    pub last_call: Arc<Mutex<std::time::Instant>>,
     pub remote_call_peers: Vec<AgentPubKey>,
+}
+
+fn env_dur(n: &'static str, d: u64) -> Duration {
+    match std::env::var(n) {
+        Ok(n) => Duration::from_millis(n.parse::<u64>().unwrap()),
+        _ => Duration::from_millis(d),
+    }
+}
+
+impl Default for ScenarioValues {
+    fn default() -> Self {
+        let call_interval = env_dur("CALL_INTERVAL_MS", 0);
+
+        Self {
+            call_interval,
+            last_call: Arc::new(Mutex::new(std::time::Instant::now())),
+            remote_call_peers: Vec::new(),
+        }
+    }
 }
 
 impl UserValuesConstraint for ScenarioValues {}
@@ -34,6 +56,19 @@ pub fn agent_behaviour_hook<Sv>(
 where
     Sv: UserValuesConstraint + AsMut<ScenarioValues>,
 {
+    let last_call = ctx.get_mut().scenario_values.as_mut().last_call.clone();
+    let call_interval = ctx.get_mut().scenario_values.as_mut().call_interval;
+
+    {
+        let now_inst = std::time::Instant::now();
+        let mut last_inst = last_call.lock().unwrap();
+        if now_inst - *last_inst < call_interval {
+            // Don't hammer with signals
+            return Ok(());
+        }
+        *last_inst = now_inst;
+    }
+
     let client = ctx.get().trycp_client();
 
     let agent_name = ctx.agent_name().to_string();
