@@ -22,6 +22,7 @@ members = [
     "scenarios/write_query",
     "scenarios/local_signals",
     "scenarios/remote_call_rate",
+    "scenarios/remote_signals",
     "scenarios/two_party_countersigning",
     "scenarios/write_validated",
     "scenarios/trycp_write_validated",
@@ -38,10 +39,12 @@ members = [
     "zomes/signal/coordinator",
     "zomes/remote_call/coordinator",
     "zomes/remote_call/integrity",
+    "zomes/remote_signal/coordinator",
+    "zomes/remote_signal/integrity",
     "zomes/countersigning/coordinator",
     "zomes/countersigning/integrity",
     "zomes/validated/coordinator",
-    "zomes/validated/integrity"
+    "zomes/validated/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -79,7 +82,9 @@ url = "2.5.0"
 tabled = "0.16.0"
 indicatif = "0.17.8"
 # TODO waiting for 0.7.3+ relase to use the new reqwest-client-native-tls-vendored feature
-influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = ["reqwest-client-native-tls-vendored"] }
+influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = [
+    "reqwest-client-native-tls-vendored",
+] }
 influxive-core = "0.0.2-alpha.1"
 nanoid = "0.4.0"
 which = "6.0.1"
@@ -98,7 +103,7 @@ holochain_types = { version = "0.4.0-dev.24" }
 holochain_conductor_api = { version = "0.4.0-dev.25" }
 holochain_nonce = { version = "0.4.0-dev.7" }
 kitsune_p2p_types = { version = "0.4.0-dev.13" }
-holochain_websocket = { version = "0.4.0-dev.24"}
+holochain_websocket = { version = "0.4.0-dev.24" }
 hdk = { version = "0.4.0-dev.17" }
 hdi = "0.5.0-dev.15"
 mr_bundle = "0.4.0-dev.7"
@@ -124,6 +129,7 @@ crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
 remote_call_integrity = { path = "./zomes/remote_call/integrity" }
+remote_signal_integrity = { path = "./zomes/remote_signal/integrity" }
 countersigning_integrity = { path = "./zomes/countersigning/integrity" }
 validated_integrity = { path = "./zomes/validated/integrity" }
 
