@@ -35,7 +35,7 @@ fn agent_setup(
         .executor()
         .execute_in_place(async move {
             client
-                .configure_player(agent_name.clone(), conductor_config().to_string(), None)
+                .configure_player(agent_name.clone(), conductor_config(), None)
                 .await?;
 
             client.startup(agent_name.clone(), None).await?;
