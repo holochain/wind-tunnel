@@ -100,8 +100,6 @@
         };
 
         devShells.ci = pkgs.mkShell {
-          inputsFrom = [ inputs'.holonix.devShells ];
-
           packages = [
             pkgs.shellcheck
             pkgs.statix
