@@ -245,7 +245,7 @@ fn build_required_dna(
             print_rerun_for_package(&integrity_dir);
 
             build_wasm(&integrity_dir, target_dir)?;
-            let wasm_file = find_wasm(target_dir, dna_name, "integrity")?;
+            let wasm_file = find_wasm(target_dir, zome_name, "integrity")?;
             integrity_manifests.push(holochain_types::dna::ZomeManifest {
                 name: format!("{}_integrity", zome_name).into(),
                 hash: None,
@@ -266,7 +266,7 @@ fn build_required_dna(
             print_rerun_for_package(&coordinator_dir);
 
             build_wasm(&coordinator_dir, target_dir)?;
-            let wasm_file = find_wasm(target_dir, dna_name, "coordinator")?;
+            let wasm_file = find_wasm(target_dir, zome_name, "coordinator")?;
             coordinator_manifests.push(holochain_types::dna::ZomeManifest {
                 name: zome_name.to_string().into(),
                 hash: None,

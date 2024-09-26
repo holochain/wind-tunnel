@@ -1,15 +1,11 @@
-use holochain_types::prelude::ActionHash;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use trycp_wind_tunnel_runner::embed_conductor_config;
 use trycp_wind_tunnel_runner::prelude::*;
-use validated_integrity::UpdateSampleEntryInput;
 
 embed_conductor_config!();
 
-#[derive(Debug, Default)]
-pub struct ScenarioValues {}
-
-impl UserValuesConstraint for ScenarioValues {}
+mod common;
+pub use common::*;
 
 fn agent_setup(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
@@ -32,6 +28,8 @@ fn agent_setup(
             Ok(())
         })?;
 
+    agent_setup_post_startup_pre_install_hook(ctx)?;
+
     install_app(
         ctx,
         scenario_happ_path!("validated"),
@@ -45,42 +43,7 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let reporter = ctx.runner_context().reporter();
-
-    let start = Instant::now();
-
-    let action_hash: ActionHash = call_zome(
-        ctx,
-        "validated",
-        "create_sample_entry",
-        "this is a test entry value",
-        Some(Duration::from_secs(80)),
-    )?;
-
-    reporter.add_custom(
-        ReportMetric::new("create_sample_entry_time")
-            .with_field("value", start.elapsed().as_secs_f64()),
-    );
-
-    let start = Instant::now();
-
-    let _: ActionHash = call_zome(
-        ctx,
-        "validated",
-        "update_sample_entry",
-        UpdateSampleEntryInput {
-            original: action_hash,
-            new_value: "the old string was a bit boring".to_string(),
-        },
-        Some(Duration::from_secs(80)),
-    )?;
-
-    reporter.add_custom(
-        ReportMetric::new("update_sample_entry_time")
-            .with_field("value", start.elapsed().as_secs_f64()),
-    );
-
-    Ok(())
+    agent_behaviour_hook(ctx)
 }
 
 fn agent_teardown(
