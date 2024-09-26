@@ -2,9 +2,9 @@ name: "test"
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   merge_group:
 
 concurrency:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,10 +26,10 @@ jobs:
         if: runner.os == 'Linux'
         uses: AdityaGarg8/remove-unwanted-software@v2
         with:
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
 
       - name: Install nix
         uses: cachix/install-nix-action@v27
@@ -74,10 +74,10 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - zome_call_single_value with CHC enabled
@@ -87,21 +87,21 @@ jobs:
 
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # TODO using `localhost` is resolving to an IPv6 address, but why is that giving a connection refused?
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read with CHC enabled
@@ -111,10 +111,10 @@ jobs:
 
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - dht_sync_lag
@@ -244,7 +244,7 @@ jobs:
 
       - name: Smoke test - write_validated with CHC enabled
         run: |
-          # start the chc reference implementation service
+          # start the CHC reference implementation service
           nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
 
           # Start a sandbox conductor and run it in the background
@@ -272,10 +272,30 @@ jobs:
           # Stop local network services
           pkill hc-run-local
 
+      - name: Smoke test - trycp_write_validated with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
       - name: Smoke test - remote_call_rate
         run: |
           set -x
-          
+
           # Start local network services
           nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
           # Start a TryCP instance
@@ -283,6 +303,26 @@ jobs:
 
           # Run the scenario for 10 seconds
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - remote_call_rate with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
@@ -304,6 +344,24 @@ jobs:
           # Stop local network services
           pkill hc-run-local
 
+      - name: Smoke test - two_party_countersigning with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 10 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
       - name: Smoke test - validation_receipts
         run: |
           set -x
@@ -315,6 +373,26 @@ jobs:
 
           # Run the scenario for 10 seconds
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - validation_receipts with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
@@ -343,4 +421,3 @@ jobs:
           name: scenario-bundles
           if-no-files-found: error
           path: dist/*
-
