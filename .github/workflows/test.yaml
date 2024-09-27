@@ -2,9 +2,9 @@ name: "test"
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   merge_group:
 
 concurrency:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -74,20 +74,20 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - single_write_many_read
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-          
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-          
+
           pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - dht_sync_lag
@@ -180,7 +180,7 @@ jobs:
       - name: Smoke test - remote_call_rate
         run: |
           set -x
-          
+
           # Start local network services
           nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
           # Start a TryCP instance

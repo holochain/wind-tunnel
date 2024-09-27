@@ -79,6 +79,7 @@
             pkgs.shellcheck
             pkgs.statix
             pkgs.taplo
+            pkgs.yamlfmt
             pkgs.perl
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
@@ -107,6 +108,7 @@
             pkgs.shellcheck
             pkgs.statix
             pkgs.taplo
+            pkgs.yamlfmt
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
