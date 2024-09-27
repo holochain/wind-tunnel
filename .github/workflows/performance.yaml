@@ -7,6 +7,10 @@ env:
   INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
   WT_METRICS_DIR: "${{ github.workspace }}/telegraf/metrics"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   local-test:
     runs-on: [self-hosted, wind-tunnel]
