@@ -78,6 +78,7 @@
             pkgs.httpie
             pkgs.shellcheck
             pkgs.statix
+            pkgs.taplo
             pkgs.perl
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
@@ -105,6 +106,7 @@
           packages = [
             pkgs.shellcheck
             pkgs.statix
+            pkgs.taplo
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
