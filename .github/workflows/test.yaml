@@ -49,6 +49,14 @@ jobs:
         run: |
           nix develop .#ci -c bash -c "shellcheck scripts/*.sh"
 
+      - name: Check TOML formatting
+        run: |
+          nix develop .#ci -c bash -c "./scripts/format-toml.sh --check"
+
+      - name: Check YAML formatting
+        run: |
+          nix develop .#ci -c bash -c "./scripts/format-yaml.sh -lint"
+
       - name: Check Nix formatting
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_fmt"
