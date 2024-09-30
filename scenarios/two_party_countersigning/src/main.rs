@@ -1,8 +1,6 @@
 use anyhow::Context;
-use countersigning_integrity::Signals;
-use holochain_types::prelude::{
-    AgentPubKey, CellId, EntryHash, PreflightRequest, PreflightResponse,
-};
+use countersigning_integrity::{AcceptedRequest, Signals};
+use holochain_types::prelude::{AgentPubKey, CellId, EntryHash, PreflightResponse};
 use holochain_types::signal::{Signal, SystemSignal};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -21,6 +19,7 @@ pub struct ScenarioValues {
     initiate_with_peers: Vec<AgentPubKey>,
     session_attempts: Arc<AtomicUsize>,
     session_successes: Arc<AtomicUsize>,
+    session_failures: Arc<AtomicUsize>,
 }
 
 impl UserValuesConstraint for ScenarioValues {}
@@ -115,6 +114,7 @@ fn agent_behaviour_initiate(
     let agent_name = ctx.agent_name().to_string();
     let initiated = ctx.get().scenario_values.session_attempts.clone();
     let initiated_success = ctx.get().scenario_values.session_successes.clone();
+    let initiated_failure = ctx.get().scenario_values.session_failures.clone();
 
     let new_peers = ctx
         .runner_context()
@@ -193,27 +193,57 @@ fn agent_behaviour_initiate(
                         client.clone(),
                         my_preflight_response,
                         session_timeout,
-                        agent_pub_key,
-                        agent_name.clone(),
+                        agent_pub_key.clone(),
                         cell_id.clone(),
                         app_port,
-                        start,
-                        initiated_success.clone(),
-                        reporter,
                     )
                     .await
                     {
-                        Ok(_) => {
-                            // Completed successfully
+                        Ok(retry_count) => {
+                            let elapsed = start.elapsed();
+
+                            log::debug!(
+                                "Completed countersigning session with agent {:?}",
+                                agent_pub_key
+                            );
+
+                            let initiated_success = initiated_success
+                                .fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                            reporter.add_custom(
+                                ReportMetric::new("countersigning_session_initiated_success")
+                                    .with_tag("agent", agent_name.clone())
+                                    .with_tag("retries", retry_count as u64)
+                                    .with_field("value", (initiated_success + 1) as u64),
+                            );
+                            reporter.add_custom(
+                                ReportMetric::new("countersigning_session_initiated_duration")
+                                    .with_tag("agent", agent_name)
+                                    .with_tag("failed", false)
+                                    .with_field("value", elapsed.as_secs_f64()),
+                            );
                         }
                         Err(e) => {
+                            let elapsed = start.elapsed();
+
                             log::warn!(
-                                "Failed to run initiated session, waiting for it to time out: {:?}",
+                                "Failed countersigning session with agent {:?}: {:?}",
+                                agent_pub_key,
                                 e
                             );
 
-                            // TODO this can be replaced with listening for the abandoned signal
-                            tokio::time::sleep_until(session_timeout).await;
+                            let initiated_failure = initiated_failure
+                                .fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                            reporter.add_custom(
+                                ReportMetric::new("countersigning_session_initiated_failure")
+                                    .with_tag("agent", agent_name.clone())
+                                    .with_field("value", (initiated_failure + 1) as u64),
+                            );
+                            reporter.add_custom(
+                                ReportMetric::new("countersigning_session_initiated_duration")
+                                    .with_tag("agent", agent_name)
+                                    .with_tag("failed", true)
+                                    .with_field("value", elapsed.as_secs_f64()),
+                            );
                         }
                     }
 
@@ -231,19 +261,14 @@ fn agent_behaviour_initiate(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 async fn run_initiated_session(
     client: TryCPClient,
     my_preflight_response: PreflightResponse,
     session_timeout: Instant,
     agent_pub_key: AgentPubKey,
-    agent_name: String,
     cell_id: CellId,
     app_port: u16,
-    start: Instant,
-    initiated_success: Arc<AtomicUsize>,
-    reporter: Arc<Reporter>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     loop {
         // Now listen for a signal from the remote with their acceptance
         let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await.with_context(|| format!("Agent [{agent_pub_key:?}] did not respond to the countersigning request in time, abandoning"))?;
@@ -262,8 +287,8 @@ async fn run_initiated_session(
 
                 let other_response = match signal.clone().into_inner().decode::<Signals>() {
                     Ok(Signals::Response(response))
-                        if session_fingerprint(response.request())?
-                            == session_fingerprint(my_preflight_response.request())? =>
+                        if response.request().fingerprint()?
+                            == my_preflight_response.request().fingerprint()? =>
                     {
                         response
                     }
@@ -272,8 +297,8 @@ async fn run_initiated_session(
                         continue;
                     }
                     Err(_) => {
-                        // Must be resilient to unexpected signals, somebody else might try to initiate with us while we're already
-                        // working with another peer.
+                        // We shouldn't really be getting signals that don't decode but choosing to
+                        // filter them out here.
                         log::debug!("Got an unexpected signal, will try again. {:?}", signal);
                         continue;
                     }
@@ -284,7 +309,7 @@ async fn run_initiated_session(
                     agent_pub_key
                 );
 
-                let retry_count = complete_session(
+                return complete_session(
                     client.clone(),
                     app_port,
                     cell_id.clone(),
@@ -292,39 +317,13 @@ async fn run_initiated_session(
                     other_response,
                     session_timeout,
                 )
-                .await
-                .context("Initiator failed to complete session")?;
-
-                let elapsed = start.elapsed();
-
-                log::debug!(
-                    "Completed the countersigning session with agent {:?}",
-                    agent_pub_key
-                );
-
-                let initiated_success =
-                    initiated_success.fetch_add(1, std::sync::atomic::Ordering::Acquire);
-                reporter.add_custom(
-                    ReportMetric::new("countersigning_session_initiated_success")
-                        .with_tag("agent", agent_name.clone())
-                        .with_field("retries", retry_count as u64)
-                        .with_field("value", initiated_success as u64),
-                );
-                reporter.add_custom(
-                    ReportMetric::new("countersigning_session_initiated_duration")
-                        .with_tag("agent", agent_name)
-                        .with_field("value", elapsed.as_secs_f64()),
-                );
-
-                break;
+                .await;
             }
             None => {
                 log::warn!("No signal received, problem with the remote? Will try again.");
             }
         }
     }
-
-    Ok(())
 }
 
 fn agent_behaviour_participate(
@@ -339,6 +338,7 @@ fn agent_behaviour_participate(
     let agent_name = ctx.agent_name().to_string();
     let accepted = ctx.get().scenario_values.session_attempts.clone();
     let accepted_success = ctx.get().scenario_values.session_successes.clone();
+    let accepted_failure = ctx.get().scenario_values.session_failures.clone();
 
     ctx.runner_context().executor().execute_in_place(
         async move {
@@ -390,45 +390,48 @@ fn agent_behaviour_participate(
                             (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
                         ));
 
-                        log::debug!("Another party has initiated a countersigning session.");
+                        match run_accepted_session(client, request, session_timeout, cell_id, app_port).await {
+                            Ok(retry_count) => {
+                                let elapsed = start.elapsed();
 
-                        let response = client.call_zome(
-                            app_port,
-                            cell_id.clone(),
-                            "countersigning",
-                            "accept_two_party",
-                            request.preflight_request,
-                            None,
-                        ).await?;
+                                log::debug!("Completed countersigning session with the initiating party.");
 
-                        log::debug!("Accepted the incoming session, proceeding to commit.");
-
-                        let my_accept_response: PreflightResponse = response.decode().map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
-
-                        let retry_count = match complete_session(client.clone(), app_port, cell_id.clone(), request.preflight_response, my_accept_response, session_timeout).await {
-                            Ok(retry_count) => retry_count,
+                                let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                reporter.add_custom(
+                                    ReportMetric::new("countersigning_session_accepted_success")
+                                        .with_tag("agent", agent_name.clone())
+                                        .with_tag("retries", retry_count as u64)
+                                        .with_field("value", (accepted_success + 1) as u64),
+                                );
+                                reporter.add_custom(
+                                    ReportMetric::new("countersigning_session_accepted_duration")
+                                        .with_tag("agent", agent_name)
+                                        .with_tag("failed", false)
+                                        .with_field("value", elapsed.as_secs_f64()),
+                                );
+                            },
                             Err(e) => {
+                                let elapsed = start.elapsed();
+
+                                log::warn!("Failed countersigning session with the initiating party: {:?}", e);
+
                                 // If we got a fatal error rather than a successful session, wait for the session to expire before trying again
                                 tokio::time::sleep_until(session_timeout).await;
-                                return Err(e).context("Acceptor failed to complete session");
+
+                                let accepted_failure = accepted_failure.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                reporter.add_custom(
+                                    ReportMetric::new("countersigning_session_accepted_failure")
+                                        .with_tag("agent", agent_name.clone())
+                                        .with_field("value", (accepted_failure + 1) as u64),
+                                );
+                                reporter.add_custom(
+                                    ReportMetric::new("countersigning_session_accepted_duration")
+                                        .with_tag("agent", agent_name)
+                                        .with_tag("failed", true)
+                                        .with_field("value", elapsed.as_secs_f64()),
+                                );
                             }
                         };
-                        let elapsed = start.elapsed();
-
-                        log::debug!("Completed the countersigning session with the initiating party.");
-
-                        let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Acquire);
-                        reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_success")
-                                .with_tag("agent", agent_name.clone())
-                                .with_field("retries", retry_count as u64)
-                                .with_field("value", accepted_success as u64),
-                        );
-                        reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_duration")
-                                .with_tag("agent", agent_name)
-                                .with_field("value", elapsed.as_secs_f64()),
-                        );
 
                         break;
                     }
@@ -445,15 +448,54 @@ fn agent_behaviour_participate(
     Ok(())
 }
 
+async fn run_accepted_session(
+    client: TryCPClient,
+    request: AcceptedRequest,
+    session_timeout: Instant,
+    cell_id: CellId,
+    app_port: u16,
+) -> anyhow::Result<usize> {
+    log::debug!("Another party has initiated a countersigning session.");
+
+    let response = client
+        .call_zome(
+            app_port,
+            cell_id.clone(),
+            "countersigning",
+            "accept_two_party",
+            request.preflight_request,
+            None,
+        )
+        .await?;
+
+    log::debug!("Accepted the incoming session, proceeding to commit.");
+
+    let my_accept_response: PreflightResponse = response
+        .decode()
+        .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
+
+    complete_session(
+        client.clone(),
+        app_port,
+        cell_id.clone(),
+        request.preflight_response,
+        my_accept_response,
+        session_timeout,
+    )
+    .await
+}
+
 fn agent_teardown(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    log::debug!("Downloading logs for agent {}", ctx.agent_name());
     if let Err(e) = dump_logs(ctx) {
         log::warn!("Failed to dump logs: {:?}", e);
     }
 
     // Best effort to remove data and cleanup.
     // You should comment out this line if you want to examine the result of the scenario run!
+    log::debug!("Resetting TryCP remote from agent {}", ctx.agent_name());
     let _ = reset_trycp_remote(ctx);
 
     // Alternatively, you can just shut down the remote conductor instead of shutting it down and removing data.
@@ -495,13 +537,16 @@ async fn complete_session(
             }
             Err(e) => {
                 if Instant::now() > session_timeout {
+                    // We haven't been able to commit our entry by the end of the countersigning
+                    // session time, so we should abandon the attempt. This is safe because we
+                    // haven't published a signature.
                     return Err(e).context(format!(
                         "Abandoning commit attempt because the session timed out on attempt {}",
                         i
                     ));
                 } else if e
                     .chain()
-                    .any(|e| e.to_string().contains("was not found on the DHT"))
+                    .any(|e| e.to_string().contains("DepMissingFromDht"))
                 {
                     // Skip logging this message, it's what we're expecting to take some time in this retry loop
                 } else if e.chain().any(|e| {
@@ -527,25 +572,11 @@ async fn complete_session(
     match await_countersigning_success(
         client.clone(),
         initiate_preflight_response.request.app_entry_hash,
-        session_timeout,
     )
     .await
     {
         Ok(_) => {}
         Err(e) => {
-            // Try to force unlock the chain
-            client
-                .call_zome(
-                    app_port,
-                    cell_id.clone(),
-                    "countersigning",
-                    "create_anything",
-                    (),
-                    None,
-                )
-                .await
-                .ok();
-
             return Err(e).with_context(|| {
                 format!(
                     "Session between [{:?}] did not complete within the session time",
@@ -555,7 +586,7 @@ async fn complete_session(
         }
     }
 
-    log::info!(
+    log::debug!(
         "Completed countersigning session with retry count: {}",
         retry_count
     );
@@ -563,22 +594,14 @@ async fn complete_session(
     Ok(retry_count)
 }
 
-fn session_fingerprint(preflight_request: &PreflightRequest) -> anyhow::Result<Vec<u8>> {
-    let hash = holo_hash::encode::blake2b_256(
-        &holochain_serialized_bytes::encode(preflight_request)
-            .context("Failed to serialize preflight request")?,
-    );
-
-    Ok(hash)
-}
-
 async fn await_countersigning_success(
     client: TryCPClient,
     session_entry_hash: EntryHash,
-    session_timeout: Instant,
 ) -> HookResult {
     loop {
-        let signal = tokio::time::timeout_at(session_timeout, client.recv_signal()).await?;
+        // Note that we don't expect the session timeout here. We will wait for Holochain to
+        // make a decision and not assume that the session is resolved at the end time.
+        let signal = client.recv_signal().await;
         match signal {
             Some(signal) => {
                 match rmp_serde::decode::from_slice::<Signal>(&signal.data).map_err(|e| {
@@ -591,8 +614,18 @@ async fn await_countersigning_success(
                         break;
                     }
                     Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
-                        // This shouldn't happen because the scenario should only be running one at a time. There's a bug if this log message shows up.
+                        // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
                         log::warn!("Received a successful countersigning signal for a different session, listening for other signals.");
+                        continue;
+                    }
+                    Signal::System(SystemSignal::AbandonedCountersigning(eh))
+                        if eh == session_entry_hash =>
+                    {
+                        return Err(anyhow::anyhow!("Countersigning session was abandoned"));
+                    }
+                    Signal::System(SystemSignal::AbandonedCountersigning(_)) => {
+                        // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
+                        log::warn!("Received an abandoned countersigning signal for a different session, listening for other signals.");
                         continue;
                     }
                     // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
