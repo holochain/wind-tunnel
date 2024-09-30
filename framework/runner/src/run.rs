@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use anyhow::Context;
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
-
+use wind_tunnel_summary_model::append_run_summary;
 use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
 use crate::progress::start_progress;
@@ -24,6 +24,22 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     println!("#RunId: [{}]", run_id);
 
     let definition = definition.build()?;
+
+    // Create the summary for the run. This is used to link the run with the report and build a
+    // summary from the metrics after the run has completed.
+    let mut summary = wind_tunnel_summary_model::RunSummary::new(
+        run_id.clone(),
+        definition.name.clone(),
+        SystemTime::now(),
+        definition.duration_s.clone(),
+        definition.assigned_behaviours.iter().map(|b| b.agent_count).sum(),
+        definition.assigned_behaviours.iter().map(|b| (b.behaviour_name.clone(), b.agent_count)).collect(),
+    );
+    for capture in &definition.capture_env {
+        if let Ok(value) = std::env::var(capture) {
+            summary.add_env(capture.clone(), value);
+        }
+    }
 
     log::info!("Running scenario: {}", definition.name);
 
@@ -213,6 +229,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     report_shutdown_handle.shutdown();
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
+
+    summary.set_peer_end_count(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire));
+    if let Err(e) = append_run_summary(summary, PathBuf::from("run_summary.jsonl")) {
+        log::error!("Failed to append run summary: {:?}", e);
+    }
 
     println!("#RunId: [{}]", run_id);
 

@@ -24,6 +24,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     cli: WindTunnelScenarioCli,
     default_agent_count: Option<usize>,
     default_duration_s: Option<u64>,
+    capture_env: HashSet<String>,
     setup_fn: Option<GlobalHookMut<RV>>,
     setup_agent_fn: Option<AgentHookMut<RV, V>>,
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -42,6 +43,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) assigned_behaviours: Vec<AssignedBehaviour>,
     pub(crate) duration_s: Option<u64>,
     pub(crate) connection_string: String,
+    pub(crate) capture_env: HashSet<String>,
     pub(crate) no_progress: bool,
     pub(crate) reporter: ReporterOpt,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
@@ -92,6 +94,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             cli,
             default_agent_count: None,
             default_duration_s: None,
+            capture_env: HashSet::with_capacity(0),
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
@@ -113,6 +116,11 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// This can be overridden when the scenario is run using the `--duration` flag.
     pub fn with_default_duration_s(mut self, duration: u64) -> Self {
         self.default_duration_s = Some(duration);
+        self
+    }
+
+    pub fn add_capture_env(mut self, key: &str) -> Self {
+        self.capture_env.insert(key.to_string());
         self
     }
 
@@ -205,6 +213,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             assigned_behaviours: build_assigned_behaviours(&self.cli, resolved_agent_count)?,
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,
+            capture_env: self.capture_env,
             no_progress: self.cli.no_progress,
             reporter: self.cli.reporter,
             setup_fn: self.setup_fn,
