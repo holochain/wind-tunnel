@@ -21,7 +21,7 @@ You need around at least 10 peers, or the nodes will never get the required numb
 
 ### NO_VALIDATION_COMPLETE
 
-By default this scenario will wait for a complete set of validation receipts before moving on to commit the next record. If you want to publish new records on every round, building up an ever-growing list of action hashes to check for validation complete, run with the `NO_VALIDATION_COMPLETE=1` environment variable.
+By default, this scenario will wait for a complete set of validation receipts before moving on to commit the next record. If you want to publish new records on every round, building up an ever-growing list of action hashes to check for validation complete, run with the `NO_VALIDATION_COMPLETE=1` environment variable.
 
 Example:
 
