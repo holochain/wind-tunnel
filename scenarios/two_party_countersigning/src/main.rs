@@ -154,7 +154,7 @@ fn agent_behaviour_initiate(
                     );
 
                     let start = Instant::now();
-                    let initiated = initiated.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                    let initiated = initiated.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     reporter.add_custom(
                         ReportMetric::new("countersigning_session_initiated")
                             .with_tag("agent", agent_name.clone())
@@ -208,7 +208,7 @@ fn agent_behaviour_initiate(
                             );
 
                             let initiated_success = initiated_success
-                                .fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_success")
                                     .with_tag("agent", agent_name.clone())
@@ -232,7 +232,7 @@ fn agent_behaviour_initiate(
                             );
 
                             let initiated_failure = initiated_failure
-                                .fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_failure")
                                     .with_tag("agent", agent_name.clone())
@@ -376,7 +376,7 @@ fn agent_behaviour_participate(
                         };
 
                         let start = Instant::now();
-                        let accepted = accepted.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                        let accepted = accepted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_accepted")
                                 .with_tag("agent", agent_name.clone())
@@ -396,7 +396,7 @@ fn agent_behaviour_participate(
 
                                 log::debug!("Completed countersigning session with the initiating party.");
 
-                                let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_success")
                                         .with_tag("agent", agent_name.clone())
@@ -418,7 +418,7 @@ fn agent_behaviour_participate(
                                 // If we got a fatal error rather than a successful session, wait for the session to expire before trying again
                                 tokio::time::sleep_until(session_timeout).await;
 
-                                let accepted_failure = accepted_failure.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                                let accepted_failure = accepted_failure.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_failure")
                                         .with_tag("agent", agent_name.clone())
@@ -615,7 +615,7 @@ async fn await_countersigning_success(
                     }
                     Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
                         // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
-                        log::warn!("Received a successful countersigning signal for a different session, listening for other signals.");
+                        log::error!("Received a successful countersigning signal for a different session, listening for other signals.");
                         continue;
                     }
                     Signal::System(SystemSignal::AbandonedCountersigning(eh))
@@ -625,7 +625,7 @@ async fn await_countersigning_success(
                     }
                     Signal::System(SystemSignal::AbandonedCountersigning(_)) => {
                         // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
-                        log::warn!("Received an abandoned countersigning signal for a different session, listening for other signals.");
+                        log::error!("Received an abandoned countersigning signal for a different session, listening for other signals.");
                         continue;
                     }
                     // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
