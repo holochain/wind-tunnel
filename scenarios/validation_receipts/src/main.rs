@@ -186,7 +186,7 @@ fn main() -> WindTunnelResult<()> {
         TryCPAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))?
     .into_std()
-        .add_capture_env("NO_VALIDATION_COMPLETE")
+    .add_capture_env("NO_VALIDATION_COMPLETE")
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);

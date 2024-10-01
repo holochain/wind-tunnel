@@ -3,10 +3,6 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use anyhow::Context;
-use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
-use wind_tunnel_instruments::ReportConfig;
-use wind_tunnel_summary_model::append_run_summary;
 use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
 use crate::progress::start_progress;
@@ -16,6 +12,10 @@ use crate::{
     executor::Executor,
     shutdown::start_shutdown_listener,
 };
+use anyhow::Context;
+use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
+use wind_tunnel_instruments::ReportConfig;
+use wind_tunnel_summary_model::append_run_summary;
 
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
@@ -30,10 +30,18 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let mut summary = wind_tunnel_summary_model::RunSummary::new(
         run_id.clone(),
         definition.name.clone(),
-        SystemTime::now(),
+        chrono::Utc::now().timestamp(),
         definition.duration_s.clone(),
-        definition.assigned_behaviours.iter().map(|b| b.agent_count).sum(),
-        definition.assigned_behaviours.iter().map(|b| (b.behaviour_name.clone(), b.agent_count)).collect(),
+        definition
+            .assigned_behaviours
+            .iter()
+            .map(|b| b.agent_count)
+            .sum(),
+        definition
+            .assigned_behaviours
+            .iter()
+            .map(|b| (b.behaviour_name.clone(), b.agent_count))
+            .collect(),
     );
     for capture in &definition.capture_env {
         if let Ok(value) = std::env::var(capture) {
