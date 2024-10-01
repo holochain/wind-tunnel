@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Summary of a run
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,7 +15,7 @@ pub struct RunSummary {
     /// The time the run started
     ///
     /// This is a Unix timestamp in seconds.
-    pub started_at: u64,
+    pub started_at: i64,
     /// The duration that the run was configured with, in seconds
     ///
     /// If the run was configured for soak testing, then this will not be set.
@@ -51,7 +50,7 @@ impl RunSummary {
     pub fn new(
         run_id: String,
         scenario_name: String,
-        started_at: SystemTime,
+        started_at: i64,
         run_duration: Option<u64>,
         peer_count: usize,
         behaviours: HashMap<String, usize>,
@@ -59,10 +58,7 @@ impl RunSummary {
         Self {
             run_id,
             scenario_name,
-            started_at: started_at
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_secs(),
+            started_at,
             run_duration,
             peer_count,
             peer_end_count: 0,
