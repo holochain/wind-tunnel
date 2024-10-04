@@ -43,6 +43,10 @@ pub struct RunSummary {
     /// This won't capture all environment variables. Just the ones that the runner is aware of or
     /// that are included by the scenario itself.
     pub env: HashMap<String, String>,
+    /// The version of Wind Tunnel that was used for this run
+    ///
+    /// This is the version of the Wind Tunnel runner that was used to run the scenario.
+    pub wind_tunnel_version: String,
 }
 
 impl RunSummary {
@@ -54,6 +58,7 @@ impl RunSummary {
         run_duration: Option<u64>,
         peer_count: usize,
         behaviours: HashMap<String, usize>,
+        wind_tunnel_version: String,
     ) -> Self {
         Self {
             run_id,
@@ -64,6 +69,7 @@ impl RunSummary {
             peer_end_count: 0,
             behaviours,
             env: HashMap::with_capacity(0),
+            wind_tunnel_version,
         }
     }
 
@@ -88,7 +94,7 @@ pub fn append_run_summary(run_summary: RunSummary, path: PathBuf) -> anyhow::Res
         .create(true)
         .open(path)?;
     store_run_summary(run_summary, &mut file)?;
-    file.write("\n".as_bytes())?;
+    let _ = file.write("\n".as_bytes())?;
     Ok(())
 }
 
