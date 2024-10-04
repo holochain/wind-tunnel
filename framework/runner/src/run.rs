@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
@@ -31,7 +31,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         run_id.clone(),
         definition.name.clone(),
         chrono::Utc::now().timestamp(),
-        definition.duration_s.clone(),
+        definition.duration_s,
         definition
             .assigned_behaviours
             .iter()
@@ -42,6 +42,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             .iter()
             .map(|b| (b.behaviour_name.clone(), b.agent_count))
             .collect(),
+        option_env!("CARGO_PKG_VERSION")
+            .unwrap_or("unknown")
+            .to_string(),
     );
     for capture in &definition.capture_env {
         if let Ok(value) = std::env::var(capture) {

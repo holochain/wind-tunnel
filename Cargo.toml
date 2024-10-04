@@ -5,6 +5,7 @@ members = [
   "framework/instruments",
   "framework/instruments_derive",
   "framework/runner",
+  "framework/summary_model",
 
   "bindings/client",
   "bindings/runner",
@@ -46,7 +47,7 @@ members = [
   "zomes/countersigning/coordinator",
   "zomes/countersigning/integrity",
   "zomes/validated/coordinator",
-  "zomes/validated/integrity", "framework/summary_model",
+  "zomes/validated/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -99,6 +100,11 @@ rand = "0.8"
 ed25519-dalek = "2.1"
 itertools = "0.13"
 chrono = "0.4"
+sha3 = "0.10"
+polars = { version = "0.43", features = ["lazy", "json", "strings"] }
+tempfile = "3.13"
+futures = "0.3"
+gethostname = "0.5"
 
 # Deps for Holochain
 holochain_client = { version = "=0.6.0-dev.10" }
