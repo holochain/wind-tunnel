@@ -1,7 +1,9 @@
-use crate::scenario::summarize_countersigning_two_party;
+use crate::scenario::{summarize_countersigning_two_party, summarize_first_call};
 use anyhow::Context;
+use chrono::Utc;
 use futures::FutureExt;
 use scenario::summarize_app_install;
+use std::fs::File;
 use std::path::PathBuf;
 use wind_tunnel_summary_model::load_summary_runs;
 
@@ -10,24 +12,19 @@ mod frame;
 mod model;
 mod query;
 mod scenario;
+mod analyze;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     let summary_runs = load_summary_runs(PathBuf::from("run_summary.jsonl"))
         .expect("Failed to load run summaries");
 
-    // Note that this is just a simple selection strategy. If we have run scenarios with more than
-    // one configuration, we might want to select multiple summaries per scenario name.
-    let latest_summaries = filter::latest_run_summaries_by_name(&summary_runs);
-
     let latest_by_config_summaries = filter::latest_run_summaries_by_name_and_config(summary_runs);
 
-    for summary in &latest_summaries {
-        println!("{:?}", summary);
-    }
-
     for (name, fingerprint, summary) in &latest_by_config_summaries {
-        println!("{:?} {:?} {:?}", name, fingerprint, summary);
+        log::debug!("Selected summary for {:?}({:?}): {:?}", name, fingerprint, summary);
     }
 
     let client = influxdb::Client::new(
@@ -41,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
             .context("Cannot read metrics without environment variable `INFLUX_TOKEN`")?,
     );
 
-    let outcome = futures::future::join_all(latest_by_config_summaries.into_iter().filter_map(
+    let mut outcome = futures::future::join_all(latest_by_config_summaries.into_iter().filter_map(
         |(name, _, summary)| {
             let client = client.clone();
             match name.as_str() {
@@ -50,6 +47,14 @@ async fn main() -> anyhow::Result<()> {
                         summarize_app_install(client.clone(), summary.clone())
                             .await
                             .context("App install report")
+                    }
+                    .boxed(),
+                ),
+                "first_call" => Some(
+                    async move {
+                        summarize_first_call(client.clone(), summary.clone())
+                            .await
+                            .context("First call report")
                     }
                     .boxed(),
                 ),
@@ -62,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
                     .boxed(),
                 ),
                 _ => {
-                    println!("No report for scenario: {}", name);
+                    log::warn!("No report for scenario: {}", name);
                     None
                 }
             }
@@ -71,10 +76,11 @@ async fn main() -> anyhow::Result<()> {
     .await
     .into_iter()
     .collect::<anyhow::Result<Vec<_>>>()?;
-    // .collect::<Vec<_>>()
-    // .await
 
-    println!("Outcome: {:?}", outcome);
+    outcome.sort_by_key(|r| r.run_summary.scenario_name.clone());
+
+    let report = File::create_new(format!("summariser-report-{:?}.json", Utc::now()))?;
+    serde_json::to_writer_pretty(report, &outcome)?;
 
     Ok(())
 }
