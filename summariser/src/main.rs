@@ -1,4 +1,6 @@
-use crate::scenario::{summarize_countersigning_two_party, summarize_first_call};
+use crate::scenario::{
+    summarize_countersigning_two_party, summarize_first_call, summarize_local_signals,
+};
 use anyhow::Context;
 use chrono::Utc;
 use futures::FutureExt;
@@ -7,12 +9,12 @@ use std::fs::File;
 use std::path::PathBuf;
 use wind_tunnel_summary_model::load_summary_runs;
 
+mod analyze;
 mod filter;
 mod frame;
 mod model;
 mod query;
 mod scenario;
-mod analyze;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -24,7 +26,12 @@ async fn main() -> anyhow::Result<()> {
     let latest_by_config_summaries = filter::latest_run_summaries_by_name_and_config(summary_runs);
 
     for (name, fingerprint, summary) in &latest_by_config_summaries {
-        log::debug!("Selected summary for {:?}({:?}): {:?}", name, fingerprint, summary);
+        log::debug!(
+            "Selected summary for {:?}({:?}): {:?}",
+            name,
+            fingerprint,
+            summary
+        );
     }
 
     let client = influxdb::Client::new(
@@ -46,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
                     async move {
                         summarize_app_install(client.clone(), summary.clone())
                             .await
-                            .context("App install report")
+                            .context("App install summary")
                     }
                     .boxed(),
                 ),
@@ -54,7 +61,15 @@ async fn main() -> anyhow::Result<()> {
                     async move {
                         summarize_first_call(client.clone(), summary.clone())
                             .await
-                            .context("First call report")
+                            .context("First call summary")
+                    }
+                    .boxed(),
+                ),
+                "local_signals" => Some(
+                    async move {
+                        summarize_local_signals(client.clone(), summary.clone())
+                            .await
+                            .context("Local signals summary")
                     }
                     .boxed(),
                 ),

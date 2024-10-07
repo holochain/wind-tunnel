@@ -1,14 +1,14 @@
+use crate::analyze::standard_timing_stats;
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use serde::Serialize;
 use wind_tunnel_summary_model::RunSummary;
-use crate::analyze::standard_timing_stats;
 
 #[derive(Debug, Clone, Serialize)]
 struct AppInstallSummary {
     first_install: f64,
-    install_app: StandardTimingsStats
+    install_app: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_app_install(
@@ -31,7 +31,8 @@ pub(crate) async fn summarize_app_install(
         summary,
         AppInstallSummary {
             first_install: first,
-            install_app: standard_timing_stats(frame, "value", Some(1)).context("Standard timing stats")?,
+            install_app: standard_timing_stats(frame, "value", Some(1))
+                .context("Standard timing stats")?,
         },
     )
 }
