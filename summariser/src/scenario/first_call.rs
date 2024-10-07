@@ -1,13 +1,13 @@
+use crate::analyze::standard_timing_stats;
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
-use crate::analyze::standard_timing_stats;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct FirstCallSummary {
-    zome_call: StandardTimingsStats
+    zome_call: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_first_call(
@@ -23,7 +23,8 @@ pub(crate) async fn summarize_first_call(
     SummaryOutput::new(
         summary,
         FirstCallSummary {
-            zome_call: standard_timing_stats(frame, "value", None).context("Standard timing stats")?,
+            zome_call: standard_timing_stats(frame, "value", None)
+                .context("Standard timing stats")?,
         },
     )
 }

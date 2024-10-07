@@ -1,9 +1,13 @@
+use crate::model::{StandardRatioStats, StandardTimingsStats};
 use anyhow::Context;
 use polars::frame::DataFrame;
 use polars::prelude::*;
-use crate::model::StandardTimingsStats;
 
-pub(crate) fn standard_timing_stats(frame: DataFrame, column: &str, skip: Option<i64>) -> anyhow::Result<StandardTimingsStats> {
+pub(crate) fn standard_timing_stats(
+    frame: DataFrame,
+    column: &str,
+    skip: Option<i64>,
+) -> anyhow::Result<StandardTimingsStats> {
     let mut value_series = frame.column(column)?.clone();
     if let Some(skip) = skip {
         value_series = value_series.slice(skip, usize::MAX);
@@ -55,6 +59,31 @@ pub(crate) fn standard_timing_stats(frame: DataFrame, column: &str, skip: Option
         within_std: pct_within_1std,
         within_2std: pct_within_2std,
         within_3std: pct_within_3std,
+    })
+}
+
+pub(crate) fn standard_ratio_stats(
+    frame: DataFrame,
+    column: &str,
+) -> anyhow::Result<StandardRatioStats> {
+    let value_series = frame.column(column)?.clone();
+
+    let mean = value_series.mean().context("Mean")?;
+    let std = value_series.std(0).context("Std")?;
+    let min = value_series
+        .min::<f64>()
+        .context("Min")?
+        .context("Missing min")?;
+    let max = value_series
+        .max::<f64>()
+        .context("Max")?
+        .context("Missing max")?;
+
+    Ok(StandardRatioStats {
+        mean,
+        std,
+        min,
+        max,
     })
 }
 
