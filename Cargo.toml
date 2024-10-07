@@ -5,11 +5,14 @@ members = [
   "framework/instruments",
   "framework/instruments_derive",
   "framework/runner",
+  "framework/summary_model",
 
   "bindings/client",
   "bindings/runner",
   "bindings/trycp_client",
   "bindings/trycp_runner",
+
+  "summariser",
 
   "happ_builder",
 
@@ -58,6 +61,8 @@ default-members = [
   "bindings/trycp_client",
   "bindings/trycp_runner",
 
+  "summariser",
+
   "happ_builder",
 ]
 
@@ -73,6 +78,7 @@ opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
 toml = "0.8.10"
 serde = "1"
 serde_yaml = "0.9"
+serde_json = "1"
 walkdir = "2"
 sysinfo = "0.31"
 url = "2.5.0"
@@ -89,6 +95,12 @@ tokio-tungstenite = "0.21"
 rmp-serde = "1"
 rand = "0.8"
 ed25519-dalek = "2.1"
+itertools = "0.13"
+chrono = "0.4"
+sha3 = "0.10"
+polars = { version = "0.43", features = ["lazy", "json", "strings"] }
+tempfile = "3.13"
+futures = "0.3"
 
 # Deps for Holochain
 holochain_client = { version = "=0.6.0-dev.10" }
@@ -111,6 +123,7 @@ wind_tunnel_core = { path = "./framework/core", version = "0.3.0-alpha.1" }
 wind_tunnel_instruments = { path = "./framework/instruments", version = "0.3.0-alpha.1" }
 wind_tunnel_instruments_derive = { path = "./framework/instruments_derive", version = "0.3.0-alpha.1" }
 wind_tunnel_runner = { path = "./framework/runner", version = "0.3.0-alpha.1" }
+wind_tunnel_summary_model = { path = "./framework/summary_model", version = "0.3.0-alpha.1" }
 
 # Bindings
 holochain_client_instrumented = { path = "./bindings/client", version = "0.3.0-alpha.1" }
