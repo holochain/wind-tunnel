@@ -42,3 +42,17 @@ pub async fn query_zome_call_instrument_data(
     let res = client.json_query(q).await?;
     frame::load_from_response(res)
 }
+
+pub async fn query_custom_data(
+    client: influxdb::Client,
+    summary: &RunSummary,
+    metric: &str,
+) -> anyhow::Result<DataFrame> {
+    let q = ReadQuery::new(format!(
+        r#"SELECT value FROM "windtunnel"."autogen"."{}" WHERE run_id = '{}'"#,
+        metric, summary.run_id
+    ));
+    log::debug!("Querying: {:?}", q);
+    let res = client.json_query(q).await?;
+    frame::load_from_response(res)
+}
