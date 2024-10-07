@@ -71,8 +71,7 @@ impl ReportCollector for InfluxReporterBase {
             operation_record
                 .elapsed
                 .expect("OperationRecord must have an elapsed time")
-                .as_micros() as f64 // TODO use as_secs_f64 and let influx handle ms
-                / 1000.0,
+                .as_secs_f64(),
         )
         .add_tag("run_id", self.run_id.clone())
         .add_tag("scenario_name", self.scenario_name.clone())

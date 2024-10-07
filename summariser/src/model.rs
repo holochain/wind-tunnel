@@ -18,3 +18,12 @@ impl SummaryOutput {
         })
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StandardTimingsStats {
+    pub mean: f64,
+    pub std: f64,
+    pub within_std: f64,
+    pub within_2std: f64,
+    pub within_3std: f64,
+}
