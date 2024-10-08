@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 
@@ -216,5 +216,17 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     println!("#RunId: [{}]", run_id);
 
-    Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
+    let min_peers = std::env::var("MIN_PEERS")
+        .map(|s| s.parse().expect("MIN_PEERS must be a number"))
+        .unwrap_or(2);
+
+    let actual_agents = agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire);
+
+    if actual_agents >= min_peers {
+        Ok(actual_agents)
+    } else {
+        Err(anyhow!(
+            "Only {actual_agents} ran. MIN_PEERS set to {min_peers}"
+        ))
+    }
 }
