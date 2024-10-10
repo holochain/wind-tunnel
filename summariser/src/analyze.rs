@@ -87,6 +87,38 @@ pub(crate) fn standard_ratio_stats(
     })
 }
 
+pub(crate) fn standard_rate(frame: DataFrame, column: &str, window_duration: &str) -> anyhow::Result<f64> {
+    let rate = frame
+        .clone()
+        .lazy()
+        .select([col("time"), col(column)])
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).count()])
+        .collect()?;
+
+    // Slice to drop the first and last because they're likely to be partially filled windows.
+    // What we really want is the average rate when the system is under load for the complete window.
+    rate
+        .column(column)?
+        .slice(1, rate.height() - 2)
+        .mean()
+        .context("Calculate average")
+}
+
 #[inline]
 fn bound_pct(value: f64) -> f64 {
     value
