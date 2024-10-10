@@ -1,5 +1,6 @@
 use crate::scenario::{
     summarize_countersigning_two_party, summarize_first_call, summarize_local_signals,
+    summarize_remote_call_rate,
 };
 use anyhow::Context;
 use chrono::Utc;
@@ -70,6 +71,14 @@ async fn main() -> anyhow::Result<()> {
                         summarize_local_signals(client.clone(), summary.clone())
                             .await
                             .context("Local signals summary")
+                    }
+                    .boxed(),
+                ),
+                "remote_call_rate" => Some(
+                    async move {
+                        summarize_remote_call_rate(client.clone(), summary.clone())
+                            .await
+                            .context("Remote call rate summary")
                     }
                     .boxed(),
                 ),
