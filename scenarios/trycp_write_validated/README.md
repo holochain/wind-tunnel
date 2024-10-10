@@ -2,7 +2,7 @@
 
 ### Description
 
-Creates an entry, updates it and links the create to the update, then repeat. Each of the three actions is validated
+Creates an entry, updates it and links the action hash of the `create` to the `update`, then repeat. Each of the three actions is validated
 by the included hApp.
 
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
