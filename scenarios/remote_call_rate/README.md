@@ -4,6 +4,10 @@
 
 This scenario tests the throughput of `remote_call` operations.
 
+It measures two sections:
+- The time between sending a remote call and the remote handler being invoked, as `wt.custom.remote_call_dispatch`
+- The total elapsed time to get a response to the client, as `wt.custom.remote_call_round_trip`
+
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
 ### Waiting for peer discovery
