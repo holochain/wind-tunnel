@@ -1,6 +1,13 @@
 use influxdb::integrations::serde_integration::DatabaseQueryResult;
 use polars::prelude::*;
 use std::io::Write;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum LoadError {
+    #[error("No series in result: {result:?}")]
+    NoSeriesInResult { result: serde_json::Value },
+}
 
 pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Result<DataFrame> {
     let result = &response.results[0];
@@ -10,7 +17,10 @@ pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Resul
         .and_then(|o| o.get("series"))
         .and_then(|s| s.as_array());
     if series.is_none() {
-        anyhow::bail!("No series in result: {:?}", result);
+        return Err(LoadError::NoSeriesInResult {
+            result: result.clone(),
+        }
+        .into());
     }
 
     let select_series = series.unwrap().first();
