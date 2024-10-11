@@ -1,11 +1,11 @@
-use crate::frame::{frame_to_json, LoadError};
-use crate::model::{PartitionedRateStats, StandardRatioStats, StandardTimingsStats};
-use crate::query;
+use crate::frame::frame_to_json;
+use crate::model::{
+    PartitionedRateStats, StandardRateStats, StandardRatioStats, StandardTimingsStats,
+};
 use anyhow::Context;
 use polars::frame::DataFrame;
 use polars::prelude::*;
 use std::collections::HashMap;
-use wind_tunnel_summary_model::RunSummary;
 
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
@@ -95,8 +95,8 @@ pub(crate) fn standard_rate(
     frame: DataFrame,
     column: &str,
     window_duration: &str,
-) -> anyhow::Result<f64> {
-    let rate = frame
+) -> anyhow::Result<StandardRateStats> {
+    let mut rate = frame
         .clone()
         .lazy()
         .select([col("time"), col(column)])
@@ -115,15 +115,25 @@ pub(crate) fn standard_rate(
                 ..Default::default()
             },
         )
-        .agg([col(column).count()])
+        .agg([col(column).count().alias("count")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
         .collect()?;
 
     // Slice to drop the first and last because they're likely to be partially filled windows.
     // What we really want is the average rate when the system is under load for the complete window.
-    rate.column(column)?
+    let mean = rate
+        .column("count")?
         .slice(1, rate.height() - 2)
         .mean()
-        .context("Calculate average")
+        .context("Calculate average");
+
+    Ok(StandardRateStats {
+        trend: frame_to_json(&mut rate)?,
+        mean_rate: mean?,
+    })
 }
 
 pub(crate) fn partitioned_rate(
@@ -215,19 +225,6 @@ pub(crate) fn partitioned_rate(
     }
 
     Ok(out)
-}
-
-pub(crate) async fn zome_call_error_count(
-    client: influxdb::Client,
-    summary: &RunSummary,
-) -> anyhow::Result<usize> {
-    match query::query_zome_call_instrument_data_errors(client.clone(), summary).await {
-        Ok(frame) => Ok(frame.height()),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
-            None => Err(e).context("Load zome call error data"),
-        },
-    }
 }
 
 #[inline]
