@@ -1,7 +1,11 @@
-use crate::model::{StandardRatioStats, StandardTimingsStats};
+use crate::frame::{frame_to_json, LoadError};
+use crate::model::{PartitionedRateStats, StandardRatioStats, StandardTimingsStats};
+use crate::query;
 use anyhow::Context;
 use polars::frame::DataFrame;
 use polars::prelude::*;
+use std::collections::HashMap;
+use wind_tunnel_summary_model::RunSummary;
 
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
@@ -120,6 +124,110 @@ pub(crate) fn standard_rate(
         .slice(1, rate.height() - 2)
         .mean()
         .context("Calculate average")
+}
+
+pub(crate) fn partitioned_rate(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+    partition_by: &[&str],
+) -> anyhow::Result<PartitionedRateStats> {
+    let mut select_cols = vec![col("time"), col(column)];
+    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+
+    let frame = frame
+        .clone()
+        .lazy()
+        .select(select_cols)
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>(),
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).count()])
+        .collect()?;
+
+    let mut trend = frame
+        .clone()
+        .lazy()
+        .select([col("time"), col(column)])
+        .group_by([col("time")])
+        .agg([col(column).sum().alias("count")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    let mut out = PartitionedRateStats {
+        trend: frame_to_json(&mut trend)?,
+        rates: HashMap::new(),
+        by_partition: HashMap::new(),
+    };
+    for prefix_len in 1..=partition_by.len() {
+        let mut group_sum_cols = vec![col("time")];
+        for c in partition_by.iter().take(prefix_len) {
+            group_sum_cols.push(col(*c));
+        }
+
+        let group_out_cols = partition_by[0..prefix_len]
+            .iter()
+            .map(|s| col(*s))
+            .collect::<Vec<_>>();
+
+        let mut grouped = frame
+            .clone()
+            .lazy()
+            .group_by(group_sum_cols)
+            .agg([col(column).sum()])
+            .collect()?
+            .lazy()
+            .group_by(group_out_cols)
+            .agg([col(column)
+                .slice(1, u32::MAX)
+                .reverse()
+                .slice(1, u32::MAX)
+                .mean()
+                .alias("mean")])
+            .collect()?;
+
+        let mean = grouped
+            .column("mean")?
+            .mean()
+            .context("Calculate average")?;
+
+        let key = partition_by[0..prefix_len].join("-");
+
+        out.rates
+            .insert(format!("{}-mean-rate-10s", key.clone()), mean);
+        out.by_partition
+            .insert(key.clone(), frame_to_json(&mut grouped)?);
+    }
+
+    Ok(out)
+}
+
+pub(crate) async fn zome_call_error_count(
+    client: influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<usize> {
+    match query::query_zome_call_instrument_data_errors(client.clone(), summary).await {
+        Ok(frame) => Ok(frame.height()),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
+            None => Err(e).context("Load zome call error data"),
+        },
+    }
 }
 
 #[inline]

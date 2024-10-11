@@ -86,3 +86,12 @@ pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Resul
 
     Ok(frame)
 }
+
+pub(crate) fn frame_to_json(frame: &mut DataFrame) -> anyhow::Result<serde_json::Value> {
+    let mut out_json = Vec::new();
+    JsonWriter::new(&mut out_json)
+        .with_json_format(JsonFormat::Json)
+        .finish(frame)?;
+
+    Ok(serde_json::from_slice::<serde_json::Value>(&out_json)?)
+}
