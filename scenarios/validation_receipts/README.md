@@ -4,6 +4,10 @@
 
 Creates an entry, wait for required validation receipts, then repeat.
 
+Records `wt.custom.validation_receipts_complete_time` which is the time taken from after the zome call that created the 
+data returns, to when we have enough validation receipts. This is measured to the nearest 20ms so that we don't keep the
+agent too busy checking for receipts.
+
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
 ### Waiting for peer discovery
