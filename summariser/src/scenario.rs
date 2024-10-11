@@ -9,6 +9,7 @@ mod validation_receipts;
 mod write_query;
 mod write_read;
 mod write_validated;
+mod zome_call_single_value;
 
 pub(crate) use app_install::summarize_app_install;
 pub(crate) use first_call::summarize_first_call;
@@ -21,3 +22,4 @@ pub(crate) use validation_receipts::summarize_validation_receipts;
 pub(crate) use write_query::summarize_write_query;
 pub(crate) use write_read::summarize_write_read;
 pub(crate) use write_validated::summarize_write_validated;
+pub(crate) use zome_call_single_value::summarize_zome_call_single_value;
