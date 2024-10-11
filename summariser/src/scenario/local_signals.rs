@@ -19,19 +19,23 @@ pub(crate) async fn summarize_local_signals(
     assert_eq!(summary.scenario_name, "local_signals");
 
     let send_frame =
-        query::query_custom_data(client.clone(), &summary, "wt.custom.signal_batch_send")
+        query::query_custom_data(client.clone(), &summary, "wt.custom.signal_batch_send", &[])
             .await
             .context("Load send data")?;
 
     let recv_frame =
-        query::query_custom_data(client.clone(), &summary, "wt.custom.signal_batch_recv")
+        query::query_custom_data(client.clone(), &summary, "wt.custom.signal_batch_recv", &[])
             .await
             .context("Load recv data")?;
 
-    let success_ratio =
-        query::query_custom_data(client.clone(), &summary, "wt.custom.signal_success_ratio")
-            .await
-            .context("Load success ratio")?;
+    let success_ratio = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.signal_success_ratio",
+        &[],
+    )
+    .await
+    .context("Load success ratio")?;
 
     SummaryOutput::new(
         summary,

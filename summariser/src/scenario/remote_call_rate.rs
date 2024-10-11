@@ -20,15 +20,23 @@ pub(crate) async fn summarize_remote_call_rate(
 ) -> anyhow::Result<SummaryOutput> {
     assert_eq!(summary.scenario_name, "remote_call_rate");
 
-    let dispatch_frame =
-        query::query_custom_data(client.clone(), &summary, "wt.custom.remote_call_dispatch")
-            .await
-            .context("Load send data")?;
+    let dispatch_frame = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.remote_call_dispatch",
+        &[],
+    )
+    .await
+    .context("Load send data")?;
 
-    let round_trip_frame =
-        query::query_custom_data(client.clone(), &summary, "wt.custom.remote_call_round_trip")
-            .await
-            .context("Load recv data")?;
+    let round_trip_frame = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.remote_call_round_trip",
+        &[],
+    )
+    .await
+    .context("Load recv data")?;
 
     let call_count = query::query_zome_call_instrument_data(client.clone(), &summary)
         .await

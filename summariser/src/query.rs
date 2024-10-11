@@ -59,10 +59,16 @@ pub async fn query_custom_data(
     client: influxdb::Client,
     summary: &RunSummary,
     metric: &str,
+    tags: &[&str],
 ) -> anyhow::Result<DataFrame> {
+    let mut select_tags = tags.join(", ");
+    if !select_tags.is_empty() {
+        select_tags = format!(", {}", select_tags);
+    }
+
     let q = ReadQuery::new(format!(
-        r#"SELECT value FROM "windtunnel"."autogen"."{}" WHERE run_id = '{}'"#,
-        metric, summary.run_id
+        r#"SELECT value{} FROM "windtunnel"."autogen"."{}" WHERE run_id = '{}'"#,
+        select_tags, metric, summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
     let res = client.json_query(q).await?;

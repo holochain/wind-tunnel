@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,4 +35,11 @@ pub struct StandardRatioStats {
     pub std: f64,
     pub min: f64,
     pub max: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartitionedRateStats {
+    pub trend: serde_json::Value,
+    pub rates: HashMap<String, f64>,
+    pub by_partition: HashMap<String, serde_json::Value>,
 }
