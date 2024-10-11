@@ -1,0 +1,78 @@
+use crate::model::SummaryOutput;
+use anyhow::Context;
+use influxdb::{Query, ReadQuery};
+use polars::frame::DataFrame;
+use polars::io::SerWriter;
+use polars::prelude::{JsonFormat, JsonWriter};
+use sha3::Digest;
+use wind_tunnel_summary_model::RunSummary;
+
+pub fn insert_run_summary(summary: &RunSummary) -> anyhow::Result<()> {
+    let out_file = match open_output_path("1_run_summaries", file_name_from_run_summary(summary))? {
+        Some(f) => f,
+        None => return Ok(()),
+    };
+
+    serde_json::to_writer_pretty(out_file, summary).context("Failed to write run summary")?;
+
+    Ok(())
+}
+
+pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::Result<()> {
+    let out_file = match open_output_path("2_query_results", file_name_from_query(query)?)? {
+        Some(f) => f,
+        None => return Ok(()),
+    };
+
+    JsonWriter::new(out_file)
+        .with_json_format(JsonFormat::Json)
+        .finish(frame)?;
+
+    Ok(())
+}
+
+pub fn insert_summary_output(output: &SummaryOutput) -> anyhow::Result<()> {
+    let out_file = match open_output_path(
+        "3_summary_outputs",
+        file_name_from_run_summary(&output.run_summary),
+    )? {
+        Some(f) => f,
+        None => return Ok(()),
+    };
+
+    serde_json::to_writer_pretty(out_file, output).context("Failed to write summary output")?;
+
+    Ok(())
+}
+
+fn open_output_path(stage: &str, file_name: String) -> anyhow::Result<Option<std::fs::File>> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("test_data")
+        .join(stage)
+        .join(file_name);
+
+    match std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(path)
+    {
+        Ok(f) => Ok(Some(f)),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            // No need to error if this has already been created
+            Ok(None)
+        }
+        Err(e) => Err(e).context("Failed to open file for writing"),
+    }
+}
+
+fn file_name_from_run_summary(summary: &RunSummary) -> String {
+    format!("{}-{}.json", summary.scenario_name, summary.fingerprint())
+}
+
+fn file_name_from_query(query: &ReadQuery) -> anyhow::Result<String> {
+    let query_string = query.clone().build()?.get();
+    let mut hasher = sha3::Sha3_256::new();
+    Digest::update(&mut hasher, query_string.as_bytes());
+
+    Ok(format!("{:x}.json", hasher.finalize()))
+}

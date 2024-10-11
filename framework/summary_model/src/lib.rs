@@ -1,4 +1,6 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use sha3::Digest;
 use std::collections::HashMap;
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
@@ -81,6 +83,30 @@ impl RunSummary {
     /// Add an environment variable
     pub fn add_env(&mut self, key: String, value: String) {
         self.env.insert(key, value);
+    }
+
+    pub fn fingerprint(&self) -> String {
+        let mut hasher = sha3::Sha3_256::new();
+        if let Some(run_duration) = self.run_duration {
+            Digest::update(&mut hasher, run_duration.to_le_bytes());
+        }
+        self.behaviours
+            .iter()
+            .sorted_by_key(|(k, _)| (*k).clone())
+            .for_each(|(k, v)| {
+                Digest::update(&mut hasher, k.as_bytes());
+                Digest::update(&mut hasher, v.to_le_bytes());
+            });
+        self.env
+            .iter()
+            .sorted_by_key(|(k, _)| (*k).clone())
+            .for_each(|(k, v)| {
+                Digest::update(&mut hasher, k.as_bytes());
+                Digest::update(&mut hasher, v.as_bytes());
+            });
+        Digest::update(&mut hasher, self.wind_tunnel_version.as_bytes());
+
+        format!("{:x}", hasher.finalize())
     }
 }
 
