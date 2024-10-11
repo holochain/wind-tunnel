@@ -1,7 +1,8 @@
 use crate::scenario::{
     summarize_countersigning_two_party, summarize_first_call, summarize_local_signals,
-    summarize_remote_call_rate, summarize_single_write_many_read, summarize_validation_receipts,
-    summarize_write_query, summarize_write_read, summarize_write_validated,
+    summarize_remote_call_rate, summarize_single_write_many_read, summarize_trycp_write_validated,
+    summarize_validation_receipts, summarize_write_query, summarize_write_read,
+    summarize_write_validated,
 };
 use anyhow::Context;
 use chrono::Utc;
@@ -93,7 +94,7 @@ async fn main() -> anyhow::Result<()> {
                 ),
                 "trycp_write_validated" => Some(
                     async move {
-                        summarize_write_validated(client.clone(), summary.clone())
+                        summarize_trycp_write_validated(client.clone(), summary.clone())
                             .await
                             .context("Write validated summary")
                     }
@@ -128,6 +129,14 @@ async fn main() -> anyhow::Result<()> {
                         summarize_write_read(client.clone(), summary.clone())
                             .await
                             .context("Write read summary")
+                    }
+                    .boxed(),
+                ),
+                "write_validated" => Some(
+                    async move {
+                        summarize_write_validated(client.clone(), summary.clone())
+                            .await
+                            .context("Write validated summary")
                     }
                     .boxed(),
                 ),
