@@ -1,6 +1,6 @@
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
-use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use polars::prelude::*;
@@ -10,7 +10,7 @@ use wind_tunnel_summary_model::RunSummary;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct SingleWriteManyReadSummary {
     read_call: StandardTimingsStats,
-    mean_rate_10s: f64,
+    rate_10s: StandardRateStats,
     error_count: usize,
 }
 
@@ -45,7 +45,7 @@ pub(crate) async fn summarize_single_write_many_read(
         summary,
         SingleWriteManyReadSummary {
             read_call: standard_timing_stats(zome_calls.clone(), "value", None)?,
-            mean_rate_10s: standard_rate(zome_calls.clone(), "value", "10s")?,
+            rate_10s: standard_rate(zome_calls.clone(), "value", "10s")?,
             error_count,
         },
     )

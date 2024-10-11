@@ -1,6 +1,7 @@
-use crate::analyze::{partitioned_rate, standard_timing_stats, zome_call_error_count};
+use crate::analyze::{partitioned_rate, standard_timing_stats};
 use crate::model::{PartitionedRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
+use crate::query::zome_call_error_count;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
