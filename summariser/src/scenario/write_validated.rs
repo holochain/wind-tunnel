@@ -1,62 +1,55 @@
 use crate::analyze::{standard_rate, standard_timing_stats};
-use crate::frame::LoadError;
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
+use crate::query::zome_call_error_count;
 use anyhow::Context;
-use polars::prelude::*;
+use polars::prelude::{col, lit, IntoLazy};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct SingleWriteManyReadSummary {
-    create_timing: StandardTimingsStats,
-    create_rate_10s: StandardRateStats,
-    update_timing: StandardTimingsStats,
-    update_rate_10s: StandardRateStats,
-    error_count: usize,
+struct WriteValidatedSummary {
+    write_timing: StandardTimingsStats,
+    write_rate: StandardRateStats,
+    read_timing: StandardTimingsStats,
+    read_rate: StandardRateStats,
+    errors: usize,
 }
 
 pub(crate) async fn summarize_write_validated(
     client: influxdb::Client,
     summary: RunSummary,
 ) -> anyhow::Result<SummaryOutput> {
-    assert_eq!(summary.scenario_name, "trycp_write_validated");
+    assert_eq!(summary.scenario_name, "write_validated");
 
     let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
         .await
         .context("Load zome call data")?;
 
-    let create_calls = zome_calls
+    let create_zome_calls = zome_calls
         .clone()
         .lazy()
         .filter(col("fn_name").eq(lit("create_sample_entry")))
         .collect()?;
 
-    let update_calls = zome_calls
+    let update_zome_calls = zome_calls
         .clone()
         .lazy()
         .filter(col("fn_name").eq(lit("update_sample_entry")))
         .collect()?;
 
-    let error_count =
-        match query::query_zome_call_instrument_data_errors(client.clone(), &summary).await {
-            Ok(frame) => frame.height(),
-            Err(e) => match e.downcast_ref::<LoadError>() {
-                Some(LoadError::NoSeriesInResult { .. }) => 0,
-                None => {
-                    return Err(e).context("Load zome call error data");
-                }
-            },
-        };
-
     SummaryOutput::new(
-        summary,
-        SingleWriteManyReadSummary {
-            create_timing: standard_timing_stats(create_calls.clone(), "value", None)?,
-            create_rate_10s: standard_rate(create_calls.clone(), "value", "10s")?,
-            update_timing: standard_timing_stats(update_calls.clone(), "value", None)?,
-            update_rate_10s: standard_rate(update_calls.clone(), "value", "10s")?,
-            error_count,
+        summary.clone(),
+        WriteValidatedSummary {
+            write_timing: standard_timing_stats(create_zome_calls.clone(), "value", None)
+                .context("Create timing stats")?,
+            write_rate: standard_rate(create_zome_calls, "value", "10s").context("Create rate")?,
+            read_timing: standard_timing_stats(update_zome_calls.clone(), "value", None)
+                .context("Update timing stats")?,
+            read_rate: standard_rate(update_zome_calls, "value", "10s").context("Update rate")?,
+            errors: zome_call_error_count(client.clone(), &summary)
+                .await
+                .context("Load zome call error data")?,
         },
     )
 }
