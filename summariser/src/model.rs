@@ -38,6 +38,12 @@ pub struct StandardRatioStats {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StandardRateStats {
+    pub trend: serde_json::Value,
+    pub mean_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartitionedRateStats {
     pub trend: serde_json::Value,
     pub rates: HashMap<String, f64>,
