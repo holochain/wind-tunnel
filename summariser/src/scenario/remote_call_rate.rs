@@ -1,6 +1,6 @@
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
-use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use wind_tunnel_summary_model::RunSummary;
 struct RemoteCallRateSummary {
     dispatch: StandardTimingsStats,
     round_trip: StandardTimingsStats,
-    mean_rate_10s: f64,
+    rate_10s: StandardRateStats,
     error_count: usize,
 }
 
@@ -60,7 +60,7 @@ pub(crate) async fn summarize_remote_call_rate(
                 .context("Send timing stats")?,
             round_trip: standard_timing_stats(round_trip_frame, "value", None)
                 .context("Recv timing stats")?,
-            mean_rate_10s: standard_rate(call_count.clone(), "value", "10s")?,
+            rate_10s: standard_rate(call_count.clone(), "value", "10s")?,
             error_count,
         },
     )

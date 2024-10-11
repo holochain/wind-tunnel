@@ -1,4 +1,6 @@
 use crate::frame;
+use crate::frame::LoadError;
+use anyhow::Context;
 use influxdb::ReadQuery;
 use polars::frame::DataFrame;
 use serde::{Deserialize, Serialize};
@@ -27,6 +29,7 @@ pub async fn query_instrument_data(
         r#"SELECT value FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND operation_id = '{}' AND is_error = 'false'"#,
         summary.run_id, operation_id
     ));
+    log::debug!("Querying: {:?}", q);
     let res = client.json_query(q).await?;
     frame::load_from_response(res)
 }
@@ -39,6 +42,7 @@ pub async fn query_zome_call_instrument_data(
         r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
         summary.run_id
     ));
+    log::debug!("Querying: {:?}", q);
     let res = client.json_query(q).await?;
     frame::load_from_response(res)
 }
@@ -51,6 +55,7 @@ pub async fn query_zome_call_instrument_data_errors(
         r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'true'"#,
         summary.run_id
     ));
+    log::debug!("Querying: {:?}", q);
     let res = client.json_query(q).await?;
     frame::load_from_response(res)
 }
@@ -73,4 +78,17 @@ pub async fn query_custom_data(
     log::debug!("Querying: {:?}", q);
     let res = client.json_query(q).await?;
     frame::load_from_response(res)
+}
+
+pub async fn zome_call_error_count(
+    client: influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<usize> {
+    match query_zome_call_instrument_data_errors(client.clone(), summary).await {
+        Ok(frame) => Ok(frame.height()),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
+            None => Err(e).context("Load zome call error data"),
+        },
+    }
 }
