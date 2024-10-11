@@ -30,8 +30,17 @@ pub async fn query_instrument_data(
         summary.run_id, operation_id
     ));
     log::debug!("Querying: {:?}", q);
-    let res = client.json_query(q).await?;
-    frame::load_from_response(res)
+    let res = client.json_query(q.clone()).await?;
+    let frame = frame::load_from_response(res)?;
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&q, &mut frame)?;
+        frame
+    };
+
+    Ok(frame)
 }
 
 pub async fn query_zome_call_instrument_data(
