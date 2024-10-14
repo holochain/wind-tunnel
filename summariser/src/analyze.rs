@@ -29,10 +29,12 @@ pub(crate) fn standard_timing_stats(
                 .and(col(column).lt_eq(lit(mean + std)))
                 .alias("within_std"),
             col(column)
+                .round(2)
                 .gt_eq(lit(mean - 2.0 * std))
                 .and(col(column).lt_eq(lit(mean + 2.0 * std)))
                 .alias("within_2std"),
             col(column)
+                .round(2)
                 .gt_eq(lit(mean - 3.0 * std))
                 .and(col(column).lt_eq(lit(mean + 3.0 * std)))
                 .alias("within_3std"),
@@ -229,5 +231,5 @@ pub(crate) fn partitioned_rate(
 
 #[inline]
 fn bound_pct(value: f64) -> f64 {
-    value
+    (value.clamp(0.0, 1.0) * 10_000.0).round() / 10_000.0
 }

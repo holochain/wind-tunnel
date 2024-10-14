@@ -2,11 +2,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use std::collections::HashMap;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 
 /// Summary of a run
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RunSummary {
     /// The unique run id
     ///
@@ -128,6 +128,13 @@ pub fn append_run_summary(run_summary: RunSummary, path: PathBuf) -> anyhow::Res
 pub fn store_run_summary<W: Write>(run_summary: RunSummary, writer: &mut W) -> anyhow::Result<()> {
     serde_json::to_writer(writer, &run_summary)?;
     Ok(())
+}
+
+/// Load a run summary from a reader
+pub fn load_run_summary<R: Read>(reader: R) -> anyhow::Result<RunSummary> {
+    let reader = std::io::BufReader::new(reader);
+    let run_summary: RunSummary = serde_json::from_reader(reader)?;
+    Ok(run_summary)
 }
 
 /// Load run summaries from a file

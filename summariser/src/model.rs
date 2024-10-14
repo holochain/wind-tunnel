@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wind_tunnel_summary_model::RunSummary;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SummaryOutput {
     pub run_summary: RunSummary,
     pub data: serde_json::Value,
