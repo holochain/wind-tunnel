@@ -1,4 +1,3 @@
-use crate::frame;
 use crate::frame::LoadError;
 use anyhow::Context;
 use influxdb::ReadQuery;
@@ -30,8 +29,14 @@ pub async fn query_instrument_data(
         summary.run_id, operation_id
     ));
     log::debug!("Querying: {:?}", q);
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return super::test_data::load_query_result(&q);
+    }
+
     let res = client.json_query(q.clone()).await?;
-    let frame = frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(res)?;
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -52,8 +57,23 @@ pub async fn query_zome_call_instrument_data(
         summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
-    let res = client.json_query(q).await?;
-    frame::load_from_response(res)
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return super::test_data::load_query_result(&q);
+    }
+
+    let res = client.json_query(q.clone()).await?;
+    let frame = crate::frame::load_from_response(res)?;
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&q, &mut frame)?;
+        frame
+    };
+
+    Ok(frame)
 }
 
 pub async fn query_zome_call_instrument_data_errors(
@@ -65,8 +85,23 @@ pub async fn query_zome_call_instrument_data_errors(
         summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
-    let res = client.json_query(q).await?;
-    frame::load_from_response(res)
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return super::test_data::load_query_result(&q);
+    }
+
+    let res = client.json_query(q.clone()).await?;
+    let frame = crate::frame::load_from_response(res)?;
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&q, &mut frame)?;
+        frame
+    };
+
+    Ok(frame)
 }
 
 pub async fn query_custom_data(
@@ -85,8 +120,23 @@ pub async fn query_custom_data(
         select_tags, metric, summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
-    let res = client.json_query(q).await?;
-    frame::load_from_response(res)
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return super::test_data::load_query_result(&q);
+    }
+
+    let res = client.json_query(q.clone()).await?;
+    let frame = crate::frame::load_from_response(res)?;
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&q, &mut frame)?;
+        frame
+    };
+
+    Ok(frame)
 }
 
 pub async fn zome_call_error_count(
