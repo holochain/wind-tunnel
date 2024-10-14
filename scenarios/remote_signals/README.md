@@ -1,4 +1,4 @@
-## remote_signal_scenario
+## remote_signals
 
 ### Description
 
