@@ -1,50 +1,79 @@
-use crate::model::SummaryOutput;
 use anyhow::Context;
 use influxdb::{Query, ReadQuery};
 use polars::frame::DataFrame;
-use polars::io::SerWriter;
-use polars::prelude::{JsonFormat, JsonWriter};
 use sha3::Digest;
-use wind_tunnel_summary_model::RunSummary;
 
-pub fn insert_run_summary(summary: &RunSummary) -> anyhow::Result<()> {
+#[cfg(feature = "test_data")]
+pub fn insert_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> anyhow::Result<()> {
     let out_file = match open_output_path("1_run_summaries", file_name_from_run_summary(summary))? {
         Some(f) => f,
-        None => return Ok(()),
+        None => {
+            log::info!("Not creating run summary file as it already exists");
+            return Ok(());
+        }
     };
+
+    log::debug!("Writing run summary to {:?}", out_file);
 
     serde_json::to_writer_pretty(out_file, summary).context("Failed to write run summary")?;
 
     Ok(())
 }
 
+#[cfg(feature = "test_data")]
 pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::Result<()> {
+    use polars::io::SerWriter;
+    use polars::prelude::JsonFormat;
+
     let out_file = match open_output_path("2_query_results", file_name_from_query(query)?)? {
         Some(f) => f,
-        None => return Ok(()),
+        None => {
+            log::info!("Not creating query result file as it already exists");
+            return Ok(());
+        }
     };
 
-    JsonWriter::new(out_file)
+    log::debug!("Writing query result to {:?}", out_file);
+
+    polars::io::json::JsonWriter::new(out_file)
         .with_json_format(JsonFormat::Json)
         .finish(frame)?;
 
     Ok(())
 }
 
-pub fn insert_summary_output(output: &SummaryOutput) -> anyhow::Result<()> {
+#[cfg(feature = "query_test_data")]
+pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
+    use polars::io::SerReader;
+
+    let mut in_file = open_input_path("2_query_results", file_name_from_query(query)?)?;
+
+    polars::io::json::JsonReader::new(&mut in_file)
+        .finish()
+        .context("Failed to load query result")
+}
+
+#[cfg(feature = "test_data")]
+pub fn insert_summary_output(output: &crate::model::SummaryOutput) -> anyhow::Result<()> {
     let out_file = match open_output_path(
         "3_summary_outputs",
         file_name_from_run_summary(&output.run_summary),
     )? {
         Some(f) => f,
-        None => return Ok(()),
+        None => {
+            log::info!("Not creating summary output file as it already exists");
+            return Ok(());
+        }
     };
+
+    log::debug!("Writing summary output to {:?}", out_file);
 
     serde_json::to_writer_pretty(out_file, output).context("Failed to write summary output")?;
 
     Ok(())
 }
 
+#[cfg(feature = "test_data")]
 fn open_output_path(stage: &str, file_name: String) -> anyhow::Result<Option<std::fs::File>> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
@@ -65,7 +94,21 @@ fn open_output_path(stage: &str, file_name: String) -> anyhow::Result<Option<std
     }
 }
 
-fn file_name_from_run_summary(summary: &RunSummary) -> String {
+#[cfg(feature = "query_test_data")]
+fn open_input_path(stage: &str, file_name: String) -> anyhow::Result<std::fs::File> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("test_data")
+        .join(stage)
+        .join(file_name);
+
+    match std::fs::OpenOptions::new().read(true).open(path) {
+        Ok(f) => Ok(f),
+        Err(e) => Err(e).context("Failed to open input file"),
+    }
+}
+
+#[cfg(feature = "test_data")]
+fn file_name_from_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> String {
     format!("{}-{}.json", summary.scenario_name, summary.fingerprint())
 }
 
