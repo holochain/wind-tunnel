@@ -1,6 +1,21 @@
+#danger_generate_throwaway_device_seed: true
+#dpki:
+#  dna_path: ~
+#  network_seed: wind-tunnel-test
+#  allow_throwaway_random_dpki_agent_key: true
+#  no_dpki: false
+dpki:
+  dna_path: ~
+  network_seed: wind-tunnel-test
+  no_dpki: true
 network:
   network_type: quic_bootstrap
   transport_pool:
     - type: webrtc
       signal_url: "wss://sbd.holo.host"
   bootstrap_service: "https://bootstrap.holo.host"
+tuning_params:
+  countersigning_resolution_retry_delay:
+    secs: 10
+    nanos: 0
+  countersigning_resolution_retry_limit: 5

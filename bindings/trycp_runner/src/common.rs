@@ -315,7 +315,7 @@ where
         let agent_name = agent_name.clone();
         async move {
             let logs = client
-                .download_logs(agent_name, Some(Duration::from_secs(180)))
+                .download_logs(agent_name, Some(Duration::from_secs(10 * 60)))
                 .await
                 .context("Failed to download logs")?;
             Ok(logs)

@@ -2,13 +2,13 @@ name: "test"
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   merge_group:
 
 concurrency:
-  group: ${{ github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -48,6 +48,14 @@ jobs:
       - name: Check scripts
         run: |
           nix develop .#ci -c bash -c "shellcheck scripts/*.sh"
+
+      - name: Check TOML formatting
+        run: |
+          nix develop .#ci -c bash -c "./scripts/format-toml.sh --check"
+
+      - name: Check YAML formatting
+        run: |
+          nix develop .#ci -c bash -c "./scripts/format-yaml.sh -lint"
 
       - name: Check Nix formatting
         run: |
