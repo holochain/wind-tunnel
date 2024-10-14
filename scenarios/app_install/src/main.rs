@@ -1,7 +1,6 @@
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::path::PathBuf;
-use std::time::Instant;
 
 #[derive(Debug, Default)]
 struct ScenarioValues {
