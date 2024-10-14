@@ -133,18 +133,24 @@ fn agent_behaviour(
         .execute_in_place(async move {
             let now = Timestamp::now();
 
+            let mut timeout_count = 0;
+
             pending_set.lock().unwrap().retain(|msg| {
                 if now.as_millis() - msg.requested_at().as_millis()
                     > response_timeout.as_millis() as i64
                 {
-                    reporter.add_custom(
-                        ReportMetric::new("remote_signal_timeout").with_field("value", 1),
-                    );
+                    timeout_count += 1;
                     false
                 } else {
                     true
                 }
             });
+
+            while timeout_count > 0 {
+                reporter
+                    .add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", 1));
+                timeout_count -= 1;
+            }
 
             match next_remote_signal_peer {
                 None => {
