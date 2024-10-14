@@ -3,6 +3,14 @@ name = "holochain_summariser"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "holochain_summariser"
+path = "src/lib.rs"
+
+[[bin]]
+name = "holochain-summariser"
+path = "src/main.rs"
+
 [dependencies]
 influxdb = { workspace = true }
 itertools = { workspace = true }
@@ -21,8 +29,14 @@ thiserror = { workspace = true }
 
 wind_tunnel_summary_model = { workspace = true }
 
+[dev-dependencies]
+holochain_summariser = { path = ".", features = ["query_test_data"] }
+walkdir = { workspace = true }
+pretty_assertions = { workspace = true }
+
 [lints]
 workspace = true
 
 [features]
 test_data = []
+query_test_data = []
