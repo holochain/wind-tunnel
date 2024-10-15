@@ -7,7 +7,7 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct FirstCallSummary {
-    zome_call: StandardTimingsStats,
+    zome_call_timing: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_first_call(
@@ -23,7 +23,7 @@ pub(crate) async fn summarize_first_call(
     SummaryOutput::new(
         summary,
         FirstCallSummary {
-            zome_call: standard_timing_stats(frame, "value", None)
+            zome_call_timing: standard_timing_stats(frame, "value", None)
                 .context("Standard timing stats")?,
         },
     )

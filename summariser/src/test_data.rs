@@ -5,7 +5,7 @@ use sha3::Digest;
 
 #[cfg(feature = "test_data")]
 pub fn insert_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> anyhow::Result<()> {
-    let out_file = match open_output_path("1_run_summaries", file_name_from_run_summary(summary))? {
+    let out_file = match open_output_path("1_run_summaries", file_name_from_run_summary(summary), false)? {
         Some(f) => f,
         None => {
             log::info!("Not creating run summary file as it already exists");
@@ -25,7 +25,7 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
     use polars::io::SerWriter;
     use polars::prelude::JsonFormat;
 
-    let out_file = match open_output_path("2_query_results", file_name_from_query(query)?)? {
+    let out_file = match open_output_path("2_query_results", file_name_from_query(query)?, false)? {
         Some(f) => f,
         None => {
             log::info!("Not creating query result file as it already exists");
@@ -53,11 +53,12 @@ pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
         .context("Failed to load query result")
 }
 
-#[cfg(feature = "test_data")]
-pub fn insert_summary_output(output: &crate::model::SummaryOutput) -> anyhow::Result<()> {
+#[cfg(any(feature = "test_data", feature = "query_test_data"))]
+pub fn insert_summary_output(output: &crate::model::SummaryOutput, overwrite: bool) -> anyhow::Result<()> {
     let out_file = match open_output_path(
         "3_summary_outputs",
         file_name_from_run_summary(&output.run_summary),
+        overwrite,
     )? {
         Some(f) => f,
         None => {
@@ -73,19 +74,26 @@ pub fn insert_summary_output(output: &crate::model::SummaryOutput) -> anyhow::Re
     Ok(())
 }
 
-#[cfg(feature = "test_data")]
-fn open_output_path(stage: &str, file_name: String) -> anyhow::Result<Option<std::fs::File>> {
+#[cfg(any(feature = "test_data", feature = "query_test_data"))]
+fn open_output_path(stage: &str, file_name: String, overwrite: bool) -> anyhow::Result<Option<std::fs::File>> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
         .join(stage)
         .join(file_name);
 
     match std::fs::OpenOptions::new()
-        .create_new(true)
+        .create_new(!overwrite)
         .write(true)
         .open(path)
     {
-        Ok(f) => Ok(Some(f)),
+        Ok(f) => {
+            // Truncate the file if we're overwriting
+            if overwrite {
+                f.set_len(0)?;
+            }
+
+            Ok(Some(f))
+        },
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
             // No need to error if this has already been created
             Ok(None)
@@ -107,7 +115,7 @@ fn open_input_path(stage: &str, file_name: String) -> anyhow::Result<std::fs::Fi
     }
 }
 
-#[cfg(feature = "test_data")]
+#[cfg(any(feature = "test_data", feature = "query_test_data"))]
 fn file_name_from_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> String {
     format!("{}-{}.json", summary.scenario_name, summary.fingerprint())
 }

@@ -1,6 +1,6 @@
 use crate::frame::frame_to_json;
 use crate::model::{
-    PartitionedRateStats, StandardRateStats, StandardRatioStats, StandardTimingsStats,
+    PartitionedRateStats, StandardRateStats, StandardTimingsStats,
 };
 use anyhow::Context;
 use polars::frame::DataFrame;
@@ -60,36 +60,11 @@ pub(crate) fn standard_timing_stats(
     let pct_within_3std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
 
     Ok(StandardTimingsStats {
-        mean,
-        std,
+        mean: round_to_n_dp(mean,3),
+        std: round_to_n_dp(std, 3),
         within_std: pct_within_1std,
         within_2std: pct_within_2std,
         within_3std: pct_within_3std,
-    })
-}
-
-pub(crate) fn standard_ratio_stats(
-    frame: DataFrame,
-    column: &str,
-) -> anyhow::Result<StandardRatioStats> {
-    let value_series = frame.column(column)?.clone();
-
-    let mean = value_series.mean().context("Mean")?;
-    let std = value_series.std(0).context("Std")?;
-    let min = value_series
-        .min::<f64>()
-        .context("Min")?
-        .context("Missing min")?;
-    let max = value_series
-        .max::<f64>()
-        .context("Max")?
-        .context("Missing max")?;
-
-    Ok(StandardRatioStats {
-        mean,
-        std,
-        min,
-        max,
     })
 }
 
@@ -229,7 +204,11 @@ pub(crate) fn partitioned_rate(
     Ok(out)
 }
 
-#[inline]
 fn bound_pct(value: f64) -> f64 {
     (value.clamp(0.0, 1.0) * 10_000.0).round() / 10_000.0
+}
+
+pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
+    let places = 10.0_f64.powi(n as i32);
+    (value * places).round() / places
 }

@@ -30,14 +30,6 @@ pub struct StandardTimingsStats {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StandardRatioStats {
-    pub mean: f64,
-    pub std: f64,
-    pub min: f64,
-    pub max: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StandardRateStats {
     pub trend: serde_json::Value,
     pub mean_rate: f64,

@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
 
     #[cfg(feature = "test_data")]
     for output in &summary_outputs {
-        holochain_summariser::test_data::insert_summary_output(output)?;
+        holochain_summariser::test_data::insert_summary_output(output, false)?;
     }
 
     if summary_outputs.is_empty() {

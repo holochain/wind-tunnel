@@ -7,8 +7,8 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize)]
 struct AppInstallSummary {
-    first_install: f64,
-    install_app: StandardTimingsStats,
+    first_install_time: f64,
+    install_app_timing: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_app_install(
@@ -30,8 +30,8 @@ pub(crate) async fn summarize_app_install(
     SummaryOutput::new(
         summary,
         AppInstallSummary {
-            first_install: first,
-            install_app: standard_timing_stats(frame, "value", Some(1))
+            first_install_time: first,
+            install_app_timing: standard_timing_stats(frame, "value", Some(1))
                 .context("Standard timing stats")?,
         },
     )

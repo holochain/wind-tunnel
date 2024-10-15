@@ -6,6 +6,8 @@ use wind_tunnel_summary_model::load_run_summary;
 
 macro_rules! run_snapshot_test {
     ($summary_fingerprint:literal) => {
+        env_logger::try_init().ok();
+
         let run_summary = find_test_data_file($summary_fingerprint, "1_run_summaries")
             .context("Run summary not found")?;
         let run_summary = load_run_summary(
@@ -27,7 +29,11 @@ macro_rules! run_snapshot_test {
         .await
         .expect("Failed to execute report");
 
-        pretty_assertions::assert_eq!(expected, output);
+        if option_env!("UPDATE_SNAPSHOTS") == Some("1") {
+            holochain_summariser::test_data::insert_summary_output(&output, true)?;
+        } else {
+            pretty_assertions::assert_eq!(expected, output, "Snapshot mismatch, run with `UPDATE_SNAPSHOTS=1 cargo test --test snapshot` to update");
+        }
     };
 }
 
@@ -45,6 +51,12 @@ async fn app_install_large() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn first_call() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
+#[tokio::test]
+async fn local_signals() -> anyhow::Result<()> {
     run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
     Ok(())
 }
