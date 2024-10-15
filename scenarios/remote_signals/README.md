@@ -4,7 +4,8 @@
 
 This scenario tests the throughput of `remote_signals` operations.
 
-**warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
+> [!WARNING]
+> This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
 ### Waiting for peer discovery
 
