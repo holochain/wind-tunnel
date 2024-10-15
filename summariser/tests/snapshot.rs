@@ -43,6 +43,12 @@ async fn app_install_large() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn first_call() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))
