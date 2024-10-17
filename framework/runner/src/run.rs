@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 
@@ -216,5 +216,12 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     println!("#RunId: [{}]", run_id);
 
-    Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
+    let agents_run_to_completion =
+        agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire);
+
+    if agents_run_to_completion < definition.min_required_agents {
+        Err(anyhow!("Not enough agents ran scenario to completion: expected {}, actual {agents_run_to_completion}", definition.min_required_agents))
+    } else {
+        Ok(agents_run_to_completion)
+    }
 }
