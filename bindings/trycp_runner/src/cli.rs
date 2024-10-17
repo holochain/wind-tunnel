@@ -25,6 +25,12 @@ pub struct WindTunnelTryCPScenarioCli {
     #[clap(long, default_value = "1")]
     pub instances_per_target: u8,
 
+    /// The minimum number of agents required for the scenario to run
+    ///
+    /// If the number of running agents drops below this value the scenario will fail.
+    #[clap(long)]
+    pub min_required_agents: Option<usize>,
+
     /// Assign a behaviour to a number of agents. Specify the behaviour and number of agents to assign
     /// it to in the format `behaviour:count`. For example `--behaviour=login:5`.
     ///
@@ -89,6 +95,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
             // Pack values together and extract by agent id in helpers.
             connection_string: targets.nodes.join(","),
             agents: Some(required_agents),
+            min_required_agents: self.min_required_agents,
             behaviour: self.behaviour,
             duration: self.duration,
             soak: self.soak,
