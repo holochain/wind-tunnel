@@ -53,7 +53,7 @@ pub async fn query_zome_call_instrument_data(
     summary: &RunSummary,
 ) -> anyhow::Result<DataFrame> {
     let q = ReadQuery::new(format!(
-        r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
+        r#"SELECT value, zome_name, fn_name, agent FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
         summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
