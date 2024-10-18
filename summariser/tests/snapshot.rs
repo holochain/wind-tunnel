@@ -67,6 +67,12 @@ async fn remote_call_rate() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn trycp_write_validated() -> anyhow::Result<()> {
+    run_snapshot_test!("3ca57c491607c8639ba04caef533f49833549bf7a2fab9851ba2cb9494d16fe2");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))

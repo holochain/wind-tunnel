@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -38,8 +37,9 @@ pub struct StandardTimingsStats {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StandardRateStats {
-    pub trend: serde_json::Value,
-    pub mean_rate: f64,
+    pub mean: f64,
+    pub trend: Vec<u32>,
+    pub window_duration: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
@@ -62,8 +62,13 @@ pub struct PartitionedTimingStats {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartitionRateStats {
+    pub key: Vec<PartitionKey>,
+    pub summary_rate: StandardRateStats,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartitionedRateStats {
-    pub trend: serde_json::Value,
-    pub rates: HashMap<String, f64>,
-    pub by_partition: HashMap<String, serde_json::Value>,
+    pub mean: f64,
+    pub rates: Vec<PartitionRateStats>,
 }

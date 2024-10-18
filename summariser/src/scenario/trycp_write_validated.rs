@@ -1,7 +1,7 @@
-use crate::analyze::{standard_rate, standard_timing_stats};
-use crate::frame::LoadError;
-use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
+use crate::analyze::{partitioned_rate, partitioned_timing_stats};
+use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
+use crate::query::zome_call_error_count;
 use anyhow::Context;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -9,10 +9,10 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct SingleWriteManyReadSummary {
-    create_timing: StandardTimingsStats,
-    create_rate_10s: StandardRateStats,
-    update_timing: StandardTimingsStats,
-    update_rate_10s: StandardRateStats,
+    create_timing: PartitionedTimingStats,
+    create_rate: PartitionedRateStats,
+    update_timing: PartitionedTimingStats,
+    update_rate_10s: PartitionedRateStats,
     error_count: usize,
 }
 
@@ -38,25 +38,14 @@ pub(crate) async fn summarize_trycp_write_validated(
         .filter(col("fn_name").eq(lit("update_sample_entry")))
         .collect()?;
 
-    let error_count =
-        match query::query_zome_call_instrument_data_errors(client.clone(), &summary).await {
-            Ok(frame) => frame.height(),
-            Err(e) => match e.downcast_ref::<LoadError>() {
-                Some(LoadError::NoSeriesInResult { .. }) => 0,
-                None => {
-                    return Err(e).context("Load zome call error data");
-                }
-            },
-        };
-
     SummaryOutput::new(
-        summary,
+        summary.clone(),
         SingleWriteManyReadSummary {
-            create_timing: standard_timing_stats(create_calls.clone(), "value", "10s", None)?,
-            create_rate_10s: standard_rate(create_calls.clone(), "value", "10s")?,
-            update_timing: standard_timing_stats(update_calls.clone(), "value", "10s", None)?,
-            update_rate_10s: standard_rate(update_calls.clone(), "value", "10s")?,
-            error_count,
+            create_timing: partitioned_timing_stats(create_calls.clone(), "value", "10s", &["agent"])?,
+            create_rate: partitioned_rate(create_calls.clone(), "value", "10s", &["agent"])?,
+            update_timing: partitioned_timing_stats(update_calls.clone(), "value", "10s", &["agent"])?,
+            update_rate_10s: partitioned_rate(update_calls.clone(), "value", "10s", &["agent"])?,
+            error_count: zome_call_error_count(client.clone(), &summary).await?,
         },
     )
 }
