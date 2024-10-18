@@ -92,12 +92,16 @@ pub async fn query_zome_call_instrument_data_errors(
         return match frame {
             Ok(frame) => crate::frame::parse_time_column(frame),
             Err(e) => {
-                log::trace!("Failed to load test data, treating as 'no data in response': {:?}", e);
+                log::trace!(
+                    "Failed to load test data, treating as 'no data in response': {:?}",
+                    e
+                );
                 Err(LoadError::NoSeriesInResult {
                     result: serde_json::Value::Null,
-                }.into())
+                }
+                .into())
             }
-        }
+        };
     }
 
     let res = client.json_query(q.clone()).await?;
