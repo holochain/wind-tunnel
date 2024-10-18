@@ -226,7 +226,7 @@ pub(crate) fn standard_rate(
     })
 }
 
-pub(crate) fn partitioned_rate(
+pub(crate) fn partitioned_rate_stats(
     frame: DataFrame,
     column: &str,
     window_duration: &str,
@@ -280,7 +280,7 @@ pub(crate) fn partitioned_rate(
     Ok(PartitionedRateStats { mean, rates })
 }
 
-fn bound_pct(value: f64) -> f64 {
+pub fn bound_pct(value: f64) -> f64 {
     (value.clamp(0.0, 1.0) * 10_000.0).round() / 10_000.0
 }
 
