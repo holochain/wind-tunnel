@@ -203,21 +203,28 @@ pub(crate) fn standard_rate(
         )
         .collect()?;
 
-    let trend = rate
-        .column("count")?
-        .slice(1, rate.height() - 2)
-        .u32()?
-        .iter()
-        .map(|v| v.unwrap_or(0))
-        .collect();
-
     // Slice to drop the first and last because they're likely to be partially filled windows.
     // What we really want is the average rate when the system is under load for the complete window.
-    let mean = rate
-        .column("count")?
-        .slice(1, rate.height() - 2)
-        .mean()
-        .context("Calculate average")?;
+
+    let trend: Vec<u32> = if rate.height() <= 2 {
+        Vec::with_capacity(0)
+    } else {
+        rate.column("count")?
+            .slice(1, rate.height() - 2)
+            .u32()?
+            .iter()
+            .map(|v| v.unwrap_or(0))
+            .collect()
+    };
+
+    let mean = if rate.height() <= 2 {
+        0.0
+    } else {
+        rate.column("count")?
+            .slice(1, rate.height() - 2)
+            .mean()
+            .context("Calculate average")?
+    };
 
     Ok(StandardRateStats {
         mean,
@@ -269,7 +276,8 @@ pub(crate) fn partitioned_rate_stats(
             .collect()
             .context("filter by partition")?;
 
-        let summary_rate = standard_rate(filtered, column, window_duration)?;
+        let summary_rate = standard_rate(filtered, column, window_duration)
+            .with_context(|| format!("Standard rate for {:?}", key))?;
 
         rates.push(PartitionRateStats { key, summary_rate });
     }
