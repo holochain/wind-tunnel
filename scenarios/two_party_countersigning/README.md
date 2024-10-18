@@ -4,6 +4,20 @@
 
 This scenario tests the performance of `countersigning` operations.
 
+There are two roles, `initiate` and the `participate`. 
+
+The participants commit an entry to advertise that they are willing
+to participate in sessions. They listen for sessions and participate in one at a time. Three metrics are recorded:
+- `wt.custom.countersigning_session_accepted`: the number of sessions accepted by the participant
+- `wt.custom.countersigning_session_accepted_success`: the number of sessions successfully completed by the participant
+- `wt.custom.countersigning_session_accepted_duration`: the duration of the session from acceptance to completion
+
+The initiators get a list of peers who are advertising that they are willing to participate in sessions. They then shuffle
+that list and attempt to initiate with each peer in turn. Three metrics are recorded:
+- `wt.custom.countersigning_session_initiated`: the number of sessions initiated by the initiator
+- `wt.custom.countersigning_session_initiated_success`: the number of sessions successfully completed by the initiator
+- `wt.custom.countersigning_session_initiated_duration`: the duration of a successful session from initiation to completion
+
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
 ### Waiting for peer discovery
