@@ -1,13 +1,11 @@
-use crate::frame::frame_to_json;
 use crate::model::{
-    PartitionKey, PartitionTimingStats, PartitionedRateStats, PartitionedTimingStats,
-    StandardRateStats, StandardTimingsStats, TimingTrend,
+    PartitionKey, PartitionRateStats, PartitionTimingStats, PartitionedRateStats,
+    PartitionedTimingStats, StandardRateStats, StandardTimingsStats, TimingTrend,
 };
 use anyhow::Context;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::*;
-use std::collections::HashMap;
 
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
@@ -125,7 +123,7 @@ pub(crate) fn partitioned_timing_stats(
         .unique_stable(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let mut out = Vec::new();
+    let mut timings = Vec::new();
     for i in 0..unique.height() {
         let mut filter_expr = col("time").is_not_null();
         let mut key = Vec::new();
@@ -154,20 +152,23 @@ pub(crate) fn partitioned_timing_stats(
 
         let summary_timing = standard_timing_stats(filtered, column, window_duration, None)?;
 
-        out.push(PartitionTimingStats {
+        timings.push(PartitionTimingStats {
             key,
             summary_timing,
         });
     }
-    out.sort_by_key(|v| v.key.clone());
+    timings.sort_by_key(|v| v.key.clone());
 
-    let mean = out.iter().map(|t| t.summary_timing.mean).sum::<f64>() / out.len() as f64;
-    let mean_std_dev = out.iter().map(|t| t.summary_timing.std).sum::<f64>() / out.len() as f64;
+    let mean = timings.iter().map(|t| t.summary_timing.mean).sum::<f64>() / timings.len() as f64;
+    let mean_std_dev = round_to_n_dp(
+        timings.iter().map(|t| t.summary_timing.std).sum::<f64>() / timings.len() as f64,
+        6,
+    );
 
     Ok(PartitionedTimingStats {
         mean,
         mean_std_dev,
-        timings: out,
+        timings,
     })
 }
 
@@ -176,7 +177,7 @@ pub(crate) fn standard_rate(
     column: &str,
     window_duration: &str,
 ) -> anyhow::Result<StandardRateStats> {
-    let mut rate = frame
+    let rate = frame
         .clone()
         .lazy()
         .select([col("time"), col(column)])
@@ -202,17 +203,26 @@ pub(crate) fn standard_rate(
         )
         .collect()?;
 
+    let trend = rate
+        .column("count")?
+        .slice(1, rate.height() - 2)
+        .u32()?
+        .iter()
+        .map(|v| v.unwrap_or(0))
+        .collect();
+
     // Slice to drop the first and last because they're likely to be partially filled windows.
     // What we really want is the average rate when the system is under load for the complete window.
     let mean = rate
         .column("count")?
         .slice(1, rate.height() - 2)
         .mean()
-        .context("Calculate average");
+        .context("Calculate average")?;
 
     Ok(StandardRateStats {
-        trend: frame_to_json(&mut rate)?,
-        mean_rate: mean?,
+        mean,
+        trend,
+        window_duration: window_duration.to_string(),
     })
 }
 
@@ -225,86 +235,49 @@ pub(crate) fn partitioned_rate(
     let mut select_cols = vec![col("time"), col(column)];
     select_cols.extend(partition_by.iter().map(|&s| col(s)));
 
-    let frame = frame
+    let unique = frame
         .clone()
         .lazy()
-        .select(select_cols)
-        .filter(col("time").is_not_null())
-        .sort(
-            ["time"],
-            SortMultipleOptions::default().with_maintain_order(true),
-        )
-        .group_by_dynamic(
-            col("time"),
-            partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>(),
-            DynamicGroupOptions {
-                every: Duration::parse(window_duration),
-                period: Duration::parse(window_duration),
-                offset: Duration::parse("0"),
-                ..Default::default()
-            },
-        )
-        .agg([col(column).count()])
+        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
+        .unique_stable(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let mut trend = frame
-        .clone()
-        .lazy()
-        .select([col("time"), col(column)])
-        .group_by([col("time")])
-        .agg([col(column).sum().alias("count")])
-        .sort(
-            ["time"],
-            SortMultipleOptions::default().with_maintain_order(true),
-        )
-        .collect()?;
-
-    let mut out = PartitionedRateStats {
-        trend: frame_to_json(&mut trend)?,
-        rates: HashMap::new(),
-        by_partition: HashMap::new(),
-    };
-    for prefix_len in 1..=partition_by.len() {
-        let mut group_sum_cols = vec![col("time")];
-        for c in partition_by.iter().take(prefix_len) {
-            group_sum_cols.push(col(*c));
+    let mut rates = Vec::new();
+    for i in 0..unique.height() {
+        let mut filter_expr = col("time").is_not_null();
+        let mut key = Vec::new();
+        for c in partition_by {
+            let value = unique
+                .column(c)?
+                .get(i)?
+                .get_str()
+                .context("Get string")?
+                .to_string();
+            key.push(PartitionKey {
+                key: c.to_string(),
+                value: value.to_string(),
+            });
+            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
         }
+        key.sort();
 
-        let group_out_cols = partition_by[0..prefix_len]
-            .iter()
-            .map(|s| col(*s))
-            .collect::<Vec<_>>();
-
-        let mut grouped = frame
+        let filtered = frame
             .clone()
             .lazy()
-            .group_by(group_sum_cols)
-            .agg([col(column).sum()])
-            .collect()?
-            .lazy()
-            .group_by(group_out_cols)
-            .agg([col(column)
-                .slice(1, u32::MAX)
-                .reverse()
-                .slice(1, u32::MAX)
-                .mean()
-                .alias("mean")])
-            .collect()?;
+            .select(select_cols.clone())
+            .filter(filter_expr)
+            .collect()
+            .context("filter by partition")?;
 
-        let mean = grouped
-            .column("mean")?
-            .mean()
-            .context("Calculate average")?;
+        let summary_rate = standard_rate(filtered, column, window_duration)?;
 
-        let key = partition_by[0..prefix_len].join("-");
-
-        out.rates
-            .insert(format!("{}-mean-rate-10s", key.clone()), mean);
-        out.by_partition
-            .insert(key.clone(), frame_to_json(&mut grouped)?);
+        rates.push(PartitionRateStats { key, summary_rate });
     }
+    rates.sort_by_key(|v| v.key.clone());
 
-    Ok(out)
+    let mean = rates.iter().map(|t| t.summary_rate.mean).sum::<f64>() / rates.len() as f64;
+
+    Ok(PartitionedRateStats { mean, rates })
 }
 
 fn bound_pct(value: f64) -> f64 {
