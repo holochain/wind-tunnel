@@ -79,6 +79,12 @@ async fn two_party_countersigning() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn validation_receipts() -> anyhow::Result<()> {
+    run_snapshot_test!("3265009665eab80d8b796d448aa6ae1739a7b416f4f98fda7e37c9fc5d898729");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))

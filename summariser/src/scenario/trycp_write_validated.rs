@@ -41,10 +41,25 @@ pub(crate) async fn summarize_trycp_write_validated(
     SummaryOutput::new(
         summary.clone(),
         SingleWriteManyReadSummary {
-            create_timing: partitioned_timing_stats(create_calls.clone(), "value", "10s", &["agent"])?,
+            create_timing: partitioned_timing_stats(
+                create_calls.clone(),
+                "value",
+                "10s",
+                &["agent"],
+            )?,
             create_rate: partitioned_rate_stats(create_calls.clone(), "value", "10s", &["agent"])?,
-            update_timing: partitioned_timing_stats(update_calls.clone(), "value", "10s", &["agent"])?,
-            update_rate_10s: partitioned_rate_stats(update_calls.clone(), "value", "10s", &["agent"])?,
+            update_timing: partitioned_timing_stats(
+                update_calls.clone(),
+                "value",
+                "10s",
+                &["agent"],
+            )?,
+            update_rate_10s: partitioned_rate_stats(
+                update_calls.clone(),
+                "value",
+                "10s",
+                &["agent"],
+            )?,
             error_count: zome_call_error_count(client.clone(), &summary).await?,
         },
     )

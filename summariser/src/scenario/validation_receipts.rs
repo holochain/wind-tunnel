@@ -1,5 +1,5 @@
-use crate::analyze::{partitioned_rate_stats, standard_timing_stats};
-use crate::model::{PartitionedRateStats, StandardTimingsStats, SummaryOutput};
+use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
+use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
@@ -8,7 +8,7 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ValidationReceiptsSummary {
-    receipts_complete_timing: StandardTimingsStats,
+    receipts_complete_timing: PartitionedTimingStats,
     receipts_complete_rate: PartitionedRateStats,
     error_count: usize,
 }
@@ -23,7 +23,7 @@ pub(crate) async fn summarize_validation_receipts(
         client.clone(),
         &summary,
         "wt.custom.validation_receipts_complete_time",
-        &["agent_name", "op_type"],
+        &["agent", "op_type"],
     )
     .await
     .context("Load receipts complete data")?;
@@ -31,18 +31,20 @@ pub(crate) async fn summarize_validation_receipts(
     SummaryOutput::new(
         summary.clone(),
         ValidationReceiptsSummary {
-            receipts_complete_timing: standard_timing_stats(
+            receipts_complete_timing: partitioned_timing_stats(
                 receipts_complete.clone(),
                 "value",
                 "10s",
-                None,
-            )?,
+                &["agent", "op_type"],
+            )
+            .context("Receipts complete timing")?,
             receipts_complete_rate: partitioned_rate_stats(
                 receipts_complete.clone(),
                 "value",
                 "10s",
                 &["agent", "op_type"],
-            )?,
+            )
+            .context("Receipts complete rate")?,
             error_count: zome_call_error_count(client, &summary).await?,
         },
     )
