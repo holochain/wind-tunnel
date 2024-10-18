@@ -1,9 +1,12 @@
-use std::ops::Sub;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
-use crate::model::{PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats, SummaryOutput};
+use crate::model::{
+    PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
+    SummaryOutput,
+};
 use crate::query;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
+use std::ops::Sub;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,26 +39,22 @@ pub(crate) async fn summarize_countersigning_two_party(
         &summary,
         "wt.custom.countersigning_session_accepted",
         &["agent"],
-    ).await.context("Load accepted")?;
-    let accepted = partitioned_rate_stats(
-        accepted,
-        "value",
-        "10s",
-        &["agent"],
-    ).context("Accepted rate")?;
+    )
+    .await
+    .context("Load accepted")?;
+    let accepted =
+        partitioned_rate_stats(accepted, "value", "10s", &["agent"]).context("Accepted rate")?;
 
     let accepted_success = query::query_custom_data(
         client.clone(),
         &summary,
         "wt.custom.countersigning_session_accepted_success",
         &["agent"],
-    ).await.context("Load accepted")?;
-    let accepted_success = partitioned_rate_stats(
-        accepted_success,
-        "value",
-        "10s",
-        &["agent"],
-    ).context("Accepted success rate")?;
+    )
+    .await
+    .context("Load accepted")?;
+    let accepted_success = partitioned_rate_stats(accepted_success, "value", "10s", &["agent"])
+        .context("Accepted success rate")?;
 
     let accepted_failures = accepted - accepted_success.clone();
 
@@ -73,26 +72,22 @@ pub(crate) async fn summarize_countersigning_two_party(
         &summary,
         "wt.custom.countersigning_session_initiated",
         &["agent"],
-    ).await.context("Load initiated")?;
-    let initiated = partitioned_rate_stats(
-        initiated,
-        "value",
-        "10s",
-        &["agent"],
-    ).context("Initiated rate")?;
+    )
+    .await
+    .context("Load initiated")?;
+    let initiated =
+        partitioned_rate_stats(initiated, "value", "10s", &["agent"]).context("Initiated rate")?;
 
     let initiated_success = query::query_custom_data(
         client.clone(),
         &summary,
         "wt.custom.countersigning_session_initiated_success",
         &["agent"],
-    ).await.context("Load initiated success")?;
-    let initiated_success = partitioned_rate_stats(
-        initiated_success,
-        "value",
-        "10s",
-        &["agent"],
-    ).context("Initiated success rate")?;
+    )
+    .await
+    .context("Load initiated success")?;
+    let initiated_success = partitioned_rate_stats(initiated_success, "value", "10s", &["agent"])
+        .context("Initiated success rate")?;
 
     let initiated_failures = initiated - initiated_success.clone();
 
