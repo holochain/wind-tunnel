@@ -138,7 +138,7 @@ fn agent_behaviour(
                     reporter.add_custom(
                         ReportMetric::new("validation_receipts_complete_time")
                             .with_tag("op_type", set.op_type.clone())
-                            .with_tag("agent_name", agent_name.clone())
+                            .with_tag("agent", agent_name.clone())
                             .with_field("value", start.elapsed().as_secs_f64()),
                     );
                     *ctx.get_mut()

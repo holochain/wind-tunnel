@@ -31,7 +31,7 @@ pub(crate) async fn summarize_app_install(
         summary,
         AppInstallSummary {
             first_install_time: first,
-            install_app_timing: standard_timing_stats(frame, "value", Some(1))
+            install_app_timing: standard_timing_stats(frame, "value", "10s", Some(1))
                 .context("Standard timing stats")?,
         },
     )
