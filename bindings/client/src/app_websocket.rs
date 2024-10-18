@@ -99,11 +99,8 @@ fn pre_call_zome(
     let fn_name: FunctionName = fn_name.clone().into();
     operation_record.add_attr("zome_name", zome_name.0.to_string());
     operation_record.add_attr("fn_name", fn_name.0.to_string());
-    match target {
-        ZomeCallTarget::CellId(cell_id) => {
-            operation_record.add_attr("agent", cell_id.agent_pubkey().to_string());
-        }
-        _ => {}
+    if let ZomeCallTarget::CellId(cell_id) = target {
+        operation_record.add_attr("agent", cell_id.agent_pubkey().to_string());
     }
 }
 
