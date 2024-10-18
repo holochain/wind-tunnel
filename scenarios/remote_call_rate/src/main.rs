@@ -101,15 +101,17 @@ fn agent_behaviour(
                         .decode()
                         .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
-                    let dispatch_time_s = response.request_value.as_micros() as f64 / 1_000_000.0;
-                    let receive_time_s = response.value.as_micros() as f64 / 1_000_000.0;
+                    let dispatch_time_s = response.request_value.as_micros() as f64 / 10e6;
+                    let receive_time_s = response.value.as_micros() as f64 / 10e6;
 
                     reporter.add_custom(
                         ReportMetric::new("remote_call_dispatch")
+                            .with_tag("agent", agent_pub_key.to_string())
                             .with_field("value", receive_time_s - dispatch_time_s),
                     );
                     reporter.add_custom(
                         ReportMetric::new("remote_call_round_trip")
+                            .with_tag("agent", agent_pub_key.to_string())
                             .with_field("value", round_trip_time_s.as_secs_f64()),
                     );
 

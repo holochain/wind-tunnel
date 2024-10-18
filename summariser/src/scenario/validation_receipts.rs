@@ -34,13 +34,14 @@ pub(crate) async fn summarize_validation_receipts(
             receipts_complete_timing: standard_timing_stats(
                 receipts_complete.clone(),
                 "value",
+                "10s",
                 None,
             )?,
             receipts_complete_rate: partitioned_rate(
                 receipts_complete.clone(),
                 "value",
                 "10s",
-                &["agent_name", "op_type"],
+                &["agent", "op_type"],
             )?,
             error_count: zome_call_error_count(client, &summary).await?,
         },

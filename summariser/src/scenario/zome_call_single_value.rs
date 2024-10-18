@@ -33,7 +33,7 @@ pub(crate) async fn summarize_zome_call_single_value(
     SummaryOutput::new(
         summary.clone(),
         ZomeCallSingleValueSummary {
-            call_timing: standard_timing_stats(zome_calls.clone(), "value", None)
+            call_timing: standard_timing_stats(zome_calls.clone(), "value", "10s", None)
                 .context("Call timing stats")?,
             call_rate: standard_rate(zome_calls, "value", "10s").context("Call rate")?,
             errors: zome_call_error_count(client.clone(), &summary)
