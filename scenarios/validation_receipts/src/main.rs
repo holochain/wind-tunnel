@@ -81,7 +81,7 @@ fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
-    let agent_name = ctx.agent_name().to_string();
+    let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
 
     let action_hash: ActionHash = call_zome(
         ctx,
@@ -138,7 +138,7 @@ fn agent_behaviour(
                     reporter.add_custom(
                         ReportMetric::new("validation_receipts_complete_time")
                             .with_tag("op_type", set.op_type.clone())
-                            .with_tag("agent", agent_name.clone())
+                            .with_tag("agent", agent.clone())
                             .with_field("value", start.elapsed().as_secs_f64()),
                     );
                     *ctx.get_mut()
