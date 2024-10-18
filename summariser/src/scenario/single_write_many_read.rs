@@ -44,7 +44,7 @@ pub(crate) async fn summarize_single_write_many_read(
     SummaryOutput::new(
         summary,
         SingleWriteManyReadSummary {
-            read_call: standard_timing_stats(zome_calls.clone(), "value", None)?,
+            read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
             rate_10s: standard_rate(zome_calls.clone(), "value", "10s")?,
             error_count,
         },

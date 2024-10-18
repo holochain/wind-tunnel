@@ -23,7 +23,7 @@ pub(crate) async fn summarize_first_call(
     SummaryOutput::new(
         summary,
         FirstCallSummary {
-            zome_call_timing: standard_timing_stats(frame, "value", None)
+            zome_call_timing: standard_timing_stats(frame, "value", "10s", None)
                 .context("Standard timing stats")?,
         },
     )

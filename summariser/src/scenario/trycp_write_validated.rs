@@ -52,9 +52,9 @@ pub(crate) async fn summarize_trycp_write_validated(
     SummaryOutput::new(
         summary,
         SingleWriteManyReadSummary {
-            create_timing: standard_timing_stats(create_calls.clone(), "value", None)?,
+            create_timing: standard_timing_stats(create_calls.clone(), "value", "10s", None)?,
             create_rate_10s: standard_rate(create_calls.clone(), "value", "10s")?,
-            update_timing: standard_timing_stats(update_calls.clone(), "value", None)?,
+            update_timing: standard_timing_stats(update_calls.clone(), "value", "10s", None)?,
             update_rate_10s: standard_rate(update_calls.clone(), "value", "10s")?,
             error_count,
         },

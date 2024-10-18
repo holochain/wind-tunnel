@@ -64,7 +64,22 @@ pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Resul
     f.write_all(serde_json::to_string(&content)?.as_bytes())?;
 
     let mut frame = JsonReader::new(f).finish()?;
-    frame = frame
+    frame = parse_time_column(frame)?;
+
+    Ok(frame)
+}
+
+pub(crate) fn frame_to_json(frame: &mut DataFrame) -> anyhow::Result<serde_json::Value> {
+    let mut out_json = Vec::new();
+    JsonWriter::new(&mut out_json)
+        .with_json_format(JsonFormat::Json)
+        .finish(frame)?;
+
+    Ok(serde_json::from_slice::<serde_json::Value>(&out_json)?)
+}
+
+pub(crate) fn parse_time_column(frame: DataFrame) -> anyhow::Result<DataFrame> {
+    Ok(frame
         .clone()
         .lazy()
         .with_column(
@@ -80,18 +95,19 @@ pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Resul
                     },
                     lit("raise"),
                 )
+                .fill_null(col("time")
+                    .str()
+                    .to_datetime(
+                        None,
+                        None,
+                        StrptimeOptions {
+                            format: Some("%Y-%m-%d %H:%M:%S.%9f".into()),
+                            strict: false, // Sometime date-times come back with a different precision from InfluxDB
+                            ..Default::default()
+                        },
+                        lit("raise"),
+                    ))
                 .alias("time"),
         )
-        .collect()?;
-
-    Ok(frame)
-}
-
-pub(crate) fn frame_to_json(frame: &mut DataFrame) -> anyhow::Result<serde_json::Value> {
-    let mut out_json = Vec::new();
-    JsonWriter::new(&mut out_json)
-        .with_json_format(JsonFormat::Json)
-        .finish(frame)?;
-
-    Ok(serde_json::from_slice::<serde_json::Value>(&out_json)?)
+        .collect()?)
 }

@@ -1,8 +1,10 @@
 use crate::frame::frame_to_json;
 use crate::model::{
-    PartitionedRateStats, StandardRateStats, StandardTimingsStats,
+    PartitionKey, PartitionTimingStats, PartitionedRateStats, PartitionedTimingStats,
+    StandardRateStats, StandardTimingsStats, TimingTrend,
 };
 use anyhow::Context;
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::*;
 use std::collections::HashMap;
@@ -10,9 +12,10 @@ use std::collections::HashMap;
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
     column: &str,
+    window_duration: &str,
     skip: Option<i64>,
 ) -> anyhow::Result<StandardTimingsStats> {
-    let mut value_series = frame.column(column)?.clone();
+    let mut value_series = frame.column(column).context("Read value column")?.clone();
     if let Some(skip) = skip {
         value_series = value_series.slice(skip, usize::MAX);
     }
@@ -59,12 +62,116 @@ pub(crate) fn standard_timing_stats(
         .context("Within 3std sum")?;
     let pct_within_3std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
 
+    let trend = frame
+        .clone()
+        .lazy()
+        .select([col("time"), col(column)])
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                // every: Duration::parse(window_duration),
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column)
+            .slice(1, u32::MAX)
+            .reverse()
+            .slice(1, u32::MAX)
+            .mean()
+            .alias("mean")])
+        .collect()
+        .context("Windowed mean")?
+        .column("mean")?
+        .f64()?
+        .iter()
+        .into_iter()
+        .filter_map(|v| match v {
+            Some(v) => Some(round_to_n_dp(v, 6)),
+            None => None,
+        })
+        .collect_vec();
+
     Ok(StandardTimingsStats {
-        mean: round_to_n_dp(mean,3),
-        std: round_to_n_dp(std, 3),
+        mean: round_to_n_dp(mean, 6),
+        std: round_to_n_dp(std, 6),
         within_std: pct_within_1std,
         within_2std: pct_within_2std,
         within_3std: pct_within_3std,
+        trend: TimingTrend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
+    })
+}
+
+pub(crate) fn partitioned_timing_stats(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+    partition_by: &[&str],
+) -> anyhow::Result<PartitionedTimingStats> {
+    let mut select_cols = vec![col("time"), col(column)];
+    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+
+    let unique = frame
+        .clone()
+        .lazy()
+        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
+        .unique_stable(None, UniqueKeepStrategy::First)
+        .collect()?;
+
+    let mut out = Vec::new();
+    for i in 0..unique.height() {
+        let mut filter_expr = col("time").is_not_null();
+        let mut key = Vec::new();
+        for c in partition_by {
+            let value = unique
+                .column(*c)?
+                .get(i)?
+                .get_str()
+                .context("Get string")?
+                .to_string();
+            key.push(PartitionKey {
+                key: c.to_string(),
+                value: value.to_string(),
+            });
+            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
+        }
+        key.sort();
+
+        let filtered = frame
+            .clone()
+            .lazy()
+            .select(select_cols.clone())
+            .filter(filter_expr)
+            .collect()
+            .context("filter by partition")?;
+
+        let summary_timing = standard_timing_stats(filtered, column, window_duration, None)?;
+
+        out.push(PartitionTimingStats {
+            key,
+            summary_timing,
+        });
+    }
+    out.sort_by_key(|v| v.key.clone());
+
+    let mean = out.iter().map(|t| t.summary_timing.mean).sum::<f64>() / out.len() as f64;
+    let mean_std_dev = out.iter().map(|t| t.summary_timing.std).sum::<f64>() / out.len() as f64;
+
+    Ok(PartitionedTimingStats {
+        mean,
+        mean_std_dev,
+        timings: out,
     })
 }
 

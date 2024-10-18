@@ -41,10 +41,10 @@ pub(crate) async fn summarize_write_read(
     SummaryOutput::new(
         summary.clone(),
         WriteQuerySummary {
-            write_timing: standard_timing_stats(create_zome_calls.clone(), "value", None)
+            write_timing: standard_timing_stats(create_zome_calls.clone(), "value", "10s", None)
                 .context("Write timing stats")?,
             write_rate: standard_rate(create_zome_calls, "value", "10s").context("Write rate")?,
-            read_timing: standard_timing_stats(get_zome_calls.clone(), "value", None)
+            read_timing: standard_timing_stats(get_zome_calls.clone(), "value", "10s", None)
                 .context("Read timing stats")?,
             read_rate: standard_rate(get_zome_calls, "value", "10s").context("Read rate")?,
             errors: zome_call_error_count(client.clone(), &summary)
