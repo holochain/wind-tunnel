@@ -41,8 +41,13 @@ pub(crate) async fn summarize_remote_call_rate(
         RemoteCallRateSummary {
             dispatch_timing: partitioned_timing_stats(dispatch_frame, "value", "10s", &["agent"])
                 .context("Timing stats for dispatch")?,
-            round_trip_timing: partitioned_timing_stats(round_trip_frame, "value", "10s", &["agent"])
-                .context("Timing stats for round trip")?,
+            round_trip_timing: partitioned_timing_stats(
+                round_trip_frame,
+                "value",
+                "10s",
+                &["agent"],
+            )
+            .context("Timing stats for round trip")?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         },
     )

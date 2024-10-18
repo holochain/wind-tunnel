@@ -95,18 +95,16 @@ pub(crate) fn parse_time_column(frame: DataFrame) -> anyhow::Result<DataFrame> {
                     },
                     lit("raise"),
                 )
-                .fill_null(col("time")
-                    .str()
-                    .to_datetime(
-                        None,
-                        None,
-                        StrptimeOptions {
-                            format: Some("%Y-%m-%d %H:%M:%S.%9f".into()),
-                            strict: false, // Sometime date-times come back with a different precision from InfluxDB
-                            ..Default::default()
-                        },
-                        lit("raise"),
-                    ))
+                .fill_null(col("time").str().to_datetime(
+                    None,
+                    None,
+                    StrptimeOptions {
+                        format: Some("%Y-%m-%d %H:%M:%S.%9f".into()),
+                        strict: false, // Sometime date-times come back with a different precision from InfluxDB
+                        ..Default::default()
+                    },
+                    lit("raise"),
+                ))
                 .alias("time"),
         )
         .collect()?)
