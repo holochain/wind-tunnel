@@ -30,15 +30,27 @@ pub struct RunSummary {
     ///
     /// This is the number of peers that were either configured or required by the behaviour
     /// configuration.
+    ///
+    /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
+    /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
+    /// the roles that were assigned across the network.
     pub peer_count: usize,
     /// The number of peers at the end of the test
     ///
     /// If some peers exit early, for example due to a fatal error during a behaviour run or an
     /// unavailable conductor, then this will be less than [RunSummary::peer_count].
+    ///
+    /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
+    /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
+    /// the roles that were assigned across the network.
     pub peer_end_count: usize,
     /// The behaviour configuration
     ///
     /// This is the number of agents that were assigned to each behaviour.
+    ///
+    /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
+    /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
+    /// the roles that were assigned across the network.
     pub behaviours: HashMap<String, usize>,
     /// Environment variables set for the run
     ///
