@@ -5,7 +5,7 @@ use sha3::Digest;
 
 #[cfg(feature = "test_data")]
 pub fn insert_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> anyhow::Result<()> {
-    let out_file = match open_output_path("1_run_summaries", file_name_from_run_summary(summary), false)? {
+    let out_file = match open_output_path("1_run_summaries", &file_name_from_run_summary(summary), false)? {
         Some(f) => f,
         None => {
             log::info!("Not creating run summary file as it already exists");
@@ -25,10 +25,11 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
     use polars::io::SerWriter;
     use polars::prelude::JsonFormat;
 
-    let out_file = match open_output_path("2_query_results", file_name_from_query(query)?, false)? {
+    let file_name = file_name_from_query(query)?;
+    let out_file = match open_output_path("2_query_results", &file_name, false)? {
         Some(f) => f,
         None => {
-            log::info!("Not creating query result file as it already exists");
+            log::info!("Not creating query result file as it already exists for query {:?}: {:?}", query, file_name);
             return Ok(());
         }
     };
@@ -42,11 +43,13 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
     Ok(())
 }
 
+// TODO should provide some way to detect which files are no longer being used as the test data is
+//      updated. We need to be deleting data that is no longer needed.
 #[cfg(feature = "query_test_data")]
 pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
     use polars::io::SerReader;
 
-    let mut in_file = open_input_path("2_query_results", file_name_from_query(query)?)?;
+    let mut in_file = open_input_path("2_query_results", file_name_from_query(query)?).with_context(|| format!("For query: {:?}", query))?;
 
     polars::io::json::JsonReader::new(&mut in_file)
         .finish()
@@ -57,7 +60,7 @@ pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
 pub fn insert_summary_output(output: &crate::model::SummaryOutput, overwrite: bool) -> anyhow::Result<()> {
     let out_file = match open_output_path(
         "3_summary_outputs",
-        file_name_from_run_summary(&output.run_summary),
+        &file_name_from_run_summary(&output.run_summary),
         overwrite,
     )? {
         Some(f) => f,
@@ -75,7 +78,7 @@ pub fn insert_summary_output(output: &crate::model::SummaryOutput, overwrite: bo
 }
 
 #[cfg(any(feature = "test_data", feature = "query_test_data"))]
-fn open_output_path(stage: &str, file_name: String, overwrite: bool) -> anyhow::Result<Option<std::fs::File>> {
+fn open_output_path(stage: &str, file_name: &str, overwrite: bool) -> anyhow::Result<Option<std::fs::File>> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
         .join(stage)
@@ -109,9 +112,9 @@ fn open_input_path(stage: &str, file_name: String) -> anyhow::Result<std::fs::Fi
         .join(stage)
         .join(file_name);
 
-    match std::fs::OpenOptions::new().read(true).open(path) {
+    match std::fs::OpenOptions::new().read(true).open(&path) {
         Ok(f) => Ok(f),
-        Err(e) => Err(e).context("Failed to open input file"),
+        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {:?}", path)),
     }
 }
 

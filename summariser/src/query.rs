@@ -32,7 +32,7 @@ pub async fn query_instrument_data(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return super::test_data::load_query_result(&q);
+        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
     }
 
     let res = client.json_query(q.clone()).await?;
@@ -60,7 +60,7 @@ pub async fn query_zome_call_instrument_data(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return super::test_data::load_query_result(&q);
+        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
     }
 
     let res = client.json_query(q.clone()).await?;
@@ -88,7 +88,16 @@ pub async fn query_zome_call_instrument_data_errors(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return super::test_data::load_query_result(&q);
+        let frame = super::test_data::load_query_result(&q);
+        return match frame {
+            Ok(frame) => crate::frame::parse_time_column(frame),
+            Err(e) => {
+                log::trace!("Failed to load test data, treating as 'no data in response': {:?}", e);
+                Err(LoadError::NoSeriesInResult {
+                    result: serde_json::Value::Null,
+                }.into())
+            }
+        }
     }
 
     let res = client.json_query(q.clone()).await?;
@@ -123,7 +132,7 @@ pub async fn query_custom_data(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return super::test_data::load_query_result(&q);
+        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
     }
 
     let res = client.json_query(q.clone()).await?;
