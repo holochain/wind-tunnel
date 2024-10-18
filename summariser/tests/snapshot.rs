@@ -73,6 +73,12 @@ async fn trycp_write_validated() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn two_party_countersigning() -> anyhow::Result<()> {
+    run_snapshot_test!("8f5f4e70e7852399484a024dcfec72909b3778c7edb642e6750aec5772bc2fc0");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))
