@@ -93,11 +93,7 @@ pub(crate) fn standard_timing_stats(
         .column("mean")?
         .f64()?
         .iter()
-        .into_iter()
-        .filter_map(|v| match v {
-            Some(v) => Some(round_to_n_dp(v, 6)),
-            None => None,
-        })
+        .filter_map(|v| v.map(|v| round_to_n_dp(v, 6)))
         .collect_vec();
 
     Ok(StandardTimingsStats {
@@ -135,7 +131,7 @@ pub(crate) fn partitioned_timing_stats(
         let mut key = Vec::new();
         for c in partition_by {
             let value = unique
-                .column(*c)?
+                .column(c)?
                 .get(i)?
                 .get_str()
                 .context("Get string")?

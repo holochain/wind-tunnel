@@ -41,18 +41,16 @@ pub(crate) async fn summarize_local_signals(
     SummaryOutput::new(
         summary,
         LocalSignalsSummary {
-            send: standard_timing_stats(send_frame, "value", "10s", None).context("Send timing stats")?,
-            recv: standard_timing_stats(recv_frame, "value", "10s", None).context("Recv timing stats")?,
-            success_ratio: ratio_stats(success_ratio, "value")
-                .context("Success ratio stats")?,
+            send: standard_timing_stats(send_frame, "value", "10s", None)
+                .context("Send timing stats")?,
+            recv: standard_timing_stats(recv_frame, "value", "10s", None)
+                .context("Recv timing stats")?,
+            success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
         },
     )
 }
 
-pub(crate) fn ratio_stats(
-    frame: DataFrame,
-    column: &str,
-) -> anyhow::Result<RatioStats> {
+pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<RatioStats> {
     let value_series = frame.column(column)?.clone();
 
     let mean = value_series.mean().context("Mean")?;
