@@ -1,4 +1,4 @@
-use crate::analyze::{partitioned_rate, standard_timing_stats};
+use crate::analyze::{partitioned_rate_stats, standard_timing_stats};
 use crate::model::{PartitionedRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
@@ -37,7 +37,7 @@ pub(crate) async fn summarize_validation_receipts(
                 "10s",
                 None,
             )?,
-            receipts_complete_rate: partitioned_rate(
+            receipts_complete_rate: partitioned_rate_stats(
                 receipts_complete.clone(),
                 "value",
                 "10s",

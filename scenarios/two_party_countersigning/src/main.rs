@@ -111,7 +111,6 @@ fn agent_behaviour_initiate(
     let initiate_with_peers = ctx.get_mut().scenario_values.initiate_with_peers.pop();
     let reporter = ctx.runner_context().reporter();
 
-    let agent_name = ctx.agent_name().to_string();
     let initiated = ctx.get().scenario_values.session_attempts.clone();
     let initiated_success = ctx.get().scenario_values.session_successes.clone();
     let initiated_failure = ctx.get().scenario_values.session_failures.clone();
@@ -157,7 +156,7 @@ fn agent_behaviour_initiate(
                     let initiated = initiated.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     reporter.add_custom(
                         ReportMetric::new("countersigning_session_initiated")
-                            .with_tag("agent", agent_name.clone())
+                            .with_tag("agent", cell_id.agent_pubkey().to_string())
                             .with_field("value", initiated as u64),
                     );
 
@@ -211,13 +210,13 @@ fn agent_behaviour_initiate(
                                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_success")
-                                    .with_tag("agent", agent_name.clone())
+                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
                                     .with_tag("retries", retry_count as u64)
                                     .with_field("value", (initiated_success + 1) as u64),
                             );
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_duration")
-                                    .with_tag("agent", agent_name)
+                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
                                     .with_tag("failed", false)
                                     .with_field("value", elapsed.as_secs_f64()),
                             );
@@ -235,12 +234,12 @@ fn agent_behaviour_initiate(
                                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_failure")
-                                    .with_tag("agent", agent_name.clone())
+                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
                                     .with_field("value", (initiated_failure + 1) as u64),
                             );
                             reporter.add_custom(
                                 ReportMetric::new("countersigning_session_initiated_duration")
-                                    .with_tag("agent", agent_name)
+                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
                                     .with_tag("failed", true)
                                     .with_field("value", elapsed.as_secs_f64()),
                             );
@@ -335,7 +334,6 @@ fn agent_behaviour_participate(
     let cell_id = ctx.get().cell_id();
     let reporter = ctx.runner_context().reporter();
 
-    let agent_name = ctx.agent_name().to_string();
     let accepted = ctx.get().scenario_values.session_attempts.clone();
     let accepted_success = ctx.get().scenario_values.session_successes.clone();
     let accepted_failure = ctx.get().scenario_values.session_failures.clone();
@@ -379,7 +377,7 @@ fn agent_behaviour_participate(
                         let accepted = accepted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         reporter.add_custom(
                             ReportMetric::new("countersigning_session_accepted")
-                                .with_tag("agent", agent_name.clone())
+                                .with_tag("agent", cell_id.agent_pubkey().to_string())
                                 .with_field("value", accepted as u64),
                         );
 
@@ -399,13 +397,13 @@ fn agent_behaviour_participate(
                                 let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_success")
-                                        .with_tag("agent", agent_name.clone())
+                                        .with_tag("agent", cell_id.agent_pubkey().to_string())
                                         .with_tag("retries", retry_count as u64)
                                         .with_field("value", (accepted_success + 1) as u64),
                                 );
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_duration")
-                                        .with_tag("agent", agent_name)
+                                        .with_tag("agent", cell_id.agent_pubkey().to_string())
                                         .with_tag("failed", false)
                                         .with_field("value", elapsed.as_secs_f64()),
                                 );
@@ -421,12 +419,12 @@ fn agent_behaviour_participate(
                                 let accepted_failure = accepted_failure.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_failure")
-                                        .with_tag("agent", agent_name.clone())
+                                        .with_tag("agent", cell_id.agent_pubkey().to_string())
                                         .with_field("value", (accepted_failure + 1) as u64),
                                 );
                                 reporter.add_custom(
                                     ReportMetric::new("countersigning_session_accepted_duration")
-                                        .with_tag("agent", agent_name)
+                                        .with_tag("agent", cell_id.agent_pubkey().to_string())
                                         .with_tag("failed", true)
                                         .with_field("value", elapsed.as_secs_f64()),
                                 );
