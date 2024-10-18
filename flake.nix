@@ -16,7 +16,7 @@
     };
 
     tryorama = {
-      url = "github:holochain/tryorama?ref=v0.17.0-dev.5";
+      url = "github:holochain/tryorama?ref=v0.17.0-dev.6";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         crane.follows = "crane";

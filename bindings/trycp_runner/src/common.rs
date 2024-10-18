@@ -330,7 +330,6 @@ where
     std::fs::create_dir_all(&path)
         .with_context(|| format!("Failed to create log directory at {path:?}"))?;
 
-    std::fs::write(path.join("lair-stderr.log"), logs.lair_stderr)?;
     std::fs::write(path.join("conductor-stdout.log"), logs.conductor_stdout)?;
     std::fs::write(path.join("conductor-stderr.log"), logs.conductor_stderr)?;
 
