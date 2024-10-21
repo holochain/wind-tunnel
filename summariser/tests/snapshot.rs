@@ -74,6 +74,12 @@ async fn remote_call_rate() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn single_write_many_read() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
+#[tokio::test]
 async fn trycp_write_validated() -> anyhow::Result<()> {
     run_snapshot_test!("3ca57c491607c8639ba04caef533f49833549bf7a2fab9851ba2cb9494d16fe2");
     Ok(())
@@ -88,6 +94,30 @@ async fn two_party_countersigning() -> anyhow::Result<()> {
 #[tokio::test]
 async fn validation_receipts() -> anyhow::Result<()> {
     run_snapshot_test!("3265009665eab80d8b796d448aa6ae1739a7b416f4f98fda7e37c9fc5d898729");
+    Ok(())
+}
+
+#[tokio::test]
+async fn write_query() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
+#[tokio::test]
+async fn write_read() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
+#[tokio::test]
+async fn write_validated() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
+    Ok(())
+}
+
+#[tokio::test]
+async fn zome_call_single_value() -> anyhow::Result<()> {
+    run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
     Ok(())
 }
 
