@@ -388,7 +388,7 @@ fn agent_behaviour_participate(
                             (session_times.end.as_millis() - session_times.start.as_millis()) as u64,
                         ));
 
-                        match run_accepted_session(client, request, session_timeout, cell_id, app_port).await {
+                        match run_accepted_session(client, request, session_timeout, cell_id.clone(), app_port).await {
                             Ok(retry_count) => {
                                 let elapsed = start.elapsed();
 
