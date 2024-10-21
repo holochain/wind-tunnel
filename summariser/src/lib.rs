@@ -30,6 +30,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "dht_sync_lag" => Some(
+            async move {
+                summarize_dht_sync_lag(client.clone(), summary.clone())
+                    .await
+                    .context("DHT sync lag summary")
+            }
+            .boxed(),
+        ),
         "first_call" => Some(
             async move {
                 summarize_first_call(client.clone(), summary.clone())
