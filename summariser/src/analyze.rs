@@ -227,7 +227,7 @@ pub(crate) fn standard_rate(
     };
 
     Ok(StandardRateStats {
-        mean,
+        mean: round_to_n_dp(mean, 2),
         trend,
         window_duration: window_duration.to_string(),
     })
@@ -285,7 +285,10 @@ pub(crate) fn partitioned_rate_stats(
 
     let mean = rates.iter().map(|t| t.summary_rate.mean).sum::<f64>() / rates.len() as f64;
 
-    Ok(PartitionedRateStats { mean, rates })
+    Ok(PartitionedRateStats {
+        mean: round_to_n_dp(mean, 2),
+        rates
+    })
 }
 
 pub fn bound_pct(value: f64) -> f64 {

@@ -45,6 +45,8 @@ pub async fn query_instrument_data(
         frame
     };
 
+    log::trace!("Loaded frame: {}", frame);
+
     Ok(frame)
 }
 
@@ -72,6 +74,8 @@ pub async fn query_zome_call_instrument_data(
         crate::test_data::insert_query_result(&q, &mut frame)?;
         frame
     };
+
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }
@@ -114,6 +118,8 @@ pub async fn query_zome_call_instrument_data_errors(
         frame
     };
 
+    log::trace!("Loaded frame: {}", frame);
+
     Ok(frame)
 }
 
@@ -148,6 +154,8 @@ pub async fn query_custom_data(
         crate::test_data::insert_query_result(&q, &mut frame)?;
         frame
     };
+
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }

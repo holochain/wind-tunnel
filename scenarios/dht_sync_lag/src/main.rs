@@ -41,7 +41,9 @@ fn agent_behaviour_write(
 
     ctx.get_mut().scenario_values.sent_actions += 1;
 
+    let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
     let metric = ReportMetric::new("dht_sync_sent_count")
+        .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.sent_actions);
     ctx.runner_context().reporter().clone().add_custom(metric);
 
@@ -64,6 +66,7 @@ fn agent_behaviour_record_lag(
         .collect::<Vec<_>>();
 
     let reporter_handle = ctx.runner_context().reporter().clone();
+    let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
     for new_record in &found {
         let timed_entry: TimedEntry = new_record
             .entry()
@@ -72,15 +75,17 @@ fn agent_behaviour_record_lag(
             .unwrap();
 
         let metric = ReportMetric::new("dht_sync_lag");
-        let lag_ms = (metric
+        let lag_s = (metric
             .timestamp
             .clone()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_micros()
             - timed_entry.created_at.as_micros() as u128) as f64
-            / 1000.0;
-        let metric = metric.with_field("value", lag_ms);
+            / 10e6;
+        let metric = metric
+            .with_tag("agent", agent_pub_key.clone())
+            .with_field("value", lag_s);
 
         reporter_handle.add_custom(metric);
 
@@ -91,6 +96,7 @@ fn agent_behaviour_record_lag(
     }
 
     let metric = ReportMetric::new("dht_sync_recv_count")
+        .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
     reporter_handle.add_custom(metric);
 

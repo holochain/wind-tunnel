@@ -50,6 +50,12 @@ async fn app_install_large() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn dht_sync_lag() -> anyhow::Result<()> {
+    run_snapshot_test!("da362693533b9148da5298929897427e7899c2120445a87a3511871dd5e00158");
+    Ok(())
+}
+
+#[tokio::test]
 async fn first_call() -> anyhow::Result<()> {
     run_snapshot_test!("1c1782ff0b6a1fce9640342be79bc23970833bc535cba493f9e494e65919d436");
     Ok(())
