@@ -287,7 +287,7 @@ pub(crate) fn partitioned_rate_stats(
 
     Ok(PartitionedRateStats {
         mean: round_to_n_dp(mean, 2),
-        rates
+        rates,
     })
 }
 

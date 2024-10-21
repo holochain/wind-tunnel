@@ -29,15 +29,20 @@ pub(crate) async fn summarize_dht_sync_lag(
         .filter(col("fn_name").eq(lit("created_timed_entry")))
         .collect()?;
 
-    let sync_lag = query::query_custom_data(client.clone(), &summary, "wt.custom.dht_sync_lag", &["agent"])
-        .await
-        .context("Load lag data")?;
+    let sync_lag = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.dht_sync_lag",
+        &["agent"],
+    )
+    .await
+    .context("Load lag data")?;
 
     SummaryOutput::new(
         summary.clone(),
         DhtSyncLagSummary {
             create_rate: partitioned_rate_stats(create_zome_calls, "value", "10s", &["agent"])
-            .context("Rate stats for create")?,
+                .context("Rate stats for create")?,
             sync_lag_timing: partitioned_timing_stats(sync_lag.clone(), "value", "10s", &["agent"])
                 .context("Timing stats for sync lag")?,
             sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
