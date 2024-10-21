@@ -1,4 +1,5 @@
 mod app_install;
+mod dht_sync_lag;
 mod first_call;
 mod local_signals;
 mod remote_call_rate;
@@ -12,6 +13,7 @@ mod write_validated;
 mod zome_call_single_value;
 
 pub(crate) use app_install::summarize_app_install;
+pub(crate) use dht_sync_lag::summarize_dht_sync_lag;
 pub(crate) use first_call::summarize_first_call;
 pub(crate) use local_signals::summarize_local_signals;
 pub(crate) use remote_call_rate::summarize_remote_call_rate;
