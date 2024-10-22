@@ -4,6 +4,16 @@
 
 This scenario tests the throughput of `remote_signals` operations.
 
+Two environment variables can further control this scenario:
+
+- `SIGNAL_INTERVAL_MS` - the interval (in ms) per node at which to publish origin signals (defaults to 1000, or 1 signal every second)
+- `RESPONSE_TIMEOUT_MS` - the interval (in ms) at which we will stop waiting for a response signal and record a `remote_signal_timeout` metric (see below).
+
+Two custom metrics are recorded:
+
+- `wt.custom.remote_signal_round_trip`: The time in floating-point seconds from origin signal dispatch to origin receive of the remote side's response signal.
+- `wt.custom.remote_signal_timeout`: A counter (value 1) recorded every time there is a timeout waiting for the response signal. (Defaults to 20 seconds--see above)
+
 > [!WARNING]
 > This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
