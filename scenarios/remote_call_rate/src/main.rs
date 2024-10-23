@@ -101,8 +101,8 @@ fn agent_behaviour(
                         .decode()
                         .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
 
-                    let dispatch_time_s = response.request_value.as_micros() as f64 / 10e6;
-                    let receive_time_s = response.value.as_micros() as f64 / 10e6;
+                    let dispatch_time_s = response.request_value.as_micros() as f64 / 1e6;
+                    let receive_time_s = response.value.as_micros() as f64 / 1e6;
 
                     reporter.add_custom(
                         ReportMetric::new("remote_call_dispatch")
