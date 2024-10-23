@@ -1,9 +1,8 @@
 use anyhow::Context;
 use holochain_summariser::{execute_report_for_run_summary, model::SummaryOutput};
-use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
-use wind_tunnel_summary_model::{load_run_summary, load_summary_runs, RunSummary};
+use wind_tunnel_summary_model::load_run_summary;
 
 macro_rules! run_snapshot_test {
     ($summary_fingerprint:literal) => {
@@ -179,20 +178,27 @@ async fn zome_call_single_value() -> anyhow::Result<()> {
 }
 
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
-    WalkDir::new(
+    let all_matches = WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("test_data")
             .join(stage),
     )
     .into_iter()
     .filter_map(|entry| entry.ok())
-    .find(|entry| {
+    .filter(|entry| {
         entry
             .file_name()
             .to_str()
             .map(|name| name.contains(summary_fingerprint))
             .unwrap_or(false)
     })
+    .collect::<Vec<_>>();
+
+    if all_matches.len() == 1 {
+        Some(all_matches[0].clone())
+    } else {
+        panic!("Expected exactly one match, this indicates a fingerprint collision: {:?}", all_matches);
+    }
 }
 
 /// Load summary output from a file
