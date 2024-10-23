@@ -24,7 +24,8 @@ in
         scenarioHapps = config.happHelper.mkHapps { configToml = ../../scenarios/${name}/Cargo.toml; };
       in
       pkgs.stdenv.mkDerivation {
-        inherit name;
+        pname = name;
+        inherit (scenarioBinary) version;
 
         # No sources to copy, everything comes from the build inputs
         unpackPhase = "true";
