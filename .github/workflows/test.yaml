@@ -247,7 +247,7 @@ jobs:
           scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
 
           mkdir -p dist
-          scenario_names | xargs -I % cp % dist/
+          scenario_names | xargs -I % cp %-arx dist/%
 
       - name: Archive scenario bundles
         if: runner.os == 'Linux'
