@@ -82,7 +82,7 @@ pub fn execute_report_for_run_summary(
             async move {
                 summarize_countersigning_two_party(client.clone(), summary.clone())
                     .await
-                    .context("Countersigning, two party, report")
+                    .context("Countersigning, two party, summary")
             }
             .boxed(),
         ),
