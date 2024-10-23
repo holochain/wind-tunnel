@@ -101,6 +101,7 @@ impl RunSummary {
     ///
     /// The fingerprint is intended to uniquely identify the configuration used to run the scenario.
     /// It uses the
+    ///     - Scenario name
     ///     - Run duration
     ///     - Assigned behaviours
     ///     - Selected environment variables
@@ -109,6 +110,7 @@ impl RunSummary {
     /// The fingerprint is computed using SHA3-256.
     pub fn fingerprint(&self) -> String {
         let mut hasher = sha3::Sha3_256::new();
+        Digest::update(&mut hasher, self.scenario_name.as_bytes());
         if let Some(run_duration) = self.run_duration {
             Digest::update(&mut hasher, run_duration.to_le_bytes());
         }
