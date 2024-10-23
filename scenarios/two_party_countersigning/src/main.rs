@@ -653,9 +653,7 @@ fn main() -> WindTunnelResult<()> {
     .use_named_agent_behaviour("participate", agent_behaviour_participate)
     .use_agent_teardown(agent_teardown);
 
-    let agents_at_completion = run(builder)?;
-
-    println!("Finished with {} agents", agents_at_completion);
+    run_with_required_agents(builder, 1)?;
 
     Ok(())
 }

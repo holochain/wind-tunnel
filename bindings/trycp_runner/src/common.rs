@@ -1,6 +1,6 @@
 use crate::context::TryCPAgentContext;
 use crate::runner_context::TryCPRunnerContext;
-use anyhow::Context;
+use anyhow::{bail, Context};
 use holochain_client::AuthorizeSigningCredentialsPayload;
 use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
 use holochain_types::app::{AppBundle, AppBundleSource, InstallAppPayload};
@@ -11,7 +11,8 @@ use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 use trycp_client_instrumented::prelude::TryCPClient;
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, UserValuesConstraint, WindTunnelResult,
+    run, AgentContext, HookResult, ScenarioDefinitionBuilder, UserValuesConstraint,
+    WindTunnelResult,
 };
 
 /// Connects to a TryCP server using the current agent index and the list of targets.
@@ -465,4 +466,28 @@ where
             .decode()
             .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
+}
+
+/// Call [`run`] for a scenario and check that it completed with the minimum required agents.
+///
+/// The value of `min_required_agents` can be overridden with the environment variable
+/// `MIN_REQUIRED_AGENTS` when running a scenario.
+pub fn run_with_required_agents<RV: UserValuesConstraint, V: UserValuesConstraint>(
+    definition: ScenarioDefinitionBuilder<RV, V>,
+    min_required_agents: usize,
+) -> anyhow::Result<()> {
+    let agents_at_completion = run(definition)?;
+
+    let min_required_agents = std::env::var("MIN_REQUIRED_AGENTS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(min_required_agents);
+
+    if agents_at_completion < min_required_agents {
+        bail!("Not enough agents ran scenario to completion: expected at least {min_required_agents}, actual {agents_at_completion}");
+    }
+
+    println!("Finished with {} agents", agents_at_completion);
+
+    Ok(())
 }
