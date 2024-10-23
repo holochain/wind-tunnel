@@ -10,6 +10,8 @@ pub(crate) mod filter;
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
+    println!("{}", 1e6);
+
     #[cfg(feature = "test_data")]
     log::info!("Test data generation enabled");
 
