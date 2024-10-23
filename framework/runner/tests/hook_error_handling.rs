@@ -21,7 +21,6 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
     WindTunnelScenarioCli {
         connection_string: "test_connection_string".to_string(),
         agents: None,
-        min_required_agents: None,
         behaviour: vec![],
         duration: None,
         soak: false,
@@ -60,7 +59,6 @@ fn capture_error_in_agent_setup() {
         sample_cli_cfg(),
     )
     .with_default_duration_s(5)
-    .with_default_min_required_agents(0)
     .use_agent_setup(agent_setup);
 
     let result = run(scenario);
@@ -162,58 +160,4 @@ fn capture_error_in_teardown() {
     let result = run(scenario);
 
     assert!(result.is_ok());
-}
-
-#[test]
-fn error_if_default_minimum_required_agents_not_met() {
-    fn agent_behaviour(_: &mut AgentContext<RunnerContextValue, AgentContextValue>) -> HookResult {
-        Err(AgentBailError::default().into())
-    }
-
-    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
-        "error_if_minimum_required_agents_not_met",
-        sample_cli_cfg(),
-    )
-    .with_default_duration_s(5)
-    .use_agent_behaviour(agent_behaviour);
-
-    let result = run(scenario);
-
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().to_string(),
-        "Not enough agents ran scenario to completion: expected 1, actual 0"
-    );
-}
-
-#[test]
-fn error_if_set_minimum_required_agents_not_met() {
-    fn agent_behaviour(
-        ctx: &mut AgentContext<RunnerContextValue, AgentContextValue>,
-    ) -> HookResult {
-        if ctx.agent_index() == 0 {
-            Ok(())
-        } else {
-            Err(AgentBailError::default().into())
-        }
-    }
-
-    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
-        "error_if_minimum_required_agents_not_met",
-        WindTunnelScenarioCli {
-            agents: Some(2),
-            ..sample_cli_cfg()
-        },
-    )
-    .with_default_duration_s(5)
-    .with_default_min_required_agents(2)
-    .use_agent_behaviour(agent_behaviour);
-
-    let result = run(scenario);
-
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().to_string(),
-        "Not enough agents ran scenario to completion: expected 2, actual 1"
-    );
 }

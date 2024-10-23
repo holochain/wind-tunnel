@@ -24,7 +24,6 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     cli: WindTunnelScenarioCli,
     default_agent_count: Option<usize>,
     default_duration_s: Option<u64>,
-    default_min_required_agents: Option<usize>,
     setup_fn: Option<GlobalHookMut<RV>>,
     setup_agent_fn: Option<AgentHookMut<RV, V>>,
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -42,7 +41,6 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) name: String,
     pub(crate) assigned_behaviours: Vec<AssignedBehaviour>,
     pub(crate) duration_s: Option<u64>,
-    pub(crate) min_required_agents: usize,
     pub(crate) connection_string: String,
     pub(crate) no_progress: bool,
     pub(crate) reporter: ReporterOpt,
@@ -94,7 +92,6 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             cli,
             default_agent_count: None,
             default_duration_s: None,
-            default_min_required_agents: None,
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
@@ -116,15 +113,6 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// This can be overridden when the scenario is run using the `--duration` flag.
     pub fn with_default_duration_s(mut self, duration: u64) -> Self {
         self.default_duration_s = Some(duration);
-        self
-    }
-
-    /// Sets the minimum number of agents required for this scenario.
-    ///
-    /// The scenario will fail if the number of running agents drops below this amount.
-    /// This can be overridden when the scenario is run using the `--min-required-agents` flag.
-    pub fn with_default_min_required_agents(mut self, default_min_required_agents: usize) -> Self {
-        self.default_min_required_agents = Some(default_min_required_agents);
         self
     }
 
@@ -190,13 +178,6 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         // Priority given to the CLI, then the default value provided by the scenario, then default to 1
         let resolved_agent_count = self.cli.agents.or(self.default_agent_count).unwrap_or(1);
 
-        // Priority given to the CLI, then the default value provided by the scenario, then default to 1
-        let min_required_agents = self
-            .cli
-            .min_required_agents
-            .or(self.default_min_required_agents)
-            .unwrap_or(1);
-
         // Check that the user hasn't requested behaviours that aren't registered in the scenario.
         let registered_behaviours = self
             .agent_behaviour
@@ -223,7 +204,6 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             name: self.name,
             assigned_behaviours: build_assigned_behaviours(&self.cli, resolved_agent_count)?,
             duration_s: resolved_duration,
-            min_required_agents,
             connection_string: self.cli.connection_string,
             no_progress: self.cli.no_progress,
             reporter: self.cli.reporter,
@@ -275,7 +255,6 @@ mod tests {
             &crate::cli::WindTunnelScenarioCli {
                 connection_string: "".to_string(),
                 agents: None,
-                min_required_agents: None,
                 behaviour: vec![],
                 duration: None,
                 soak: false,
@@ -297,7 +276,6 @@ mod tests {
             &crate::cli::WindTunnelScenarioCli {
                 connection_string: "".to_string(),
                 agents: None,
-                min_required_agents: None,
                 behaviour: vec![], // Not specified
                 duration: None,
                 soak: false,
@@ -319,7 +297,6 @@ mod tests {
             &crate::cli::WindTunnelScenarioCli {
                 connection_string: "".to_string(),
                 agents: None,
-                min_required_agents: None,
                 behaviour: vec![("login".to_string(), 3)], // 3 of 5
                 duration: None,
                 soak: false,
@@ -343,7 +320,6 @@ mod tests {
             &crate::cli::WindTunnelScenarioCli {
                 connection_string: "".to_string(),
                 agents: None,
-                min_required_agents: None,
                 behaviour: vec![("login".to_string(), 30)], // 30 of 5
                 duration: None,
                 soak: false,

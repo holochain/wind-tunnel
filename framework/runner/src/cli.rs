@@ -11,12 +11,6 @@ pub struct WindTunnelScenarioCli {
     #[clap(long)]
     pub agents: Option<usize>,
 
-    /// The minimum number of agents required for the scenario to run
-    ///
-    /// If the number of running agents drops below this value the scenario will fail.
-    #[clap(long)]
-    pub min_required_agents: Option<usize>,
-
     /// Assign a behaviour to a number of agents. Specify the behaviour and number of agents to assign
     /// it to in the format `behaviour:count`. For example `--behaviour=login:5`.
     ///
