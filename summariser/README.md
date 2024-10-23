@@ -24,7 +24,7 @@ RUST_LOG=debug cargo run --features test_data summariser
 
 This will add:
 - The run summary to `summariser/test_data/1_run_summaries/<scenario-name>-<scenario run fingerprint>.json`
-- The raw that fetched from influx, as JSON to `summariser/test_data/2_query_results/<query fingerprint>.json`
+- The raw data fetched from influx, as JSON to `summariser/test_data/2_query_results/<query fingerprint>.json`
 - The generated report to `summariser/test_data/3_summary_outputs/<scenario-name>-<scenario run fingerprint>.json`
 
 All of these should be added to Git, then you can write a test that loads the test data. This allows you to iterate on 
