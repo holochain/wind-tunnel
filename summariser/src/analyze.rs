@@ -73,7 +73,6 @@ pub(crate) fn standard_timing_stats(
             col("time"),
             [],
             DynamicGroupOptions {
-                // every: Duration::parse(window_duration),
                 every: Duration::parse(window_duration),
                 period: Duration::parse(window_duration),
                 offset: Duration::parse("0"),
