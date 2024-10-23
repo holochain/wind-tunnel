@@ -138,7 +138,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
         &self.agent_name
     }
 
-    /// The user-supplied value from [ScenarioDefinitionBuilder::use_named_agent_behaviour].
+    /// The user-supplied value from [crate::prelude::ScenarioDefinitionBuilder::use_named_agent_behaviour].
     ///
     /// From within the behaviour, you know which behaviour you are assigned to. This is useful for
     /// the setup and teardown hooks where you may need to adjust the actions your agent takes
