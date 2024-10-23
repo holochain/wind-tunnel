@@ -9,7 +9,7 @@ macro_rules! run_snapshot_test {
         env_logger::try_init().ok();
 
         let run_summary = find_test_data_file($summary_fingerprint, "1_run_summaries")
-            .context("Run summary not found")?;
+            .with_context(|| format!("Run summary not found: {}", $summary_fingerprint))?;
         let run_summary = load_run_summary(
             std::fs::File::open(run_summary.path()).context("Failed to load run summary")?,
         )?;
@@ -51,7 +51,7 @@ async fn app_install_large() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn dht_sync_lag() -> anyhow::Result<()> {
-    run_snapshot_test!("da362693533b9148da5298929897427e7899c2120445a87a3511871dd5e00158");
+    run_snapshot_test!("28ccc7d6a728cf63055ea210996cd57b6ebeb5793bb3d9186d6a9b9c06a98765");
     Ok(())
 }
 
