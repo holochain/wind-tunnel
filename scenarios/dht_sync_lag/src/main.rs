@@ -82,7 +82,7 @@ fn agent_behaviour_record_lag(
             .unwrap()
             .as_micros()
             - timed_entry.created_at.as_micros() as u128) as f64
-            / 10e6;
+            / 1e6;
         let metric = metric
             .with_tag("agent", agent_pub_key.clone())
             .with_field("value", lag_s);

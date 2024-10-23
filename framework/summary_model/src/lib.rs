@@ -51,7 +51,7 @@ pub struct RunSummary {
     /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
     /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
     /// the roles that were assigned across the network.
-    pub behaviours: HashMap<String, usize>,
+    pub assigned_behaviours: HashMap<String, usize>,
     /// Environment variables set for the run
     ///
     /// This won't capture all environment variables. Just the ones that the runner is aware of or
@@ -71,7 +71,7 @@ impl RunSummary {
         started_at: i64,
         run_duration: Option<u64>,
         peer_count: usize,
-        behaviours: HashMap<String, usize>,
+        assigned_behaviours: HashMap<String, usize>,
         wind_tunnel_version: String,
     ) -> Self {
         Self {
@@ -81,7 +81,7 @@ impl RunSummary {
             run_duration,
             peer_count,
             peer_end_count: 0,
-            behaviours,
+            assigned_behaviours,
             env: HashMap::with_capacity(0),
             wind_tunnel_version,
         }
@@ -97,21 +97,31 @@ impl RunSummary {
         self.env.insert(key, value);
     }
 
+    /// Computer a fingerprint for this run summary
+    ///
+    /// The fingerprint is intended to uniquely identify the configuration used to run the scenario.
+    /// It uses the
+    ///     - Run duration
+    ///     - Assigned behaviours
+    ///     - Selected environment variables
+    ///     - Wind Tunnel version
+    ///
+    /// The fingerprint is computed using SHA3-256.
     pub fn fingerprint(&self) -> String {
         let mut hasher = sha3::Sha3_256::new();
         if let Some(run_duration) = self.run_duration {
             Digest::update(&mut hasher, run_duration.to_le_bytes());
         }
-        self.behaviours
+        self.assigned_behaviours
             .iter()
-            .sorted_by_key(|(k, _)| (*k).clone())
+            .sorted_by_key(|(k, _)| k.to_owned())
             .for_each(|(k, v)| {
                 Digest::update(&mut hasher, k.as_bytes());
                 Digest::update(&mut hasher, v.to_le_bytes());
             });
         self.env
             .iter()
-            .sorted_by_key(|(k, _)| (*k).clone())
+            .sorted_by_key(|(k, _)| k.to_owned())
             .for_each(|(k, v)| {
                 Digest::update(&mut hasher, k.as_bytes());
                 Digest::update(&mut hasher, v.as_bytes());
