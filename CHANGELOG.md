@@ -25,10 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   broadcast channel that it uses internally. Shutdown failures used to panic but it a `ShutdownHandle` happens to not
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
 - Metrics now automatically include `run_id` and `scenario_name` tags.
+- Update `trycp_client` and `trycp_api` dependencies to `v0.17.0-dev.6`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
 
 ### Deprecated
 ### Removed
 ### Fixed
+- Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
+
 ### Security
 
 ## [0.2.0-alpha.2] - 2024-05-25
