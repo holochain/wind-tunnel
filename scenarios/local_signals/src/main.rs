@@ -28,7 +28,7 @@ fn agent_behaviour(
         async move {
             app_client
                 .on_signal(move |_signal| {
-                    received_count.fetch_add(1, std::sync::atomic::Ordering::Acquire);
+                    received_count.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
                 })
                 .await?;
 
@@ -70,8 +70,8 @@ fn agent_behaviour(
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     let received_count = received_count.load(std::sync::atomic::Ordering::Acquire);
-    let metric =
-        ReportMetric::new("signal_success_pct").with_field("value", received_count as f32 / 100.0);
+    let metric = ReportMetric::new("signal_success_ratio")
+        .with_field("value", received_count as f32 / 10_000.0);
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
@@ -82,7 +82,7 @@ fn main() -> WindTunnelResult<()> {
         ScenarioDefinitionBuilder::<HolochainRunnerContext, HolochainAgentContext>::new_with_init(
             env!("CARGO_PKG_NAME"),
         )
-        .with_default_duration_s(60)
+        .with_default_duration_s(180)
         .use_setup(setup)
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(agent_behaviour)

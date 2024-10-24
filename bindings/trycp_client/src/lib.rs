@@ -997,7 +997,7 @@ fn check_empty_response(response: MessageResponse) -> io::Result<()> {
 fn pre_call_zome<I>(
     operation_record: &mut OperationRecord,
     _port: &u16,
-    _cell_id: &CellId,
+    cell_id: &CellId,
     zome_name: &(impl Into<ZomeName> + Clone),
     fn_name: &(impl Into<FunctionName> + Clone),
     _payload: &I,
@@ -1009,6 +1009,7 @@ fn pre_call_zome<I>(
     let fn_name: FunctionName = fn_name.clone().into();
     operation_record.add_attr("zome_name", zome_name.0.to_string());
     operation_record.add_attr("fn_name", fn_name.0.to_string());
+    operation_record.add_attr("agent", cell_id.agent_pubkey().to_string());
 }
 
 pub(crate) async fn sign_zome_call(

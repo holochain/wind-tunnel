@@ -32,14 +32,13 @@ fn agent_setup(
     Ok(())
 }
 
-fn agent_behaviour_local(
+fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    install_app(ctx, scenario_happ_path!("crud"), &"crud".into())?;
-
-    let _: ActionHash = call_zome(ctx, "crud", "create_sample_entry", "a value")?;
-
+    // Will log a warning on the first run, but makes it easier to run the scenario multiple times
     uninstall_app(ctx, None)?;
+    install_app(ctx, scenario_happ_path!("crud"), &"crud".into())?;
+    let _: ActionHash = call_zome(ctx, "crud", "create_sample_entry", "a value")?;
 
     Ok(())
 }
@@ -49,10 +48,10 @@ fn main() -> WindTunnelResult<()> {
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
-    .with_default_duration_s(60)
+    .with_default_duration_s(180)
     .use_setup(setup)
     .use_agent_setup(agent_setup)
-    .use_named_agent_behaviour("local", agent_behaviour_local)
+    .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(|ctx| {
         uninstall_app(ctx, None).ok();
         Ok(())

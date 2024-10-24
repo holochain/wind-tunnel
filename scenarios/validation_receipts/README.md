@@ -4,6 +4,10 @@
 
 Creates an entry, wait for required validation receipts, then repeat.
 
+Records `wt.custom.validation_receipts_complete_time` which is the time taken from after the zome call that created the 
+data returns, to when we have enough validation receipts. This is measured to the nearest 20ms so that we don't keep the
+agent too busy checking for receipts.
+
 **warning** This is a TryCP-based scenario and needs to be run differently to other scenarios.
 
 ### Waiting for peer discovery
@@ -21,7 +25,7 @@ You need around at least 10 peers, or the nodes will never get the required numb
 
 ### NO_VALIDATION_COMPLETE
 
-By default this scenario will wait for a complete set of validation receipts before moving on to commit the next record. If you want to publish new records on every round, building up an ever-growing list of action hashes to check for validation complete, run with the `NO_VALIDATION_COMPLETE=1` environment variable.
+By default, this scenario will wait for a complete set of validation receipts before moving on to commit the next record. If you want to publish new records on every round, building up an ever-growing list of action hashes to check for validation complete, run with the `NO_VALIDATION_COMPLETE=1` environment variable.
 
 Example:
 
