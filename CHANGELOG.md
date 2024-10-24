@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check in the `happ_builder` whether `hc` and `cargo` are available. This is used by the scenario build script to skip
   building happs if build tools are not available. This allows the project to be loaded in an environment where the
   tools aren't available.
+- `run_with_required_agents` function for TryCP scenarios that fails if the number of agents that completed the scenario
+  is less than the passed `min_required_agents`. Can be overridden with the `MIN_REQUIRED_AGENTS` environment variable.
 
 ### Changed
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
