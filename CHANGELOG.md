@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A new tool for summarising scenario outcomes. This is called the `summariser` which is possibly a working title! The 
   tool is specific to the scenarios in this project but does have some re-usable pieces. It remains to be decided whether
   we will separate those parts out and publish them as a crate. For now, this is private to the project.
+- `run_with_required_agents` function for TryCP scenarios that fails if the number of agents that completed the scenario
+  is less than the passed `min_required_agents`. Can be overridden with the `MIN_REQUIRED_AGENTS` environment variable.
 
 ### Changed
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
