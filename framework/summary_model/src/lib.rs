@@ -107,7 +107,7 @@ impl RunSummary {
     ///     - Selected environment variables
     ///     - Wind Tunnel version
     ///
-    /// The fingerprint is computed using SHA3-256.
+    /// The fingerprint is computed using [sha3::Sha3_256].
     pub fn fingerprint(&self) -> String {
         let mut hasher = sha3::Sha3_256::new();
         Digest::update(&mut hasher, self.scenario_name.as_bytes());
