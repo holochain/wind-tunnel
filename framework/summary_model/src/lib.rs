@@ -97,7 +97,7 @@ impl RunSummary {
         self.env.insert(key, value);
     }
 
-    /// Computer a fingerprint for this run summary
+    /// Compute a fingerprint for this run summary
     ///
     /// The fingerprint is intended to uniquely identify the configuration used to run the scenario.
     /// It uses the
