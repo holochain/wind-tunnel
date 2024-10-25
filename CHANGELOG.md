@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check in the `happ_builder` whether `hc` and `cargo` are available. This is used by the scenario build script to skip
   building happs if build tools are not available. This allows the project to be loaded in an environment where the
   tools aren't available.
+- A new tool for summarising scenario outcomes. This is called the `summariser` which is possibly a working title! The 
+  tool is specific to the scenarios in this project but does have some re-usable pieces. It remains to be decided whether
+  we will separate those parts out and publish them as a crate. For now, this is private to the project.
 
 ### Changed
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
@@ -26,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
 - Metrics now automatically include `run_id` and `scenario_name` tags.
 - Update `trycp_client` and `trycp_api` dependencies to `v0.17.0-dev.6`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
+- When making zome calls with the TryCP client bindings, the `agent` is now reported on the metrics, taken from the target
+  cell_id for the call. For the wrapped `holochain_client`, this is only done when the call target is `CellId`. Or in 
+  other words, the `agent` is not reported when calling a clone cell.
+- All metrics are now reported in seconds, as an `f64`. There were some types still using milliseconds which made reporting
+  across scenarios more complex.
 
 ### Deprecated
 ### Removed
