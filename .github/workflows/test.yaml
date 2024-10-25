@@ -124,7 +124,7 @@ jobs:
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario for 5 seconds
-          RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --agents 1 --behaviour local:1 --duration 5 --no-progress
+          RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
