@@ -23,7 +23,7 @@ pub(crate) fn start_monitor(mut shutdown_listener: DelegatedShutdownListener) {
                     break;
                 }
 
-                sys.refresh_processes_specifics(ProcessesToUpdate::Some(&[this_process_pid]), ProcessRefreshKind::new().with_cpu());
+                sys.refresh_processes_specifics(ProcessesToUpdate::Some(&[this_process_pid]), true, ProcessRefreshKind::new().with_cpu());
 
                 let process = sys.process(this_process_pid).expect("Failed to get process info");
 
