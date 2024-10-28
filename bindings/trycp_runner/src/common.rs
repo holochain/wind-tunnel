@@ -6,6 +6,7 @@ use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
 use holochain_types::app::{AppBundle, AppBundleSource, InstallAppPayload};
 use holochain_types::prelude::RoleName;
 use holochain_types::websocket::AllowedOrigins;
+use log::warn;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
@@ -480,7 +481,11 @@ pub fn run_with_required_agents<RV: UserValuesConstraint, V: UserValuesConstrain
 
     let min_required_agents = std::env::var("MIN_REQUIRED_AGENTS")
         .ok()
-        .and_then(|v| v.parse().ok())
+        .and_then(|v| {
+            v.parse()
+                .inspect_err(|_| warn!("Invalid MIN_REQUIRED_AGENTS value. Using default"))
+                .ok()
+        })
         .unwrap_or(min_required_agents);
 
     if agents_at_completion < min_required_agents {
