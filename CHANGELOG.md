@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   other words, the `agent` is not reported when calling a clone cell.
 - All metrics are now reported in seconds, as an `f64`. There were some types still using milliseconds which made reporting
   across scenarios more complex.
+- Increased TryCP test scenario duration to 30s in CI [Test Workflow](.github/workflows/test.yaml).
 
 ### Deprecated
 ### Removed
