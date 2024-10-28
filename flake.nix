@@ -81,10 +81,10 @@
             pkgs.taplo
             pkgs.yamlfmt
             pkgs.perl
+            config.rustHelper.rust
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
-            inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
@@ -107,6 +107,7 @@
             pkgs.statix
             pkgs.taplo
             pkgs.yamlfmt
+            config.rustHelper.rust
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
