@@ -37,7 +37,7 @@ fn agent_behaviour(
     })?;
 
     let start = Instant::now();
-    call_zome(ctx, "signal", "emit_10k_signals", ())?;
+    call_zome::<_, (), _>(ctx, "signal", "emit_10k_signals", ())?;
     let send_elapsed_s = start.elapsed().as_secs_f64();
 
     ctx.runner_context().executor().execute_in_place({
