@@ -7,6 +7,10 @@ env:
   INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
   WT_METRICS_DIR: "${{ github.workspace }}/telegraf/metrics"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   local-test:
     runs-on: [self-hosted, wind-tunnel]
@@ -14,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         # To run a local test with default configuration, add the scenario name to this array.
-        scenario: [ zome_call_single_value, single_write_many_read, write_read, write_query, local_signals, write_validated ]
+        scenario: [zome_call_single_value, single_write_many_read, write_read, write_query, local_signals, write_validated]
         # To run a local test with additional configuration, add the scenario name and `extra-args` as an `include` item.
         include:
           - scenario: dht_sync_lag
@@ -87,7 +91,7 @@ jobs:
       fail-fast: false
       matrix:
         # To run a test with TryCP and default configuration, add the scenario name to this array.
-        scenario: [ trycp_write_validated, remote_call_rate, validation_receipts ]
+        scenario: [trycp_write_validated, remote_call_rate, validation_receipts, remote_signals]
         # To run a test with TryCP and additional configuration, add the scenario name and `extra-args` as an `include` item.
         include:
           - scenario: two_party_countersigning
@@ -105,7 +109,7 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets-ci.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
+          RUST_LOG=info TRYCP_RUST_LOG="info" MIN_PEERS=2 nix run .#${{ matrix.scenario }} -- --targets targets.yaml --instances-per-target 2 --duration 120 --no-progress --reporter influx-file ${{ matrix.extra-args }} > >(tee logs/scenario-stdout.log) 2> >(tee logs/scenario-stderr.log >&2)
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"

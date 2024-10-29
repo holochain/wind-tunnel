@@ -1,17 +1,19 @@
 use crate::context::TryCPAgentContext;
 use crate::runner_context::TryCPRunnerContext;
-use anyhow::Context;
+use anyhow::{bail, Context};
 use holochain_client::AuthorizeSigningCredentialsPayload;
 use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
 use holochain_types::app::{AppBundle, AppBundleSource, InstallAppPayload};
 use holochain_types::prelude::RoleName;
 use holochain_types::websocket::AllowedOrigins;
+use log::{debug, warn};
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 use trycp_client_instrumented::prelude::TryCPClient;
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, UserValuesConstraint, WindTunnelResult,
+    run, AgentContext, HookResult, ScenarioDefinitionBuilder, UserValuesConstraint,
+    WindTunnelResult,
 };
 
 /// Connects to a TryCP server using the current agent index and the list of targets.
@@ -315,7 +317,7 @@ where
         let agent_name = agent_name.clone();
         async move {
             let logs = client
-                .download_logs(agent_name, Some(Duration::from_secs(180)))
+                .download_logs(agent_name, Some(Duration::from_secs(10 * 60)))
                 .await
                 .context("Failed to download logs")?;
             Ok(logs)
@@ -330,7 +332,6 @@ where
     std::fs::create_dir_all(&path)
         .with_context(|| format!("Failed to create log directory at {path:?}"))?;
 
-    std::fs::write(path.join("lair-stderr.log"), logs.lair_stderr)?;
     std::fs::write(path.join("conductor-stdout.log"), logs.conductor_stdout)?;
     std::fs::write(path.join("conductor-stderr.log"), logs.conductor_stderr)?;
 
@@ -466,4 +467,33 @@ where
             .decode()
             .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
+}
+
+/// Call [`run`] for a scenario and check that it completed with the minimum required agents.
+///
+/// The value of `min_required_agents` can be overridden with the environment variable
+/// `MIN_REQUIRED_AGENTS` when running a scenario.
+pub fn run_with_required_agents<RV: UserValuesConstraint, V: UserValuesConstraint>(
+    definition: ScenarioDefinitionBuilder<RV, V>,
+    min_required_agents: usize,
+) -> anyhow::Result<()> {
+    let agents_at_completion = run(definition)?;
+
+    let min_required_agents = std::env::var("MIN_REQUIRED_AGENTS")
+        .inspect_err(|_| debug!("MIN_REQUIRED_AGENTS not set, using default value"))
+        .ok()
+        .and_then(|v| {
+            v.parse()
+                .inspect_err(|_| warn!("Invalid MIN_REQUIRED_AGENTS value. Using default"))
+                .ok()
+        })
+        .unwrap_or(min_required_agents);
+
+    if agents_at_completion < min_required_agents {
+        bail!("Not enough agents ran scenario to completion: expected at least {min_required_agents}, actual {agents_at_completion}");
+    }
+
+    println!("Finished with {} agents", agents_at_completion);
+
+    Ok(())
 }

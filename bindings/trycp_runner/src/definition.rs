@@ -21,6 +21,10 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> TryCPScenarioDefinitionB
     /// Once the TryCP customisations have been made, use this function to switch back to
     /// configuring default properties for the scenario.
     pub fn into_std(self) -> ScenarioDefinitionBuilder<RV, V> {
+        // These environment variables are common to TryCP tests. Always capture them and just let
+        // scenarios add any that are custom.
         self.inner
+            .add_capture_env("CONDUCTOR_CONFIG")
+            .add_capture_env("MIN_PEERS")
     }
 }

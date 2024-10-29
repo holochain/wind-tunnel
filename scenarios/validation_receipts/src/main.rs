@@ -15,7 +15,7 @@ pub struct ScenarioValues {
     /// - if the sub map is empty, we haven't received any receipts yet,
     ///   so we're still pending
     /// - if any of the receipts_complete are false, we are still pending
-    /// - if all of the receipts_complete are true, we are complete
+    /// - if all the receipts_complete are true, we are complete
     ///   so the action should be removed from the map
     pending_actions: HashMap<ActionHash, HashMap<OpType, ReceiptsComplete>>,
 }
@@ -81,6 +81,7 @@ fn agent_behaviour(
     ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
+    let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
 
     let action_hash: ActionHash = call_zome(
         ctx,
@@ -102,7 +103,7 @@ fn agent_behaviour(
         ctx.runner_context()
             .executor()
             .execute_in_place(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                tokio::time::sleep(Duration::from_millis(20)).await;
                 Ok(())
             })?;
 
@@ -137,6 +138,7 @@ fn agent_behaviour(
                     reporter.add_custom(
                         ReportMetric::new("validation_receipts_complete_time")
                             .with_tag("op_type", set.op_type.clone())
+                            .with_tag("agent", agent.clone())
                             .with_field("value", start.elapsed().as_secs_f64()),
                     );
                     *ctx.get_mut()
@@ -186,13 +188,13 @@ fn main() -> WindTunnelResult<()> {
         TryCPAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))?
     .into_std()
+    .with_default_duration_s(300)
+    .add_capture_env("NO_VALIDATION_COMPLETE")
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);
 
-    let agents_at_completion = run(builder)?;
-
-    println!("Finished with {} agents", agents_at_completion);
+    run_with_required_agents(builder, 1)?;
 
     Ok(())
 }

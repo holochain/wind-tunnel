@@ -1,19 +1,12 @@
 use holochain_types::prelude::ActionHash;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use trycp_wind_tunnel_runner::embed_conductor_config;
 use trycp_wind_tunnel_runner::prelude::*;
 use validated_integrity::UpdateSampleEntryInput;
 
 embed_conductor_config!();
 
-#[derive(Debug, Default)]
-pub struct ScenarioValues {}
-
-impl UserValuesConstraint for ScenarioValues {}
-
-fn agent_setup(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
-) -> HookResult {
+fn agent_setup(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
     connect_trycp_client(ctx)?;
     reset_trycp_remote(ctx)?;
 
@@ -42,13 +35,7 @@ fn agent_setup(
     Ok(())
 }
 
-fn agent_behaviour(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
-) -> HookResult {
-    let reporter = ctx.runner_context().reporter();
-
-    let start = Instant::now();
-
+fn agent_behaviour(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
     let action_hash: ActionHash = call_zome(
         ctx,
         "validated",
@@ -56,13 +43,6 @@ fn agent_behaviour(
         "this is a test entry value",
         Some(Duration::from_secs(80)),
     )?;
-
-    reporter.add_custom(
-        ReportMetric::new("create_sample_entry_time")
-            .with_field("value", start.elapsed().as_secs_f64()),
-    );
-
-    let start = Instant::now();
 
     let _: ActionHash = call_zome(
         ctx,
@@ -75,17 +55,10 @@ fn agent_behaviour(
         Some(Duration::from_secs(80)),
     )?;
 
-    reporter.add_custom(
-        ReportMetric::new("update_sample_entry_time")
-            .with_field("value", start.elapsed().as_secs_f64()),
-    );
-
     Ok(())
 }
 
-fn agent_teardown(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
-) -> HookResult {
+fn agent_teardown(ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext>) -> HookResult {
     if let Err(e) = dump_logs(ctx) {
         log::warn!("Failed to dump logs: {:?}", e);
     }
@@ -103,18 +76,17 @@ fn agent_teardown(
 }
 
 fn main() -> WindTunnelResult<()> {
-    let builder = TryCPScenarioDefinitionBuilder::<
-        TryCPRunnerContext,
-        TryCPAgentContext<ScenarioValues>,
-    >::new_with_init(env!("CARGO_PKG_NAME"))?
-    .into_std()
-    .use_agent_setup(agent_setup)
-    .use_agent_behaviour(agent_behaviour)
-    .use_agent_teardown(agent_teardown);
+    let builder =
+        TryCPScenarioDefinitionBuilder::<TryCPRunnerContext, TryCPAgentContext>::new_with_init(
+            env!("CARGO_PKG_NAME"),
+        )?
+        .into_std()
+        .with_default_duration_s(180)
+        .use_agent_setup(agent_setup)
+        .use_agent_behaviour(agent_behaviour)
+        .use_agent_teardown(agent_teardown);
 
-    let agents_at_completion = run(builder)?;
-
-    println!("Finished with {} agents", agents_at_completion);
+    run_with_required_agents(builder, 1)?;
 
     Ok(())
 }

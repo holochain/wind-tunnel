@@ -1,64 +1,72 @@
 [workspace]
 resolver = "2"
 members = [
-    "framework/core",
-    "framework/instruments",
-    "framework/instruments_derive",
-    "framework/runner",
+  "framework/core",
+  "framework/instruments",
+  "framework/instruments_derive",
+  "framework/runner",
+  "framework/summary_model",
 
-    "bindings/client",
-    "bindings/runner",
-    "bindings/trycp_client",
-    "bindings/trycp_runner",
+  "bindings/client",
+  "bindings/runner",
+  "bindings/trycp_client",
+  "bindings/trycp_runner",
 
-    "happ_builder",
+  "summariser",
 
-    "scenarios/app_install",
-    "scenarios/dht_sync_lag",
-    "scenarios/single_write_many_read",
-    "scenarios/zome_call_single_value",
-    "scenarios/first_call",
-    "scenarios/write_read",
-    "scenarios/write_query",
-    "scenarios/local_signals",
-    "scenarios/remote_call_rate",
-    "scenarios/two_party_countersigning",
-    "scenarios/write_validated",
-    "scenarios/trycp_write_validated",
-    "scenarios/validation_receipts",
+  "happ_builder",
 
-    "zomes/return_single_value/coordinator",
-    "zomes/crud/coordinator",
-    "zomes/crud/integrity",
-    "zomes/timed/coordinator",
-    "zomes/timed/integrity",
-    "zomes/callback/coordinator",
-    "zomes/callback/integrity",
-    "zomes/large/coordinator",
-    "zomes/signal/coordinator",
-    "zomes/remote_call/coordinator",
-    "zomes/remote_call/integrity",
-    "zomes/countersigning/coordinator",
-    "zomes/countersigning/integrity",
-    "zomes/validated/coordinator",
-    "zomes/validated/integrity"
+  "scenarios/app_install",
+  "scenarios/dht_sync_lag",
+  "scenarios/single_write_many_read",
+  "scenarios/zome_call_single_value",
+  "scenarios/first_call",
+  "scenarios/write_read",
+  "scenarios/write_query",
+  "scenarios/local_signals",
+  "scenarios/remote_call_rate",
+  "scenarios/remote_signals",
+  "scenarios/two_party_countersigning",
+  "scenarios/write_validated",
+  "scenarios/trycp_write_validated",
+  "scenarios/validation_receipts",
+
+  "zomes/return_single_value/coordinator",
+  "zomes/crud/coordinator",
+  "zomes/crud/integrity",
+  "zomes/timed/coordinator",
+  "zomes/timed/integrity",
+  "zomes/callback/coordinator",
+  "zomes/callback/integrity",
+  "zomes/large/coordinator",
+  "zomes/signal/coordinator",
+  "zomes/remote_call/coordinator",
+  "zomes/remote_call/integrity",
+  "zomes/remote_signal/coordinator",
+  "zomes/remote_signal/integrity",
+  "zomes/countersigning/coordinator",
+  "zomes/countersigning/integrity",
+  "zomes/validated/coordinator",
+  "zomes/validated/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
 # The scenarios should only be built when they are being run.
 # The zomes should only be built into wasm as part of running scenarios.
 default-members = [
-    "framework/core",
-    "framework/instruments",
-    "framework/instruments_derive",
-    "framework/runner",
+  "framework/core",
+  "framework/instruments",
+  "framework/instruments_derive",
+  "framework/runner",
 
-    "bindings/client",
-    "bindings/runner",
-    "bindings/trycp_client",
-    "bindings/trycp_runner",
+  "bindings/client",
+  "bindings/runner",
+  "bindings/trycp_client",
+  "bindings/trycp_runner",
 
-    "happ_builder",
+  "summariser",
+
+  "happ_builder",
 ]
 
 [workspace.dependencies]
@@ -73,13 +81,16 @@ opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
 toml = "0.8.10"
 serde = "1"
 serde_yaml = "0.9"
+serde_json = "1"
 walkdir = "2"
 sysinfo = "0.31"
 url = "2.5.0"
 tabled = "0.16.0"
 indicatif = "0.17.8"
 # TODO waiting for 0.7.3+ relase to use the new reqwest-client-native-tls-vendored feature
-influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = ["reqwest-client-native-tls-vendored"] }
+influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = [
+  "reqwest-client-native-tls-vendored",
+] }
 influxive-core = "0.0.2-alpha.1"
 nanoid = "0.4.0"
 which = "6.0.1"
@@ -87,21 +98,35 @@ tokio-tungstenite = "0.21"
 rmp-serde = "1"
 rand = "0.8"
 ed25519-dalek = "2.1"
+itertools = "0.13"
+chrono = "0.4"
+sha3 = "0.10"
+polars = { version = "0.43", features = [
+  "lazy",
+  "json",
+  "strings",
+  "dynamic_group_by",
+  "round_series",
+] }
+tempfile = "3.13"
+futures = "0.3"
+thiserror = "1"
+pretty_assertions = "1.4"
 
 # Deps for Holochain
-holochain_client = { version = "=0.6.0-dev.9" }
-trycp_client = { version = "0.17.0-dev.5" }
-trycp_api = { version = "0.17.0-dev.5" }
-holochain_zome_types = { version = "0.4.0-dev.17" }
-holo_hash = { version = "0.4.0-dev.12" }
-holochain_types = { version = "0.4.0-dev.24" }
-holochain_conductor_api = { version = "0.4.0-dev.25" }
+holochain_client = { version = "=0.6.0-dev.10" }
+trycp_client = { version = "0.17.0-dev.6" }
+trycp_api = { version = "0.17.0-dev.6" }
+holochain_zome_types = { version = "0.4.0-dev.18" }
+holo_hash = { version = "0.4.0-dev.13" }
+holochain_types = { version = "0.4.0-dev.26" }
+holochain_conductor_api = { version = "0.4.0-dev.27" }
 holochain_nonce = { version = "0.4.0-dev.7" }
-kitsune_p2p_types = { version = "0.4.0-dev.13" }
-holochain_websocket = { version = "0.4.0-dev.24"}
-hdk = { version = "0.4.0-dev.17" }
-hdi = "0.5.0-dev.15"
-mr_bundle = "0.4.0-dev.7"
+kitsune_p2p_types = { version = "0.4.0-dev.15" }
+holochain_websocket = { version = "0.4.0-dev.26" }
+hdk = { version = "0.4.0-dev.19" }
+hdi = "0.5.0-dev.17"
+mr_bundle = "0.4.0-dev.8"
 holochain_serialized_bytes = "0.0.55"
 
 # Framework
@@ -109,6 +134,7 @@ wind_tunnel_core = { path = "./framework/core", version = "0.3.0-alpha.1" }
 wind_tunnel_instruments = { path = "./framework/instruments", version = "0.3.0-alpha.1" }
 wind_tunnel_instruments_derive = { path = "./framework/instruments_derive", version = "0.3.0-alpha.1" }
 wind_tunnel_runner = { path = "./framework/runner", version = "0.3.0-alpha.1" }
+wind_tunnel_summary_model = { path = "./framework/summary_model", version = "0.3.0-alpha.1" }
 
 # Bindings
 holochain_client_instrumented = { path = "./bindings/client", version = "0.3.0-alpha.1" }
@@ -124,6 +150,7 @@ crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
 remote_call_integrity = { path = "./zomes/remote_call/integrity" }
+remote_signal_integrity = { path = "./zomes/remote_signal/integrity" }
 countersigning_integrity = { path = "./zomes/countersigning/integrity" }
 validated_integrity = { path = "./zomes/validated/integrity" }
 
