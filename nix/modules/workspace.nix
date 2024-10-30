@@ -7,7 +7,7 @@ let
     then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
     else pkgs.pkgsStatic.openssl;
 
-  nonCargoBuildFiles = path: _type: builtins.match ".*(/conductor-config(conductor-config.yaml|conductor-config-ci.yaml|with*chc.yaml)|*/summariser/test*data/.*.json)$" path != null;
+  nonCargoBuildFiles = path: builtins.match ".*(/conductor-config/(conductor-config.yaml|conductor-config-ci.yaml|with.*chc.yaml)|.*/summariser/test-data/.*\.json)$" path != null;_type: builtins.match ".*(/conductor-config(conductor-config.yaml|conductor-config-ci.yaml|with*chc.yaml)|*/summariser/test*data/.*.json)$" path != null;
   includeFilesFilter = path: type:
     (craneLib.filterCargoSources path type) || (nonCargoBuildFiles path type);
 
