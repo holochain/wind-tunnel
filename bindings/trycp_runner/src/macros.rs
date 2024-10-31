@@ -7,7 +7,7 @@ macro_rules! embed_conductor_config {
             static BASE_CONDUCTOR_CONFIG_CI: &str =
                 include_str!("../../../conductor-config/conductor-config-ci.yaml");
             static CHC_CONDUCTOR_CONFIG: &str =
-                include_str!("../../../conductor-config/with_chc.yaml");
+                include_str!("../../../conductor-config/with-chc.yaml");
 
             let mut config = if std::env::var("CONDUCTOR_CONFIG")
                 .map(|value| value == "CI")
