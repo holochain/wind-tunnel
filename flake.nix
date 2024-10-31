@@ -6,7 +6,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
-      url = "github:holochain/holonix?ref=main";
+      url = "github:holochain/holonix?ref=main-0.4";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
@@ -94,9 +94,9 @@
             pkgs.yamlfmt
             pkgs.perl
             customHolochain
+            config.rustHelper.rust
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
-            inputs'.holonix.packages.rust
             inputs'.tryorama.packages.trycp-server
             inputs'.chc-service.packages.hc-chc-service
             inputs'.amber.packages.default
@@ -120,6 +120,7 @@
             pkgs.statix
             pkgs.taplo
             pkgs.yamlfmt
+            config.rustHelper.rust
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
