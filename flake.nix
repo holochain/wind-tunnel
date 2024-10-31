@@ -65,6 +65,8 @@
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
+        cargoExtraArgs = "--features chc";
+        customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
       in
       {
         imports = [
@@ -91,7 +93,7 @@
             pkgs.taplo
             pkgs.yamlfmt
             pkgs.perl
-            inputs'.holonix.packages.holochain
+            customHolochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
             inputs'.holonix.packages.rust
