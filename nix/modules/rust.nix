@@ -12,7 +12,7 @@ let
 
   rustWithWasmTarget = rustPkgs.rust-bin.stable."${rustVersion}".minimal.override {
     targets = [ "wasm32-unknown-unknown" ];
-    extensions = [ "clippy" ];
+    extensions = [ "clippy" "rustfmt" ];
   };
 
   craneLib = (crane.mkLib rustPkgs).overrideToolchain rustWithWasmTarget;
