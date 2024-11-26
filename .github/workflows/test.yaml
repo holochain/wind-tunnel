@@ -108,6 +108,19 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - dht_sync_lag with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
       - name: Smoke test - app_install
         run: |
           # Start a sandbox conductor and run it in the background
@@ -138,12 +151,41 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - write_read with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # wait for the CHC service to be available
+          sleep 2
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
       - name: Smoke test - write_query
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario
+          RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
+      - name: Smoke test - write_query with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -168,6 +210,19 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - write_validated with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
+
       - name: Smoke test - trycp_write_validated
         run: |
           set -x
@@ -179,6 +234,26 @@ jobs:
 
           # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - trycp_write_validated with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
@@ -217,6 +292,24 @@ jobs:
           # Stop local network services
           pkill hc-run-local
 
+      - name: Smoke test - two_party_countersigning with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 10 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
       - name: Smoke test - validation_receipts
         run: |
           set -x
@@ -245,6 +338,26 @@ jobs:
 
           # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_signals -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
+
+          # Stop the TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
+          # Stop local network services
+          pkill hc-run-local
+
+      - name: Smoke test - validation_receipts with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start local network services
+          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
+          # Start a TryCP instance
+          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+
+          # Run the scenario for 10 seconds
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"

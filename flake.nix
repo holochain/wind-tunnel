@@ -25,6 +25,16 @@
       };
     };
 
+    chc-service = {
+      url = "github:holochain/hc-chc-service";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
+        holonix.follows = "holonix";
+      };
+    };
+
     crane = {
       url = "github:ipetkov/crane";
     };
@@ -55,6 +65,8 @@
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
+        cargoExtraArgs = "--features chc";
+        customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
       in
       {
         imports = [
@@ -81,11 +93,12 @@
             pkgs.taplo
             pkgs.yamlfmt
             pkgs.perl
+            customHolochain
             config.rustHelper.rust
-            inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
             inputs'.tryorama.packages.trycp-server
+            inputs'.chc-service.packages.hc-chc-service
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
@@ -111,6 +124,7 @@
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
+            inputs'.chc-service.packages.hc-chc-service
           ];
         };
 
