@@ -54,6 +54,7 @@
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
+        unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
       in
       {
@@ -68,6 +69,7 @@
           ./nix/modules/zomes.nix
         ];
 
+
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.influxdb2-cli
@@ -81,6 +83,7 @@
             pkgs.taplo
             pkgs.yamlfmt
             pkgs.perl
+            unfreePkgs.nomad
             config.rustHelper.rust
             inputs'.holonix.packages.holochain
             inputs'.holonix.packages.lair-keystore
