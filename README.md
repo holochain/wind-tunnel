@@ -435,6 +435,41 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 ```bash
 RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 60
 ```
+#### Running Wind Tunnel Scenarios with Nomad
+
+> [!Warning]
+> This is a work in progress and currently only works with the `app_install` scenario.
+
+##### Running Locally
+
+You can easily test the Wind Tunnel scenarios with [Nomad](https://www.nomadproject.io) by running them locally, this requires running a Nomad agent locally
+as both a client and a server.
+
+First, enter the Nix `devShell` with `nix develop` to make sure you have all the packages install.
+Alternatively, [install Nomad](https://developer.hashicorp.com/nomad/install) and Holochain locally so that both `nomad` and `hc` are in your `PATH`.
+
+Once Nomad is installed, run the agent in `dev` mode to spin up both a server and client, do this with:
+```shell
+nomad agent -dev
+```
+
+Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
+
+Next, in a new terminal window, build the `app_install` scenario with:
+```shell
+nix build .#app_install
+```
+
+Once the scenario is built you can run the Nomad job with:
+```shell
+nomad job run nomad/run-app_install-local.nomad.hcl
+```
+
+Then, navigate to <http://localhost:4646/ui/jobs/app_install_scenario@default> where you should see one allocation (the Nomad name for an instance of the job)
+this allocation should have two tasks: the `start-holochain` task and the `run_scenario` task. You can view the logs of these tasks to see the results.
+The allocation should be marked as "Completed" after a few seconds.
+
+Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
 
 #### Kitsune tests
 
