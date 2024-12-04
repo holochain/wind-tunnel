@@ -69,7 +69,7 @@
         ];
 
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          packages = [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
             # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
