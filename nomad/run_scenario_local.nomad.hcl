@@ -1,6 +1,11 @@
-job "app_install_scenario" {
+variable "scenario_name" {
+  type = string
+}
+
+job "run_scenario" {
   type = "batch"
-  group "app_install" {
+
+  group "scenario_runnner" {
     task "start_holochain" {
       lifecycle {
         hook = "prestart"
@@ -20,7 +25,7 @@ job "app_install_scenario" {
         RUST_LOG = "info"
       }
       config {
-        command = abspath("result/bin/app_install")
+        command = abspath("result/bin/${var.scenario_name}")
         args = [
           "--connection-string", "ws://localhost:8888",
           "--agents", "2",
