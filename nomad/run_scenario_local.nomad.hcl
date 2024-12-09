@@ -12,6 +12,11 @@ variable "agents" {
   default = null
 }
 
+variable "duration" {
+  type = number
+  default = null
+}
+
 job "run_scenario" {
   type = "batch"
 
@@ -40,9 +45,9 @@ job "run_scenario" {
         args = compact([
           "--connection-string=${var.connection-string}",
           var.agents != null ? "--agents=${var.agents}" : null,
+          var.duration != null ? "--duration=${var.duration}" : null,
           "--behaviour", "minimal:1",
           "--behaviour", "large:1",
-          "--duration", "5",
           "--no-progress"
         ])
       }
