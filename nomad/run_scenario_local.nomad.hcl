@@ -17,6 +17,11 @@ variable "duration" {
   default = null
 }
 
+variable "behaviours" {
+  type = map(string)
+  default = {}
+}
+
 job "run_scenario" {
   type = "batch"
 
@@ -42,13 +47,13 @@ job "run_scenario" {
       config {
         command = abspath("result/bin/${var.scenario-name}")
         // The `compact` function removes empty strings and `null` items from the list.
-        args = compact([
+        args = concat(compact([
           "--connection-string=${var.connection-string}",
           var.agents != null ? "--agents=${var.agents}" : null,
           var.duration != null ? "--duration=${var.duration}" : null,
-          "--behaviour", "minimal:1",
-          "--behaviour", "large:1",
           "--no-progress"
+        ]), [
+          for k, v in var.behaviours : "--behaviour=${k}:${v}"
         ])
       }
     }
