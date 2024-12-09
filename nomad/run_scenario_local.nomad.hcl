@@ -1,4 +1,4 @@
-variable "scenario_name" {
+variable "scenario-name" {
   type = string
 }
 
@@ -25,7 +25,7 @@ job "run_scenario" {
         RUST_LOG = "info"
       }
       config {
-        command = abspath("result/bin/${var.scenario_name}")
+        command = abspath("result/bin/${var.scenario-name}")
         args = [
           "--connection-string", "ws://localhost:8888",
           "--agents", "2",
