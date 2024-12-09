@@ -2,6 +2,11 @@ variable "scenario-name" {
   type = string
 }
 
+variable "connection-string" {
+  type = string
+  default = "ws://localhost:8888"
+}
+
 job "run_scenario" {
   type = "batch"
 
@@ -27,7 +32,7 @@ job "run_scenario" {
       config {
         command = abspath("result/bin/${var.scenario-name}")
         args = [
-          "--connection-string", "ws://localhost:8888",
+          "--connection-string=${var.connection-string}",
           "--agents", "2",
           "--behaviour", "minimal:1",
           "--behaviour", "large:1",
