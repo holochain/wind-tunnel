@@ -1,29 +1,35 @@
 variable "scenario-name" {
   type = string
+  description = "The name of the scenario to run"
 }
 
 variable "connection-string" {
   type = string
+  description = "The URL to be used to connect to the service being tested"
   default = "ws://localhost:8888"
 }
 
 variable "agents" {
   type = number
+  description = "The number of agents to create"
   default = null
 }
 
 variable "duration" {
   type = number
+  description = "The maximum duration of the scenario run"
   default = null
 }
 
 variable "reporter" {
   type = string
+  description = "The method used to report the logs"
   default = "influx-file"
 }
 
 variable "behaviours" {
   type = map(string)
+  description = "Custom behaviours defined and used by the scenarios"
   default = {}
 }
 
