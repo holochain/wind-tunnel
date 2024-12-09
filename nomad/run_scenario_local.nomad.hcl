@@ -7,6 +7,11 @@ variable "connection-string" {
   default = "ws://localhost:8888"
 }
 
+variable "agents" {
+  type = number
+  default = null
+}
+
 job "run_scenario" {
   type = "batch"
 
@@ -31,14 +36,15 @@ job "run_scenario" {
       }
       config {
         command = abspath("result/bin/${var.scenario-name}")
-        args = [
+        // The `compact` function removes empty strings and `null` items from the list.
+        args = compact([
           "--connection-string=${var.connection-string}",
-          "--agents", "2",
+          var.agents != null ? "--agents=${var.agents}" : null,
           "--behaviour", "minimal:1",
           "--behaviour", "large:1",
           "--duration", "5",
           "--no-progress"
-        ]
+        ])
       }
     }
   }
