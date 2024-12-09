@@ -438,7 +438,7 @@ RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run 
 #### Running Wind Tunnel Scenarios with Nomad
 
 > [!Warning]
-> This is a work in progress and currently only works with the `app_install` scenario.
+> This is a work in progress and currently only works running the scenarios locally.
 
 ##### Running Locally
 
@@ -455,19 +455,29 @@ nomad agent -dev
 
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 
-Next, in a new terminal window, build the `app_install` scenario with:
+Next, in a new terminal window, build the scenario you want to run with:
 ```shell
 nix build .#app_install
 ```
+where `app_install` is the name of the scenario.
 
 Once the scenario is built you can run the Nomad job with:
 ```shell
-nomad job run nomad/run-app_install-local.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars nomad/run_scenario_local.nomad.hcl
 ```
+where the `-var-file` path should point to the var file in `nomad/var_files` with the matching scenario name.
+
+You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (omitted) and reporter (override) use:
+
+```shell
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var duration=5 -var reporter=in-memory nomad/run_scenario_local.nomad.hcl
+```
+> [!Note]
+> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
 
 Then, navigate to <http://localhost:4646/ui/jobs/app_install_scenario@default> where you should see one allocation (the Nomad name for an instance of the job)
-this allocation should have two tasks: the `start-holochain` task and the `run_scenario` task. You can view the logs of these tasks to see the results.
-The allocation should be marked as "Completed" after a few seconds.
+this allocation should have two tasks: the `start_holochain` task and the `run_scenario` task. You can view the logs of these tasks to see the results.
+The allocation should be marked as "Completed" after the duration specified.
 
 Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
 
