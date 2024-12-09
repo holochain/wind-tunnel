@@ -17,6 +17,11 @@ variable "duration" {
   default = null
 }
 
+variable "reporter" {
+  type = string
+  default = "influx-file"
+}
+
 variable "behaviours" {
   type = map(string)
   default = {}
@@ -51,6 +56,7 @@ job "run_scenario" {
           "--connection-string=${var.connection-string}",
           var.agents != null ? "--agents=${var.agents}" : null,
           var.duration != null ? "--duration=${var.duration}" : null,
+          var.reporter != null ? "--reporter=${var.reporter}" : null,
           "--no-progress"
         ]), [
           for k, v in var.behaviours : "--behaviour=${k}:${v}"
