@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=24.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-24.11";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
@@ -16,7 +16,7 @@
     };
 
     tryorama = {
-      url = "github:holochain/tryorama?ref=v0.17.0-dev.6";
+      url = "github:holochain/tryorama?ref=v0.17.0";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         crane.follows = "crane";
@@ -55,6 +55,11 @@
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
+
+        # Enable unstable and non-default features that Wind Tunnel tests.
+        cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
+        # Override arguments passed in to Holochain build with above feature arguments.
+        customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
       in
       {
         imports = [
@@ -82,7 +87,7 @@
             pkgs.yamlfmt
             pkgs.perl
             config.rustHelper.rust
-            inputs'.holonix.packages.holochain
+            customHolochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
             inputs'.tryorama.packages.trycp-server
@@ -108,7 +113,7 @@
             pkgs.taplo
             pkgs.yamlfmt
             config.rustHelper.rust
-            inputs'.holonix.packages.holochain
+            customHolochain
             inputs'.holonix.packages.lair-keystore
             inputs'.tryorama.packages.trycp-server
           ];

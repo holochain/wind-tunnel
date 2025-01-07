@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   building the scenario if they do not match. [#122](https://github.com/holochain/wind-tunnel/pull/122)
 
 ### Changed
+- Updated to Holochain 0.4.0
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
   and app instrumented websockets.
 - `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 
