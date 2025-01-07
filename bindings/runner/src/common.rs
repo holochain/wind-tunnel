@@ -10,7 +10,6 @@ use holochain_types::prelude::{
     AppBundleSource, CellId, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
 };
 use holochain_types::websocket::AllowedOrigins;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
@@ -163,9 +162,8 @@ where
                     source: AppBundleSource::Path(app_path),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
-                    membrane_proofs: Default::default(),
+                    roles_settings: None,
                     network_seed: None,
-                    existing_cells: HashMap::new(),
                     ignore_genesis_failure: false,
                     allow_throwaway_random_agent_key: false,
                 })
