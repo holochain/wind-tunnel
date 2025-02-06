@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   we will separate those parts out and publish them as a crate. For now, this is private to the project.
 - `run_with_required_agents` function for TryCP scenarios that fails if the number of agents that completed the scenario
   is less than the passed `min_required_agents`. Can be overridden with the `MIN_REQUIRED_AGENTS` environment variable.
+- Check that the scenarios have a cargo package name that matches the directory name used by Nix packages. Panic when
+  building the scenario if they do not match. [#122](https://github.com/holochain/wind-tunnel/pull/122)
 
 ### Changed
+- Updated to Holochain 0.4.0
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
   and app instrumented websockets.
 - `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 

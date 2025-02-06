@@ -83,7 +83,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -93,7 +93,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -103,7 +103,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -126,7 +126,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -136,7 +136,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -146,7 +146,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -172,7 +172,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -195,7 +195,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -205,7 +205,7 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Run the scenario for 5 seconds
+          # Run the scenario
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
@@ -232,7 +232,7 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 30 seconds
+          # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
 
           # Stop the TryCP instance
@@ -269,8 +269,8 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 30 seconds
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
+          # Run the scenario
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 45 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
@@ -284,7 +284,7 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 30 seconds
+          # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 30 --no-progress
 
           # Stop the TryCP instance
@@ -319,8 +319,8 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 30 seconds
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
+          # Run the scenario
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 45 --no-progress
 
           # Stop the TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
@@ -336,7 +336,7 @@ jobs:
           # Start a TryCP instance
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
-          # Run the scenario for 30 seconds
+          # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_signals -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
 
           # Stop the TryCP instance
