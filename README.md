@@ -20,10 +20,10 @@ It is divided into the following crates:
 
 #### Holochain Bindings for Wind Tunnel
 
-The `bindings`, found in the `./bindings`, customise the `wind-tunnel` framework to Holochain. They are what you would be
+The `bindings`, found in `./bindings`, customise the `wind-tunnel` framework to Holochain. They are what you would be
 consuming when using `wind-tunnel` to test Holochain.
 
-The bindings contains the following crates:
+The bindings contain the following crates:
 - `holochain_client_instrumented`: A wrapper around the [`holochain_client`](https://crates.io/crates/holochain_client) that uses `instruments` and `instruments_derive`
   to instrument the client. It exports an API that is nearly identical to the `holochain_client` crate, except that when constructing client connections
   you need to provide a reporter which it can write results to.
@@ -333,7 +333,7 @@ For standard Wind Tunnel tests - start a sandbox for testing:
 hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
 ```
 
-It is recommended to stop and start this sandbox conductor between test runs because getting Holochain back to a clean
+It is recommended to stop and start this sandbox conductor between test runs, because getting Holochain back to a clean state
 through its API is not yet implemented.
 
 You can then start a second terminal and run one of the scenarios in the `scenarios` directory:

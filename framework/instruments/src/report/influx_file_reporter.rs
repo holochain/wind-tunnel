@@ -12,7 +12,6 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
@@ -28,7 +27,7 @@ pub struct InfluxFileReportCollector {
 
 impl InfluxFileReportCollector {
     pub fn new(
-        runtime: &Runtime,
+        runtime: &tokio::runtime::Handle,
         shutdown_listener: DelegatedShutdownListener,
         dir: PathBuf,
         run_id: String,
@@ -70,7 +69,7 @@ impl ReportCollector for InfluxFileReportCollector {
 }
 
 fn start_metrics_file_write_task(
-    runtime: &Runtime,
+    runtime: &tokio::runtime::Handle,
     mut shutdown_listener: DelegatedShutdownListener,
     dir: PathBuf,
     scenario_name: String,

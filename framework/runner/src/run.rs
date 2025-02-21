@@ -82,7 +82,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             }
         }
 
-        Arc::new(report_config.init_reporter(&runtime, report_shutdown_handle.new_listener())?)
+        Arc::new(
+            report_config.init_reporter(runtime.handle(), report_shutdown_handle.new_listener())?,
+        )
     };
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(

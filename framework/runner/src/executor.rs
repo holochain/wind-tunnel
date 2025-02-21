@@ -8,7 +8,7 @@ use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
 /// cancellation if they could be long-running.
 ///
 /// You should not need to construct this type yourself. It is constructed by the Wind Tunnel runner
-/// during as part of the [run](crate::run::run) function. You get a handle to it from the [RunnerContext](crate::context::RunnerContext).
+/// as part of the [run](crate::run::run) function. You get a handle to it from the [RunnerContext](crate::context::RunnerContext).
 #[derive(Debug)]
 pub struct Executor {
     runtime: tokio::runtime::Runtime,
