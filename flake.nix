@@ -15,6 +15,14 @@
       };
     };
 
+    kitsune2 = {
+      url = "github:holochain/kitsune2?ref=v0.0.1-alpha6";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        crane.follows = "crane";
+      };
+    };
+
     tryorama = {
       url = "github:holochain/tryorama?ref=v0.17.0";
       inputs = {
@@ -74,7 +82,7 @@
         ];
 
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          packages = [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
             # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
@@ -90,6 +98,7 @@
             customHolochain
             inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
+            inputs'.kitsune2.packages.bootstrap-srv
             inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
@@ -108,6 +117,9 @@
 
         devShells.ci = pkgs.mkShell {
           packages = [
+            pkgs.cmake
+            pkgs.perl
+            pkgs.rustPlatform.bindgenHook
             pkgs.shellcheck
             pkgs.statix
             pkgs.taplo
@@ -115,6 +127,7 @@
             config.rustHelper.rust
             customHolochain
             inputs'.holonix.packages.lair-keystore
+            inputs'.kitsune2.packages.bootstrap-srv
             inputs'.tryorama.packages.trycp-server
           ];
         };

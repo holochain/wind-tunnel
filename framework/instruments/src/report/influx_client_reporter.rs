@@ -7,7 +7,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use crate::report::influx_reporter_base::InfluxReporterBase;
-use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
@@ -25,7 +24,7 @@ pub struct InfluxClientReportCollector {
 
 impl InfluxClientReportCollector {
     pub fn new(
-        runtime: &Runtime,
+        runtime: &tokio::runtime::Handle,
         shutdown_listener: DelegatedShutdownListener,
         run_id: String,
         scenario_name: String,
@@ -73,7 +72,7 @@ impl ReportCollector for InfluxClientReportCollector {
 }
 
 fn start_metrics_write_task(
-    runtime: &Runtime,
+    runtime: &tokio::runtime::Handle,
     mut shutdown_listener: DelegatedShutdownListener,
     client: Client,
     flush_complete: Arc<AtomicBool>,

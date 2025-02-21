@@ -9,6 +9,8 @@ members = [
 
   "bindings/client",
   "bindings/runner",
+  "bindings/kitsune_client",
+  "bindings/kitsune_runner",
   "bindings/trycp_client",
   "bindings/trycp_runner",
 
@@ -30,6 +32,7 @@ members = [
   "scenarios/write_validated",
   "scenarios/trycp_write_validated",
   "scenarios/validation_receipts",
+  "scenarios/kitsune_continuous_flow",
 
   "zomes/return_single_value/coordinator",
   "zomes/crud/coordinator",
@@ -61,6 +64,8 @@ default-members = [
 
   "bindings/client",
   "bindings/runner",
+  "bindings/kitsune_client",
+  "bindings/kitsune_runner",
   "bindings/trycp_client",
   "bindings/trycp_runner",
 
@@ -71,6 +76,7 @@ default-members = [
 
 [workspace.dependencies]
 anyhow = "1.0.80"
+bytes = "1.10"
 clap = { version = "4.5.1", features = ["derive"] }
 tokio = { version = "1.36.0", features = ["full"] }
 parking_lot = "0.12.1"
@@ -131,6 +137,13 @@ hdk = { version = "0.4.0", features = [
 hdi = { version = "0.5.0", features = ["unstable-functions"] }
 holochain_serialized_bytes = "0.0.55"
 
+# Deps for Kitsune
+kitsune2 = "0.0.1-alpha6"
+kitsune2_api = "0.0.1-alpha6"
+kitsune2_core = "0.0.1-alpha6"
+kitsune2_gossip = "0.0.1-alpha6"
+kitsune2_transport_tx5 = { version = "0.0.1-alpha6", default-features = false }
+
 # Framework
 wind_tunnel_core = { path = "./framework/core", version = "0.4.0-alpha.1" }
 wind_tunnel_instruments = { path = "./framework/instruments", version = "0.4.0-alpha.1" }
@@ -141,13 +154,15 @@ wind_tunnel_summary_model = { path = "./framework/summary_model", version = "0.4
 # Bindings
 holochain_client_instrumented = { path = "./bindings/client", version = "0.4.0-alpha.1" }
 holochain_wind_tunnel_runner = { path = "./bindings/runner", version = "0.4.0-alpha.1" }
+kitsune_client_instrumented = { path = "./bindings/kitsune_client", version = "0.4.0-alpha.1" }
+kitsune_wind_tunnel_runner = { path = "./bindings/kitsune_runner", version = "0.4.0-alpha.1" }
 trycp_client_instrumented = { path = "./bindings/trycp_client", version = "0.4.0-alpha.1" }
 trycp_wind_tunnel_runner = { path = "./bindings/trycp_runner", version = "0.4.0-alpha.1" }
 
 # hApp Builder
 happ_builder = { path = "./happ_builder", version = "0.1.0" }
 
-# Zomes for coorindator dependencies
+# Zomes for coordinator dependencies
 crud_integrity = { path = "./zomes/crud/integrity" }
 timed_integrity = { path = "./zomes/timed/integrity" }
 callback_integrity = { path = "./zomes/callback/integrity" }
