@@ -26,10 +26,10 @@ jobs:
         if: runner.os == 'Linux'
         uses: AdityaGarg8/remove-unwanted-software@v2
         with:
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
 
       - name: Install nix
         uses: cachix/install-nix-action@v30
@@ -69,14 +69,18 @@ jobs:
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
-      - name: Build and unit tests
-        run: |
-          nix build .#workspace
-
       - name: Lint Rust
         run: |
           # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
           nix flake check --all-systems
+
+      - name: Run unit tests
+        run: |
+          nix develop .#ci -c bash -c "cargo test --workspace --all-targets"
+
+      - name: Build
+        run: |
+          nix build .#workspace
 
       - name: Smoke test - zome_call_single_value
         run: |
@@ -250,6 +254,19 @@ jobs:
           nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
           pkill hc-run-local
+
+      - name: Smoke test - kitsune continuous flow
+        run: |
+          set -x
+
+          # Start local bootstrap and signal server
+          nix develop .#ci -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
+
+          # Run the scenario
+          RUST_LOG=warn cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
+
+          # Stop servers
+          pkill kitsune2-bootst
 
       - name: Build scenario bundles
         if: runner.os == 'Linux'

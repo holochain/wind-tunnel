@@ -405,9 +405,7 @@ fn print_rerun_for_package(package_dir: &Path) {
     walkdir::WalkDir::new(package_dir.join("src"))
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.file_type().is_file() && e.path().extension().map_or(false, |ext| ext == "rs")
-        })
+        .filter(|e| e.file_type().is_file() && e.path().extension().is_some_and(|ext| ext == "rs"))
         .for_each(|e| println!("cargo:rerun-if-changed={}", e.path().display()));
 }
 

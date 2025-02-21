@@ -6,4 +6,4 @@ set -eux
 
 EXTRA_ARG=${1:-}
 
-yamlfmt "$EXTRA_ARG" .
+yamlfmt -gitignore_excludes "$EXTRA_ARG" .

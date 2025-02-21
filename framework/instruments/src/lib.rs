@@ -3,7 +3,6 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::runtime::Runtime;
 use wind_tunnel_core::prelude::DelegatedShutdownListener;
 
 mod report;
@@ -53,7 +52,7 @@ impl ReportConfig {
 
     pub fn init_reporter(
         self,
-        runtime: &Runtime,
+        runtime: &tokio::runtime::Handle,
         shutdown_listener: DelegatedShutdownListener,
     ) -> anyhow::Result<Reporter> {
         if self.enable_influx_client && self.enable_influx_file {
