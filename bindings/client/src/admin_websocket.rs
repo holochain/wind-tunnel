@@ -25,9 +25,9 @@ pub struct AdminWebsocketInstrumented {
 impl AdminWebsocketInstrumented {
     pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        AdminWebsocket::connect(addr)
+        Ok(AdminWebsocket::connect(addr)
             .await
-            .map(|inner| Self { inner, reporter })
+            .map(|inner| Self { inner, reporter })?)
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
@@ -132,7 +132,7 @@ impl AdminWebsocketInstrumented {
         &self,
         request: AuthorizeSigningCredentialsPayload,
     ) -> Result<SigningCredentials> {
-        self.inner.authorize_signing_credentials(request).await
+        Ok(self.inner.authorize_signing_credentials(request).await?)
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
