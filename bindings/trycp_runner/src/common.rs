@@ -3,7 +3,7 @@ use crate::runner_context::TryCPRunnerContext;
 use anyhow::{bail, Context};
 use holochain_client::AuthorizeSigningCredentialsPayload;
 use holochain_conductor_api::{CellInfo, IssueAppAuthenticationTokenPayload};
-use holochain_types::app::{AppBundle, AppBundleSource, InstallAppPayload};
+use holochain_types::app::{AppBundleSource, InstallAppPayload};
 use holochain_types::prelude::RoleName;
 use holochain_types::websocket::AllowedOrigins;
 use log::{debug, warn};
@@ -128,7 +128,7 @@ where
                 .install_app(
                     agent_name.clone(),
                     InstallAppPayload {
-                        source: AppBundleSource::Bundle(AppBundle::decode(&content)?),
+                        source: AppBundleSource::Bytes(content),
                         agent_key: Some(agent_key),
                         installed_app_id: Some(installed_app_id.clone()),
                         roles_settings: None,
