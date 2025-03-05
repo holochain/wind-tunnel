@@ -34,7 +34,7 @@ impl AppWebsocketInstrumented {
     where
         F: Fn(Signal) + 'static + Sync + Send,
     {
-        self.inner.on_signal(handler).await
+        Ok(self.inner.on_signal(handler).await)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
