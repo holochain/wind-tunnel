@@ -52,11 +52,18 @@ job "run_scenario" {
 
     task "run_scenario" {
       driver = "raw_exec"
+
+      artifact {
+          source = "https://github.com/holochain/wind-tunnel/releases/download/bins-for-nomad/${var.scenario-name}"
+      }
+
       env {
         RUST_LOG = "info"
+        HOME = "${NOMAD_TASK_DIR}"
       }
+
       config {
-        command = abspath("result/bin/${var.scenario-name}")
+        command = var.scenario-name
         // The `compact` function removes empty strings and `null` items from the list.
         args = concat(compact([
           "--connection-string=${var.connection-string}",
