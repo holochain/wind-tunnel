@@ -2,7 +2,7 @@ use anyhow::Context;
 use bytes::Bytes;
 use kitsune2::default_builder;
 use kitsune2_api::{
-    BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler, Id, K2Result,
+    BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler, K2Result,
     KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
 };
 use kitsune2_core::{
@@ -94,7 +94,7 @@ impl WtChatter {
         let kitsune = kitsune_builder.build().await?;
         kitsune.register_handler(Arc::new(WtKitsuneHandler)).await?;
         let space = kitsune
-            .space(SpaceId(Id(Bytes::copy_from_slice(space_id.as_bytes()))))
+            .space(SpaceId::from(Bytes::copy_from_slice(space_id.as_bytes())))
             .await?;
 
         log::info!("created chatter with id {}", agent.agent());
