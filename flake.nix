@@ -116,16 +116,10 @@
         };
 
         devShells.ci = pkgs.mkShell {
-          nativeBuildInputs = [
-            pkgs.openssl
-            pkgs.rustPlatform.bindgenHook
-            pkgs.zlib
-          ];
           packages = [
             pkgs.cmake
-            pkgs.libclang
             pkgs.perl
-            pkgs.pkg-config
+            pkgs.rustPlatform.bindgenHook
             pkgs.shellcheck
             pkgs.statix
             pkgs.taplo
@@ -136,7 +130,6 @@
             inputs'.kitsune2.packages.bootstrap-srv
             inputs'.tryorama.packages.trycp-server
           ];
-          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
 
         packages = {
