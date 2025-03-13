@@ -143,6 +143,7 @@ where
     let app_ws_url = ctx.runner_context().get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
+    let run_id = ctx.runner_context().get_run_id().to_string();
 
     let (installed_app_id, cell_id, app_client) = ctx
         .runner_context()
@@ -165,7 +166,7 @@ where
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     roles_settings: None,
-                    network_seed: None,
+                    network_seed: Some(run_id),
                     ignore_genesis_failure: false,
                     allow_throwaway_random_agent_key: false,
                 })
