@@ -94,6 +94,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelTryCPScenarioCli {
             soak: self.soak,
             no_progress: self.no_progress,
             reporter: self.reporter,
+            run_id: None,
         })
     }
 }

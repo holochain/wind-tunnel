@@ -55,6 +55,12 @@ pub struct WindTunnelKitsuneScenarioCli {
     /// The reporter to use.
     #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
     pub reporter: ReporterOpt,
+
+    /// Set the ID of this run
+    ///
+    /// If not set, a random ID is used.
+    #[arg(long, short)]
+    pub run_id: Option<String>,
 }
 
 impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
@@ -73,6 +79,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
             soak: self.soak,
             no_progress: self.no_progress,
             reporter: self.reporter,
+            run_id: self.run_id,
         })
     }
 }
