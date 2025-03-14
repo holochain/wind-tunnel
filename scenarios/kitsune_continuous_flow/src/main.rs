@@ -4,7 +4,7 @@ use std::time::Duration;
 
 fn agent_setup(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>) -> HookResult {
     create_chatter(ctx)?;
-    join_chatter_space(ctx)
+    join_chatter_network(ctx)
 }
 
 fn behavior(
@@ -35,7 +35,7 @@ fn behavior(
 fn main() -> WindTunnelResult<()> {
     let builder =
         KitsuneScenarioDefinitionBuilder::<KitsuneRunnerContext, KitsuneAgentContext>::new_with_init(
-            "kitsune",
+            "kitsune_continuous_flow",
         )?.into_std()
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(behavior);

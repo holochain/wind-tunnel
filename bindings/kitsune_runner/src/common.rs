@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{KitsuneAgentContext, KitsuneRunnerContext};
-use anyhow::Context;
+use anyhow::{bail, Context};
 use kitsune_client_instrumented::WtChatter;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_runner::prelude::{
@@ -38,10 +38,13 @@ pub fn to_connection_string(bootstrap_server_url: String, signal_server_url: Str
         .expect("failed to convert bootstrap and signal server URLs to connection string")
 }
 
-/// Create a kitsune app instance.
+/// Create a Kitsune chatter instance.
 pub fn create_chatter(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> HookResult {
+    if ctx.get().chatter.is_some() {
+        bail!("create_chatter: Chatter already created.");
+    }
     let (bootstrap_server_url, signal_server_url) = get_server_urls(ctx)?;
     let space_id = ctx.runner_context().get_run_id();
     let reporter = ctx.runner_context().reporter();
@@ -61,8 +64,18 @@ pub fn create_chatter(
     Ok(())
 }
 
-/// Join the chatter space.
-pub fn join_chatter_space(
+/// Return chatter id.
+pub fn chatter_id(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>) -> String {
+    ctx.get()
+        .chatter
+        .clone()
+        .expect("chatter_id: chatter is not created")
+        .id()
+        .to_string()
+}
+
+/// Join the chatter network.
+pub fn join_chatter_network(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> HookResult {
     let chatter = ctx.get().get_chatter();
