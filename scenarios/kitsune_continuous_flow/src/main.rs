@@ -2,8 +2,6 @@ use kitsune_wind_tunnel_runner::prelude::*;
 use rand::Rng;
 use std::time::Duration;
 
-const NUM_MESSAGES: u8 = 3;
-
 fn agent_setup(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>) -> HookResult {
     create_chatter(ctx)?;
     join_chatter_space(ctx)
@@ -12,7 +10,8 @@ fn agent_setup(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>
 fn behavior(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> anyhow::Result<()> {
-    // Create NUM_MESSAGES messages.
+    const NUM_MESSAGES: u8 = 3;
+    // Create messages.
     let mut messages = Vec::with_capacity(NUM_MESSAGES as usize);
     let timestamp = std::time::UNIX_EPOCH
         .elapsed()

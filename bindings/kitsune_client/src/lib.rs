@@ -146,7 +146,7 @@ impl WtChatter {
         .context("failure to join space")
     }
 
-    /// Say a message, so that it will be gossiped to all peers.
+    /// Say messages, so that they will be gossiped to all peers.
     #[wind_tunnel_instrument]
     pub async fn say(&self, messages: Vec<String>) -> anyhow::Result<Vec<OpId>> {
         let state = self.state.lock().await;
@@ -154,7 +154,7 @@ impl WtChatter {
         let message_ops = messages
             .clone()
             .into_iter()
-            .map(|message| WtOp::new(timestamp.clone(), message.into()))
+            .map(|message| WtOp::new(timestamp, message.into()))
             .collect();
         let message_ids = state
             .op_store
