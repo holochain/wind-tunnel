@@ -25,16 +25,18 @@ impl AppWebsocketInstrumented {
         signer: Arc<dyn AgentSigner + Send + Sync>,
         reporter: Arc<Reporter>,
     ) -> Result<Self> {
-        AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone())
-            .await
-            .map(|inner| Self { inner, reporter })
+        Ok(
+            AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone())
+                .await
+                .map(|inner| Self { inner, reporter })?,
+        )
     }
 
     pub async fn on_signal<F>(&self, handler: F) -> Result<String>
     where
         F: Fn(Signal) + 'static + Sync + Send,
     {
-        self.inner.on_signal(handler).await
+        Ok(self.inner.on_signal(handler).await)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]

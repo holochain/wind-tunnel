@@ -157,9 +157,11 @@ where
                 .map_err(handle_api_err)?;
             log::debug!("Generated agent pub key: {:}", key);
 
+            let content = std::fs::read(app_path)?;
+
             let app_info = client
                 .install_app(InstallAppPayload {
-                    source: AppBundleSource::Path(app_path),
+                    source: AppBundleSource::Bytes(content),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     roles_settings: None,
