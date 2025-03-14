@@ -30,6 +30,17 @@ The bindings contain the following crates:
 - `holochain_wind_tunnel_runner`: This is a wrapper around the `wind_tunnel_runner` crate that provides Holochain specific code to be used with the `wind_tunnel_runner`.
   The `wind_tunnel_runner` is re-exported, so you should just use this crate as your runner when creating tests for Holochain.
 
+#### Kitsune Bindings for Wind Tunnel
+
+[Kitsune](https://github.com/holochain/kitsune2) is a framework for writing distributed hash table based network applications. Bindings for Wind Tunnel enable developers
+to write scenarios to test Kitsune.
+
+The bindings contain the following crates:
+- `kitsune_client_instrumented`: A test application specifically written for Wind Tunnel. With Kitsune at its core, instances are created to publish text messages which
+are sent to all participating peers. The API is minimal, as the focus lies on observing speed and resilience of delivering messages to peers.
+- `kitsune_wind_tunnel_runner`: A wrapper around the `wind_tunnel_runner` crate that provides Kitsune specific code to be used with the `wind_tunnel_runner`. It provides
+CLI options to configure scenarios.
+
 #### Scenarios
 
 The `scenarios`, found in `./scenarios`, are what describe the performance testing scenarios to be run against Holochain. Each scenario
@@ -174,7 +185,7 @@ This is the basic structure of a Wind Tunnel scenario. The `ScenarioDefinitionBu
 a CLI which will allow you to override some of the defaults that are set in your code. Using the builder you can configure your hooks
 which are just Rust functions that take a context and return a `WindTunnelResult`. 
 
-The `run` function is then called with the builder. At that point the Wind Tunnel runner takes over and configures then runs your scenario.
+The `run` function is then called with the builder. At that point the Wind Tunnel runner takes over and configures, then runs your scenario.
 
 Before you can run this, you'll need to provide the agent behaviour hook. Add the following to your `main.rs`:
 
@@ -202,6 +213,76 @@ You should see the print messages from the agent behaviour hook. If so, you are 
 you are recommended to take a look at documentation for the `holochain_wind_tunnel_runner` crate. This has common code to use in your
 your scenarios and example of how to use them. This will help you get started much more quickly than starting from scratch. There is
 also a tips section below which you might find helpful as you run into questions.
+
+
+### Writing Scenarios for Kitsune
+
+> [!NOTE]
+> Writing scenarios requires some knowledge of `wind-tunnel`'s methodology as well as an overview of how Kitsune works. That is assumed knowledge for this section!
+
+Writing a Kitsune Wind Tunnel scenario is relatively straight forward. The Kitsune client defines three common functions for the developer. A chatter can be `create`d, it can `join_chatter_network` and it can `say` a list of messages. As long as a chatter has not joined the network, it won't receive messages from other peers and will also not send messages to them. Once joined, it starts receiving and sending messages it has said. It will also receive messages that were sent before it joined the network.
+
+For communication among peers to work, a bootstrap server must be running that enables peers to discover each other, and a signal server is required for establishing direct WebRTC connections. See [Kitsune Tests](#kitsune-tests).
+
+The only Wind Tunnel specific dependency you will need is `kitsune_wind_tunnel_runner`.
+
+```bash
+cargo add kitsune_wind_tunnel_runner
+```
+
+If this scenario is being written inside this repository then there are some extra setup steps. Please see the [project layout docs](#navigating-the-project).
+
+Add the following imports to the top of your `main.rs`:
+
+```rust
+use kitsune_wind_tunnel_runner::prelude::*;
+```
+
+Then replace your `main` function with the following:
+
+```rust
+fn main() -> WindTunnelResult<()> {
+    let builder =
+        KitsuneScenarioDefinitionBuilder::<KitsuneRunnerContext, KitsuneAgentContext>::new_with_init(
+            "scenario_name",
+        )?.into_std()
+        .use_agent_behaviour(agent_behavior);
+
+    run(builder)?;
+
+    Ok(())
+}
+```
+
+This is the basic structure of a Kitsune Wind Tunnel scenario. The `ScenarioDefinitionBuilder` is used to define the scenario. It includes
+a CLI which will allow you to override some of the defaults that are set in your code. Using the builder you can configure your hooks
+which are just Rust functions that take a context and return a `WindTunnelResult`. 
+
+The `run` function is then called with the builder. At that point the Wind Tunnel runner takes over and configures, then runs your scenario.
+
+Before you can run this, you'll need to provide the agent behaviour hook. Add the following to your `main.rs`:
+
+```rust
+fn agent_behaviour(
+    ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
+) -> HookResult {
+    println!("Hello from, {}", ctx.agent_name());
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    Ok(())
+}
+```
+
+This is just an example hook and you will want to replace it once you have got your scenario running. Note the `KitsuneAgentContext` that is provided
+to the hook. This is created per-agent and gives you access to the agent's ID and the runner's context as well as the chatter ID which is specific to
+Kitsune. Both the agent and the runner context are used for sharing configuration between the runner and your hooks, and state between your hooks.
+
+Your scenario should now be runnable. Try running it with
+
+```bash
+cargo run -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 10
+```
+
+You should see the print messages from the agent behaviour hook. If so, you are ready to start writing your scenario.
 
 ### Tips for Writing Scenarios
 
@@ -354,6 +435,23 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 ```bash
 RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 60
 ```
+
+#### Kitsune tests
+
+For Kitsune Wind Tunnel tests, start a bootstrap and signal server:
+```bash
+kitsune2-bootstrap-srv --listen 127.0.0.1:30000
+```
+
+This starts the two servers on the provided address. If for some reason the port 30000 is used on your system, you can specify a different port or omit the `--listen` option altogether to let the command choose a free port.
+
+You can then start a second terminal and run one of the scenarios in the `scenarios` directory that start with `kitsune_`:
+
+```bash
+RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000  --duration 20 --agents 2
+```
+
+If your bootstrap and signal servers run under a different port, adapt the command accordingly. The scenario creates 2 peer and runs for 20 seconds.
 
 ### Published crates
 
