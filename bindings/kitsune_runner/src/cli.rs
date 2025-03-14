@@ -15,9 +15,11 @@ pub struct WindTunnelKitsuneScenarioCli {
     pub signal_server_url: String,
 
     /// The number of agents to run. All agents will run on the local machine.
-    /// Each agent creates an instance of "Chatter", the WindTunnel kitsune2 app.
+    /// Each agent creates an instance of "Chatter", the WindTunnel Kitsune2 app.
     /// Once an agent has joined the chatter space, it will be communicating with
     /// the other agents.
+    ///
+    /// Defaults to 1.
     #[clap(long)]
     pub agents: Option<usize>,
 
