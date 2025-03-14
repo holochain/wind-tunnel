@@ -1,8 +1,7 @@
 use super::WtOpStore;
-use crate::tests::test_reporter;
+use crate::{op_store::WtOp, tests::test_reporter};
 use bytes::Bytes;
 use kitsune2_api::{AgentId, DhtArc, Id, OpStore, Timestamp};
-use kitsune2_core::factories::MemoryOp;
 use std::time::Duration;
 
 async fn test_op_store() -> WtOpStore {
@@ -16,23 +15,34 @@ async fn test_op_store() -> WtOpStore {
 
 #[test]
 fn happy_op_to_bytes() {
-    let op = MemoryOp {
+    let op = WtOp {
         created_at: Timestamp::now(),
         op_data: vec![0],
     };
     let bytes = Bytes::from(op.clone());
-    let decoded_op = MemoryOp::from(bytes);
+    let decoded_op = WtOp::from(bytes);
     assert_eq!(op, decoded_op);
+}
+
+#[tokio::test]
+async fn store_ops() {
+    let op_store = test_op_store().await;
+    let op = WtOp {
+        created_at: Timestamp::now(),
+        op_data: vec![0],
+    };
+    let stored_op_ids = op_store.store_ops(vec![op]).await.unwrap();
+    assert_eq!(stored_op_ids.len(), 1);
 }
 
 #[tokio::test]
 async fn process_incoming_ops_and_retrieve() {
     let op_store = test_op_store().await;
-    let op_1 = MemoryOp {
+    let op_1 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![1],
     };
-    let op_2 = MemoryOp {
+    let op_2 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![2],
     };
@@ -54,21 +64,21 @@ async fn process_incoming_ops_and_retrieve() {
 #[tokio::test]
 async fn op_hashes_in_time_slice() {
     let op_store = test_op_store().await;
-    let included_op_1 = MemoryOp {
+    let included_op_1 = WtOp {
         created_at: Timestamp::from_micros(10),
         op_data: vec![1],
     };
     let included_op_id_1 = included_op_1.compute_op_id();
-    let included_op_2 = MemoryOp {
+    let included_op_2 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![2],
     };
     let included_op_id_2 = included_op_2.compute_op_id();
-    let excluded_op_1 = MemoryOp {
+    let excluded_op_1 = WtOp {
         created_at: Timestamp::from_micros(100),
         op_data: vec![3],
     };
-    let excluded_op_2 = MemoryOp {
+    let excluded_op_2 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![101],
     };
@@ -99,20 +109,20 @@ async fn op_hashes_in_time_slice() {
 #[tokio::test]
 async fn bounded_op_ids() {
     let op_store = test_op_store().await;
-    let included_op_1 = MemoryOp {
+    let included_op_1 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![1; 9],
     };
     let included_op_id_1 = included_op_1.compute_op_id();
-    let excess_op_1 = MemoryOp {
+    let excess_op_1 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![1; 3],
     };
-    let excluded_op_1 = MemoryOp {
+    let excluded_op_1 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![1],
     };
-    let excluded_op_2 = MemoryOp {
+    let excluded_op_2 = WtOp {
         created_at: Timestamp::from_micros(0),
         op_data: vec![255],
     };

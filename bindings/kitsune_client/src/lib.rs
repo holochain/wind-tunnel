@@ -2,8 +2,8 @@ use anyhow::Context;
 use bytes::Bytes;
 use kitsune2::default_builder;
 use kitsune2_api::{
-    BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler, K2Result,
-    KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
+    AgentId, BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler,
+    K2Result, KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
 };
 use kitsune2_core::{
     factories::config::{CoreBootstrapConfig, CoreBootstrapModConfig},
@@ -45,6 +45,7 @@ struct State {
 pub struct WtChatter {
     state: Arc<Mutex<State>>,
     reporter: Arc<Reporter>,
+    id: AgentId,
 }
 
 impl WtChatter {
@@ -57,6 +58,7 @@ impl WtChatter {
     ) -> anyhow::Result<Self> {
         let agent = Arc::new(Ed25519LocalAgent::default());
         agent.set_tgt_storage_arc_hint(DhtArc::FULL);
+        let id = agent.agent().clone();
         // Counter to common practice, an op store has to be created first and passed
         // to the factory constructor, to keep a handle to the typed WtOpStore in the chatter
         // instance. This store instance is also used to instantiate the dummy factory, which
@@ -109,7 +111,16 @@ impl WtChatter {
             _kitsune: kitsune,
         }));
 
-        Ok(Self { state, reporter })
+        Ok(Self {
+            state,
+            reporter,
+            id,
+        })
+    }
+
+    /// Get chatter id.
+    pub fn id(&self) -> &AgentId {
+        &self.id
     }
 
     /// Join the WindTunnel space.
@@ -148,12 +159,17 @@ impl WtChatter {
 
     /// Say a message, so that it will be gossiped to all peers.
     #[wind_tunnel_instrument]
-    pub async fn say(&self, message: &str) -> anyhow::Result<Vec<OpId>> {
+    pub async fn say(&self, messages: Vec<String>) -> anyhow::Result<Vec<OpId>> {
         let state = self.state.lock().await;
-        let message_op = WtOp::new(Timestamp::now(), message.into());
+        let timestamp = Timestamp::now();
+        let message_ops = messages
+            .clone()
+            .into_iter()
+            .map(|message| WtOp::new(timestamp, message.into()))
+            .collect();
         let message_ids = state
             .op_store
-            .store_op(message_op)
+            .store_ops(message_ops)
             .await
             .context("failure to write ops to the store")?;
         state
@@ -169,12 +185,14 @@ impl WtChatter {
                     .collect(),
             )
             .await?;
-        log::info!("agent {} said {}", state.agent.agent(), message);
+        for message in messages {
+            log::info!("agent {} said {}", state.agent.agent(), message);
+        }
 
         self.reporter.add_custom(
-            ReportMetric::new("message said")
+            ReportMetric::new("said_messages")
                 .with_tag("agent_id", state.agent.agent().to_string())
-                .with_field("message_said", message_ids.len() as u32),
+                .with_field("num_messages", message_ids.len() as u32),
         );
 
         Ok(message_ids)
@@ -275,8 +293,8 @@ mod tests {
         for i in 0..3 {
             let message_1 = format!("hello there {} {}", agent_1, i);
             let message_2 = format!("hello there {} {}", agent_2, i);
-            let mut message_ids_1 = chatter_1.say(&message_1).await.unwrap();
-            let mut message_ids_2 = chatter_2.say(&message_2).await.unwrap();
+            let mut message_ids_1 = chatter_1.say(vec![message_1]).await.unwrap();
+            let mut message_ids_2 = chatter_2.say(vec![message_2]).await.unwrap();
             all_message_ids_1.append(&mut message_ids_1);
             all_message_ids_2.append(&mut message_ids_2);
             tokio::time::sleep(Duration::from_secs(1)).await;
