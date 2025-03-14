@@ -78,7 +78,7 @@ pub fn chatter_id(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentConte
 pub fn join_chatter_network(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> HookResult {
-    let chatter = ctx.get().get_chatter();
+    let chatter = ctx.get().chatter();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move { chatter.join_space().await })?;
@@ -90,7 +90,7 @@ pub fn say(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
     messages: Vec<String>,
 ) -> anyhow::Result<()> {
-    let chatter = ctx.get().get_chatter();
+    let chatter = ctx.get().chatter();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move { chatter.say(messages).await })?;
