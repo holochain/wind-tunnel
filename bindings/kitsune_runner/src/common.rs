@@ -72,15 +72,15 @@ pub fn join_chatter_space(
     Ok(())
 }
 
-/// Send a message to peers.
+/// Send messages to peers.
 pub fn say(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
-    message: &str,
+    messages: Vec<String>,
 ) -> anyhow::Result<()> {
     let chatter = ctx.get().get_chatter();
     ctx.runner_context()
         .executor()
-        .execute_in_place(async move { chatter.say(message).await })?;
+        .execute_in_place(async move { chatter.say(messages).await })?;
     Ok(())
 }
 
