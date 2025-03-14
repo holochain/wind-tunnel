@@ -94,6 +94,8 @@
             pkgs.taplo
             pkgs.yamlfmt
             pkgs.perl
+            pkgs.cmake
+            pkgs.rustPlatform.bindgenHook
             config.rustHelper.rust
             customHolochain
             inputs'.holonix.packages.lair-keystore
