@@ -154,7 +154,7 @@ impl WtChatter {
         let message_ops = messages
             .clone()
             .into_iter()
-            .map(|message| WtOp::new(timestamp.clone(), message.into()))
+            .map(|message| WtOp::new(timestamp, message.into()))
             .collect();
         let message_ids = state
             .op_store
