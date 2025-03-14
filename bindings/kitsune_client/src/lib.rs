@@ -2,8 +2,8 @@ use anyhow::Context;
 use bytes::Bytes;
 use kitsune2::default_builder;
 use kitsune2_api::{
-    BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler, K2Result,
-    KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
+    AgentId, BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler,
+    K2Result, KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
 };
 use kitsune2_core::{
     factories::config::{CoreBootstrapConfig, CoreBootstrapModConfig},
@@ -45,6 +45,7 @@ struct State {
 pub struct WtChatter {
     state: Arc<Mutex<State>>,
     reporter: Arc<Reporter>,
+    id: AgentId,
 }
 
 impl WtChatter {
@@ -57,6 +58,7 @@ impl WtChatter {
     ) -> anyhow::Result<Self> {
         let agent = Arc::new(Ed25519LocalAgent::default());
         agent.set_tgt_storage_arc_hint(DhtArc::FULL);
+        let id = agent.agent().clone();
         // Counter to common practice, an op store has to be created first and passed
         // to the factory constructor, to keep a handle to the typed WtOpStore in the chatter
         // instance. This store instance is also used to instantiate the dummy factory, which
@@ -109,7 +111,16 @@ impl WtChatter {
             _kitsune: kitsune,
         }));
 
-        Ok(Self { state, reporter })
+        Ok(Self {
+            state,
+            reporter,
+            id,
+        })
+    }
+
+    /// Get chatter id.
+    pub fn id(&self) -> &AgentId {
+        &self.id
     }
 
     /// Join the WindTunnel space.

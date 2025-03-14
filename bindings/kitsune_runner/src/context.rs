@@ -11,9 +11,21 @@ pub struct KitsuneAgentContext {
 impl UserValuesConstraint for KitsuneAgentContext {}
 
 impl KitsuneAgentContext {
+    /// Get chatter instance.
     pub fn get_chatter(&self) -> Arc<WtChatter> {
         self.chatter.clone().expect(
             "chatter is not set, did you forget to call `create_chatter` in your agent setup?",
         )
+    }
+
+    /// Get chatter id.
+    pub fn get_chatter_id(&self) -> String {
+        self.chatter
+            .clone()
+            .expect(
+                "chatter is not set, did you forget to call `create_chatter` in your agent setup?",
+            )
+            .id()
+            .to_string()
     }
 }
