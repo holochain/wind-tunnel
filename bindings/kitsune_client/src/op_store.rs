@@ -162,18 +162,18 @@ impl WtOpStore {
         }
     }
 
-    pub async fn store_op(&self, op: WtOp) -> anyhow::Result<Vec<OpId>> {
-        let op_record = WtOpRecord::from(Bytes::from(op));
-        let inserted_op_ids = match self
-            .inner
-            .write()
-            .await
-            .op_list
-            .insert(op_record.op_id.clone(), op_record)
-        {
-            None => vec![],
-            Some(op) => vec![op.op_id],
-        };
+    pub async fn store_ops(&self, ops: Vec<WtOp>) -> anyhow::Result<Vec<OpId>> {
+        let mut inner_lock = self.inner.write().await;
+        let mut inserted_op_ids = Vec::new();
+        for op in ops {
+            let op_record = WtOpRecord::from(Bytes::from(op));
+            if !inner_lock.op_list.contains_key(&op_record.op_id) {
+                inserted_op_ids.push(op_record.op_id.clone());
+                inner_lock
+                    .op_list
+                    .insert(op_record.op_id.clone(), op_record);
+            }
+        }
         Ok(inserted_op_ids)
     }
 }
@@ -225,9 +225,9 @@ impl OpStore for WtOpStore {
                 // Kitsune is calling this method with empty vectors. Work around it by not reporting
                 // such events.
                 self.reporter.add_custom(
-                    ReportMetric::new("number_of_incoming_ops")
+                    ReportMetric::new("heard_messages")
                         .with_tag("agent_id", self.agent_id.to_string())
-                        .with_field("number_of_incoming_ops", amount as u32),
+                        .with_field("num_messages", amount as u32),
                 );
             }
 
