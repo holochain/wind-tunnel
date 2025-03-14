@@ -148,12 +148,17 @@ impl WtChatter {
 
     /// Say a message, so that it will be gossiped to all peers.
     #[wind_tunnel_instrument]
-    pub async fn say(&self, message: &str) -> anyhow::Result<Vec<OpId>> {
+    pub async fn say(&self, messages: Vec<String>) -> anyhow::Result<Vec<OpId>> {
         let state = self.state.lock().await;
-        let message_op = WtOp::new(Timestamp::now(), message.into());
+        let timestamp = Timestamp::now();
+        let message_ops = messages
+            .clone()
+            .into_iter()
+            .map(|message| WtOp::new(timestamp.clone(), message.into()))
+            .collect();
         let message_ids = state
             .op_store
-            .store_op(message_op)
+            .store_ops(message_ops)
             .await
             .context("failure to write ops to the store")?;
         state
@@ -169,12 +174,14 @@ impl WtChatter {
                     .collect(),
             )
             .await?;
-        log::info!("agent {} said {}", state.agent.agent(), message);
+        for message in messages {
+            log::info!("agent {} said {}", state.agent.agent(), message);
+        }
 
         self.reporter.add_custom(
-            ReportMetric::new("message said")
+            ReportMetric::new("said_messages")
                 .with_tag("agent_id", state.agent.agent().to_string())
-                .with_field("message_said", message_ids.len() as u32),
+                .with_field("num_messages", message_ids.len() as u32),
         );
 
         Ok(message_ids)
@@ -275,8 +282,8 @@ mod tests {
         for i in 0..3 {
             let message_1 = format!("hello there {} {}", agent_1, i);
             let message_2 = format!("hello there {} {}", agent_2, i);
-            let mut message_ids_1 = chatter_1.say(&message_1).await.unwrap();
-            let mut message_ids_2 = chatter_2.say(&message_2).await.unwrap();
+            let mut message_ids_1 = chatter_1.say(vec![message_1]).await.unwrap();
+            let mut message_ids_2 = chatter_2.say(vec![message_2]).await.unwrap();
             all_message_ids_1.append(&mut message_ids_1);
             all_message_ids_2.append(&mut message_ids_2);
             tokio::time::sleep(Duration::from_secs(1)).await;
