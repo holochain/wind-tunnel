@@ -10,14 +10,14 @@ fn agent_setup(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>
 fn behavior(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> anyhow::Result<()> {
-    const NUM_MESSAGES: u8 = 3;
+    let number_of_messages = number_of_messages(ctx);
     // Create messages.
-    let mut messages = Vec::with_capacity(NUM_MESSAGES as usize);
+    let mut messages = Vec::with_capacity(number_of_messages as usize);
     let timestamp = std::time::UNIX_EPOCH
         .elapsed()
         .expect("time went backwards")
         .as_millis();
-    for i in 0..NUM_MESSAGES {
+    for i in 0..number_of_messages {
         let message = format!("message_{}_{}_{}", ctx.agent_index(), timestamp, i);
         messages.push(message);
     }
@@ -38,7 +38,8 @@ fn main() -> WindTunnelResult<()> {
             "kitsune_continuous_flow",
         )?.into_std()
         .use_agent_setup(agent_setup)
-        .use_agent_behaviour(behavior);
+        .use_agent_behaviour(behavior)
+        .with_default_duration_s(30);
     run(builder)?;
     Ok(())
 }

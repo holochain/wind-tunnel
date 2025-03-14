@@ -74,11 +74,19 @@ pub fn chatter_id(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentConte
         .to_string()
 }
 
+/// Get configured number of messages per interval.
+///
+/// This number can be configured with the env var `NUM_MESSAGES`.
+/// Defaults to 3.
+pub fn number_of_messages(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>) -> u8 {
+    ctx.get_mut().number_of_messages()
+}
+
 /// Join the chatter network.
 pub fn join_chatter_network(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> HookResult {
-    let chatter = ctx.get().get_chatter();
+    let chatter = ctx.get().chatter();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move { chatter.join_space().await })?;
@@ -90,7 +98,7 @@ pub fn say(
     ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
     messages: Vec<String>,
 ) -> anyhow::Result<()> {
-    let chatter = ctx.get().get_chatter();
+    let chatter = ctx.get().chatter();
     ctx.runner_context()
         .executor()
         .execute_in_place(async move { chatter.say(messages).await })?;

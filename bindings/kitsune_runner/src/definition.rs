@@ -21,6 +21,6 @@ impl<RV: UserValuesConstraint, AV: UserValuesConstraint> KitsuneScenarioDefiniti
     /// Once the Kitsune customisations have been made, use this function to switch back to
     /// configuring default properties for the scenario.
     pub fn into_std(self) -> ScenarioDefinitionBuilder<RV, AV> {
-        self.inner
+        self.inner.add_capture_env("NUM_MESSAGES")
     }
 }

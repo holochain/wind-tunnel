@@ -8,7 +8,7 @@ mod runner_context;
 
 pub mod prelude {
     pub use super::{
-        common::{chatter_id, create_chatter, join_chatter_network, run, say},
+        common::{chatter_id, create_chatter, join_chatter_network, number_of_messages, run, say},
         context::KitsuneAgentContext,
         definition::KitsuneScenarioDefinitionBuilder,
         runner_context::KitsuneRunnerContext,
