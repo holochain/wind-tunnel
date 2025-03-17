@@ -46,7 +46,7 @@ job "run_scenario" {
       driver = "raw_exec"
       config {
         command = "bash"
-        args = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair && echo 1234 | hc s --piped -f 8888 run"]
+        args = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
       }
     }
 
