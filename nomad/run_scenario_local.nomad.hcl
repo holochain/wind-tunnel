@@ -35,8 +35,15 @@ variable "behaviours" {
 
 job "run_scenario" {
   type = "batch"
+  all_at_once = true // Try to run all groups at once
 
   group "scenario_runnner" {
+    count = var.agents // Run one group per required agent
+
+    constraint {
+      distinct_hosts = true // Don't run multiple instances on the same client at once
+    }
+
     task "start_holochain" {
       lifecycle {
         hook = "prestart"
