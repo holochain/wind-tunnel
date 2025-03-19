@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   building the scenario if they do not match. [#122](https://github.com/holochain/wind-tunnel/pull/122)
 
 ### Changed
-- Updated to Holochain 0.4.0
+- Updated to Holochain `v0.4.2`
 - Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
   and app instrumented websockets.
 - `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 
@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All metrics are now reported in seconds, as an `f64`. There were some types still using milliseconds which made reporting
   across scenarios more complex.
 - Increased TryCP test scenario duration to 30s in CI [Test Workflow](.github/workflows/test.yaml).
+- Use the new `AppBundleSource::Bytes` variant to bundle scenarios [#152](https://github.com/holochain/wind-tunnel/pull/152)
 
 ### Deprecated
 ### Removed
