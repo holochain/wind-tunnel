@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   broadcast channel that it uses internally. Shutdown failures used to panic but it a `ShutdownHandle` happens to not
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
 - Metrics now automatically include `run_id` and `scenario_name` tags.
-- Update `trycp_client` and `trycp_api` dependencies to `v0.17.0-dev.6`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
+- Update `trycp_client` and `trycp_api` dependencies to `v0.17.0`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - When making zome calls with the TryCP client bindings, the `agent` is now reported on the metrics, taken from the target
   cell_id for the call. For the wrapped `holochain_client`, this is only done when the call target is `CellId`. Or in 
   other words, the `agent` is not reported when calling a clone cell.
