@@ -75,8 +75,7 @@ jobs:
           nix flake check --all-systems
 
       - name: Run unit tests
-        run: |
-          nix develop .#ci -c bash -c "cargo test --workspace --all-targets"
+        run: cargo test --workspace --all-targets
 
       - name: Build
         run: |
