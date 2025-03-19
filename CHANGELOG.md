@@ -27,8 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated to Holochain `v0.4.2`
-- Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
-  and app instrumented websockets.
+- Updated to new Holochain client version `v0.6.2`
+- Replace `&mut self` with `&self` in admin and app instrumented websockets.
 - `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 
   broadcast channel that it uses internally. Shutdown failures used to panic but it a `ShutdownHandle` happens to not
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
