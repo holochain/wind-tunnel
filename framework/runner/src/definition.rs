@@ -51,6 +51,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
     pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) teardown_fn: Option<GlobalHook<RV>>,
+    pub(crate) run_id: String,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V> {
@@ -208,6 +209,8 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             ));
         }
 
+        let run_id = self.cli.run_id.clone().unwrap_or_else(|| nanoid::nanoid!());
+
         Ok(ScenarioDefinition {
             name: self.name,
             assigned_behaviours: build_assigned_behaviours(&self.cli, resolved_agent_count)?,
@@ -221,6 +224,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             agent_behaviour: self.agent_behaviour,
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
+            run_id,
         })
     }
 }
@@ -269,6 +273,7 @@ mod tests {
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
+                run_id: None,
             },
             5,
         )
@@ -290,6 +295,7 @@ mod tests {
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
+                run_id: None,
             },
             5,
         )
@@ -311,6 +317,7 @@ mod tests {
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
+                run_id: None,
             },
             5,
         )
@@ -334,6 +341,7 @@ mod tests {
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
+                run_id: None,
             },
             5,
         );
