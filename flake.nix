@@ -62,6 +62,7 @@
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
+        unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
@@ -81,6 +82,7 @@
           ./nix/modules/zomes.nix
         ];
 
+
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.influxdb2-cli
@@ -96,6 +98,7 @@
             pkgs.perl
             pkgs.cmake
             pkgs.rustPlatform.bindgenHook
+            unfreePkgs.nomad
             config.rustHelper.rust
             customHolochain
             inputs'.holonix.packages.lair-keystore
