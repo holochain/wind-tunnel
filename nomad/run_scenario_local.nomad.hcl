@@ -57,6 +57,18 @@ job "run_scenario" {
       }
     }
 
+    task "wait_for_holochain" {
+      lifecycle {
+        hook = "prestart"
+      }
+
+      driver = "raw_exec"
+      config {
+        command = "bash"
+        args = ["-c", "echo -n 'Waiting for Holochain to start'; until hc s call --running=8888 dump-conductor-state 2>/dev/null >/dev/null; do echo '.'; sleep 0.5; done; echo 'done'; sleep 1"]
+      }
+    }
+
     task "run_scenario" {
       driver = "raw_exec"
 
