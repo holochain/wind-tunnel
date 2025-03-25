@@ -59,6 +59,10 @@ job "run_scenario" {
         command = "bash"
         args = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
       }
+
+      resources {
+        memory = 2048
+      }
     }
 
     task "wait_for_holochain" {
@@ -97,6 +101,10 @@ job "run_scenario" {
         ]), [
           for k, v in var.behaviours : "--behaviour=${k}:${v}"
         ])
+      }
+
+      resources {
+        memory = 2048
       }
     }
   }
