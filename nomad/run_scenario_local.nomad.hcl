@@ -50,6 +50,10 @@ job "run_scenario" {
         sidecar = true
       }
 
+      env {
+        RUST_LOG = "info"
+      }
+
       driver = "raw_exec"
       config {
         command = "bash"
