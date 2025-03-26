@@ -28,9 +28,9 @@ variable "reporter" {
 }
 
 variable "behaviours" {
-  type = map(string)
+  type = list(string)
   description = "Custom behaviours defined and used by the scenarios"
-  default = {}
+  default = [""]
 }
 
 job "run_scenario" {
@@ -99,7 +99,7 @@ job "run_scenario" {
           var.reporter != null ? "--reporter=${var.reporter}" : null,
           "--no-progress"
         ]), [
-          for k, v in var.behaviours : "--behaviour=${k}:${v}"
+          for b in var.behaviours : "--behaviour=${b}:1"
         ])
       }
 
