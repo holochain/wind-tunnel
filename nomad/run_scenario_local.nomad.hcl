@@ -102,6 +102,23 @@ job "run_scenario" {
           memory = 2048
         }
       }
+
+      task "upload_metrics" {
+        lifecycle {
+          hook = "poststop"
+        }
+
+        driver = "raw_exec"
+
+        artifact {
+          source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
+        }
+
+        config {
+          command = "bash"
+          args = [ "-c", "telegraf --config=${NOMAD_TASK_DIR}/runner-telegraf.conf --once" ]
+        }
+      }
     }
   }
 }
