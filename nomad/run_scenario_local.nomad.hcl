@@ -93,6 +93,7 @@ job "run_scenario" {
             var.duration != null ? "--duration=${var.duration}" : null,
             var.reporter != null ? "--reporter=${var.reporter}" : null,
             group.value != "" ? "--behaviour=${group.value}:1" : null,
+            "--run-id=${var.scenario-name}-${NOMAD_JOB_ID}",
             "--no-progress"
           ])
         }
