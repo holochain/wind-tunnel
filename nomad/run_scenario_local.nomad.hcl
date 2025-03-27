@@ -108,6 +108,14 @@ job "run_scenario" {
           hook = "poststop"
         }
 
+        template {
+          destination = "${NOMAD_SECRETS_DIR}/secrets.env"
+          env = true
+          data = <<EOT
+          INFLUX_TOKEN={{ with nomadVar "nomad/jobs/run_scenario" }}{{ .INFLUX_TOKEN }}{{ end }}
+          EOT
+        }
+
         driver = "raw_exec"
 
         artifact {
