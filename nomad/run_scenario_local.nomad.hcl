@@ -83,6 +83,7 @@ job "run_scenario" {
         env {
           RUST_LOG = "info"
           HOME = "${NOMAD_TASK_DIR}"
+          WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
         }
 
         config {
@@ -106,6 +107,10 @@ job "run_scenario" {
       task "upload_metrics" {
         lifecycle {
           hook = "poststop"
+        }
+
+        env {
+          WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
         }
 
         template {
