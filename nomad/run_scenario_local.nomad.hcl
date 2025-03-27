@@ -123,8 +123,8 @@ job "run_scenario" {
         }
 
         config {
-          command = "bash"
-          args = [ "-c", "telegraf --config=${NOMAD_TASK_DIR}/runner-telegraf.conf --once" ]
+          command = "telegraf"
+          args = [ "--config=${NOMAD_TASK_DIR}/runner-telegraf.conf", "--once" ]
         }
       }
     }
