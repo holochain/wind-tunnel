@@ -110,6 +110,7 @@ job "run_scenario" {
         }
 
         env {
+          HOME = "${NOMAD_TASK_DIR}"
           TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
           WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
         }
@@ -125,7 +126,7 @@ job "run_scenario" {
         driver = "raw_exec"
 
         artifact {
-          source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
+          source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/132-replace-trycp-with-nomad-for-running-scenarios/telegraf/runner-telegraf.conf"
         }
 
         config {
