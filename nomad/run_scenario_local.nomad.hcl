@@ -110,7 +110,6 @@ job "run_scenario" {
         }
 
         env {
-          HOME = "${NOMAD_TASK_DIR}"
           TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
           WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
         }
