@@ -32,6 +32,12 @@ variable "scenario-download-url" {
   description = "The URL to the binary for the scenario under test that will be downloaded"
 }
 
+variable "run-id" {
+  type        = string
+  description = "The ID of this run to distinguish it from other runs"
+  default     = null
+}
+
 job "run_scenario" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -99,7 +105,7 @@ job "run_scenario" {
             var.duration != null ? "--duration=${var.duration}" : null,
             var.reporter != null ? "--reporter=${var.reporter}" : null,
             group.value != "" ? "--behaviour=${group.value}:1" : null,
-            "--run-id=${var.scenario-name}-${NOMAD_JOB_ID}",
+            var.run-id != null ? "--run-id=${var.run-id}" : null,
             "--no-progress"
           ])
         }
