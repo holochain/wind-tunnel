@@ -1,0 +1,31 @@
+name: "Run performance tests on Nomad cluster"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run-scenarios:
+    runs-on: [self-hosted, wind-tunnel]
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - app_install
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bundle - ${{ matrix.scenario }}
+        run: |
+          nix bundle --option sandbox false .#packages.x86_64-linux.${{ matrix.scenario }}
+          cp ./${{ matrix.scenario }}-arx ./${{ matrix.scenario }}
+
+      - name: Upload bundle as artifact
+        id: upload-bundle
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./${{ matrix.scenario }}
+          if-no-files-found: error
