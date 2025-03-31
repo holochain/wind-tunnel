@@ -9,6 +9,7 @@ concurrency:
 
 jobs:
   run-scenarios:
+    name: Run ${{ matrix.job-name }}
     runs-on: [self-hosted, wind-tunnel]
     strategy:
       fail-fast: false
@@ -19,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle - ${{ matrix.scenario-name }}
+      - name: Bundle scenario
         run: |
           nix bundle --option sandbox false .#packages.x86_64-linux.${{ matrix.scenario-name }}
           cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
