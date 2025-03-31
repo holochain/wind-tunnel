@@ -27,6 +27,11 @@ variable "behaviours" {
   default     = [""]
 }
 
+variable "scenario-download-url" {
+  type        = string
+  description = "The URL to the binary for the scenario under test that will be downloaded"
+}
+
 job "run_scenario" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -77,7 +82,7 @@ job "run_scenario" {
         driver = "raw_exec"
 
         artifact {
-          source = "https://github.com/holochain/wind-tunnel/releases/download/bins-for-nomad/${var.scenario-name}"
+          source = var.scenario-download-url
         }
 
         env {
