@@ -13,19 +13,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scenario:
-          - app_install
+        include:
+          - job-name: app_install_minimal
+            scenario-name: app_install
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle - ${{ matrix.scenario }}
+      - name: Bundle - ${{ matrix.scenario-name }}
         run: |
-          nix bundle --option sandbox false .#packages.x86_64-linux.${{ matrix.scenario }}
-          cp ./${{ matrix.scenario }}-arx ./${{ matrix.scenario }}
+          nix bundle --option sandbox false .#packages.x86_64-linux.${{ matrix.scenario-name }}
+          cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
 
       - name: Upload bundle as artifact
         id: upload-bundle
         uses: actions/upload-artifact@v4
         with:
-          path: ./${{ matrix.scenario }}
+          path: ./${{ matrix.scenario-name }}
           if-no-files-found: error
