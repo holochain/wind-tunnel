@@ -30,4 +30,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ./${{ matrix.scenario-name }}
+          name: ${{ matrix.scenario-name }}
           if-no-files-found: error
+
+      - name: Run Nomad Job
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name }}.vars" -address https://nomad-server-01.holochain.org:4646 -var scenario-download-url="${{ steps.upload-bundle.outputs.artifact-url }}" nomad/run_scenario_local.nomad.hcl
