@@ -46,6 +46,10 @@ job "run_scenario" {
     distinct_hosts = true // Don't run multiple instances on the same client at once
   }
 
+  constraint {
+    distinct_property = "${attr.unique.hostname}"
+  }
+
   dynamic "group" {
     for_each = var.behaviours
     labels   = ["${var.scenario-name}-${group.value}"]
