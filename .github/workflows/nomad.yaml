@@ -33,12 +33,22 @@ jobs:
           name: ${{ matrix.scenario-name }}
           if-no-files-found: error
 
+      - name: Get Download URL
+        id: get-download-url
+        run: |
+          DOWNLOAD_URL=$(curl -Ls -o /dev/null -w %{url_effective} \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-bundle.outputs.artifact-id}}/zip")
+          echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
+
       - name: Run Nomad Job
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          NOMAD_VAR_scenario-download-url: ${{ steps.upload-bundle.outputs.artifact-url }}
+          NOMAD_VAR_scenario-download-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
         run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name }}.vars" nomad/run_scenario_local.nomad.hcl
