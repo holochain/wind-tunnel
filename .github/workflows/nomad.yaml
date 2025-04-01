@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   run-scenarios:
-    name: Run ${{ matrix.job-name }}
+    name: Run ${{ matrix.job-name || matrix.scenario-name }}
     runs-on: [self-hosted, wind-tunnel]
     strategy:
       fail-fast: false
@@ -51,4 +51,4 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario-download-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
-        run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name }}.vars" nomad/run_scenario_local.nomad.hcl
+        run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name || matrix.scenario-name }}.vars" nomad/run_scenario_local.nomad.hcl
