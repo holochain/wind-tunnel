@@ -36,6 +36,9 @@ jobs:
       - name: Run Nomad Job
         env:
           NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-        run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name }}.vars" -address https://nomad-server-01.holochain.org:4646 -var scenario-download-url="${{ steps.upload-bundle.outputs.artifact-url }}" -var run-id="${{ github.run_id }}" nomad/run_scenario_local.nomad.hcl
+          NOMAD_VAR_scenario-download-url: ${{ steps.upload-bundle.outputs.artifact-url }}
+          NOMAD_VAR_run-id: ${{ github.run_id }}
+        run: nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name }}.vars" nomad/run_scenario_local.nomad.hcl
