@@ -13,8 +13,21 @@ jobs:
     runs-on: [self-hosted, wind-tunnel]
     strategy:
       fail-fast: false
+      # `job-name` defaults to `scenario-name` if not provided.
+      # `required-nodes` defaults to `1` if not provided.
       matrix:
+        scenario-name:
+          - first_call
+          - local_signals
+          - single_write_many_read
+          - write_query
+          - write_read
+          - write_validated
+          - zome_call_single_value
         include:
+          - job-name: app_install_large
+            scenario-name: app_install
+
           - job-name: app_install_minimal
             scenario-name: app_install
 
