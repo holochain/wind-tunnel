@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ./${{ matrix.scenario-name }}
-          name: ${{ matrix.scenario-name }}
+          name: ${{ matrix.job-name || matrix.scenario-name }}
           if-no-files-found: error
 
       - name: Wait for free nodes
