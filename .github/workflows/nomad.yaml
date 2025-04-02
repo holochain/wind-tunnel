@@ -14,11 +14,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scenario-name:
-          - dht_sync_lag
         include:
           - job-name: app_install_minimal
             scenario-name: app_install
+
+          - scenario-name: dht_sync_lag
+            required-nodes: 2
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +35,24 @@ jobs:
           path: ./${{ matrix.scenario-name }}
           name: ${{ matrix.scenario-name }}
           if-no-files-found: error
+
+      - name: Wait for free nodes
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: |
+          echo "Waiting for ${{ matrix.required-nodes || 1 }} node(s) to be free"
+          while true; do
+              count=$(nix run --impure --inputs-from . nixpkgs#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
+              if (( ${count:-0} >= ${{ matrix.required-nodes || 1 }} )); then
+                  break
+              else
+                  echo -n "."
+              fi
+          done
+          echo "done"
 
       - name: Get Download URL
         id: get-download-url
