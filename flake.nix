@@ -81,57 +81,68 @@
           ./nix/modules/zomes.nix
         ];
 
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.influxdb2-cli
-            pkgs.influxdb2-server
-            # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
-            pkgs.telegraf
-            pkgs.yq
-            pkgs.httpie
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            pkgs.perl
-            pkgs.cmake
-            pkgs.rustPlatform.bindgenHook
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
-            inputs'.holonix.packages.hn-introspect
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
-            inputs'.amber.packages.default
-          ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            pkgs.darwin.apple_sdk.frameworks.Security
-            pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-            pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-          ];
+        devShells = {
+          default = pkgs.mkShell {
+            packages = [
+              pkgs.influxdb2-cli
+              pkgs.influxdb2-server
+              # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
+              pkgs.telegraf
+              pkgs.yq
+              pkgs.httpie
+              pkgs.shellcheck
+              pkgs.statix
+              pkgs.taplo
+              pkgs.yamlfmt
+              pkgs.perl
+              pkgs.cmake
+              pkgs.rustPlatform.bindgenHook
+              config.rustHelper.rust
+              customHolochain
+              inputs'.holonix.packages.lair-keystore
+              inputs'.holonix.packages.hn-introspect
+              inputs'.kitsune2.packages.bootstrap-srv
+              inputs'.tryorama.packages.trycp-server
+              inputs'.amber.packages.default
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.darwin.apple_sdk.frameworks.Security
+              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+              pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+            ];
 
-          shellHook = ''
-            source ./scripts/influx.sh
-            source ./scripts/telegraf.sh
-            source ./scripts/trycp.sh
-            source ./scripts/checks.sh
-          '';
-        };
+            shellHook = ''
+              source ./scripts/influx.sh
+              source ./scripts/telegraf.sh
+              source ./scripts/trycp.sh
+              source ./scripts/checks.sh
+            '';
+          };
 
-        devShells.ci = pkgs.mkShell {
-          packages = [
-            pkgs.cmake
-            pkgs.perl
-            pkgs.rustPlatform.bindgenHook
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
-          ];
+          ci = pkgs.mkShell {
+            packages = [
+              pkgs.cmake
+              pkgs.perl
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+              pkgs.statix
+              pkgs.taplo
+              pkgs.yamlfmt
+              config.rustHelper.rust
+              customHolochain
+              inputs'.holonix.packages.lair-keystore
+              inputs'.kitsune2.packages.bootstrap-srv
+              inputs'.tryorama.packages.trycp-server
+            ];
+          };
+
+          kitsune = pkgs.mkShell {
+            packages = [
+              pkgs.cmake
+              pkgs.perl
+              pkgs.rustPlatform.bindgenHook
+              inputs'.kitsune2.packages.bootstrap-srv
+            ];
+          };
         };
 
         packages = {
