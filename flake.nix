@@ -118,6 +118,9 @@
                 pkgs.darwin.apple_sdk.frameworks.CoreFoundation
               ];
 
+              NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
+              NOMAD_CACERT = ./nomad/server-ca-cert.pem;
+
               shellHook = ''
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
