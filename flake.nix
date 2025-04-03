@@ -62,12 +62,30 @@
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
+        unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        # The packages required in all devShells
+        devShellPackages = [
+          pkgs.cmake
+          pkgs.perl
+          pkgs.rustPlatform.bindgenHook
+          pkgs.shellcheck
+          pkgs.statix
+          pkgs.taplo
+          pkgs.yamlfmt
+          pkgs.nomad-pack
+          config.rustHelper.rust
+          customHolochain
+          inputs'.holonix.packages.lair-keystore
+          inputs'.kitsune2.packages.bootstrap-srv
+          inputs'.tryorama.packages.trycp-server
+        ];
       in
       {
         imports = [
@@ -81,33 +99,26 @@
           ./nix/modules/zomes.nix
         ];
 
+
         devShells.default = pkgs.mkShell {
-          packages = [
+          packages = devShellPackages ++ [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
             # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
             pkgs.telegraf
             pkgs.yq
             pkgs.httpie
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            pkgs.perl
-            pkgs.cmake
-            pkgs.rustPlatform.bindgenHook
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
+            unfreePkgs.nomad
             inputs'.holonix.packages.hn-introspect
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
             pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
             pkgs.darwin.apple_sdk.frameworks.CoreFoundation
           ];
+
+          NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
+          NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
           shellHook = ''
             source ./scripts/influx.sh
@@ -118,20 +129,7 @@
         };
 
         devShells.ci = pkgs.mkShell {
-          packages = [
-            pkgs.cmake
-            pkgs.perl
-            pkgs.rustPlatform.bindgenHook
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
-          ];
+          packages = devShellPackages;
         };
 
         packages = {
