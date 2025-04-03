@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is less than the passed `min_required_agents`. Can be overridden with the `MIN_REQUIRED_AGENTS` environment variable.
 - Check that the scenarios have a cargo package name that matches the directory name used by Nix packages. Panic when
   building the scenario if they do not match. [#122](https://github.com/holochain/wind-tunnel/pull/122)
+- Nix dev shell for kitsune scenarios.
 
 ### Changed
 - Updated to Holochain `v0.4.2`
@@ -41,11 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across scenarios more complex.
 - Increased TryCP test scenario duration to 30s in CI [Test Workflow](.github/workflows/test.yaml).
 - Use the new `AppBundleSource::Bytes` variant to bundle scenarios [#152](https://github.com/holochain/wind-tunnel/pull/152)
+- Test workflow uses kitsune dev shell for kitsune scenario.
 
 ### Deprecated
 ### Removed
 ### Fixed
 - Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
+- Fix Kitsune op store to always return all processed op ids. Previously ops processed multiple times would not be removed from the request queue. Duplicate ops are still not considered for reporting.
 
 ### Security
 
