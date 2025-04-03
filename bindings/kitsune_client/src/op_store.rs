@@ -208,26 +208,26 @@ impl OpStore for WtOpStore {
                 })?;
 
             let mut op_ids = Vec::with_capacity(ops_to_add.len());
+            let mut number_of_added_ops = 0;
             let mut lock = self.write().await;
             for (op_id, record) in ops_to_add {
                 if let std::collections::hash_map::Entry::Vacant(entry) =
                     lock.op_list.entry(op_id.clone())
                 {
                     entry.insert(record);
-                    op_ids.push(op_id);
+                    number_of_added_ops += 1;
                 }
+                op_ids.push(op_id);
             }
 
             // After inserting incoming ops into the store, the number of inserted ops is reported.
-            let amount = op_ids.len();
-            log::info!("{} ops have come in to {}", amount, self.agent_id);
-            if amount > 0 {
-                // Kitsune is calling this method with empty vectors. Work around it by not reporting
-                // such events.
+            log::info!("{} ops have come in to {}", op_ids.len(), self.agent_id);
+            if number_of_added_ops > 0 {
+                // Ops may have come in multiple times. This reports only distinct op ids as heard messages.
                 self.reporter.add_custom(
                     ReportMetric::new("heard_messages")
                         .with_tag("agent_id", self.agent_id.to_string())
-                        .with_field("num_messages", amount as u32),
+                        .with_field("num_messages", number_of_added_ops),
                 );
             }
 
