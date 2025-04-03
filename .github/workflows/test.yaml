@@ -259,7 +259,7 @@ jobs:
           set -x
 
           # Start local bootstrap and signal server
-          nix develop .#ci -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
 
           # Run the scenario
           RUST_LOG=warn cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
