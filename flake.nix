@@ -79,6 +79,7 @@
           pkgs.statix
           pkgs.taplo
           pkgs.yamlfmt
+          pkgs.nomad-pack
           config.rustHelper.rust
           customHolochain
           inputs'.holonix.packages.lair-keystore
