@@ -69,6 +69,22 @@
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        # The packages required in all devShells
+        devShellPackages = [
+          pkgs.cmake
+          pkgs.perl
+          pkgs.rustPlatform.bindgenHook
+          pkgs.shellcheck
+          pkgs.statix
+          pkgs.taplo
+          pkgs.yamlfmt
+          config.rustHelper.rust
+          customHolochain
+          inputs'.holonix.packages.lair-keystore
+          inputs'.kitsune2.packages.bootstrap-srv
+          inputs'.tryorama.packages.trycp-server
+        ];
       in
       {
         imports = [
@@ -84,27 +100,15 @@
 
 
         devShells.default = pkgs.mkShell {
-          packages = [
+          packages = devShellPackages ++ [
             pkgs.influxdb2-cli
             pkgs.influxdb2-server
             # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
             pkgs.telegraf
             pkgs.yq
             pkgs.httpie
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            pkgs.perl
-            pkgs.cmake
-            pkgs.rustPlatform.bindgenHook
             unfreePkgs.nomad
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
             inputs'.holonix.packages.hn-introspect
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
             inputs'.amber.packages.default
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
@@ -121,20 +125,7 @@
         };
 
         devShells.ci = pkgs.mkShell {
-          packages = [
-            pkgs.cmake
-            pkgs.perl
-            pkgs.rustPlatform.bindgenHook
-            pkgs.shellcheck
-            pkgs.statix
-            pkgs.taplo
-            pkgs.yamlfmt
-            config.rustHelper.rust
-            customHolochain
-            inputs'.holonix.packages.lair-keystore
-            inputs'.kitsune2.packages.bootstrap-srv
-            inputs'.tryorama.packages.trycp-server
-          ];
+          packages = devShellPackages;
         };
 
         packages = {
