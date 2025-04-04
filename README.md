@@ -573,6 +573,11 @@ Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs/run_scenar
 should see the allocation, which is the Nomad name for an instance of the job. You can view the logs
 of the tasks to see the results. The allocation should be marked as "complete" after the duration specified.
 
+You can now get the run ID from the `stdout` of the `run_scenario` task in the Nomad web UI and, if the `reporter`
+was set to `influx-file` (the default value) then you can use that ID to view the results on the corresponding
+InfluxDB dashboard, the dashboards can be found at <https://ifdb.holochain.org/orgs/37472a94dbe3e7c1/dashboards-list>,
+the credentials of which can be found in BitWarden.
+
 #### Kitsune tests
 
 For Kitsune Wind Tunnel tests, start a bootstrap and signal server:
