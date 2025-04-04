@@ -578,6 +578,24 @@ was set to `influx-file` (the default value) then you can use that ID to view th
 InfluxDB dashboard, the dashboards can be found at <https://ifdb.holochain.org/orgs/37472a94dbe3e7c1/dashboards-list>,
 the credentials of which can be found in BitWarden.
 
+###### Running Scenarios with the CI
+
+There is a [dedicated GitHub workflow](https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml)
+for bundling all the scenarios designed to run with Nomad, uploading them as GitHub artifacts, and then
+running them on available Nomad clients specifically available for testing. The metrics from the runs
+are also uploaded to the InfluxDB instance. This is the recommended way to run the Wind Tunnel scenarios
+with Nomad.
+
+To run it, simply navigate to <https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml>, select
+`Run workflow` on the right, and select the branch that you want to test. If you only want to test a
+sub-selection of the scenarios then simply comment-out or remove the scenarios that you want to exclude
+from the matrix in [the workflow file](.github/workflows/nomad.yaml), push your changes and make sure to
+select the correct branch.
+
+> [!Warning]
+> Currently, the `Wait for free nodes` step will wait indefinitely if there are never enough free nodes
+> which will also block other jobs from running.
+
 #### Kitsune tests
 
 For Kitsune Wind Tunnel tests, start a bootstrap and signal server:
