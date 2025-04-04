@@ -463,14 +463,14 @@ where `app_install` is the name of the scenario.
 
 Once the scenario is built you can run the Nomad job with:
 ```shell
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars nomad/run_scenario_local.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars nomad/run_scenario.nomad.hcl
 ```
 where the `-var-file` path should point to the var file in `nomad/var_files` with the matching scenario name.
 
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (omitted) and reporter (override) use:
 
 ```shell
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var duration=5 -var reporter=in-memory nomad/run_scenario_local.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var duration=5 -var reporter=in-memory nomad/run_scenario.nomad.hcl
 ```
 > [!Note]
 > Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
