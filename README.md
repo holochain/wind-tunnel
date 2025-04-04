@@ -474,6 +474,11 @@ nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_insta
 - `-var scenario-url=...` provides the path to the scenario binary that you built in the previous step.
 - `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
 
+> [!Warning]
+> When running locally as in this guide, the `reporter` must be set to `in-memory` and the `scenario-url` must be a
+> local path due to the way Nomad handles downloading. To get around this limitation you must disable file system
+> isolation, see <https://developer.hashicorp.com/nomad/docs/configuration/client#disable_filesystem_isolation>.
+
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
 
 ```bash
