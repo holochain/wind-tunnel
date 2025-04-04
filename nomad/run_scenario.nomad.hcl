@@ -27,7 +27,7 @@ variable "behaviours" {
   default     = [""]
 }
 
-variable "scenario-download-url" {
+variable "scenario-url" {
   type        = string
   description = "The URL to the binary for the scenario under test that will be downloaded"
 }
@@ -92,7 +92,7 @@ job "run_scenario" {
         driver = "raw_exec"
 
         artifact {
-          source = var.scenario-download-url
+          source = var.scenario-url
         }
 
         env {
