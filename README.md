@@ -437,47 +437,55 @@ RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run 
 ```
 #### Running Wind Tunnel Scenarios with Nomad
 
-> [!Warning]
-> This is a work in progress and currently only works running the scenarios locally.
-
 ##### Running Locally
 
-You can easily test the Wind Tunnel scenarios with [Nomad](https://www.nomadproject.io) by running them locally, this requires running a Nomad agent locally
-as both a client and a server.
+You can easily test the Wind Tunnel scenarios with
+[Nomad](https://www.nomadproject.io) by running them locally. This requires
+running a Nomad agent locally as both a client and a server.
 
 First, enter the Nix `devShell` with `nix develop` to make sure you have all the packages install.
-Alternatively, [install Nomad](https://developer.hashicorp.com/nomad/install) and Holochain locally so that both `nomad` and `hc` are in your `PATH`.
+Alternatively, [install Nomad](https://developer.hashicorp.com/nomad/install) and Holochain locally
+so that both `nomad` and `hc` are in your `PATH`.
 
 Once Nomad is installed, run the agent in `dev` mode to spin up both a server and client, do this with:
-```shell
+
+```bash
 nomad agent -dev
 ```
 
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 
 Next, in a new terminal window, build the scenario you want to run with:
-```shell
+
+```bash
 nix build .#app_install
 ```
-where `app_install` is the name of the scenario.
+
+Replace `app_install` with the name of the scenario that you want to run.
 
 Once the scenario is built you can run the Nomad job with:
-```shell
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars nomad/run_scenario.nomad.hcl
-```
-where the `-var-file` path should point to the var file in `nomad/var_files` with the matching scenario name.
 
-You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (omitted) and reporter (override) use:
-
-```shell
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var duration=5 -var reporter=in-memory nomad/run_scenario.nomad.hcl
+```bash
+nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory nomad/run_scenario.nomad.hcl
 ```
+
+- `-address` sets Nomad to talk to the locally running instance and not the dedicated Wind Tunnel cluster one.
+- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
+- `-var scenario-url=...` provides the path to the scenario binary that you built in the previous step.
+- `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
+
+You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
+
+```bash
+nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+```
+
 > [!Note]
 > Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
 
-Then, navigate to <http://localhost:4646/ui/jobs/app_install_scenario@default> where you should see one allocation (the Nomad name for an instance of the job)
-this allocation should have two tasks: the `start_holochain` task and the `run_scenario` task. You can view the logs of these tasks to see the results.
-The allocation should be marked as "Completed" after the duration specified.
+Then, navigate to <http://localhost:4646/ui/jobs/run_scenario@default> where you should see one allocation,
+which is the Nomad name for an instance of the job. You can view the logs of the tasks to see the results.
+The allocation should be marked as "complete" after the duration specified.
 
 Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
 
