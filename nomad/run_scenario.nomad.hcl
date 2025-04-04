@@ -29,7 +29,7 @@ variable "behaviours" {
 
 variable "scenario-url" {
   type        = string
-  description = "The URL to the binary for the scenario under test that will be downloaded"
+  description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path"
 }
 
 variable "run-id" {
@@ -91,8 +91,13 @@ job "run_scenario" {
       task "run_scenario" {
         driver = "raw_exec"
 
-        artifact {
-          source = var.scenario-url
+        dynamic "artifact" {
+          // Download the scenario from the URL if it is not a valid local path.
+          for_each = fileexists(abspath(var.scenario-url)) ? [] : [var.scenario-url]
+
+          content {
+            source = var.scenario-url
+          }
         }
 
         env {
@@ -102,7 +107,8 @@ job "run_scenario" {
         }
 
         config {
-          command = var.scenario-name
+          // If `var.scenario-url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
+          command = fileexists(abspath(var.scenario-url)) ? abspath(var.scenario-url) : var.scenario-name
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
             "--connection-string=${var.connection-string}",
