@@ -511,7 +511,8 @@ You can now view and recent or running jobs at <https://nomad-server-01.holochai
 > [!Note]
 > Running scenarios on the remote cluster from the command-line requires quite a few steps including
 > storing the binary on a public file share. For that reason it is recommended to instead use the
-> [Nomad workflow](.github/workflows/nomad.yaml) which takes care of some of these steps for you.
+> [Nomad workflow](https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml) which
+> takes care of some of these steps for you.
 
 To run a Wind Tunnel scenario on the Nomad cluster from the command-line, first enter the Nix `devShell`
 with `nix develop` or [install Nomad](https://developer.hashicorp.com/nomad/install) locally.
