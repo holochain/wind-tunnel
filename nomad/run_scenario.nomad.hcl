@@ -125,33 +125,39 @@ job "run_scenario" {
         }
       }
 
-      task "upload_metrics" {
-        lifecycle {
-          hook = "poststop"
-        }
+      dynamic "task" {
+        // Only upload the metrics if `var.reporter` is set to `influx-file`.
+        for_each = var.reporter == "influx-file" ? [var.reporter] : []
+        labels   = ["upload_metrics"]
 
-        env {
-          TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
-          WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-        }
+        content {
+          lifecycle {
+            hook = "poststop"
+          }
 
-        template {
-          destination = "${NOMAD_SECRETS_DIR}/secrets.env"
-          env         = true
-          data        = <<EOT
+          env {
+            TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
+            WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          }
+
+          template {
+            destination = "${NOMAD_SECRETS_DIR}/secrets.env"
+            env         = true
+            data        = <<EOT
           INFLUX_TOKEN={{ with nomadVar "nomad/jobs/run_scenario" }}{{ .INFLUX_TOKEN }}{{ end }}
           EOT
-        }
+          }
 
-        driver = "raw_exec"
+          driver = "raw_exec"
 
-        artifact {
-          source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
-        }
+          artifact {
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
+          }
 
-        config {
-          command = "telegraf"
-          args    = ["--once"]
+          config {
+            command = "telegraf"
+            args    = ["--once"]
+          }
         }
       }
     }
