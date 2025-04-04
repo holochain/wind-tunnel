@@ -489,6 +489,77 @@ The allocation should be marked as "complete" after the duration specified.
 
 Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
 
+##### Wind Tunnel Nomad Cluster
+
+Wind Tunnel has a dedicated Nomad cluster for running scenarios.
+
+This cluster can be accessed at <https://nomad-server-01.holochain.org:4646/ui>.
+A token is required to view the details of the cluster, the shared admin "bootstrap" token can be
+found in BitWarden under `Nomad Server Bootstrap Token`.
+
+Enter the token (or use auto-fill) to sign in at <https://nomad-server-01.holochain.org:4646/ui/settings/tokens>.
+
+You can now view and recent or running jobs at <https://nomad-server-01.holochain.org:4646/ui/jobs>.
+
+###### Running Scenarios from the Command-Line
+
+> [!Note]
+> Running scenarios on the remote cluster from the command-line requires quite a few steps including
+> storing the binary on a public file share. For that reason it is recommended to instead use the
+> [Nomad workflow](.github/workflows/nomad.yaml) which takes care of some of these steps for you.
+
+To run a Wind Tunnel scenario on the Nomad cluster from the command-line, first enter the Nix `devShell`
+with `nix develop` or [install Nomad](https://developer.hashicorp.com/nomad/install) locally.
+
+Once Nomad is installed, bundle the scenario you want to run with Nix so that it can run on other machines.
+
+Run:
+
+```bash
+nix bundle .#packages.x86_64-linux.app_install
+```
+
+Replace `app_install` with the name of the scenario that you want to run.
+This will build and bundle the scenario to run on any `x86_64-linux` machine and does not require Nix to run.
+The bundled output will be in your `/nix/store/` with a symlink to it in your local dir with an `-arx` postfix,
+to make it easier to find the bundle later it is recommended to copy it somewhere. It is also best to remove
+the `-arx` postfix now so we don't forget later.
+
+```bash
+cp ./app_install-arx ./app_install
+```
+
+You now need to upload the scenario bundle to somewhere public so that the Nomad client can download it.
+This could be a GitHub release, a public file sharing services, or some other means, as long as it's publicly
+accessible.
+
+> [!Note]
+> Unlike when running locally in the section above, we cannot just pass a path because the path needs to be
+> accessible to the client and Nomad doesn't have native support for uploading artefacts.
+
+Now that the bundle is publicly available you can run the scenario with the following:
+
+```bash
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} nomad/run_scenario.nomad.hcl
+```
+
+- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
+- `-var scenario-url=...` provides the URL to the scenario binary that you uploaded in the previous step.
+
+You can also override existing and omitted variables with the `-var` flag. For example, to set the duration
+(in seconds) or to set the reporter to print to `stdout`.
+
+```bash
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http:://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+```
+
+> [!Note]
+> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
+
+Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs/run_scenario@default> where you
+should see the allocation, which is the Nomad name for an instance of the job. You can view the logs
+of the tasks to see the results. The allocation should be marked as "complete" after the duration specified.
+
 #### Kitsune tests
 
 For Kitsune Wind Tunnel tests, start a bootstrap and signal server:
