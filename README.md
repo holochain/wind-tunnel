@@ -516,6 +516,13 @@ You can now view and recent or running jobs at <https://nomad-server-01.holochai
 To run a Wind Tunnel scenario on the Nomad cluster from the command-line, first enter the Nix `devShell`
 with `nix develop` or [install Nomad](https://developer.hashicorp.com/nomad/install) locally.
 
+You also need to set the `NOMAD_ADDR` environment variable to `https://nomad-server-01.holochain.org:4646`
+and `NOMAD_CACERT` to `./nomad/server-ca-cert.pem`, which are both set by the Nix `devShell`.
+
+The final environment variable that needs to be set and is **not** set by the `devShell` is `NOMAD_TOKEN`
+which needs to be set to a token with the correct permissions, for now it is fine to just use the admin
+token found in BitWarden under `Nomad Server Bootstrap Token`.
+
 Once Nomad is installed, bundle the scenario you want to run with Nix so that it can run on other machines.
 
 Run:
