@@ -39,7 +39,7 @@ jobs:
 
       - name: Bundle scenario
         run: |
-          nix bundle --option sandbox false .#packages.x86_64-linux.${{ matrix.scenario-name }}
+          nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
           cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
 
       - name: Upload bundle as artifact
