@@ -1,12 +1,11 @@
 use holo_hash::DnaHash;
 use holochain_client::{
     AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload,
-    ConductorApiResult, EnableAppResponse, InstallAppPayload, SigningCredentials, WebsocketConfig,
+    ConductorApiResult, EnableAppResponse, InstallAppPayload, SigningCredentials,
 };
 use holochain_types::prelude::{CellId, DeleteCloneCellPayload, Record};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::ToSocketAddr;
 use anyhow::Result;
@@ -26,11 +25,7 @@ pub struct AdminWebsocketInstrumented {
 impl AdminWebsocketInstrumented {
     pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        let config = WebsocketConfig {
-            default_request_timeout: Duration::from_secs(3 * 60),
-            ..WebsocketConfig::CLIENT_DEFAULT
-        };
-        Ok(AdminWebsocket::connect_with_config(addr, config.into())
+        Ok(AdminWebsocket::connect(addr)
             .await
             .map(|inner| Self { inner, reporter })?)
     }
