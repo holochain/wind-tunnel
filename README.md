@@ -500,7 +500,7 @@ Wind Tunnel has a dedicated Nomad cluster for running scenarios.
 
 This cluster can be accessed at <https://nomad-server-01.holochain.org:4646/ui>.
 A token is required to view the details of the cluster, the shared admin "bootstrap" token can be
-found in BitWarden under `Nomad Server Bootstrap Token`.
+found in the Holochain shared vault of the password manager under `Nomad Server Bootstrap Token`.
 
 Enter the token (or use auto-fill) to sign in at <https://nomad-server-01.holochain.org:4646/ui/settings/tokens>.
 
@@ -522,7 +522,7 @@ and `NOMAD_CACERT` to `./nomad/server-ca-cert.pem`, which are both set by the Ni
 
 The final environment variable that needs to be set and is **not** set by the `devShell` is `NOMAD_TOKEN`
 which needs to be set to a token with the correct permissions, for now it is fine to just use the admin
-token found in BitWarden under `Nomad Server Bootstrap Token`.
+token found in the Holochain shared vault of the password manager under `Nomad Server Bootstrap Token`.
 
 Once Nomad is installed, bundle the scenario you want to run with Nix so that it can run on other machines.
 
@@ -576,7 +576,7 @@ of the tasks to see the results. The allocation should be marked as "complete" a
 You can now get the run ID from the `stdout` of the `run_scenario` task in the Nomad web UI and, if the `reporter`
 was set to `influx-file` (the default value) then you can use that ID to view the results on the corresponding
 InfluxDB dashboard, the dashboards can be found at <https://ifdb.holochain.org/orgs/37472a94dbe3e7c1/dashboards-list>,
-the credentials of which can be found in BitWarden.
+the credentials of which can be found in the Holochain shared vault of the password manager.
 
 ###### Running Scenarios with the CI
 
