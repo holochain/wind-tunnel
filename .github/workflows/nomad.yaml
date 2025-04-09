@@ -12,6 +12,7 @@ jobs:
     name: Run ${{ matrix.job-name || matrix.scenario-name }}
     runs-on: [self-hosted, wind-tunnel]
     strategy:
+      max-parallel: 1
       fail-fast: false
       # `job-name` defaults to `scenario-name` if not provided.
       # `required-nodes` defaults to `1` if not provided.
