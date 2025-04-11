@@ -86,7 +86,7 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
-        run: |
+        run: |-
           nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name || matrix.scenario-name }}.vars" nomad/run_scenario.nomad.hcl
 
           echo "Ran ${{ matrix.job-name }} with run ID ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
