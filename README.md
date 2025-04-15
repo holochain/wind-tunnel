@@ -435,6 +435,166 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 ```bash
 RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 60
 ```
+#### Running Wind Tunnel Scenarios with Nomad
+
+##### Running Locally
+
+You can easily test the Wind Tunnel scenarios with
+[Nomad](https://www.nomadproject.io) by running them locally. This requires
+running a Nomad agent locally as both a client and a server.
+
+First, enter the Nix `devShell` with `nix develop` to make sure you have all the packages install.
+Alternatively, [install Nomad](https://developer.hashicorp.com/nomad/install) and Holochain locally
+so that both `nomad` and `hc` are in your `PATH`.
+
+Once Nomad is installed, run the agent in `dev` mode to spin up both a server and client, do this with:
+
+```bash
+nomad agent -dev
+```
+
+Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
+
+Next, in a new terminal window, build the scenario you want to run with:
+
+```bash
+nix build .#app_install
+```
+
+Replace `app_install` with the name of the scenario that you want to run.
+
+Once the scenario is built you can run the Nomad job with:
+
+```bash
+nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory nomad/run_scenario.nomad.hcl
+```
+
+- `-address` sets Nomad to talk to the locally running instance and not the dedicated Wind Tunnel cluster one.
+- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
+- `-var scenario-url=...` provides the path to the scenario binary that you built in the previous step.
+- `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
+
+> [!Warning]
+> When running locally as in this guide, the `reporter` must be set to `in-memory` and the `scenario-url` must be a
+> local path due to the way Nomad handles downloading. To get around this limitation you must disable file system
+> isolation, see <https://developer.hashicorp.com/nomad/docs/configuration/client#disable_filesystem_isolation>.
+
+You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
+
+```bash
+nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+```
+
+> [!Note]
+> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
+
+Then, navigate to <http://localhost:4646/ui/jobs/run_scenario@default> where you should see one allocation,
+which is the Nomad name for an instance of the job. You can view the logs of the tasks to see the results.
+The allocation should be marked as "complete" after the duration specified.
+
+Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
+
+##### Wind Tunnel Nomad Cluster
+
+Wind Tunnel has a dedicated Nomad cluster for running scenarios.
+
+This cluster can be accessed at <https://nomad-server-01.holochain.org:4646/ui>.
+A token is required to view the details of the cluster, the shared admin "bootstrap" token can be
+found in the Holochain shared vault of the password manager under `Nomad Server Bootstrap Token`.
+
+Enter the token (or use auto-fill) to sign in at <https://nomad-server-01.holochain.org:4646/ui/settings/tokens>.
+
+You can now view and recent or running jobs at <https://nomad-server-01.holochain.org:4646/ui/jobs>.
+
+###### Running Scenarios from the Command-Line
+
+> [!Note]
+> Running scenarios on the remote cluster from the command-line requires quite a few steps including
+> storing the binary on a public file share. For that reason it is recommended to instead use the
+> [Nomad workflow](https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml) which
+> takes care of some of these steps for you.
+
+To run a Wind Tunnel scenario on the Nomad cluster from the command-line, first enter the Nix `devShell`
+with `nix develop` or [install Nomad](https://developer.hashicorp.com/nomad/install) locally.
+
+You also need to set the `NOMAD_ADDR` environment variable to `https://nomad-server-01.holochain.org:4646`
+and `NOMAD_CACERT` to `./nomad/server-ca-cert.pem`, which are both set by the Nix `devShell`.
+
+The final environment variable that needs to be set and is **not** set by the `devShell` is `NOMAD_TOKEN`
+which needs to be set to a token with the correct permissions, for now it is fine to just use the admin
+token found in the Holochain shared vault of the password manager under `Nomad Server Bootstrap Token`.
+
+Once Nomad is installed, bundle the scenario you want to run with Nix so that it can run on other machines.
+
+Run:
+
+```bash
+nix bundle .#packages.x86_64-linux.app_install
+```
+
+Replace `app_install` with the name of the scenario that you want to run.
+This will build and bundle the scenario to run on any `x86_64-linux` machine and does not require Nix to run.
+The bundled output will be in your `/nix/store/` with a symlink to it in your local dir with an `-arx` postfix,
+to make it easier to find the bundle later it is recommended to copy it somewhere. It is also best to remove
+the `-arx` postfix now so we don't forget later.
+
+```bash
+cp ./app_install-arx ./app_install
+```
+
+You now need to upload the scenario bundle to somewhere public so that the Nomad client can download it.
+This could be a GitHub release, a public file sharing services, or some other means, as long as it's publicly
+accessible.
+
+> [!Note]
+> Unlike when running locally in the section above, we cannot just pass a path because the path needs to be
+> accessible to the client and Nomad doesn't have native support for uploading artefacts.
+
+Now that the bundle is publicly available you can run the scenario with the following:
+
+```bash
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} nomad/run_scenario.nomad.hcl
+```
+
+- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
+- `-var scenario-url=...` provides the URL to the scenario binary that you uploaded in the previous step.
+
+You can also override existing and omitted variables with the `-var` flag. For example, to set the duration
+(in seconds) or to set the reporter to print to `stdout`.
+
+```bash
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http:://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+```
+
+> [!Note]
+> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
+
+Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs/run_scenario@default> where you
+should see the allocation, which is the Nomad name for an instance of the job. You can view the logs
+of the tasks to see the results. The allocation should be marked as "complete" after the duration specified.
+
+You can now get the run ID from the `stdout` of the `run_scenario` task in the Nomad web UI and, if the `reporter`
+was set to `influx-file` (the default value) then you can use that ID to view the results on the corresponding
+InfluxDB dashboard, the dashboards can be found at <https://ifdb.holochain.org/orgs/37472a94dbe3e7c1/dashboards-list>,
+the credentials of which can be found in the Holochain shared vault of the password manager.
+
+###### Running Scenarios with the CI
+
+There is a [dedicated GitHub workflow](https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml)
+for bundling all the scenarios designed to run with Nomad, uploading them as GitHub artifacts, and then
+running them on available Nomad clients specifically available for testing. The metrics from the runs
+are also uploaded to the InfluxDB instance. This is the recommended way to run the Wind Tunnel scenarios
+with Nomad.
+
+To run it, simply navigate to <https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml>, select
+`Run workflow` on the right, and select the branch that you want to test. If you only want to test a
+sub-selection of the scenarios then simply comment-out or remove the scenarios that you want to exclude
+from the matrix in [the workflow file](.github/workflows/nomad.yaml), push your changes and make sure to
+select the correct branch.
+
+> [!Warning]
+> Currently, the `Wait for free nodes` step will wait indefinitely if there are never enough free nodes
+> which will also block other jobs from running.
 
 #### Kitsune tests
 

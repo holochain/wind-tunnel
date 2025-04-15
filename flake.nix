@@ -62,6 +62,7 @@
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
+        unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
@@ -81,45 +82,10 @@
           ./nix/modules/zomes.nix
         ];
 
-        devShells = {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.influxdb2-cli
-              pkgs.influxdb2-server
-              # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
-              pkgs.telegraf
-              pkgs.yq
-              pkgs.httpie
-              pkgs.shellcheck
-              pkgs.statix
-              pkgs.taplo
-              pkgs.yamlfmt
-              pkgs.perl
-              pkgs.cmake
-              pkgs.rustPlatform.bindgenHook
-              config.rustHelper.rust
-              customHolochain
-              inputs'.holonix.packages.lair-keystore
-              inputs'.holonix.packages.hn-introspect
-              inputs'.kitsune2.packages.bootstrap-srv
-              inputs'.tryorama.packages.trycp-server
-              inputs'.amber.packages.default
-            ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-              pkgs.darwin.apple_sdk.frameworks.Security
-              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-              pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-            ];
-
-            shellHook = ''
-              source ./scripts/influx.sh
-              source ./scripts/telegraf.sh
-              source ./scripts/trycp.sh
-              source ./scripts/checks.sh
-            '';
-          };
-
-          ci = pkgs.mkShell {
-            packages = [
+        devShells =
+          let
+            # The packages required in most devShells
+            commonPackages = [
               pkgs.cmake
               pkgs.perl
               pkgs.rustPlatform.bindgenHook
@@ -133,17 +99,49 @@
               inputs'.kitsune2.packages.bootstrap-srv
               inputs'.tryorama.packages.trycp-server
             ];
-          };
+          in
+          {
+            default = pkgs.mkShell {
+              packages = commonPackages ++ [
+                pkgs.influxdb2-cli
+                pkgs.influxdb2-server
+                # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
+                pkgs.telegraf
+                pkgs.yq
+                pkgs.httpie
+                unfreePkgs.nomad
+                inputs'.holonix.packages.hn-introspect
+                inputs'.amber.packages.default
+              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+                pkgs.darwin.apple_sdk.frameworks.Security
+                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+              ];
 
-          kitsune = pkgs.mkShell {
-            packages = [
-              pkgs.cmake
-              pkgs.perl
-              pkgs.rustPlatform.bindgenHook
-              inputs'.kitsune2.packages.bootstrap-srv
-            ];
+              NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
+              NOMAD_CACERT = ./nomad/server-ca-cert.pem;
+
+              shellHook = ''
+                source ./scripts/influx.sh
+                source ./scripts/telegraf.sh
+                source ./scripts/trycp.sh
+                source ./scripts/checks.sh
+              '';
+            };
+
+            ci = pkgs.mkShell {
+              packages = commonPackages;
+            };
+
+            kitsune = pkgs.mkShell {
+              packages = [
+                pkgs.cmake
+                pkgs.perl
+                pkgs.rustPlatform.bindgenHook
+                inputs'.kitsune2.packages.bootstrap-srv
+              ];
+            };
           };
-        };
 
         packages = {
           default = config.workspace.workspace;
