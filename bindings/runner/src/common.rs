@@ -11,6 +11,8 @@ use holochain_types::prelude::{
 };
 use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
@@ -300,6 +302,82 @@ where
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
+
+    Ok(())
+}
+
+/// Tries to wait for a minimum number of peers to be discovered.
+///
+/// If you call this function in you agent setup then the scenario will become configurable using
+/// the `MIN_PEERS` environment variable. The default value is 2.
+///
+/// Note that the number of peers seen by each node includes itself. So having two nodes means that
+/// each node will immediately see one peer after app installation.
+///
+/// Example:
+/// ```rust
+/// use std::path::Path;
+/// use std::time::Duration;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, install_app, try_wait_for_min_peers};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainAgentContext, HolochainRunnerContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     try_wait_for_min_peers(ctx, Duration::from_secs(60))?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Note that if no apps have been installed, you are waiting for too many peers, or anything else
+/// prevents enough peers being discovered then the function will wait up to the `wait_for` duration
+/// before continuing. It will not fail if too few peers were discovered.
+///
+/// Note that the smallest resolution is 1s. This is because the function will sleep between
+/// querying peers from the conductor. You could probably not use this function for performance
+/// testing peer discovery!
+pub fn try_wait_for_min_peers<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    wait_for: Duration,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    static MIN_PEERS: OnceLock<usize> = OnceLock::new();
+
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let reporter = ctx.runner_context().reporter();
+    let agent_name = ctx.agent_name().to_string();
+
+    let min_peers = *MIN_PEERS.get_or_init(|| {
+        std::env::var("MIN_PEERS")
+            .ok()
+            .map(|s| s.parse().expect("MIN_PEERS must be a number"))
+            .unwrap_or(2)
+    });
+    
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+            
+            let start_discovery = Instant::now();
+            for _ in 0..wait_for.as_secs() {
+                let agent_list = client.agent_info(None).await?;
+
+                if agent_list.len() >= min_peers {
+                    break;
+                }
+
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+
+            println!(
+                "Discovery for agent {} took: {}s",
+                agent_name,
+                start_discovery.elapsed().as_secs()
+            );
+
+            Ok(())
+        })?;
 
     Ok(())
 }
