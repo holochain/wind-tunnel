@@ -353,12 +353,12 @@ where
             .map(|s| s.parse().expect("MIN_PEERS must be a number"))
             .unwrap_or(2)
     });
-    
+
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
             let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
-            
+
             let start_discovery = Instant::now();
             for _ in 0..wait_for.as_secs() {
                 let agent_list = client.agent_info(None).await?;

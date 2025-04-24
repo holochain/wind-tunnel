@@ -126,7 +126,10 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn agent_info(&self, cell_id: Option<CellId>) -> ConductorApiResult<Vec<AgentInfoSigned>> {
+    pub async fn agent_info(
+        &self,
+        cell_id: Option<CellId>,
+    ) -> ConductorApiResult<Vec<AgentInfoSigned>> {
         self.inner.agent_info(cell_id).await
     }
 
