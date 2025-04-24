@@ -207,18 +207,13 @@ jobs:
 
       - name: Smoke test - two_party_countersigning
         run: |
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 30 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - validation_receipts
         run: |
