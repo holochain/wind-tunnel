@@ -11,7 +11,6 @@ use holochain_types::prelude::{
 };
 use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
-use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
