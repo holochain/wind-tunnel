@@ -52,7 +52,7 @@ job "run_scenario" {
 
   dynamic "group" {
     for_each = var.behaviours
-    labels   = ["${var.scenario-name}-${group.value}"]
+    labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
 
     content {
       task "start_holochain" {
