@@ -14,6 +14,7 @@ use holochain_conductor_api::{
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
+use kitsune_p2p_types::agent_info::AgentInfoSigned;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
@@ -122,6 +123,14 @@ impl AdminWebsocketInstrumented {
         records: Vec<Record>,
     ) -> ConductorApiResult<()> {
         self.inner.graft_records(cell_id, validate, records).await
+    }
+
+    #[wind_tunnel_instrument(prefix = "admin_")]
+    pub async fn agent_info(
+        &self,
+        cell_id: Option<CellId>,
+    ) -> ConductorApiResult<Vec<AgentInfoSigned>> {
+        self.inner.agent_info(cell_id).await
     }
 
     // This is really a wrapper function, because it will call `grant_zome_call_capability` but it will call
