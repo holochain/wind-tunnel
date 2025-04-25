@@ -38,6 +38,12 @@ variable "run-id" {
   default     = null
 }
 
+variable "agents-per-node" {
+  type        = number
+  description = "The number of agents to run per client node that is running the scenario"
+  default     = 1
+}
+
 job "run_scenario" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -116,6 +122,7 @@ job "run_scenario" {
             var.reporter != null ? "--reporter=${var.reporter}" : null,
             group.value != "" ? "--behaviour=${group.value}:1" : null,
             var.run-id != null ? "--run-id=${var.run-id}" : null,
+            "--agents=${var.agents-per-node}",
             "--no-progress"
           ])
         }
