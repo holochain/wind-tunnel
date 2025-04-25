@@ -341,18 +341,14 @@ pub fn try_wait_for_min_agents<SV>(
 where
     SV: UserValuesConstraint,
 {
-    static MIN_AGENTS: OnceLock<usize> = OnceLock::new();
-
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let reporter = ctx.runner_context().reporter();
     let agent_name = ctx.agent_name().to_string();
 
-    let min_agents = *MIN_AGENTS.get_or_init(|| {
-        std::env::var("MIN_AGENTS")
-            .ok()
-            .map(|s| s.parse().expect("MIN_AGENTS must be a number"))
-            .unwrap_or(2)
-    });
+    let min_agents = std::env::var("MIN_AGENTS")
+        .ok()
+        .map(|s| s.parse().expect("MIN_AGENTS must be a number"))
+        .unwrap_or(2);
 
     ctx.runner_context()
         .executor()
