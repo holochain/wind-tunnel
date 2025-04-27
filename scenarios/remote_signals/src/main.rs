@@ -1,15 +1,13 @@
 use anyhow::Context;
 use holochain_types::prelude::*;
+use holochain_wind_tunnel_runner::{prelude::*, scenario_happ_path};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use remote_signal_integrity::TimedMessage;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
-use trycp_wind_tunnel_runner::embed_conductor_config;
-use trycp_wind_tunnel_runner::prelude::*;
-
-embed_conductor_config!();
 
 #[derive(Debug)]
 pub struct ScenarioValues {
@@ -42,84 +40,71 @@ impl Default for ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
+fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
+    configure_app_ws_url(ctx)?;
+    Ok(())
+}
+
 fn agent_setup(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    connect_trycp_client(ctx)?;
-    reset_trycp_remote(ctx)?;
-
-    let pending_set = ctx.get().scenario_values.pending_set.clone();
-
-    let client = ctx.get().trycp_client();
-    let agent_name = ctx.agent_name().to_string();
-    let reporter = ctx.runner_context().reporter();
-
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            client
-                .configure_player(agent_name.clone(), conductor_config().to_string(), None)
-                .await?;
-
-            client.startup(agent_name.clone(), None).await?;
-
-            let _rcv_task = tokio::task::spawn(async move {
-                loop {
-                    let msg: Signal = ExternIO(
-                        client
-                            .recv_signal()
-                            .await
-                            .expect("signal receiver ended")
-                            .data,
-                    )
-                    .decode()
-                    .unwrap();
-                    let msg = match msg {
-                        Signal::App { signal, .. } => {
-                            let msg: Vec<u8> = signal.into_inner().decode().unwrap();
-                            let msg: TimedMessage = ExternIO(msg).decode().unwrap();
-                            msg
-                        }
-                        _ => continue,
-                    };
-
-                    pending_set.lock().unwrap().remove(&msg.to_request());
-
-                    match msg {
-                        TimedMessage::TimedRequest { .. } => (),
-                        TimedMessage::TimedResponse { requested_at, .. } => {
-                            let dispatch_time_s = requested_at.as_micros() as f64 / 1_000_000.0;
-                            let receive_time_s = Timestamp::now().as_micros() as f64 / 1_000_000.0;
-
-                            reporter.add_custom(
-                                ReportMetric::new("remote_signal_round_trip")
-                                    .with_field("value", receive_time_s - dispatch_time_s),
-                            );
-                        }
-                    }
-                }
-            });
-
-            Ok(())
-        })?;
-
     install_app(
         ctx,
         scenario_happ_path!("remote_signal"),
         &"remote_signal".to_string(),
     )?;
-    try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
+
+    let pending_set = ctx.get().scenario_values.pending_set.clone();
+    let reporter = ctx.runner_context().reporter();
+    let client = ctx.get().app_client();
+
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let _rcv_task = tokio::task::spawn(async move {
+                client
+                    .on_signal(move |signal| {
+                        let msg = match signal {
+                            Signal::App { signal, .. } => {
+                                let msg: Vec<u8> = signal.into_inner().decode().unwrap();
+                                let msg: TimedMessage = ExternIO(msg).decode().unwrap();
+                                msg
+                            }
+                            _ => return,
+                        };
+
+                        pending_set.lock().unwrap().remove(&msg.to_request());
+
+                        match msg {
+                            TimedMessage::TimedRequest { .. } => (),
+                            TimedMessage::TimedResponse { requested_at, .. } => {
+                                let dispatch_time_s = requested_at.as_micros() as f64 / 1_000_000.0;
+                                let receive_time_s =
+                                    Timestamp::now().as_micros() as f64 / 1_000_000.0;
+
+                                reporter.add_custom(
+                                    ReportMetric::new("remote_signal_round_trip")
+                                        .with_field("value", receive_time_s - dispatch_time_s),
+                                );
+                            }
+                        }
+                    })
+                    .await
+                    .expect("signal receiver ended");
+            });
+
+            Ok(())
+        })?;
+
+    try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     Ok(())
 }
 
 fn agent_behaviour(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let client = ctx.get().trycp_client();
-
-    let agent_name = ctx.agent_name().to_string();
-    let app_port = ctx.get().app_port();
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let cell_id = ctx.get().cell_id();
     let next_remote_signal_peer = ctx.get_mut().scenario_values.remote_signal_peers.pop();
     let signal_interval = ctx.get().scenario_values.signal_interval;
@@ -127,37 +112,34 @@ fn agent_behaviour(
     let pending_set = ctx.get().scenario_values.pending_set.clone();
     let reporter = ctx.runner_context().reporter();
 
-    let new_peers = ctx
-        .runner_context()
-        .executor()
-        .execute_in_place(async move {
-            let now = Timestamp::now();
+    let now = Timestamp::now();
 
-            let mut timeout_count = 0;
+    let mut timeout_count = 0;
 
-            pending_set.lock().unwrap().retain(|msg| {
-                if now.as_millis() - msg.requested_at().as_millis()
-                    > response_timeout.as_millis() as i64
-                {
-                    timeout_count += 1;
-                    false
-                } else {
-                    true
-                }
-            });
+    pending_set.lock().unwrap().retain(|msg| {
+        if now.as_millis() - msg.requested_at().as_millis() > response_timeout.as_millis() as i64 {
+            timeout_count += 1;
+            false
+        } else {
+            true
+        }
+    });
 
-            while timeout_count > 0 {
-                reporter
-                    .add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", 1));
-                timeout_count -= 1;
-            }
+    while timeout_count > 0 {
+        reporter.add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", 1));
+        timeout_count -= 1;
+    }
 
-            match next_remote_signal_peer {
-                None => {
+    let new_peers = match next_remote_signal_peer {
+        None => {
+            ctx.runner_context()
+                .executor()
+                .execute_in_place(async move {
+                    let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
                     // No more agents available to signal, get a new list.
                     // This is also the initial condition.
-                    let mut new_peer_list = client
-                        .agent_info(agent_name, None, None)
+                    let mut new_peer_list = admin_client
+                        .agent_info(None)
                         .await
                         .context("Failed to get agent info")?
                         .into_iter()
@@ -166,39 +148,25 @@ fn agent_behaviour(
                         .collect::<Vec<_>>();
                     new_peer_list.shuffle(&mut thread_rng());
                     Ok(new_peer_list)
-                }
-                Some(agent_pub_key) => {
-                    let msg = TimedMessage::TimedRequest {
-                        requester: cell_id.agent_pubkey().clone(),
-                        responder: agent_pub_key.clone(),
-                        requested_at: Timestamp::now(),
-                    };
-                    pending_set.lock().unwrap().insert(msg.clone());
-                    // Send a remote signal to this agent
-                    client
-                        .call_zome(
-                            app_port,
-                            cell_id.clone(),
-                            "remote_signal",
-                            "signal_request",
-                            msg,
-                            // Better to keep this higher than the Kitsune timeout so that when this fails we get a
-                            // clear error back, rather than timing out here.
-                            Some(Duration::from_secs(80)),
-                        )
-                        .await
-                        .with_context(|| {
-                            format!("Failed to make remote signal to: {:?}", agent_pub_key)
-                        })?;
+                })?
+        }
+        Some(agent_pub_key) => {
+            let msg = TimedMessage::TimedRequest {
+                requester: cell_id.agent_pubkey().clone(),
+                responder: agent_pub_key.clone(),
+                requested_at: Timestamp::now(),
+            };
+            pending_set.lock().unwrap().insert(msg.clone());
+            // Send a remote signal to this agent
+            let _: () = call_zome(ctx, "remote_signal", "signal_request", msg)?;
 
-                    // Don't hammer with signals
-                    tokio::time::sleep(signal_interval).await;
+            // Don't hammer with signals
+            thread::sleep(signal_interval);
 
-                    // Add no new agents, that should only happen when we exhaust the list.
-                    Ok(Vec::with_capacity(0))
-                }
-            }
-        })?;
+            // Add no new agents, that should only happen when we exhaust the list.
+            Vec::with_capacity(0)
+        }
+    };
 
     ctx.get_mut()
         .scenario_values
@@ -208,36 +176,20 @@ fn agent_behaviour(
     Ok(())
 }
 
-fn agent_teardown(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
-) -> HookResult {
-    if let Err(e) = dump_logs(ctx) {
-        log::warn!("Failed to dump logs: {:?}", e);
-    }
-
-    // Best effort to remove data and cleanup.
-    // You should comment out this line if you want to examine the result of the scenario run!
-    let _ = reset_trycp_remote(ctx);
-
-    // Alternatively, you can just shut down the remote conductor instead of shutting it down and removing data.
-    // shutdown_remote(ctx)?;
-
-    disconnect_trycp_client(ctx)?;
-
-    Ok(())
-}
-
 fn main() -> WindTunnelResult<()> {
-    let builder = TryCPScenarioDefinitionBuilder::<
-        TryCPRunnerContext,
-        TryCPAgentContext<ScenarioValues>,
-    >::new_with_init(env!("CARGO_PKG_NAME"))?
-    .into_std()
+    let builder = ScenarioDefinitionBuilder::<
+        HolochainRunnerContext,
+        HolochainAgentContext<ScenarioValues>,
+    >::new_with_init(env!("CARGO_PKG_NAME"))
+    .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
-    .use_agent_teardown(agent_teardown);
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
 
-    run_with_required_agents(builder, 1)?;
+    run(builder)?;
 
     Ok(())
 }
