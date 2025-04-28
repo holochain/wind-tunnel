@@ -599,7 +599,6 @@ fn main() -> WindTunnelResult<()> {
         Ok(())
     });
 
-    // run_with_required_agents(builder, 1)?;
     run(builder)?;
 
     Ok(())
