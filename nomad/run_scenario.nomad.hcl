@@ -44,6 +44,12 @@ variable "agents-per-node" {
   default     = 1
 }
 
+variable "min-agents" {
+  type        = number
+  description = "The minimum number of agents to wait for in the scenario"
+  default     = 2
+}
+
 job "run_scenario" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -110,6 +116,7 @@ job "run_scenario" {
           RUST_LOG       = "info"
           HOME           = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          MIN_AGENTS     = "${var.min-agents}"
         }
 
         config {
