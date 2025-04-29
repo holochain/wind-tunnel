@@ -34,6 +34,9 @@ jobs:
 
           - scenario: first_call
             extra-args: "--agents 1 --behaviour local:1"
+
+          - scenario: validation_receipts
+            extra-args: "--agents 2"
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +94,7 @@ jobs:
       fail-fast: false
       matrix:
         # To run a test with TryCP and default configuration, add the scenario name to this array.
-        scenario: [trycp_write_validated, remote_call_rate, validation_receipts, remote_signals]
+        scenario: [trycp_write_validated, remote_call_rate, remote_signals]
         # To run a test with TryCP and additional configuration, add the scenario name and `extra-args` as an `include` item.
         include:
           - scenario: two_party_countersigning
