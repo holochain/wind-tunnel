@@ -355,7 +355,7 @@ start_telegraf
 For a zero-config and quick way to run Holochain, you can use the following command:
 
 ```bash
-hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
+hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn hc s --piped -f 8888 run
 ```
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
