@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Increased TryCP test scenario duration to 30s in CI [Test Workflow](.github/workflows/test.yaml).
 - Use the new `AppBundleSource::Bytes` variant to bundle scenarios [#152](https://github.com/holochain/wind-tunnel/pull/152)
 - Test workflow uses kitsune dev shell for kitsune scenario.
+- Converted `validation_receipts` scenario to non-TryCP scenario to be run on the Nomad cluster. [#172](https://github.com/holochain/wind-tunnel/pull/172)
 
 ### Deprecated
 ### Removed

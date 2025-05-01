@@ -1,10 +1,8 @@
 use holochain_types::prelude::*;
+use holochain_wind_tunnel_runner::prelude::*;
+use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use trycp_wind_tunnel_runner::embed_conductor_config;
-use trycp_wind_tunnel_runner::prelude::*;
-
-embed_conductor_config!();
 
 type OpType = String;
 type ReceiptsComplete = bool;
@@ -50,35 +48,22 @@ impl ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
+fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
+    configure_app_ws_url(ctx)?;
+    Ok(())
+}
+
 fn agent_setup(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    connect_trycp_client(ctx)?;
-    reset_trycp_remote(ctx)?;
-
-    let client = ctx.get().trycp_client();
-    let agent_name = ctx.agent_name().to_string();
-
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            client
-                .configure_player(agent_name.clone(), conductor_config().to_string(), None)
-                .await?;
-
-            client.startup(agent_name.clone(), None).await?;
-
-            Ok(())
-        })?;
-
     install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
-    try_wait_for_min_peers(ctx, Duration::from_secs(120))?;
+    try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     Ok(())
 }
 
 fn agent_behaviour(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
     let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
@@ -88,7 +73,6 @@ fn agent_behaviour(
         "crud",
         "create_sample_entry",
         "this is a test entry value",
-        Some(Duration::from_secs(80)),
     )?;
 
     ctx.get_mut()
@@ -123,7 +107,6 @@ fn agent_behaviour(
                 "crud",
                 "get_sample_entry_validation_receipts",
                 action_hash.clone(),
-                Some(Duration::from_secs(80)),
             )?;
 
             for set in response.iter() {
@@ -164,37 +147,24 @@ fn agent_behaviour(
 }
 
 fn agent_teardown(
-    ctx: &mut AgentContext<TryCPRunnerContext, TryCPAgentContext<ScenarioValues>>,
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    if let Err(e) = dump_logs(ctx) {
-        log::warn!("Failed to dump logs: {:?}", e);
-    }
-
-    // Best effort to remove data and cleanup.
-    // You should comment out this line if you want to examine the result of the scenario run!
-    let _ = reset_trycp_remote(ctx);
-
-    // Alternatively, you can just shut down the remote conductor instead of shutting it down and removing data.
-    // shutdown_remote(ctx)?;
-
-    disconnect_trycp_client(ctx)?;
-
-    Ok(())
+    uninstall_app(ctx, None)
 }
 
 fn main() -> WindTunnelResult<()> {
-    let builder = TryCPScenarioDefinitionBuilder::<
-        TryCPRunnerContext,
-        TryCPAgentContext<ScenarioValues>,
-    >::new_with_init(env!("CARGO_PKG_NAME"))?
-    .into_std()
+    let builder = ScenarioDefinitionBuilder::<
+        HolochainRunnerContext,
+        HolochainAgentContext<ScenarioValues>,
+    >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(300)
     .add_capture_env("NO_VALIDATION_COMPLETE")
+    .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);
 
-    run_with_required_agents(builder, 1)?;
+    run(builder)?;
 
     Ok(())
 }

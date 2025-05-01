@@ -38,6 +38,18 @@ variable "run-id" {
   default     = null
 }
 
+variable "agents-per-node" {
+  type        = number
+  description = "The number of agents to run per client node that is running the scenario"
+  default     = 1
+}
+
+variable "min-agents" {
+  type        = number
+  description = "The minimum number of agents to wait for in the scenario"
+  default     = 2
+}
+
 job "run_scenario" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -52,7 +64,7 @@ job "run_scenario" {
 
   dynamic "group" {
     for_each = var.behaviours
-    labels   = ["${var.scenario-name}-${group.value}"]
+    labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
 
     content {
       task "start_holochain" {
@@ -104,6 +116,7 @@ job "run_scenario" {
           RUST_LOG       = "info"
           HOME           = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          MIN_AGENTS     = "${var.min-agents}"
         }
 
         config {
@@ -116,6 +129,7 @@ job "run_scenario" {
             var.reporter != null ? "--reporter=${var.reporter}" : null,
             group.value != "" ? "--behaviour=${group.value}:1" : null,
             var.run-id != null ? "--run-id=${var.run-id}" : null,
+            "--agents=${var.agents-per-node}",
             "--no-progress"
           ])
         }
