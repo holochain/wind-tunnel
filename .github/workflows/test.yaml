@@ -237,6 +237,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_AGENTS=2 nix run .#validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
 
