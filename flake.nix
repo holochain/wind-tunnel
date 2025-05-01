@@ -93,6 +93,7 @@
               pkgs.statix
               pkgs.taplo
               pkgs.yamlfmt
+              pkgs.netcat-gnu
               config.rustHelper.rust
               customHolochain
               inputs'.holonix.packages.lair-keystore

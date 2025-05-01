@@ -86,6 +86,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -95,6 +97,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -106,6 +110,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
@@ -115,6 +121,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
@@ -126,6 +134,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -135,6 +145,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -146,6 +158,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -156,6 +170,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -165,6 +181,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -193,6 +211,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
 
@@ -202,6 +222,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
@@ -229,6 +251,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=warn MIN_AGENTS=2 cargo run -p remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
