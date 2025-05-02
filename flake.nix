@@ -23,16 +23,6 @@
       };
     };
 
-    tryorama = {
-      url = "github:holochain/tryorama?ref=v0.17.0";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        crane.follows = "crane";
-        rust-overlay.follows = "rust-overlay";
-        holonix.follows = "holonix";
-      };
-    };
-
     crane = {
       url = "github:ipetkov/crane";
     };
@@ -98,7 +88,6 @@
               customHolochain
               inputs'.holonix.packages.lair-keystore
               inputs'.kitsune2.packages.bootstrap-srv
-              inputs'.tryorama.packages.trycp-server
             ];
           in
           {
@@ -125,7 +114,6 @@
               shellHook = ''
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
-                source ./scripts/trycp.sh
                 source ./scripts/checks.sh
               '';
             };

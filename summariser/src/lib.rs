@@ -70,14 +70,6 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
-        "trycp_write_validated" => Some(
-            async move {
-                summarize_trycp_write_validated(client.clone(), summary.clone())
-                    .await
-                    .context("Write validated summary")
-            }
-            .boxed(),
-        ),
         "two_party_countersigning" => Some(
             async move {
                 summarize_countersigning_two_party(client.clone(), summary.clone())
