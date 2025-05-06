@@ -136,12 +136,6 @@ async fn single_write_many_read() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn trycp_write_validated() -> anyhow::Result<()> {
-    run_snapshot_test!("67451208b842208de0861073fb576a921685acf71f0c4cef1b87340527f22b49");
-    Ok(())
-}
-
-#[tokio::test]
 async fn two_party_countersigning() -> anyhow::Result<()> {
     run_snapshot_test!("3cdc5a29d42fbe93e971508e7cd8856367465e047c870b60283ed86a5bf5687c");
     Ok(())

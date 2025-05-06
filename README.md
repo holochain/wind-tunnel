@@ -360,17 +360,6 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn h
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
-#### Running Holochain with TryCP server
-
-For tests that use TryCP, you can start a TryCP server with the following command:
-
-```bash
-start_trycp
-```
-
-This server does not need restarting. It can be left running and it will stop and start
-Holochain instances as required by the scenarios.
-
 #### Running network services
 
 There is an alternate conductor configuration that is used in CI and for development. This is found in `conductor-config-ci.yaml`.
@@ -423,18 +412,6 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
 ```
 
-#### TryCP Wind Tunnel tests
-
-For TryCP Wind Tunnel testing - start a trycp_server:
-```bash
-start_trycp
-```
-
-You can then start a second terminal and run one of the scenarios in the `scenarios` directory:
-
-```bash
-RUST_LOG=info CONDUCTOR_CONFIG="CI" TRYCP_RUST_LOG="info" MIN_PEERS=2 cargo run --package trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 60
-```
 #### Running Wind Tunnel Scenarios with Nomad
 
 ##### Running Locally

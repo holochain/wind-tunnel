@@ -31,9 +31,9 @@ pub struct RunSummary {
     /// This is the number of peers that were either configured or required by the behaviour
     /// configuration.
     ///
-    /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
-    /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
-    /// the roles that were assigned across the network.
+    /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel
+    /// runner. In general, each node only sees the roles it was assigned and not the roles that
+    /// were assigned across the network.
     pub peer_count: usize,
     /// The number of peers at the end of the test
     ///
