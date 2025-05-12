@@ -24,27 +24,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is less than the passed `min_required_agents`. Can be overridden with the `MIN_REQUIRED_AGENTS` environment variable.
 - Check that the scenarios have a cargo package name that matches the directory name used by Nix packages. Panic when
   building the scenario if they do not match. [#122](https://github.com/holochain/wind-tunnel/pull/122)
+- Nix dev shell for kitsune scenarios.
 
 ### Changed
-- Updated to Holochain 0.4.0
-- Updated to new Holochain client version 0.5.0-alpha.4 which allowed `&mut self` to be replaced with `&self` in admin
-  and app instrumented websockets.
+- Updated to Holochain `v0.4.2`
+- Updated to new Holochain client version `v0.6.2`
+- Replace `&mut self` with `&self` in admin and app instrumented websockets.
 - `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 
   broadcast channel that it uses internally. Shutdown failures used to panic but it a `ShutdownHandle` happens to not
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
 - Metrics now automatically include `run_id` and `scenario_name` tags.
-- Update `trycp_client` and `trycp_api` dependencies to `v0.17.0-dev.6`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
+- Update `trycp_client` and `trycp_api` dependencies to `v0.17.0`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - When making zome calls with the TryCP client bindings, the `agent` is now reported on the metrics, taken from the target
   cell_id for the call. For the wrapped `holochain_client`, this is only done when the call target is `CellId`. Or in 
   other words, the `agent` is not reported when calling a clone cell.
 - All metrics are now reported in seconds, as an `f64`. There were some types still using milliseconds which made reporting
   across scenarios more complex.
 - Increased TryCP test scenario duration to 30s in CI [Test Workflow](.github/workflows/test.yaml).
+- Use the new `AppBundleSource::Bytes` variant to bundle scenarios [#152](https://github.com/holochain/wind-tunnel/pull/152)
+- Test workflow uses kitsune dev shell for kitsune scenario.
+- Converted `validation_receipts` scenario to non-TryCP scenario to be run on the Nomad cluster. [#172](https://github.com/holochain/wind-tunnel/pull/172)
 
 ### Deprecated
 ### Removed
 ### Fixed
 - Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
+- Fix Kitsune op store to always return all processed op ids. Previously ops processed multiple times would not be removed from the request queue. Duplicate ops are still not considered for reporting.
 
 ### Security
 

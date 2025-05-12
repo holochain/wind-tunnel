@@ -43,6 +43,12 @@ pub struct WindTunnelScenarioCli {
     /// The reporter to use.
     #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
     pub reporter: ReporterOpt,
+
+    /// Set the ID of this run
+    ///
+    /// If not set, a random ID is used.
+    #[arg(long, short)]
+    pub run_id: Option<String>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]

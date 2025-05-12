@@ -14,6 +14,7 @@ use holochain_conductor_api::{
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
+use kitsune_p2p_types::agent_info::AgentInfoSigned;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
@@ -25,9 +26,9 @@ pub struct AdminWebsocketInstrumented {
 impl AdminWebsocketInstrumented {
     pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        AdminWebsocket::connect(addr)
+        Ok(AdminWebsocket::connect(addr)
             .await
-            .map(|inner| Self { inner, reporter })
+            .map(|inner| Self { inner, reporter })?)
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
@@ -124,6 +125,14 @@ impl AdminWebsocketInstrumented {
         self.inner.graft_records(cell_id, validate, records).await
     }
 
+    #[wind_tunnel_instrument(prefix = "admin_")]
+    pub async fn agent_info(
+        &self,
+        cell_id: Option<CellId>,
+    ) -> ConductorApiResult<Vec<AgentInfoSigned>> {
+        self.inner.agent_info(cell_id).await
+    }
+
     // This is really a wrapper function, because it will call `grant_zome_call_capability` but it will call
     // that on the `AdminWebsocket` rather than this `AdminWebsocketInstrumented` type. So we need to instrument
     // this and include the time taken to do the client side logic for setting up signing credentials.
@@ -132,7 +141,7 @@ impl AdminWebsocketInstrumented {
         &self,
         request: AuthorizeSigningCredentialsPayload,
     ) -> Result<SigningCredentials> {
-        self.inner.authorize_signing_credentials(request).await
+        Ok(self.inner.authorize_signing_credentials(request).await?)
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]

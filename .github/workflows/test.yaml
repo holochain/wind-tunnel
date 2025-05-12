@@ -26,10 +26,10 @@ jobs:
         if: runner.os == 'Linux'
         uses: AdityaGarg8/remove-unwanted-software@v2
         with:
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
 
       - name: Install nix
         uses: cachix/install-nix-action@v30
@@ -69,19 +69,24 @@ jobs:
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
-      - name: Build and unit tests
-        run: |
-          nix build .#workspace
-
       - name: Lint Rust
         run: |
           # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
           nix flake check --all-systems
 
+      - name: Run unit tests
+        run: cargo test --workspace --all-targets
+
+      - name: Build
+        run: |
+          nix build .#workspace
+
       - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -93,6 +98,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -102,6 +109,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
@@ -116,6 +125,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
@@ -125,6 +136,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
@@ -136,6 +149,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -145,6 +160,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -162,6 +179,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -171,6 +190,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -185,6 +206,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -195,6 +218,8 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario
           RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
@@ -204,6 +229,8 @@ jobs:
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
@@ -218,59 +245,36 @@ jobs:
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
 
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
           # Run the scenario for 5 seconds
           RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
-      - name: Smoke test - trycp_write_validated
-        run: |
-          set -x
-
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
-
-          # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#trycp_write_validated -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
-
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
-
       - name: Smoke test - remote_call_rate
         run: |
-          set -x
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_call_rate -- --targets targets-ci.yaml --instances-per-target 2 --duration 45 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - two_party_countersigning
         run: |
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 30 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - two_party_countersigning with CHC enabled
         run: |
@@ -294,35 +298,41 @@ jobs:
         run: |
           set -x
 
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 45 --no-progress
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_AGENTS=2 nix run .#validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
+          pkill hc && pkill holochain && pkill lair-keystore
 
       - name: Smoke test - remote_signals
         run: |
-          set -x
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
 
-          # Start local network services
-          nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_PEERS=2 nix run .#remote_signals -- --targets targets-ci.yaml --instances-per-target 2 --duration 30 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run -p remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
-          # Stop local network services
-          pkill hc-run-local
+          # Stop sandbox conductor
+          pkill hc && pkill holochain && pkill lair-keystore
+
+      - name: Smoke test - kitsune continuous flow
+        run: |
+          set -x
+
+          # Start local bootstrap and signal server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
+
+          # Run the scenario
+          RUST_LOG=warn cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
+
+          # Stop servers
+          pkill kitsune2-bootst
 
       - name: Smoke test - validation_receipts with CHC enabled
         run: |
@@ -353,8 +363,7 @@ jobs:
             find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
           }
 
-          # Disable sandbox because hApp builds aren't done by Nix and need network access.
-          scenario_names | xargs -I % nix bundle --option sandbox false .#packages.x86_64-linux.%
+          scenario_names | xargs -I % nix bundle .#packages.x86_64-linux.%
 
           mkdir -p dist
           scenario_names | xargs -I % cp %-arx dist/%

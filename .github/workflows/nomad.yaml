@@ -1,0 +1,95 @@
+name: "Run performance tests on Nomad cluster"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run-scenarios:
+    name: Run ${{ matrix.job-name || matrix.scenario-name }}
+    runs-on: [self-hosted, wind-tunnel]
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      # `job-name` defaults to `scenario-name` if not provided.
+      # `required-nodes` defaults to `1` if not provided.
+      matrix:
+        scenario-name:
+          - first_call
+          - local_signals
+          - single_write_many_read
+          - write_query
+          - write_read
+          - write_validated
+          - zome_call_single_value
+        include:
+          - job-name: app_install_large
+            scenario-name: app_install
+
+          - job-name: app_install_minimal
+            scenario-name: app_install
+
+          - scenario-name: dht_sync_lag
+            required-nodes: 2
+
+          - scenario-name: validation_receipts
+            required-nodes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bundle scenario
+        run: |
+          nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
+          cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
+
+      - name: Upload bundle as artifact
+        id: upload-bundle
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./${{ matrix.scenario-name }}
+          name: ${{ matrix.job-name || matrix.scenario-name }}
+          if-no-files-found: error
+
+      - name: Wait for free nodes
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: |
+          echo "Waiting for ${{ matrix.required-nodes || 1 }} node(s) to be free"
+          while true; do
+              count=$(nix run --impure --inputs-from . nixpkgs#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
+              if (( ${count:-0} >= ${{ matrix.required-nodes || 1 }} )); then
+                  break
+              else
+                  echo -n "."
+              fi
+          done
+          echo "done"
+
+      - name: Get Download URL
+        id: get-download-url
+        run: |
+          DOWNLOAD_URL=$(curl -Ls -o /dev/null -w %{url_effective} \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-bundle.outputs.artifact-id}}/zip")
+          echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Run Nomad Job
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
+          NOMAD_VAR_run-id: ${{ github.run_id }}
+        run: |-
+          nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name || matrix.scenario-name }}.vars" nomad/run_scenario.nomad.hcl
+
+          echo "Ran ${{ matrix.job-name }} with run ID ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY

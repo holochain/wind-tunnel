@@ -11,6 +11,7 @@ use holochain_types::prelude::{
 };
 use holochain_types::websocket::AllowedOrigins;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
@@ -143,6 +144,7 @@ where
     let app_ws_url = ctx.runner_context().get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
+    let run_id = ctx.runner_context().get_run_id().to_string();
 
     let (installed_app_id, cell_id, app_client) = ctx
         .runner_context()
@@ -157,13 +159,15 @@ where
                 .map_err(handle_api_err)?;
             log::debug!("Generated agent pub key: {:}", key);
 
+            let content = std::fs::read(app_path)?;
+
             let app_info = client
                 .install_app(InstallAppPayload {
-                    source: AppBundleSource::Path(app_path),
+                    source: AppBundleSource::Bytes(content),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     roles_settings: None,
-                    network_seed: None,
+                    network_seed: Some(run_id),
                     ignore_genesis_failure: false,
                     allow_throwaway_random_agent_key: false,
                 })
@@ -297,6 +301,78 @@ where
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
+
+    Ok(())
+}
+
+/// Tries to wait for a minimum number of agents to be discovered.
+///
+/// If you call this function in your agent setup, then the scenario will become configurable using
+/// the `MIN_AGENTS` environment variable. The default value is 2.
+///
+/// Note that the number of agents seen by each node includes itself. So having two conductors with
+/// one agent on each, means that each node will immediately see one agent after app installation.
+///
+/// Example:
+/// ```rust
+/// use std::path::Path;
+/// use std::time::Duration;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, install_app, try_wait_for_min_agents};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainAgentContext, HolochainRunnerContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     try_wait_for_min_agents(ctx, Duration::from_secs(60))?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Note that if no apps have been installed, you are waiting for too many agents, or anything else
+/// prevents enough agents being discovered then the function will wait up to the `wait_for` duration
+/// before continuing. It will not fail if too few agents were discovered.
+///
+/// Note that the smallest resolution is 1s. This is because the function will sleep between
+/// querying agents from the conductor. You could probably not use this function for performance
+/// testing peer discovery!
+pub fn try_wait_for_min_agents<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    wait_for: Duration,
+) -> HookResult
+where
+    SV: UserValuesConstraint,
+{
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let reporter = ctx.runner_context().reporter();
+    let agent_name = ctx.agent_name().to_string();
+
+    let min_agents = std::env::var("MIN_AGENTS")
+        .ok()
+        .map(|s| s.parse().expect("MIN_AGENTS must be a number"))
+        .unwrap_or(2);
+
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+
+            let start_discovery = Instant::now();
+            for _ in 0..wait_for.as_secs() {
+                let agent_list = client.agent_info(None).await?;
+
+                if agent_list.len() >= min_agents {
+                    break;
+                }
+
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+
+            println!(
+                "Discovery for agent {} took: {}s",
+                agent_name,
+                start_discovery.elapsed().as_secs()
+            );
+
+            Ok(())
+        })?;
 
     Ok(())
 }

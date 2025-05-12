@@ -20,15 +20,14 @@ use wind_tunnel_summary_model::append_run_summary;
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
 ) -> anyhow::Result<usize> {
-    let run_id = nanoid::nanoid!();
-    println!("#RunId: [{}]", run_id);
-
     let definition = definition.build()?;
+
+    println!("#RunId: [{}]", definition.run_id);
 
     // Create the summary for the run. This is used to link the run with the report and build a
     // summary from the metrics after the run has completed.
     let mut summary = wind_tunnel_summary_model::RunSummary::new(
-        run_id.clone(),
+        definition.run_id.clone(),
         definition.name.clone(),
         chrono::Utc::now().timestamp(),
         definition.duration_s,
@@ -61,7 +60,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let reporter = {
         let _h = runtime.handle().enter();
-        let mut report_config = ReportConfig::new(run_id.clone(), definition.name.clone());
+        let mut report_config =
+            ReportConfig::new(definition.run_id.clone(), definition.name.clone());
 
         match definition.reporter {
             ReporterOpt::InMemory => {
@@ -82,14 +82,16 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             }
         }
 
-        Arc::new(report_config.init_reporter(&runtime, report_shutdown_handle.new_listener())?)
+        Arc::new(
+            report_config.init_reporter(runtime.handle(), report_shutdown_handle.new_listener())?,
+        )
     };
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(
         executor,
         reporter,
         shutdown_handle.clone(),
-        run_id.clone(),
+        definition.run_id.clone(),
         definition.connection_string.clone(),
     );
 
@@ -246,7 +248,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         log::error!("Failed to append run summary: {:?}", e);
     }
 
-    println!("#RunId: [{}]", run_id);
+    println!("#RunId: [{}]", definition.run_id);
 
     Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }
