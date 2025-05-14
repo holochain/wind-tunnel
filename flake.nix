@@ -6,11 +6,11 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.4";
+      url = "github:holochain/holonix?ref=main-0.5";
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.0.1-alpha6";
+      url = "github:holochain/kitsune2?ref=v0.1.8";
     };
 
     crane = {
@@ -80,7 +80,9 @@
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
                 pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-              ];
+              ] ++ (with inputs'.holonix.packages; [
+                hc
+              ]);
 
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
