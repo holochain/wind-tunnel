@@ -57,7 +57,6 @@ in
           integrity = {
             network_seed = null;
             properties = null;
-            origin_time = 1710431275;
             zomes = builtins.map
               (zome_name: {
                 name = "${zome_name}_integrity";
@@ -119,8 +118,6 @@ in
                 modifiers = {
                   network_seed = null;
                   properties = null;
-                  origin_time = null;
-                  quantum_time = null;
                 };
                 installed_hash = null;
                 clone_limit = 0;
@@ -159,6 +156,7 @@ in
         buildInputs = zomeDeps ++ [
           # Need `hc` to package DNAs and hApps.
           inputs'.holonix.packages.holochain
+          inputs'.holonix.packages.hc
         ];
 
         postInstall = ''

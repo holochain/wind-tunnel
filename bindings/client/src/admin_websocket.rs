@@ -5,6 +5,7 @@ use holochain_client::{
 };
 use holochain_types::prelude::{CellId, DeleteCloneCellPayload, Record};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
+use kitsune2_api::TransportStats;
 use std::sync::Arc;
 
 use crate::ToSocketAddr;
@@ -14,7 +15,6 @@ use holochain_conductor_api::{
 };
 use holochain_types::app::InstalledAppId;
 use holochain_types::websocket::AllowedOrigins;
-use kitsune_p2p_types::agent_info::AgentInfoSigned;
 use wind_tunnel_instruments::Reporter;
 use wind_tunnel_instruments_derive::wind_tunnel_instrument;
 
@@ -111,7 +111,7 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn dump_network_stats(&self) -> ConductorApiResult<String> {
+    pub async fn dump_network_stats(&self) -> ConductorApiResult<TransportStats> {
         self.inner.dump_network_stats().await
     }
 
@@ -126,10 +126,7 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn agent_info(
-        &self,
-        cell_id: Option<CellId>,
-    ) -> ConductorApiResult<Vec<AgentInfoSigned>> {
+    pub async fn agent_info(&self, cell_id: Option<CellId>) -> ConductorApiResult<Vec<String>> {
         self.inner.agent_info(cell_id).await
     }
 
