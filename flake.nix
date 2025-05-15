@@ -97,6 +97,7 @@
               customHolochain
               inputs'.holonix.packages.lair-keystore
               inputs'.kitsune2.packages.bootstrap-srv
+              inputs'.chc-service.packages.hc-chc-service
             ];
           in
           {
