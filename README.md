@@ -412,6 +412,14 @@ You can then start a second terminal and run one of the scenarios in the `scenar
 RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
 ```
 
+#### Running Scenarios with CHC Enabled
+
+In order to run scenarios with chc enabled, you will need to run the [reference chc service](https://github.com/holochain/hc-chc-service) in a separate terminal window:
+
+```bash
+hc-chc-service --port 8181
+```
+
 #### Running Wind Tunnel Scenarios with Nomad
 
 ##### Running Locally
