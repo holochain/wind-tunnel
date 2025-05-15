@@ -87,6 +87,7 @@
               config.rustHelper.rust
               customHolochain
               inputs'.holonix.packages.lair-keystore
+              inputs'.holonix.packages.hc
               inputs'.kitsune2.packages.bootstrap-srv
             ];
           in
