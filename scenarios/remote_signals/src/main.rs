@@ -1,6 +1,8 @@
 use anyhow::Context;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::{prelude::*, scenario_happ_path};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use remote_signal_integrity::TimedMessage;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -148,10 +150,11 @@ fn agent_behaviour(
                         )?;
                         agent_infos.push(AgentPubKey::from_raw_32(a.agent.to_vec()))
                     }
-                    let new_peer_list = agent_infos
+                    let mut new_peer_list = agent_infos
                         .into_iter()
-                        .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
+                        .filter(|k| k != cell_id.agent_pubkey()) // Don't signal ourselves!
                         .collect::<Vec<_>>();
+                    new_peer_list.shuffle(&mut thread_rng());
                     Ok(new_peer_list)
                 })?
         }

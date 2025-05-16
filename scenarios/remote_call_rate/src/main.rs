@@ -49,13 +49,13 @@ fn agent_behaviour(
                     .agent_info(None)
                     .await
                     .context("Failed to get agent info")?;
-                let mut agent_infos = Vec::new();
+                let mut agent_infos = Vec::with_capacity(agent_infos_encoded.len());
                 for info in agent_infos_encoded {
                     let a = kitsune2_api::AgentInfoSigned::decode(
                         &kitsune2_core::Ed25519Verifier,
                         info.as_bytes(),
                     )?;
-                    agent_infos.push(AgentPubKey::from_raw_32(a.agent.to_vec()))
+                    agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
                 }
                 let mut new_peer_list = agent_infos
                     .into_iter()

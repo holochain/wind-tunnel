@@ -1,10 +1,12 @@
 use crate::ToSocketAddr;
 use anyhow::Result;
+use holo_hash::DnaHash;
 use holochain_client::{AgentSigner, AppWebsocket, ConductorApiResult, ZomeCallTarget};
 use holochain_conductor_api::{AppAuthenticationToken, AppInfo};
 use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload};
-use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, FunctionName, Signal, ZomeName};
+use holochain_types::prelude::{CreateCloneCellPayload, ExternIO, FunctionName, Kitsune2NetworkMetrics, Signal, ZomeName};
 use holochain_zome_types::clone::ClonedCell;
+use kitsune2_api::TransportStats;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
@@ -80,19 +82,19 @@ impl AppWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn dump_network_stats(&self) -> ConductorApiResult<kitsune2_api::TransportStats> {
+    pub async fn dump_network_stats(&self) -> ConductorApiResult<TransportStats> {
         self.inner.dump_network_stats().await
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
     pub async fn dump_network_metrics(
         &self,
-        dna_hash: Option<holo_hash::DnaHash>,
+        dna_hash: Option<DnaHash>,
         include_dht_summary: bool,
     ) -> ConductorApiResult<
         std::collections::HashMap<
-            holo_hash::DnaHash,
-            holochain_types::network::Kitsune2NetworkMetrics,
+            DnaHash,
+            Kitsune2NetworkMetrics,
         >,
     > {
         self.inner

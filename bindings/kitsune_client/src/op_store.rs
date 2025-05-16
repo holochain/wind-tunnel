@@ -287,11 +287,6 @@ impl OpStore for WtOpStore {
         })
     }
 
-    /// Filter the passed in op ids by ops that exist in the store.
-    ///
-    /// # Returns
-    ///
-    /// The filtered list of op ids that do not exist in the store.
     fn filter_out_existing_ops(&self, op_ids: Vec<OpId>) -> BoxFut<'_, K2Result<Vec<OpId>>> {
         Box::pin(async move {
             let self_lock = self.read().await;
@@ -353,13 +348,6 @@ impl OpStore for WtOpStore {
         })
     }
 
-    /// Get the earliest op timestamp in the given arc.
-    ///
-    /// If there are no ops in the arc, return None.
-    /// Otherwise, return the earliest `created_at` timestamp of the ops in the arc.
-    ///
-    /// This is used to determine the earliest timestamp that the arc has seen. That is a lower
-    /// bound on the work that needs to be done when building a summary model of the DHT.
     fn earliest_timestamp_in_arc(&self, arc: DhtArc) -> BoxFut<'_, K2Result<Option<Timestamp>>> {
         Box::pin(async move {
             Ok(self
