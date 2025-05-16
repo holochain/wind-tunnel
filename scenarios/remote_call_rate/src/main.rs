@@ -45,12 +45,20 @@ fn agent_behaviour(
                 let admin_client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
                 // No more agents available to call, get a new list.
                 // This is also the initial condition.
-                let mut new_peer_list = admin_client
+                let agent_infos_encoded = admin_client
                     .agent_info(None)
                     .await
-                    .context("Failed to get agent info")?
+                    .context("Failed to get agent info")?;
+                let mut agent_infos = Vec::with_capacity(agent_infos_encoded.len());
+                for info in agent_infos_encoded {
+                    let a = kitsune2_api::AgentInfoSigned::decode(
+                        &kitsune2_core::Ed25519Verifier,
+                        info.as_bytes(),
+                    )?;
+                    agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
+                }
+                let mut new_peer_list = agent_infos
                     .into_iter()
-                    .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
                     .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
                     .collect::<Vec<_>>();
                 new_peer_list.shuffle(&mut thread_rng());
