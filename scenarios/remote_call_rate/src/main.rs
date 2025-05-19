@@ -53,10 +53,7 @@ fn agent_behaviour(
                     .context("Failed to get agent info")?;
                 let mut agent_infos = Vec::with_capacity(agent_infos_encoded.len());
                 for info in agent_infos_encoded {
-                    let a = AgentInfoSigned::decode(
-                        &Ed25519Verifier,
-                        info.as_bytes(),
-                    )?;
+                    let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
                     agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
                 }
                 let mut new_peer_list = agent_infos
