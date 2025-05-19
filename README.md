@@ -367,7 +367,7 @@ To use this configuration, you will need to start bootstrap and signal servers o
 following command:
 
 ```bash
-hc-run-local-services --bootstrap-port 4422 --signal-port 4423
+kitsune2-bootstrap-srv --listen 127.0.0.1:30000
 ```
 
 You should then set the environment variable `CONDUCTOR_CONFIG="CI"`. The scenario you are running should recommend this
