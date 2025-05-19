@@ -1,6 +1,7 @@
 use anyhow::Context;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::{prelude::*, scenario_happ_path};
+use kitsune2_api::AgentInfoSigned;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use remote_signal_integrity::TimedMessage;
@@ -144,7 +145,7 @@ fn agent_behaviour(
                         .context("Failed to get agent info")?;
                     let mut agent_infos = Vec::new();
                     for info in agent_infos_encoded {
-                        let a = kitsune2_api::AgentInfoSigned::decode(
+                        let a = AgentInfoSigned::decode(
                             &kitsune2_core::Ed25519Verifier,
                             info.as_bytes(),
                         )?;
