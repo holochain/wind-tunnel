@@ -283,14 +283,10 @@ jobs:
 
           # Start local network services
           nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
           # Run the scenario for 10 seconds
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#two_party_countersigning -- --targets targets-ci.yaml --behaviour initiate:1 --behaviour participate:1 --instances-per-target 2 --duration 10 --no-progress
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
           pkill hc-run-local
 
@@ -343,14 +339,10 @@ jobs:
 
           # Start local network services
           nix develop .#ci -c bash -c "hc-run-local-services --bootstrap-port 4422 --signal-port 4423 &"
-          # Start a TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && start_trycp &"
 
           # Run the scenario for 10 seconds
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" CHC_ENABLED="1" MIN_PEERS=2 nix run .#validation_receipts -- --targets targets-ci.yaml --instances-per-target 2 --duration 10 --no-progress
 
-          # Stop the TryCP instance
-          nix develop .#ci -c bash -c "source ./scripts/trycp.sh && stop_trycp"
           # Stop local network services
           pkill hc-run-local
 
