@@ -360,19 +360,6 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn h
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
-#### Running network services
-
-There is an alternate conductor configuration that is used in CI and for development. This is found in `conductor-config-ci.yaml`.
-To use this configuration, you will need to start bootstrap and signal servers on the expected ports. You can do this with the 
-following command:
-
-```bash
-kitsune2-bootstrap-srv --listen 127.0.0.1:30000
-```
-
-You should then set the environment variable `CONDUCTOR_CONFIG="CI"`. The scenario you are running should recommend this
-if it supports switching the Holochain conductor config that it uses.
-
 #### Running scenarios
 
 Each scenario is expected to provide a README.md with at least:
