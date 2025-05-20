@@ -93,7 +93,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info cargo run run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
