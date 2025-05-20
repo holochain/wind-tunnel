@@ -31,21 +31,6 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # TODO should be followed correctly by amber for nixpkgs, contribute upstream.
-    naersk = {
-      url = "github:nix-community/naersk?ref=master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    amber = {
-      url = "github:thetasinner/amber?ref=master";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        naersk.follows = "naersk";
-        rust-overlay.follows = "rust-overlay";
-      };
-    };
   };
 
   outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
@@ -101,7 +86,6 @@
                 pkgs.httpie
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
-                inputs'.amber.packages.default
               ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
