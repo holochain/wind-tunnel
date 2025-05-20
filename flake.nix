@@ -7,20 +7,10 @@
 
     holonix = {
       url = "github:holochain/holonix?ref=main-0.4";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-parts.follows = "flake-parts";
-        crane.follows = "crane";
-        rust-overlay.follows = "rust-overlay";
-      };
     };
 
     kitsune2 = {
       url = "github:holochain/kitsune2?ref=v0.0.1-alpha6";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        crane.follows = "crane";
-      };
     };
 
     crane = {
