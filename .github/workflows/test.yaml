@@ -40,10 +40,19 @@ jobs:
 
       - uses: cachix/cachix-action@v15
         with:
-          name: holochain-wind-tunnel
-          authToken: ${{ secrets.CACHIX_HOLOCHAIN_WIND_TUNNEL }}
+          name: holochain-ci
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - uses: Swatinem/rust-cache@v2
+
+      # We do a custom build of Holochain in the CI shell which can take up a lot of
+      # disk space. We want to build and cache this early in the workflow so that if we
+      # do run out of disk space, then at least we've captured that big piece in the
+      # cache and can just download it next time.
+      - name: Cache CI shell
+        run: |
+          nix develop --profile ci-profile -c true
+          cachix push holochain-ci ci-profile
 
       - name: Check scripts
         run: |
@@ -71,8 +80,7 @@ jobs:
 
       - name: Lint Rust
         run: |
-          # Currently the only check is clippy, could bundle the other checks into the flake and remove the steps above?
-          nix flake check --all-systems
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
 
       - name: Run unit tests
         run: cargo test --workspace --all-targets
@@ -253,17 +261,45 @@ jobs:
           # Stop servers
           pkill kitsune2-bootst
 
+  archive_bundles:
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Maximize build space
+        if: runner.os == 'Linux'
+        uses: AdityaGarg8/remove-unwanted-software@v2
+        with:
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v30
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.24.9/install
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - uses: cachix/cachix-action@v15
+        with:
+          name: holochain-ci
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
       - name: Build scenario bundles
         if: runner.os == 'Linux'
         run: |
           set -euxo pipefail
-
+          
           scenario_names() {
             find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
           }
-
+          
           scenario_names | xargs -I % nix bundle .#packages.x86_64-linux.%
-
+          
           mkdir -p dist
           scenario_names | xargs -I % cp %-arx dist/%
 
@@ -280,6 +316,7 @@ jobs:
     runs-on: "ubuntu-latest"
     needs:
       - test
+      - archive_bundles
     steps:
       - name: check status
         uses: re-actors/alls-green@release/v1
