@@ -85,10 +85,6 @@ jobs:
       - name: Run unit tests
         run: cargo test --workspace --all-targets
 
-      - name: Build
-        run: |
-          nix build .#workspace
-
       - name: Smoke test - zome_call_single_value
         run: |
           # Start a sandbox conductor and run it in the background
@@ -97,7 +93,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -109,7 +105,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -121,7 +117,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -133,7 +129,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -145,7 +141,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -157,7 +153,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -169,7 +165,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -181,7 +177,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -193,7 +189,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+          RUST_LOG=info cargo run --package write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -231,7 +227,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_AGENTS=2 nix run .#validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
 
@@ -243,7 +239,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run -p remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
 
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
@@ -256,7 +252,7 @@ jobs:
           nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
 
           # Run the scenario
-          RUST_LOG=warn cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
+          RUST_LOG=warn cargo run --package kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
 
           # Stop servers
           pkill kitsune2-bootst
