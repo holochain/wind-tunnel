@@ -1,9 +1,5 @@
-use anyhow::Context;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::{prelude::*, scenario_happ_path};
-use kitsune2_api::AgentInfoSigned;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 use remote_signal_integrity::TimedMessage;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -56,7 +52,7 @@ fn agent_setup(
     )?;
 
     let pending_set = ctx.get().scenario_values.pending_set.clone();
-    let reporter = ctx.runner_context().reporter();
+    let reporter: Arc<Reporter> = ctx.runner_context().reporter();
     let client = ctx.get().app_client();
 
     ctx.runner_context()
@@ -105,7 +101,6 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
     let cell_id = ctx.get().cell_id();
     let next_remote_signal_peer = ctx.get_mut().scenario_values.remote_signal_peers.pop();
     let signal_interval = ctx.get().scenario_values.signal_interval;
@@ -132,33 +127,7 @@ fn agent_behaviour(
     }
 
     let new_peers = match next_remote_signal_peer {
-        None => {
-            ctx.runner_context()
-                .executor()
-                .execute_in_place(async move {
-                    let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
-                    // No more agents available to signal, get a new list.
-                    // This is also the initial condition.
-                    let agent_infos_encoded = admin_client
-                        .agent_info(None)
-                        .await
-                        .context("Failed to get agent info")?;
-                    let mut agent_infos = Vec::new();
-                    for info in agent_infos_encoded {
-                        let a = AgentInfoSigned::decode(
-                            &kitsune2_core::Ed25519Verifier,
-                            info.as_bytes(),
-                        )?;
-                        agent_infos.push(AgentPubKey::from_raw_32(a.agent.to_vec()))
-                    }
-                    let mut new_peer_list = agent_infos
-                        .into_iter()
-                        .filter(|k| k != cell_id.agent_pubkey()) // Don't signal ourselves!
-                        .collect::<Vec<_>>();
-                    new_peer_list.shuffle(&mut thread_rng());
-                    Ok(new_peer_list)
-                })?
-        }
+        None => get_peer_list_randomized(ctx)?,
         Some(agent_pub_key) => {
             let msg = TimedMessage::TimedRequest {
                 requester: cell_id.agent_pubkey().clone(),
