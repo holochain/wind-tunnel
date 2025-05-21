@@ -117,6 +117,21 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - dht_sync_lag with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+
       - name: Smoke test - app_install
         run: |
           # Start a sandbox conductor and run it in the background
@@ -153,6 +168,21 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - write_read with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+
       - name: Smoke test - write_query
         run: |
           # Start a sandbox conductor and run it in the background
@@ -164,6 +194,21 @@ jobs:
           RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+      - name: Smoke test - write_query with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
 
       - name: Smoke test - local_signals
         run: |
@@ -189,6 +234,21 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - write_validated with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create --chc-url http://localhost:8181 && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario for 5 seconds
+          RUST_LOG=info nix run .#write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+
       - name: Smoke test - remote_call_rate
         run: |
           # Start a sandbox conductor and run it in the background
@@ -213,6 +273,21 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+      - name: Smoke test - two_party_countersigning with CHC enabled
+        run: |
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
+
       - name: Smoke test - validation_receipts
         run: |
           set -x
@@ -226,6 +301,23 @@ jobs:
           RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_AGENTS=2 nix run .#validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+      - name: Smoke test - validation_receipts with CHC enabled
+        run: |
+          set -x
+
+          # start the CHC reference implementation service
+          nix develop .#ci -c bash -c "hc-chc-service --port 8181 &"
+
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario
+          RUST_LOG=warn CONDUCTOR_CONFIG="CI" MIN_AGENTS=2 nix run .#validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore && pkill hc-chc-service
 
       - name: Smoke test - remote_signals
         run: |

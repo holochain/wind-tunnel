@@ -23,6 +23,16 @@
       };
     };
 
+    chc-service = {
+      url = "github:holochain/hc-chc-service";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
+        holonix.follows = "holonix";
+      };
+    };
+
     crane = {
       url = "github:ipetkov/crane";
     };
@@ -54,7 +64,6 @@
       let
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
-
         # Enable unstable and non-default features that Wind Tunnel tests.
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
@@ -88,6 +97,7 @@
               customHolochain
               inputs'.holonix.packages.lair-keystore
               inputs'.kitsune2.packages.bootstrap-srv
+              inputs'.chc-service.packages.hc-chc-service
             ];
           in
           {
