@@ -155,7 +155,6 @@ in
 
         buildInputs = zomeDeps ++ [
           # Need `hc` to package DNAs and hApps.
-          inputs'.holonix.packages.holochain
           inputs'.holonix.packages.hc
         ];
 
