@@ -516,6 +516,27 @@ where
     })
 }
 
+/// Get a randomized list of peers connected to the conductor in the `ctx` for a given cell.
+///
+/// Requires:
+/// - The [HolochainAgentContext] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_types::prelude::ActionHash;
+/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     let peer_list = get_peer_list_randomized(ctx)?;
+///     println!("Connected peers: {:?}", peer_list);
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - calls `app_agent_info` on the websocket.
+/// - filters out self
+/// - shuffles the list
 pub fn get_peer_list_randomized<SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<Vec<AgentPubKey>>
@@ -533,7 +554,7 @@ where
             // No more agents available to signal, get a new list.
             // This is also the initial condition.
             let agent_infos_encoded = admin_client
-                .agent_info(None)
+                .agent_info(Some(cell_id.clone()))
                 .await
                 .context("Failed to get agent info")?;
             let mut agent_infos = Vec::new();
@@ -541,12 +562,12 @@ where
                 let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
                 agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
             }
-            let mut new_peer_list = agent_infos
+            let mut peer_list = agent_infos
                 .into_iter()
-                .filter(|k| k != cell_id.agent_pubkey()) // Don't signal ourselves!
+                .filter(|k| k != cell_id.agent_pubkey()) // Don't include ourselves!
                 .collect::<Vec<_>>();
-            new_peer_list.shuffle(&mut thread_rng());
-            Ok(new_peer_list)
+            peer_list.shuffle(&mut thread_rng());
+            Ok(peer_list)
         })
 }
 
