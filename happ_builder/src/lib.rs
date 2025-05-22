@@ -1,6 +1,5 @@
 use anyhow::Context;
 use holochain_types::dna::ZomeDependency;
-use holochain_types::prelude::Timestamp;
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -290,13 +289,11 @@ fn build_required_dna(
         integrity: holochain_types::dna::IntegrityManifest {
             network_seed: None,
             properties: None,
-            origin_time: Timestamp::now().into(),
             zomes: integrity_manifests,
         },
         coordinator: holochain_types::dna::CoordinatorManifest {
             zomes: coordinator_manifests,
         },
-        lineage: Vec::with_capacity(0),
     });
 
     let dna_manifest_workdir = dna_target_dir.join(scenario_package_name).join(dna_name);
@@ -436,8 +433,6 @@ fn build_required_happ(
     modifiers:
       network_seed: ~
       properties: ~
-      origin_time: ~
-      quantum_time: ~
     installed_hash: ~
     clone_limit: 0
     "#,

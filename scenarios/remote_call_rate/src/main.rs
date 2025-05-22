@@ -2,8 +2,6 @@ use anyhow::Context;
 use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 use remote_call_integrity::TimedResponse;
 use std::time::{Duration, Instant};
 
@@ -35,28 +33,10 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let cell_id = ctx.get().cell_id();
     let next_remote_call_peer = ctx.get_mut().scenario_values.remote_call_peers.pop();
     let reporter = ctx.runner_context().reporter();
     let new_peers = match next_remote_call_peer {
-        None => {
-            ctx.runner_context().executor().execute_in_place(async {
-                let admin_client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
-                // No more agents available to call, get a new list.
-                // This is also the initial condition.
-                let mut new_peer_list = admin_client
-                    .agent_info(None)
-                    .await
-                    .context("Failed to get agent info")?
-                    .into_iter()
-                    .map(|info| AgentPubKey::from_raw_36(info.agent.0.clone()))
-                    .filter(|k| k != cell_id.agent_pubkey()) // Don't call ourselves!
-                    .collect::<Vec<_>>();
-                new_peer_list.shuffle(&mut thread_rng());
-                Ok(new_peer_list)
-            })?
-        }
+        None => get_peer_list_randomized(ctx)?,
         Some(agent_pub_key) => {
             // Send a remote call to this agent
             let start = Instant::now();

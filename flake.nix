@@ -6,11 +6,11 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.4";
+      url = "github:holochain/holonix?ref=main-0.5";
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.0.1-alpha6";
+      url = "github:holochain/kitsune2?ref=v0.1.8";
     };
 
     crane = {
@@ -62,6 +62,7 @@
               config.rustHelper.rust
               customHolochain
               inputs'.holonix.packages.lair-keystore
+              inputs'.holonix.packages.hc
               inputs'.kitsune2.packages.bootstrap-srv
             ];
           in

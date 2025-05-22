@@ -6,14 +6,20 @@ use holochain_client_instrumented::prelude::{
     ClientAgentSigner,
 };
 use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
+use holochain_types::prelude::*;
 use holochain_types::prelude::{
     AppBundleSource, CellId, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
 };
 use holochain_types::websocket::AllowedOrigins;
+use kitsune2_api::AgentInfoSigned;
+use kitsune2_core::Ed25519Verifier;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, RunnerContext, UserValuesConstraint, WindTunnelResult,
+    AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
@@ -508,6 +514,61 @@ where
             .decode()
             .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
+}
+
+/// Get a randomized list of peers connected to the conductor in the `ctx` for a given cell.
+///
+/// Requires:
+/// - The [HolochainAgentContext] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_types::prelude::ActionHash;
+/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     let peer_list = get_peer_list_randomized(ctx)?;
+///     println!("Connected peers: {:?}", peer_list);
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - calls `app_agent_info` on the websocket.
+/// - filters out self
+/// - shuffles the list
+pub fn get_peer_list_randomized<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<Vec<AgentPubKey>>
+where
+    SV: UserValuesConstraint,
+{
+    let cell_id = ctx.get().cell_id();
+    let reporter: Arc<Reporter> = ctx.runner_context().reporter();
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+            // No more agents available to signal, get a new list.
+            // This is also the initial condition.
+            let agent_infos_encoded = admin_client
+                .agent_info(Some(cell_id.clone()))
+                .await
+                .context("Failed to get agent info")?;
+            let mut agent_infos = Vec::new();
+            for info in agent_infos_encoded {
+                let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
+                agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
+            }
+            let mut peer_list = agent_infos
+                .into_iter()
+                .filter(|k| k != cell_id.agent_pubkey()) // Don't include ourselves!
+                .collect::<Vec<_>>();
+            peer_list.shuffle(&mut thread_rng());
+            Ok(peer_list)
+        })
 }
 
 fn installed_app_id_for_agent<SV>(
