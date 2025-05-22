@@ -54,36 +54,73 @@ jobs:
           nix develop --profile ci-profile -c true
           cachix push holochain-ci ci-profile
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Check scripts
         run: |
           nix develop .#ci -c bash -c "shellcheck scripts/*.sh"
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Check TOML formatting
         run: |
           nix develop .#ci -c bash -c "./scripts/format-toml.sh --check"
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Check YAML formatting
         run: |
           nix develop .#ci -c bash -c "./scripts/format-yaml.sh -lint"
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Check Nix formatting
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_fmt"
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Lint Nix
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_static"
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Check Rust formatting
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Lint Rust
         run: |
           nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Run unit tests
-        run: cargo test --workspace --all-targets
+        run: |
+          cargo test --workspace --all-targets
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - zome_call_single_value
         run: |
@@ -97,6 +134,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - single_write_many_read
         run: |
           # Start a sandbox conductor and run it in the background
@@ -108,6 +149,10 @@ jobs:
           RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - dht_sync_lag
         run: |
@@ -121,6 +166,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - app_install
         run: |
           # Start a sandbox conductor and run it in the background
@@ -132,6 +181,10 @@ jobs:
           RUST_LOG=info cargo run --package app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - first_call
         run: |
@@ -145,6 +198,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - write_read
         run: |
           # Start a sandbox conductor and run it in the background
@@ -156,6 +213,10 @@ jobs:
           RUST_LOG=info cargo run --package write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - write_query
         run: |
@@ -169,6 +230,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - local_signals
         run: |
           # Start a sandbox conductor and run it in the background
@@ -180,6 +245,10 @@ jobs:
           RUST_LOG=info cargo run --package local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - write_validated
         run: |
@@ -193,6 +262,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - remote_call_rate
         run: |
           # Start a sandbox conductor and run it in the background
@@ -205,6 +278,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - two_party_countersigning
         run: |
           # Start a sandbox conductor and run it in the background
@@ -216,6 +293,10 @@ jobs:
           RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
 
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Smoke test - validation_receipts
         run: |
@@ -231,6 +312,10 @@ jobs:
 
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - remote_signals
         run: |
           # Start a sandbox conductor and run it in the background
@@ -244,6 +329,10 @@ jobs:
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
 
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - kitsune continuous flow
         run: |
           set -x
@@ -256,6 +345,10 @@ jobs:
 
           # Stop servers
           pkill kitsune2-bootst
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
   archive_bundles:
     runs-on: ubuntu-22.04
@@ -298,6 +391,10 @@ jobs:
 
           mkdir -p dist
           scenario_names | xargs -I % cp %-arx dist/%
+
+          echo "==> Available space after step"
+          echo
+          df -h
 
       - name: Archive scenario bundles
         if: runner.os == 'Linux'
