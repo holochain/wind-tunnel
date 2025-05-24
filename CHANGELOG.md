@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Updated to Holochain `v0.5.2`
 - Updated to new Holochain client version `v0.7.0`
+- Enable the former TryCP scenarios on the Nomad cluster CI: remote_call_rate, remote_signals and two_party_countersigning.
 
 ### Added
 - Exposed `on_signal` from the app websocket in the instrumented websocket.
