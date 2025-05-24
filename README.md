@@ -468,7 +468,7 @@ found in the Holochain shared vault of the password manager under `Nomad Server 
 
 Enter the token (or use auto-fill) to sign in at <https://nomad-server-01.holochain.org:4646/ui/settings/tokens>.
 
-You can now view and recent or running jobs at <https://nomad-server-01.holochain.org:4646/ui/jobs>.
+You can now view any recent or running jobs at <https://nomad-server-01.holochain.org:4646/ui/jobs>.
 
 ###### Running Scenarios from the Command-Line
 
