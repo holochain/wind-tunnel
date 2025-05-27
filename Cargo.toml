@@ -164,3 +164,11 @@ validated_integrity = { path = "./zomes/validated/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = 0
+debug-assertions = false
+overflow-checks = false
+incremental = false
+codegen-units = 16
