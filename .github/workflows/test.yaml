@@ -116,7 +116,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          cargo test --workspace --all-targets
+          nix develop .#ci -c bash -c cargo test --workspace --all-targets
 
           echo "==> Available space after step"
           echo
