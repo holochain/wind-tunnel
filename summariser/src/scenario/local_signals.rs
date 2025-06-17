@@ -51,15 +51,16 @@ pub(crate) async fn summarize_local_signals(
 }
 
 pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<RatioStats> {
-    let value_series = frame.column(column)?.clone();
+    let value_col = frame.column(column)?.clone();
+    let values_series = value_col.as_materialized_series();
 
-    let mean = value_series.mean().context("Mean")?;
-    let std = value_series.std(0).context("Std")?;
-    let min = value_series
+    let mean = values_series.mean().context("Mean")?;
+    let std = values_series.std(0).context("Std")?;
+    let min = values_series
         .min::<f64>()
         .context("Min")?
         .context("Missing min")?;
-    let max = value_series
+    let max = values_series
         .max::<f64>()
         .context("Max")?
         .context("Missing max")?;
