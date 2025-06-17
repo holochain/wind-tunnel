@@ -58,7 +58,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V
     pub(crate) fn assigned_behaviours_flat(&self) -> Vec<String> {
         self.assigned_behaviours
             .iter()
-            .flat_map(|b| std::iter::repeat(&b.behaviour_name).take(b.agent_count))
+            .flat_map(|b| std::iter::repeat_n(&b.behaviour_name, b.agent_count))
             .cloned()
             .collect()
     }

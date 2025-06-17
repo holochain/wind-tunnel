@@ -13,10 +13,11 @@ pub(crate) fn standard_timing_stats(
     window_duration: &str,
     skip: Option<i64>,
 ) -> anyhow::Result<StandardTimingsStats> {
-    let mut value_series = frame.column(column).context("Read value column")?.clone();
+    let mut value_col = frame.column(column).context("Read value column")?.clone();
     if let Some(skip) = skip {
-        value_series = value_series.slice(skip, usize::MAX);
+        value_col = value_col.slice(skip, usize::MAX);
     }
+    let value_series = value_col.as_materialized_series();
 
     let mean = value_series.mean().context("Mean")?;
     let std = value_series.std(0).context("Std")?;
@@ -30,12 +31,12 @@ pub(crate) fn standard_timing_stats(
                 .and(col(column).lt_eq(lit(mean + std)))
                 .alias("within_std"),
             col(column)
-                .round(2)
+                .round(2, RoundMode::default())
                 .gt_eq(lit(mean - 2.0 * std))
                 .and(col(column).lt_eq(lit(mean + 2.0 * std)))
                 .alias("within_2std"),
             col(column)
-                .round(2)
+                .round(2, RoundMode::default())
                 .gt_eq(lit(mean - 3.0 * std))
                 .and(col(column).lt_eq(lit(mean + 3.0 * std)))
                 .alias("within_3std"),
@@ -44,18 +45,21 @@ pub(crate) fn standard_timing_stats(
 
     let count = out
         .column("within_std")?
+        .as_materialized_series()
         .sum::<usize>()
         .context("Within std sum")?;
     let pct_within_1std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
 
     let count = out
         .column("within_2std")?
+        .as_materialized_series()
         .sum::<usize>()
         .context("Within 2std sum")?;
     let pct_within_2std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
 
     let count = out
         .column("within_3std")?
+        .as_materialized_series()
         .sum::<usize>()
         .context("Within 3std sum")?;
     let pct_within_3std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
@@ -75,7 +79,7 @@ pub(crate) fn standard_timing_stats(
             DynamicGroupOptions {
                 every: Duration::parse(window_duration),
                 period: Duration::parse(window_duration),
-                offset: Duration::parse("0"),
+                offset: Duration::parse("0s"),
                 ..Default::default()
             },
         )
@@ -191,7 +195,7 @@ pub(crate) fn standard_rate(
             DynamicGroupOptions {
                 every: Duration::parse(window_duration),
                 period: Duration::parse(window_duration),
-                offset: Duration::parse("0"),
+                offset: Duration::parse("0s"),
                 ..Default::default()
             },
         )
@@ -221,6 +225,7 @@ pub(crate) fn standard_rate(
     } else {
         rate.column("count")?
             .slice(1, rate.height() - 2)
+            .as_materialized_series()
             .mean()
             .context("Calculate average")?
     };

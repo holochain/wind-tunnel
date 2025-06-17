@@ -325,7 +325,7 @@ where
 /// use std::time::Duration;
 /// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, install_app, try_wait_for_min_agents};
 ///
-/// fn agent_setup(ctx: &mut AgentContext<HolochainAgentContext, HolochainRunnerContext>) -> HookResult {
+/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
 ///     try_wait_for_min_agents(ctx, Duration::from_secs(60))?;
 ///     Ok(())
@@ -524,7 +524,7 @@ where
 /// Call this function as follows:
 /// ```rust
 /// use holochain_types::prelude::ActionHash;
-/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, get_peer_list_randomized};
 ///
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     let peer_list = get_peer_list_randomized(ctx)?;
