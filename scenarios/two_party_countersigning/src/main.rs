@@ -72,7 +72,7 @@ fn agent_setup(
 
     log::debug!(
         "Agent setup complete for {}, with agent pub key {:?}",
-        ctx.agent_name().to_string(),
+        ctx.agent_name(),
         ctx.get().cell_id().agent_pubkey()
     );
 
