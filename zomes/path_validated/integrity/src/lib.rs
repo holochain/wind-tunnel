@@ -20,16 +20,15 @@ pub enum LinkTypes {
 
 #[hdk_extern]
 fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
-    match op.flattened()? {
-        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry, .. }) => match app_entry {
-            EntryTypes::SampleEntry(_) => Ok(ValidateCallbackResult::Valid),
-        },
-        FlatOp::RegisterCreateLink { link_type, .. } => match link_type {
-            LinkTypes::SampleLink => Ok(ValidateCallbackResult::Valid),
-        },
-        _ => {
-            // Allow any other operations
-            Ok(ValidateCallbackResult::Valid)
-        }
+    match op.flattened::<EntryTypes, LinkTypes>()? {
+        FlatOp::StoreEntry(OpEntry::CreateEntry { .. })
+        | FlatOp::StoreRecord(OpRecord::InitZomesComplete { .. } | OpRecord::CreateEntry { .. })
+        | FlatOp::RegisterAgentActivity(
+            OpActivity::InitZomesComplete { .. } | OpActivity::CreateEntry { .. },
+        ) => Ok(ValidateCallbackResult::Valid),
+        _ => Ok(ValidateCallbackResult::Invalid(format!(
+            "Validation not supported for type: {:?}",
+            op
+        ))),
     }
 }
