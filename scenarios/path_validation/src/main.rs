@@ -29,6 +29,8 @@ fn agent_behaviour(
         "this is a test entry value",
     )?;
 
+    let () = call_zome(ctx, "path_validated", "create_path", ())?;
+
     Ok(())
 }
 

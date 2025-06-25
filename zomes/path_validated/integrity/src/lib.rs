@@ -15,7 +15,7 @@ pub enum EntryTypes {
 
 #[hdk_link_types]
 pub enum LinkTypes {
-    SampleLink,
+    Path,
 }
 
 #[hdk_extern]
@@ -26,6 +26,13 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
         | FlatOp::RegisterAgentActivity(
             OpActivity::InitZomesComplete { .. } | OpActivity::CreateEntry { .. },
         ) => Ok(ValidateCallbackResult::Valid),
+        FlatOp::StoreRecord(OpRecord::CreateLink { .. }) => Ok(ValidateCallbackResult::Valid),
+        FlatOp::RegisterAgentActivity(OpActivity::CreateLink { .. }) => {
+            Ok(ValidateCallbackResult::Valid)
+        }
+        FlatOp::RegisterCreateLink { link_type, .. } => match link_type {
+            LinkTypes::Path => Ok(ValidateCallbackResult::Valid),
+        },
         _ => Ok(ValidateCallbackResult::Invalid(format!(
             "Validation not supported for type: {:?}",
             op
