@@ -35,11 +35,6 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 if base_address_lookup == root_hash()? {
                     break;
                 }
-                if base_address_lookup.into_entry_hash().is_none() {
-                    return Ok(ValidateCallbackResult::Invalid(
-                        "Base address is not valid entry hash".to_string(),
-                    ));
-                }
                 if let Action::CreateLink(prev_create_link) =
                     must_get_action(action.prev_action.clone())?
                         .hashed
