@@ -2,7 +2,7 @@ use hdi::prelude::*;
 
 #[hdk_entry_helper]
 pub struct SampleEntry {
-    pub value: String,
+    pub updated: bool,
 }
 
 #[derive(Serialize, Deserialize)]
