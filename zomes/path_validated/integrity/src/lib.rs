@@ -16,6 +16,7 @@ pub enum EntryTypes {
 
 #[hdk_link_types]
 pub enum LinkTypes {
+    SampleLink,
     Path,
 }
 
@@ -23,6 +24,7 @@ pub enum LinkTypes {
 fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     match op.flattened::<EntryTypes, LinkTypes>()? {
         FlatOp::StoreRecord(OpRecord::CreateLink {
+            link_type: LinkTypes::Path,
             base_address,
             action,
             ..
