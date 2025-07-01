@@ -2,8 +2,8 @@ use hdi::hash_path::path::root_hash;
 use hdi::prelude::*;
 
 #[hdk_entry_helper]
-pub struct SampleEntry {
-    pub updated: bool,
+pub struct BookEntry {
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -11,7 +11,7 @@ pub struct SampleEntry {
 #[hdk_entry_types]
 #[unit_enum(UnitEntryTypes)]
 pub enum EntryTypes {
-    SampleEntry(SampleEntry),
+    BookEntry(BookEntry),
 }
 
 #[hdk_link_types]

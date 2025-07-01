@@ -1,9 +1,9 @@
 use hdk::prelude::*;
-use path_validated_integrity::{EntryTypes, LinkTypes, SampleEntry};
+use path_validated_integrity::{BookEntry, EntryTypes, LinkTypes};
 
 #[hdk_extern]
-fn create_sample_entry() -> ExternResult<ActionHash> {
-    create_entry(EntryTypes::SampleEntry(SampleEntry { updated: false }))
+fn add_book_entry(name: String) -> ExternResult<ActionHash> {
+    create_entry(EntryTypes::BookEntry(BookEntry { name }))
 }
 
 #[hdk_extern]

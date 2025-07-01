@@ -22,7 +22,7 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    let _: ActionHash = call_zome(ctx, "path_validated", "create_sample_entry", ())?;
+    let _: ActionHash = call_zome(ctx, "path_validated", "add_book_entry", "Romeo and Juliet")?;
 
     let () = call_zome(ctx, "path_validated", "create_path", ())?;
 
