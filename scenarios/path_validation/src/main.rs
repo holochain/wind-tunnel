@@ -67,7 +67,13 @@ fn agent_behaviour(
         }]
     );
 
-    // Add another book on first, and only the first, call to this behaviour.
+    // Add multiple books for a new author on first, and only the first, call to this behaviour.
+    let () = call_zome(
+        ctx,
+        "path_validated",
+        "add_book_entry",
+        ("Stevenson", "Treasure Island"),
+    )?;
     let () = call_zome(
         ctx,
         "path_validated",
@@ -75,14 +81,19 @@ fn agent_behaviour(
         ("Stevenson", "Strange Case of Dr Jekyll and Mr Hyde"),
     )?;
 
-    // There should only ever be a single book to this author, even on subsequent calls.
+    // Confirm there are two books.
     let books: Vec<BookEntry> =
         call_zome(ctx, "path_validated", "find_books_from_author", "Stevenson")?;
     assert_eq!(
         books,
-        [BookEntry {
-            name: "Strange Case of Dr Jekyll and Mr Hyde".to_string()
-        }]
+        [
+            BookEntry {
+                name: "Treasure Island".to_string()
+            },
+            BookEntry {
+                name: "Strange Case of Dr Jekyll and Mr Hyde".to_string()
+            },
+        ]
     );
 
     // Original author should still only have the original book.
