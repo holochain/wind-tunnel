@@ -54,10 +54,10 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
 }
 
 #[hdk_extern]
-fn find_books_from_author(author: String) -> ExternResult<Vec<EntryHashed>> {
+fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
     let path = Path::from(author).typed(LinkTypes::AuthorPath)?;
 
-    get_links(
+    let book_entries_hashed = get_links(
         GetLinksInputBuilder::try_new(
             path.path_entry_hash()?,
             LinkTypes::AuthorPath.try_into_filter()?,
@@ -68,5 +68,12 @@ fn find_books_from_author(author: String) -> ExternResult<Vec<EntryHashed>> {
     .into_iter()
     .filter_map(|link| link.target.into_entry_hash())
     .map(must_get_entry)
-    .collect()
+    .collect::<ExternResult<Vec<EntryHashed>>>()?;
+
+    let books = book_entries_hashed
+        .into_iter()
+        .filter_map(|entry_hashed| BookEntry::try_from(entry_hashed.content).ok())
+        .collect();
+
+    Ok(books)
 }

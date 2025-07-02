@@ -1,6 +1,7 @@
 use hdi::prelude::*;
 
 #[hdk_entry_helper]
+#[derive(PartialEq, Eq)]
 pub struct BookEntry {
     pub name: String,
 }

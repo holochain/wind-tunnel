@@ -1,6 +1,6 @@
-use holochain_types::EntryHashed;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
+use path_validated_integrity::BookEntry;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     configure_app_ws_url(ctx)?;
@@ -17,13 +17,13 @@ fn agent_setup(
     )?;
 
     // There should be no books created yet.
-    let books_hashed: Vec<EntryHashed> = call_zome(
+    let books: Vec<BookEntry> = call_zome(
         ctx,
         "path_validated",
         "find_books_from_author",
         "Shakespeare",
     )?;
-    assert!(books_hashed.is_empty());
+    assert!(books.is_empty());
 
     Ok(())
 }
@@ -40,13 +40,18 @@ fn agent_behaviour(
     )?;
 
     // There should only ever be a single book to this author, even on subsequent calls.
-    let books_hashed: Vec<EntryHashed> = call_zome(
+    let books: Vec<BookEntry> = call_zome(
         ctx,
         "path_validated",
         "find_books_from_author",
         "Shakespeare",
     )?;
-    assert_eq!(books_hashed.len(), 1);
+    assert_eq!(
+        books,
+        [BookEntry {
+            name: "Romeo and Juliet".to_string()
+        }]
+    );
 
     Ok(())
 }
