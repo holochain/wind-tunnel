@@ -1,4 +1,4 @@
-use holochain_types::prelude::ActionHash;
+use holochain_types::EntryHashed;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 
@@ -16,15 +16,37 @@ fn agent_setup(
         &"path_validated".to_string(),
     )?;
 
+    // There should be no books created yet.
+    let books_hashed: Vec<EntryHashed> = call_zome(
+        ctx,
+        "path_validated",
+        "find_books_from_author",
+        "Shakespeare",
+    )?;
+    assert!(books_hashed.is_empty());
+
     Ok(())
 }
 
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    let _: ActionHash = call_zome(ctx, "path_validated", "add_book_entry", "Romeo and Juliet")?;
+    // Add a book on first, and only the first, call to this behaviour.
+    let () = call_zome(
+        ctx,
+        "path_validated",
+        "add_book_entry",
+        ("Shakespeare", "Romeo and Juliet"),
+    )?;
 
-    let () = call_zome(ctx, "path_validated", "create_path", ())?;
+    // There should only ever be a single book to this author, even on subsequent calls.
+    let books_hashed: Vec<EntryHashed> = call_zome(
+        ctx,
+        "path_validated",
+        "find_books_from_author",
+        "Shakespeare",
+    )?;
+    assert_eq!(books_hashed.len(), 1);
 
     Ok(())
 }
