@@ -54,8 +54,8 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
     create_link(
         path.path_entry_hash()?,
         book_entry_hash.clone(),
-        LinkTypes::AuthorPath,
-        "book",
+        LinkTypes::AuthorBook,
+        path.make_tag()?,
     )?;
 
     Ok(())
@@ -73,9 +73,8 @@ fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
             get_links(
                 GetLinksInputBuilder::try_new(
                     child.path_entry_hash()?,
-                    LinkTypes::AuthorPath.try_into_filter()?,
+                    LinkTypes::AuthorBook.try_into_filter()?,
                 )?
-                .tag_prefix("book".into())
                 .build(),
             )
         })
