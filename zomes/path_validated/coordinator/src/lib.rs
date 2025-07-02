@@ -28,7 +28,7 @@ fn recursively_create_links_from_root(path: TypedPath) -> ExternResult<()> {
 
 #[hdk_extern]
 fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
-    let path = Path::from(author_and_name.0).typed(LinkTypes::AuthorPath)?;
+    let path = Path::from(author_and_name.0.to_lowercase()).typed(LinkTypes::AuthorPath)?;
 
     if path.exists()? {
         return Ok(());
@@ -55,7 +55,7 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
 
 #[hdk_extern]
 fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
-    let path = Path::from(author).typed(LinkTypes::AuthorPath)?;
+    let path = Path::from(author.to_lowercase()).typed(LinkTypes::AuthorPath)?;
 
     let book_entries_hashed = get_links(
         GetLinksInputBuilder::try_new(

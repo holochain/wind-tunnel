@@ -53,6 +53,20 @@ fn agent_behaviour(
         }]
     );
 
+    // Search is not case-sensitive.
+    let books: Vec<BookEntry> = call_zome(
+        ctx,
+        "path_validated",
+        "find_books_from_author",
+        "shakespeare",
+    )?;
+    assert_eq!(
+        books,
+        [BookEntry {
+            name: "Romeo and Juliet".to_string()
+        }]
+    );
+
     Ok(())
 }
 
