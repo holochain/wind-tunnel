@@ -28,10 +28,17 @@ fn recursively_create_links_from_root(path: TypedPath) -> ExternResult<()> {
 
 #[hdk_extern]
 fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
-    let path_string = format!("{}.{}", author_and_name.0.to_lowercase(), author_and_name.1);
+    // Use path-sharding to split author's name into single character paths.
+    let path_string = format!(
+        "1:{}#{}.{}",
+        author_and_name.0.len(),
+        author_and_name.0.to_lowercase(),
+        author_and_name.1
+    );
     let path = Path::from(path_string).typed(LinkTypes::AuthorPath)?;
 
     if path.exists()? {
+        // Full path, including book name, exists so the book should exist.
         return Ok(());
     }
 
@@ -56,7 +63,8 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
 
 #[hdk_extern]
 fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
-    let path = Path::from(author.to_lowercase()).typed(LinkTypes::AuthorPath)?;
+    let path_string = format!("1:{}#{}", author.len(), author.to_lowercase(),);
+    let path = Path::from(path_string).typed(LinkTypes::AuthorPath)?;
 
     let children_book_links = path
         .children_paths()?
