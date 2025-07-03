@@ -77,10 +77,18 @@ fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
     let path = Path::from(path_string).typed(LinkTypes::AuthorPath)?;
 
     // Path-sharding appends an extra leaf to the path so remove it.
+    // Example: if trying to find authors beginning with 'ab' then the path will be "a.b.ab" which will
+    // find nothing so instead, use the parent path which is "a.b".
     let path = path
         .parent()
         .ok_or(wasm_error!("Could not get path from author"))?;
 
+    // Because we start at the parent path then we never need to check ourselves and instead only
+    // our children because we are our parent's child.
+    // Example 1: Given a full author's name "bob", the path will be "b.o.b.bob" so take our parent
+    // "b.o.b" and then search its children and we find "b.o.b.bob" which is where the links are.
+    // Example 2: Given a part of an author's name "bo", the path will be "b.o.bo" which is not
+    // valid so we take the parent "b.o" and recursively search its children to find "b.o.b.bob".
     let book_links = recursively_find_books(path)?;
 
     let books = book_links
