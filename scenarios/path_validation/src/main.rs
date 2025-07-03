@@ -144,6 +144,10 @@ fn agent_behaviour(
         ]
     );
 
+    // No books found for names beginning with 'b'.
+    let books: Vec<BookEntry> = call_zome(ctx, "path_validated", "find_books_from_author", "b")?;
+    assert!(books.is_empty(),);
+
     Ok(())
 }
 
