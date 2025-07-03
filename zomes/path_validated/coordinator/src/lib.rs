@@ -12,7 +12,12 @@ fn recursively_create_links_from_root(
         root_hash()?
     };
 
+    // Create this path's links if they don't exist, which they should due to the recursive nature
+    // of this function.
     path.ensure()?;
+
+    // Always create link from the parent hash to the book entry because it will be an new book.
+    // Even if the path links exist then it might be a book by the same author.
     create_link(
         parent_hash,
         book_entry_hash.clone(),
@@ -47,7 +52,10 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
         .action()
         .entry_hash()
         .expect("create book action has not entry hash");
+    // Create links for all parent paths so we can look-up books based on part of an author's name.
     recursively_create_links_from_root(path.clone(), book_entry_hash.clone())?;
+
+    // Create the final link from this full path, including the book name, to the book itself.
     create_link(
         path.path_entry_hash()?,
         book_entry_hash.clone(),
