@@ -30,18 +30,9 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             tag,
             ..
         }) => {
-            let tag_bytes = SerializedBytes::from(UnsafeBytes::from(tag.into_inner()));
-            let tag_component = Component::try_from(tag_bytes).map_err(|e| wasm_error!(e))?;
-            let tag_string = String::try_from(&tag_component).map_err(|e| wasm_error!(e))?;
+            let tag_bytes = SerializedBytes::from(UnsafeBytes::from(tag.clone().into_inner()));
 
-            if tag_string
-                .chars()
-                .any(|c| c != '-' && !c.is_ascii_lowercase())
-            {
-                Ok(ValidateCallbackResult::Invalid(format!(
-                    "Link's tag of '{tag_string:?}' contained more than lower-case ASCII letters and dashes",
-                )))
-            } else if base_address.clone().into_entry_hash().is_none() {
+            if base_address.clone().into_entry_hash().is_none() {
                 Ok(ValidateCallbackResult::Invalid(format!(
                     "Link's base_address '{base_address}' was not a valid entry hash",
                 )))
@@ -49,8 +40,27 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 Ok(ValidateCallbackResult::Invalid(format!(
                     "Link's target_address '{target_address}' was not a valid entry hash",
                 )))
+            } else if let Ok(tag_components) = Component::try_from(tag_bytes) {
+                if let Ok(tag_string) = String::try_from(&tag_components) {
+                    if tag_string
+                        .chars()
+                        .all(|c| c == '-' || c.is_ascii_lowercase())
+                    {
+                        Ok(ValidateCallbackResult::Valid)
+                    } else {
+                        Ok(ValidateCallbackResult::Invalid(format!(
+                    "Link's tag of '{tag_string:?}' contained more than lower-case ASCII letters and dashes",
+                )))
+                    }
+                } else {
+                    Ok(ValidateCallbackResult::Invalid(format!(
+                        "The components of the link's tag '{tag_components:?}' were not valid strings",
+                    )))
+                }
             } else {
-                Ok(ValidateCallbackResult::Valid)
+                Ok(ValidateCallbackResult::Invalid(format!(
+                    "Link's tag '{tag:?}' was not a path component",
+                )))
             }
         }
         FlatOp::StoreRecord(OpRecord::CreateLink {
