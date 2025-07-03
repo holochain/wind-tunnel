@@ -1,27 +1,31 @@
 use hdk::{hdi::hash_path::path::root_hash, prelude::*};
 use path_validated_integrity::{BookEntry, EntryTypes, LinkTypes};
 
-fn recursively_create_links_from_root(path: TypedPath) -> ExternResult<()> {
-    if path.exists()? {
-        return Ok(()); // Path already exists, therefore, so must its parents.
-    }
-
-    if let Some(parent) = path.parent() {
-        recursively_create_links_from_root(parent.clone())?;
-        create_link(
-            parent.path_entry_hash()?,
-            path.path_entry_hash()?,
-            LinkTypes::AuthorPath,
-            path.make_tag()?,
-        )?;
+fn recursively_create_links_from_root(
+    path: TypedPath,
+    book_entry_hash: EntryHash,
+) -> ExternResult<()> {
+    let parent_hash = if let Some(parent) = path.parent() {
+        recursively_create_links_from_root(parent.clone(), book_entry_hash.clone())?;
+        parent.path_entry_hash()?.into()
     } else {
+        root_hash()?
+    };
+
+    if !path.exists()? {
         create_link(
-            root_hash()?,
+            parent_hash.clone(),
             path.path_entry_hash()?,
             LinkTypes::AuthorPath,
             path.make_tag()?,
         )?;
     }
+    create_link(
+        parent_hash,
+        book_entry_hash.clone(),
+        LinkTypes::AuthorBook,
+        path.make_tag()?,
+    )?;
 
     Ok(())
 }
@@ -50,7 +54,7 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
         .action()
         .entry_hash()
         .expect("create book action has not entry hash");
-    recursively_create_links_from_root(path.clone())?;
+    recursively_create_links_from_root(path.clone(), book_entry_hash.clone())?;
     create_link(
         path.path_entry_hash()?,
         book_entry_hash.clone(),
@@ -65,6 +69,11 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
 fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
     let path_string = format!("1:{}#{}", author.len(), author.to_lowercase(),);
     let path = Path::from(path_string).typed(LinkTypes::AuthorPath)?;
+
+    // Path-sharding appends an extra leaf to the path so remove it.
+    let path = path
+        .parent()
+        .ok_or(wasm_error!("Could not get path from author"))?;
 
     let children_book_links = path
         .children_paths()?

@@ -110,6 +110,40 @@ fn agent_behaviour(
         }]
     );
 
+    // Add new book with author who's name doesn't begin with 's'
+    let () = call_zome(
+        ctx,
+        "path_validated",
+        "add_book_entry",
+        ("Austen", "Pride and Prejudice"),
+    )?;
+
+    // Should be able to find that book by looking up names beginning with 'a'.
+    let books: Vec<BookEntry> = call_zome(ctx, "path_validated", "find_books_from_author", "a")?;
+    assert_eq!(
+        books,
+        [BookEntry {
+            name: "Pride and Prejudice".to_string()
+        }]
+    );
+
+    // Can find all books with authors who's names begin with 's'.
+    let books: Vec<BookEntry> = call_zome(ctx, "path_validated", "find_books_from_author", "s")?;
+    assert_eq!(
+        books,
+        [
+            BookEntry {
+                name: "Romeo and Juliet".to_string()
+            },
+            BookEntry {
+                name: "Treasure Island".to_string()
+            },
+            BookEntry {
+                name: "Strange Case of Dr Jekyll and Mr Hyde".to_string()
+            },
+        ]
+    );
+
     Ok(())
 }
 
