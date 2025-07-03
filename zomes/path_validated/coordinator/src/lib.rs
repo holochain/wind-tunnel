@@ -82,26 +82,19 @@ fn find_books_from_author(author: String) -> ExternResult<Vec<BookEntry>> {
         .parent()
         .ok_or(wasm_error!("Could not get path from author"))?;
 
-    let children_book_links = path
-        .children_paths()?
-        .into_iter()
-        .map(|child| {
-            get_links(
-                GetLinksInputBuilder::try_new(
-                    child.path_entry_hash()?,
-                    LinkTypes::AuthorBook.try_into_filter()?,
-                )?
-                .build(),
-            )
-        })
-        .collect::<ExternResult<Vec<Vec<Link>>>>()?;
-
-    let book_entries_hashed = children_book_links
-        .into_iter()
-        .flatten()
-        .filter_map(|link| link.target.into_entry_hash())
-        .map(must_get_entry)
-        .collect::<ExternResult<Vec<EntryHashed>>>()?;
+    // Because all parents have a link to all their children's books then just get our own links.
+    let book_entries_hashed = get_links(
+        GetLinksInputBuilder::try_new(
+            path.path_entry_hash()?,
+            LinkTypes::AuthorBook.try_into_filter()?,
+        )?
+        .build(),
+    )
+    .into_iter()
+    .flatten()
+    .filter_map(|link| link.target.into_entry_hash())
+    .map(must_get_entry)
+    .collect::<ExternResult<Vec<EntryHashed>>>()?;
 
     let books: Vec<_> = book_entries_hashed
         .into_iter()
