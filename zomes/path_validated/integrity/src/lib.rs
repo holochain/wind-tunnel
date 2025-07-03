@@ -60,16 +60,9 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             tag,
             ..
         }) => {
-            let tag_bytes = SerializedBytes::from(UnsafeBytes::from(tag.into_inner()));
-            let tag_component = Component::try_from(tag_bytes).map_err(|e| wasm_error!(e))?;
-            let tag_string = String::try_from(&tag_component).map_err(|e| wasm_error!(e))?;
-
-            if tag_string
-                .chars()
-                .any(|c| c != '-' && !c.is_ascii_lowercase())
-            {
+            if TryInto::<String>::try_into(tag.clone()).is_err() {
                 Ok(ValidateCallbackResult::Invalid(format!(
-                    "Link's tag of '{tag_string:?}' contained more than lower-case ASCII letters and dashes",
+                    "Link's tag of '{tag:?}' was not a valid string",
                 )))
             } else if base_address.clone().into_entry_hash().is_none() {
                 Ok(ValidateCallbackResult::Invalid(format!(
