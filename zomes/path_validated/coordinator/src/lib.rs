@@ -12,14 +12,7 @@ fn recursively_create_links_from_root(
         root_hash()?
     };
 
-    if !path.exists()? {
-        create_link(
-            parent_hash.clone(),
-            path.path_entry_hash()?,
-            LinkTypes::AuthorPath,
-            path.make_tag()?,
-        )?;
-    }
+    path.ensure()?;
     create_link(
         parent_hash,
         book_entry_hash.clone(),
