@@ -25,6 +25,8 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     match op.flattened::<EntryTypes, LinkTypes>()? {
         FlatOp::StoreRecord(OpRecord::CreateLink {
             link_type: LinkTypes::AuthorPath,
+            base_address,
+            target_address,
             tag,
             ..
         }) => {
@@ -34,13 +36,21 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
 
             if tag_string
                 .chars()
-                .all(|c| c == '-' || c.is_ascii_lowercase())
+                .any(|c| c != '-' && !c.is_ascii_lowercase())
             {
-                Ok(ValidateCallbackResult::Valid)
-            } else {
                 Ok(ValidateCallbackResult::Invalid(format!(
                     "Link's tag of '{tag_string:?}' contained more than lower-case ASCII letters and dashes",
                 )))
+            } else if base_address.clone().into_entry_hash().is_none() {
+                Ok(ValidateCallbackResult::Invalid(format!(
+                    "Link's base_address '{base_address}' was not a valid entry hash",
+                )))
+            } else if target_address.clone().into_entry_hash().is_none() {
+                Ok(ValidateCallbackResult::Invalid(format!(
+                    "Link's target_address '{target_address}' was not a valid entry hash",
+                )))
+            } else {
+                Ok(ValidateCallbackResult::Valid)
             }
         }
         _ => Ok(ValidateCallbackResult::Valid),
