@@ -34,8 +34,14 @@ fn add_book_entry(author_and_name: (String, String)) -> ExternResult<()> {
     let path_string = format!(
         "1:{}#{}.{}",
         author_and_name.0.len(),
-        author_and_name.0.to_lowercase(),
-        author_and_name.1
+        author_and_name
+            .0
+            .to_lowercase()
+            .replace(char::is_whitespace, "-"),
+        author_and_name
+            .1
+            .to_lowercase()
+            .replace(char::is_whitespace, "-"),
     );
     let path = Path::from(path_string).typed(LinkTypes::AuthorPath)?;
 
