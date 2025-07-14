@@ -50,6 +50,8 @@ jobs:
       # do run out of disk space, then at least we've captured that big piece in the
       # cache and can just download it next time.
       - name: Cache CI shell
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
         run: |
           nix develop --profile ci-profile -c true
           cachix push holochain-ci ci-profile
