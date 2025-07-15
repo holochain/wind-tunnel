@@ -6,9 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 - Updated to Holochain `v0.5.2`
 - Updated to new Holochain client version `v0.7.0`
 - Enable the former TryCP scenarios on the Nomad cluster CI: remote_call_rate, remote_signals and two_party_countersigning.
+
+## [0.4.0-dev.1] - 2025-06-19
 
 ### Added
 - Exposed `on_signal` from the app websocket in the instrumented websocket.
@@ -48,13 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test workflow uses kitsune dev shell for kitsune scenario.
 - Converted `validation_receipts` scenario to non-TryCP scenario to be run on the Nomad cluster. [#172](https://github.com/holochain/wind-tunnel/pull/172)
 
-### Deprecated
-### Removed
 ### Fixed
 - Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - Fix Kitsune op store to always return all processed op ids. Previously ops processed multiple times would not be removed from the request queue. Duplicate ops are still not considered for reporting.
-
-### Security
 
 ## [0.2.0-alpha.2] - 2024-05-25
 
