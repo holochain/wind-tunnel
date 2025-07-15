@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0-dev.1] - 2025-06-19
 
 ### Added
+
 - Exposed `on_signal` from the app websocket in the instrumented websocket.
 - New handler function `handle_api_err` which can be used with `map_err` to deal with `ConductorApiError`s and convert
   them into `anyhow` errors or panic when the error is fatal.
@@ -23,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check in the `happ_builder` whether `hc` and `cargo` are available. This is used by the scenario build script to skip
   building happs if build tools are not available. This allows the project to be loaded in an environment where the
   tools aren't available.
-- A new tool for summarising scenario outcomes. This is called the `summariser` which is possibly a working title! The 
+- A new tool for summarising scenario outcomes. This is called the `summariser` which is possibly a working title! The
   tool is specific to the scenarios in this project but does have some re-usable pieces. It remains to be decided whether
   we will separate those parts out and publish them as a crate. For now, this is private to the project.
 - `run_with_required_agents` function for TryCP scenarios that fails if the number of agents that completed the scenario
@@ -33,16 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nix dev shell for kitsune scenarios.
 
 ### Changed
+
 - Updated to Holochain `v0.4.2`
 - Updated to new Holochain client version `v0.6.2`
 - Replace `&mut self` with `&self` in admin and app instrumented websockets.
-- `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the 
+- `ShutdownHandle` now hides its implementation. It works the same way that it did but you can no longer access the
   broadcast channel that it uses internally. Shutdown failures used to panic but it a `ShutdownHandle` happens to not
   have any subscribers then that should not be considered a fatal error. It will now log a warning instead.
 - Metrics now automatically include `run_id` and `scenario_name` tags.
 - Update `trycp_client` and `trycp_api` dependencies to `v0.17.0`. [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - When making zome calls with the TryCP client bindings, the `agent` is now reported on the metrics, taken from the target
-  cell_id for the call. For the wrapped `holochain_client`, this is only done when the call target is `CellId`. Or in 
+  cell_id for the call. For the wrapped `holochain_client`, this is only done when the call target is `CellId`. Or in
   other words, the `agent` is not reported when calling a clone cell.
 - All metrics are now reported in seconds, as an `f64`. There were some types still using milliseconds which made reporting
   across scenarios more complex.
@@ -52,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Converted `validation_receipts` scenario to non-TryCP scenario to be run on the Nomad cluster. [#172](https://github.com/holochain/wind-tunnel/pull/172)
 
 ### Fixed
+
 - Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - Fix Kitsune op store to always return all processed op ids. Previously ops processed multiple times would not be removed from the request queue. Duplicate ops are still not considered for reporting.
 
