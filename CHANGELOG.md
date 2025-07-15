@@ -2,14 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0-dev.0] - 2025-07-15
 
-- Updated to Holochain `v0.5.2`
-- Updated to new Holochain client version `v0.7.0`
-- Enable the former TryCP scenarios on the Nomad cluster CI: remote_call_rate, remote_signals and two_party_countersigning.
+### Added
+
+- Add job to comment the changelog preview on PRs by @cdunster in [#221](https://github.com/holochain/wind-tunnel/pull/221)
+- Add missing CACHIX_AUTH_TOKEN env to cachix push step by @cdunster in [#219](https://github.com/holochain/wind-tunnel/pull/219)
+- Add holochain_serialized_bytes dependency by @cdunster in [#213](https://github.com/holochain/wind-tunnel/pull/213)
+
+### Changed
+
+- Markdown format the CHANGELOG.md
+- Bump holochain/actions from 1.0.0 to 1.2.0 by @dependabot[bot] in [#212](https://github.com/holochain/wind-tunnel/pull/212)
+- Update PR template for conventional commits usage by @cdunster
+- Update Cargo.lock file by @ThetaSinner
+- Update flake.lock file by @ThetaSinner in [#216](https://github.com/holochain/wind-tunnel/pull/216)
+- Update Cargo.lock file by @ThetaSinner in [#203](https://github.com/holochain/wind-tunnel/pull/203)
+- Update flake.lock file by @ThetaSinner in [#201](https://github.com/holochain/wind-tunnel/pull/201)
+- Bump AdityaGarg8/remove-unwanted-software from 2 to 5 by @dependabot[bot] in [#195](https://github.com/holochain/wind-tunnel/pull/195)
+- Bump peter-evans/create-pull-request from 6 to 7 (#194) by @dependabot[bot] in [#194](https://github.com/holochain/wind-tunnel/pull/194)
+- Use workspace package properties (#198) by @ThetaSinner in [#198](https://github.com/holochain/wind-tunnel/pull/198)
+- Add release support (#193) by @ThetaSinner in [#193](https://github.com/holochain/wind-tunnel/pull/193)
+- Maintenance update versions (#192) by @ThetaSinner in [#192](https://github.com/holochain/wind-tunnel/pull/192)
+- Update flake.lock file (#191) by @github-actions[bot] in [#191](https://github.com/holochain/wind-tunnel/pull/191)
+- Enable scenarios remote_call_rate, remote_signals & two_party_countersigning on nomad cluster by @jost-s in [#188](https://github.com/holochain/wind-tunnel/pull/188)
+- Track and reduce disk usage (#189) by @ThetaSinner in [#189](https://github.com/holochain/wind-tunnel/pull/189)
+- Update to use holochain  0.5 (#182) by @zippy in [#182](https://github.com/holochain/wind-tunnel/pull/182)
+- Use less disk space (#185) by @ThetaSinner in [#185](https://github.com/holochain/wind-tunnel/pull/185)
+- Add `ci_pass` check (#183) by @ThetaSinner in [#183](https://github.com/holochain/wind-tunnel/pull/183)
+
+### Removed
+
+- Remove empty changelog headings and add missing release
+
+## First-time Contributors
+
+* @zippy made their first contribution in [#182](https://github.com/holochain/wind-tunnel/pull/182)
 
 ## [0.4.0-dev.1] - 2025-06-19
 
