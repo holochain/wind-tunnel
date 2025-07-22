@@ -48,6 +48,10 @@ jobs:
           nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
           cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
 
+      - name: Build Nomad Jobs
+        run: |
+          nix develop --impure --inputs-from . --command ./nomad/generate_jobs.sh
+
       - name: Upload bundle as artifact
         id: upload-bundle
         uses: actions/upload-artifact@v4
@@ -93,6 +97,6 @@ jobs:
           NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
         run: |-
-          nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name || matrix.scenario-name }}.vars" nomad/run_scenario.nomad.hcl
+          nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${{ matrix.job-name || matrix.scenario-name }}.nomad.hcl
 
           echo "Ran ${{ matrix.job-name }} with run ID ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY

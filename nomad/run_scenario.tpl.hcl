@@ -1,56 +1,66 @@
 variable "scenario-name" {
   type        = string
   description = "The name of the scenario to run"
+  default = {{ (ds "vars").scenario_name | quote }}
 }
 
 variable "connection-string" {
   type        = string
   description = "The URL to be used to connect to the service being tested"
-  default     = "ws://localhost:8888"
+  {{/* Default: read `connection_string` from the JSON data source `vars`, or set to `"ws://localhost:8888"` if not provided.*/}}
+  default     = {{ index (ds "vars") "connection_string" | default "ws://localhost:8888" | quote }}
 }
 
 variable "duration" {
   type        = number
   description = "The maximum duration of the scenario run"
-  default     = null
+  {{/* Default: read `duration` from the JSON data source `vars`, or set to `null` if not provided.*/}}
+  default     = {{ with index (ds "vars") "duration" }}{{ . | quote }}{{ else }}null{{ end }}
 }
 
 variable "reporter" {
   type        = string
   description = "The method used to report the logs"
-  default     = "influx-file"
+  {{/* Default: read `reporter` from the JSON data source `vars`, or set to `"influx-file"` if not provided.*/}}
+  default     = {{ index (ds "vars") "reporter" | default "influx-file" | quote }}
 }
 
 variable "behaviours" {
   type        = list(string)
   description = "Custom behaviours defined and used by the scenarios"
-  default     = [""]
+  {{/* Default: read `behaviours` from the JSON data source `vars`, or set to `[]` if not provided.*/}}
+  default = {{ index (ds "vars") "behaviours" | default (coll.Slice "") | toJSON }}
 }
 
 variable "scenario-url" {
   type        = string
-  description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path"
+  description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path" 
+  {{/* Default: read `scenario_url` from the JSON data source `vars`, or set to `""` if not provided.*/}}
+  default = {{ index (ds "vars") "scenario_url" | default "" | quote }}
 }
 
 variable "run-id" {
   type        = string
   description = "The ID of this run to distinguish it from other runs"
-  default     = null
+  {{/* Default: read `run_id` from the JSON data source `vars`, or set to `null` if not provided. */}}
+  default     = {{ with index (ds "vars") "run_id" }}{{ . | quote }}{{ else }}null{{ end }}
 }
 
 variable "agents-per-node" {
   type        = number
   description = "The number of agents to run per client node that is running the scenario"
-  default     = 1
+  {{/* Default: read `agents_per_node` from the JSON data source `vars`, or set to `1` if not provided. */}}
+  default     = {{ index (ds "vars") "agents_per_node" | default 1 }}
 }
 
 variable "min-agents" {
   type        = number
   description = "The minimum number of agents to wait for in the scenario"
-  default     = 2
+  {{/* Default: read `min_agents` from the JSON data source `vars`, or set to `2` if not provided. */}}
+  default     = {{ index (ds "vars") "min_agents" | default 2 }}
 }
 
-job "run_scenario" {
+job "{{ (ds "vars").scenario_name }}" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
 
@@ -158,8 +168,8 @@ job "run_scenario" {
             destination = "${NOMAD_SECRETS_DIR}/secrets.env"
             env         = true
             data        = <<EOT
-          INFLUX_TOKEN={{ with nomadVar "nomad/jobs/run_scenario" }}{{ .INFLUX_TOKEN }}{{ end }}
-          EOT
+            INFLUX_TOKEN={{ "{{" }} with nomadVar "nomad/jobs/{{ (ds "vars").scenario_name }}" {{ "}}" }}{{ "{{" }} .INFLUX_TOKEN {{ "}}" }}{{ "{{" }} end {{ "}}" }}
+            EOT
           }
 
           driver = "raw_exec"
