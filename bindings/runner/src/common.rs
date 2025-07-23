@@ -15,6 +15,7 @@ use kitsune2_api::AgentInfoSigned;
 use kitsune2_core::Ed25519Verifier;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -98,6 +99,30 @@ pub fn configure_app_ws_url(
     Ok(())
 }
 
+pub async fn build_happ(
+    path: PathBuf,
+    properties: HashMap<String, YamlProperties>,
+) -> WindTunnelResult<AppBundleSource> {
+    let mut source = AppBundleSource::Path(path);
+    use mr_bundle::Bundle;
+    let bundle: mr_bundle::Bundle<AppManifest> = match source {
+        AppBundleSource::Bytes(bundle) => Bundle::decode(&bundle).unwrap(),
+        AppBundleSource::Path(path) => Bundle::read_from_file(&path).await.unwrap(),
+    };
+    let AppManifest::V1(mut manifest) = bundle.manifest().clone();
+    for role_manifest in &mut manifest.roles {
+        let properties = properties.get(&role_manifest.name);
+        role_manifest.dna.modifiers.properties = properties.cloned();
+    }
+    source = AppBundleSource::Bytes(
+        bundle
+            .update_manifest(AppManifest::V1(manifest))
+            .unwrap()
+            .encode()
+            .unwrap(),
+    );
+    Ok(source)
+}
 /// Opinionated app installation which will give you what you need in most cases.
 ///
 /// The [RoleName] you provide is used to find the cell id within the installed app that you want
@@ -142,6 +167,8 @@ pub fn install_app<SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     app_path: PathBuf,
     role_name: &RoleName,
+    agent_pubkey: Option<AgentPubKey>,
+    dna_properties: Option<HashMap<String, YamlProperties>>,
 ) -> WindTunnelResult<()>
 where
     SV: UserValuesConstraint,
@@ -159,17 +186,32 @@ where
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
             let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
 
-            let key = client
-                .generate_agent_pub_key()
-                .await
-                .map_err(handle_api_err)?;
-            log::debug!("Generated agent pub key: {:}", key);
+            let key = match agent_pubkey {
+                Some(key) => key,
+                None => {
+                    let key = client
+                        .generate_agent_pub_key()
+                        .await
+                        .map_err(handle_api_err)?;
+                    log::debug!("Generated agent pub key: {:}", key);
+                    key
+                }
+            };
 
-            let content = std::fs::read(app_path)?;
-
+            let source = match dna_properties {
+                Some(properties) => {
+                    let happ = build_happ(app_path, properties).await?;
+                    happ
+                }
+                None => {
+                    let content = std::fs::read(app_path)?;
+                    AppBundleSource::Bytes(content)
+                }
+            };
+            log::debug!("Installing app with source");
             let app_info = client
                 .install_app(InstallAppPayload {
-                    source: AppBundleSource::Bytes(content),
+                    source,
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     roles_settings: None,
