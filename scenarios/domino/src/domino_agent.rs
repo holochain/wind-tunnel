@@ -3,7 +3,7 @@ use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::entries::{
     code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
-    GlobalDefinitionExt, SmartAgreementExt,
+    GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt,
 };
 
 pub trait DominoAgentExt {
@@ -21,7 +21,15 @@ pub trait DominoAgentExt {
         &mut self,
         code_template: CodeTemplate,
     ) -> Result<ActionHashB64, anyhow::Error>;
+    fn domino_create_smart_agreement(
+        &mut self,
+        smart_agreement: SmartAgreement,
+    ) -> Result<ActionHashB64, anyhow::Error>;
     fn domino_get_code_templates_lib(&mut self) -> Result<Vec<CodeTemplateExt>, anyhow::Error>;
+    fn domino_initialize_global_definition(
+        &mut self,
+        config: GlobalDefinition,
+    ) -> Result<ActionHash, anyhow::Error>;
 }
 
 impl DominoAgentExt
@@ -110,8 +118,22 @@ impl DominoAgentExt
         self.call_zome_alliance("create_code_template", code_template)
     }
 
+    fn domino_create_smart_agreement(
+        &mut self,
+        smart_agreement: SmartAgreement,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_smart_agreement", smart_agreement)
+    }
+
     fn domino_get_code_templates_lib(&mut self) -> Result<Vec<CodeTemplateExt>, anyhow::Error> {
         self.call_zome_alliance("get_code_templates_lib", ())
+    }
+
+    fn domino_initialize_global_definition(
+        &mut self,
+        config: GlobalDefinition,
+    ) -> Result<ActionHash, anyhow::Error> {
+        self.call_zome_alliance("initialize_global_definition", config)
     }
 }
 

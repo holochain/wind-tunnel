@@ -31,6 +31,3 @@ build:
 	cd domino && yarn build:happ
 	mkdir -p happs/domino
 	cp domino/workdir/domino.happ happs/domino/domino.happ
-
-run_test:
-	cd happs/domino && yarn start

@@ -8,6 +8,7 @@ use tokio::time::Instant;
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
     pub session_start_time: Option<Instant>,
+    pub network_initialized: bool,
     // pub signal_tx: Option<tokio::sync::broadcast::Sender<Signal>>,
     // pub initiate_with_peers: Vec<AgentPubKey>,
     // pub session_attempts: Arc<AtomicUsize>,
