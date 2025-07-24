@@ -1,9 +1,11 @@
 use super::handle_scenario_setup::ScenarioValues;
+use crate::domino_agent::DominoAgentExt;
 use holochain_types::prelude::YamlProperties;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashMap;
 use std::time::Duration;
+use tokio::time::Instant;
 
 pub fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
@@ -38,7 +40,7 @@ pub fn agent_setup(
     }
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
-    call_zome::<_, String, _>(ctx, "alliance", "init", ())?;
+    ctx.domino_init()?;
 
     log::debug!(
         "Agent setup complete for {}, with agent pub key {:?}",
@@ -46,5 +48,13 @@ pub fn agent_setup(
         ctx.get().cell_id().agent_pubkey()
     );
 
+    // Every agent creates a code template to flag that they have joined the network
+    let _ = ctx.domino_create_flag_template()?;
+
+    // Note: get all code template and check the author of them as possible agents to transact with
+    // I think we should generate the list based on the behaviour of the agent
+    // so in some cases we should only have one agent to transact with
+    // and in other cases we should have all agents to transact with
+    ctx.get_mut().scenario_values.session_start_time = Some(Instant::now());
     Ok(())
 }

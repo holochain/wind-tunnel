@@ -1,11 +1,13 @@
 use anyhow::Context;
-use holochain_types::{prelude::AgentPubKey, signal::Signal};
+// use holochain_types::{prelude::AgentPubKey, signal::Signal};
 use holochain_wind_tunnel_runner::prelude::*;
-use std::sync::atomic::AtomicUsize;
-use std::sync::Arc;
+// use std::sync::atomic::AtomicUsize;
+// use std::sync::Arc;
+use tokio::time::Instant;
 
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
+    pub session_start_time: Option<Instant>,
     // pub signal_tx: Option<tokio::sync::broadcast::Sender<Signal>>,
     // pub initiate_with_peers: Vec<AgentPubKey>,
     // pub session_attempts: Arc<AtomicUsize>,
