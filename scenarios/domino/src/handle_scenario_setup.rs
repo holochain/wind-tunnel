@@ -1,6 +1,7 @@
 use anyhow::Context;
 // use holochain_types::{prelude::AgentPubKey, signal::Signal};
 use holochain_wind_tunnel_runner::prelude::*;
+use rave_engine::types::AgentPubKeyB64;
 // use std::sync::atomic::AtomicUsize;
 // use std::sync::Arc;
 use tokio::time::Instant;
@@ -9,6 +10,7 @@ use tokio::time::Instant;
 pub struct ScenarioValues {
     pub session_start_time: Option<Instant>,
     pub network_initialized: bool,
+    pub participating_agents: Vec<AgentPubKeyB64>,
     // pub signal_tx: Option<tokio::sync::broadcast::Sender<Signal>>,
     // pub initiate_with_peers: Vec<AgentPubKey>,
     // pub session_attempts: Arc<AtomicUsize>,

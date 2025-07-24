@@ -1,11 +1,23 @@
 use crate::handle_scenario_setup::ScenarioValues;
+use holochain_serialized_bytes::prelude::*;
 use holochain_types::prelude::*;
-use holochain_wind_tunnel_runner::prelude::*;
-use rave_engine::types::entries::{
-    code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
-    GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt,
+use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};
+use rave_engine::types::{
+    entries::{
+        code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
+        GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt,
+    },
+    Transaction, Units,
 };
 
+// todo: move to rave_engine
+#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
+pub struct SpendInput {
+    pub receiver: AgentPubKeyB64,
+    pub amount: Units,
+    pub note: Option<String>,
+    pub service_network_definition: Option<ActionHash>,
+}
 pub trait DominoAgentExt {
     fn domino_init(&mut self) -> HookResult;
     fn is_network_initialized(&mut self) -> bool;
@@ -30,6 +42,10 @@ pub trait DominoAgentExt {
         &mut self,
         config: GlobalDefinition,
     ) -> Result<ActionHash, anyhow::Error>;
+    fn domino_create_spend(
+        &mut self,
+        transaction: SpendInput,
+    ) -> Result<Transaction, anyhow::Error>;
 }
 
 impl DominoAgentExt
@@ -135,6 +151,13 @@ impl DominoAgentExt
     ) -> Result<ActionHash, anyhow::Error> {
         self.call_zome_alliance("initialize_global_definition", config)
     }
+
+    fn domino_create_spend(
+        &mut self,
+        transaction: SpendInput,
+    ) -> Result<Transaction, anyhow::Error> {
+        self.call_zome_alliance("create_spend", transaction)
+    }
 }
 
 // Helper trait for the zome calling
@@ -153,6 +176,10 @@ impl ZomeTransactorExt
         O: std::fmt::Debug + serde::de::DeserializeOwned,
         I: serde::Serialize + std::fmt::Debug,
     {
-        call_zome(self, "transactor", fn_name, payload)
+        let reporter = self.runner_context().reporter();
+        let operation_record = wind_tunnel_prelude::OperationRecord::new(fn_name.to_string());
+        let result = call_zome(self, "transactor", fn_name, payload);
+        wind_tunnel_prelude::report_operation(reporter.clone(), operation_record, &result);
+        result
     }
 }
