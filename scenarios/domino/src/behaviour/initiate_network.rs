@@ -36,7 +36,7 @@ pub fn agent_behaviour(
                 compute_credit_limit: credit_limit_smart_agreement.into(),
                 compute_transaction_fee: TransactionFeeCompute {
                     agreement: fee_transfer_smart_agreement.into(),
-                    fee_trigger: ZFuel::from_str("10").unwrap(),
+                    fee_trigger: ZFuel::from_str("100").unwrap(),
                     fee_percentage: 1,
                 },
             },
@@ -263,7 +263,9 @@ fn create_agreements(
             description: "Spender".to_string(),
             qualification: RoleQualification::Any,
         }],
-        executor_rules: ExecutorRules::Any, // todo: refine it to only set progenitor(or special agent) to run it, since that is how it would be in production
+        executor_rules: ExecutorRules::AuthorizedExecutor(
+            ctx.get().cell_id().agent_pubkey().clone().into(),
+        ),
         one_time_run: false,
         aggregate_execution: true,
         tags: vec![],

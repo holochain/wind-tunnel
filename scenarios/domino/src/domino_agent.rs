@@ -7,8 +7,9 @@ use rave_engine::types::{
         code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
         GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt,
     },
-    Transaction, Units,
+    Actionable, Completed, Ledger, Transaction, Units,
 };
+use zfuel::fuel::ZFuel;
 
 // todo: move to rave_engine
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
@@ -16,6 +17,12 @@ pub struct SpendInput {
     pub receiver: AgentPubKeyB64,
     pub amount: Units,
     pub note: Option<String>,
+    pub service_network_definition: Option<ActionHash>,
+}
+
+#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
+pub struct AcceptTx {
+    pub address: ActionHash,
     pub service_network_definition: Option<ActionHash>,
 }
 pub trait DominoAgentExt {
@@ -46,6 +53,11 @@ pub trait DominoAgentExt {
         &mut self,
         transaction: SpendInput,
     ) -> Result<Transaction, anyhow::Error>;
+    fn domino_get_actionable_transactions(&mut self) -> Result<Actionable, anyhow::Error>;
+    fn domino_accept_transaction(&mut self, tx: AcceptTx) -> Result<Transaction, anyhow::Error>;
+    fn domino_get_ledger(&mut self) -> Result<Ledger, anyhow::Error>;
+    fn domino_get_my_current_applied_credit_limit(&mut self) -> Result<ZFuel, anyhow::Error>;
+    fn domino_get_completed_transactions(&mut self) -> Result<Completed, anyhow::Error>;
 }
 
 impl DominoAgentExt
@@ -157,6 +169,26 @@ impl DominoAgentExt
         transaction: SpendInput,
     ) -> Result<Transaction, anyhow::Error> {
         self.call_zome_alliance("create_spend", transaction)
+    }
+
+    fn domino_get_actionable_transactions(&mut self) -> Result<Actionable, anyhow::Error> {
+        self.call_zome_alliance("get_actionable_transactions", ())
+    }
+
+    fn domino_accept_transaction(&mut self, tx: AcceptTx) -> Result<Transaction, anyhow::Error> {
+        self.call_zome_alliance("accept_transaction", tx)
+    }
+
+    fn domino_get_ledger(&mut self) -> Result<Ledger, anyhow::Error> {
+        self.call_zome_alliance("get_ledger", ())
+    }
+
+    fn domino_get_my_current_applied_credit_limit(&mut self) -> Result<ZFuel, anyhow::Error> {
+        self.call_zome_alliance("get_my_current_applied_credit_limit", ())
+    }
+
+    fn domino_get_completed_transactions(&mut self) -> Result<Completed, anyhow::Error> {
+        self.call_zome_alliance("get_completed_transactions", ())
     }
 }
 
