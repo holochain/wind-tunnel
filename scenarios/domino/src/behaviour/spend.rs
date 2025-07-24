@@ -48,8 +48,6 @@ pub fn agent_behaviour(
         });
     }
 
-    // todo: get ledger and calculate how much you can spend in this round
-
     // test 3
     // get ledger and calculate how much you can spend in this round
     let ledger = ctx.domino_get_ledger()?;
@@ -88,7 +86,7 @@ pub fn agent_behaviour(
         // from the spend amount lets just use 75 % of it so that we have fees accounted for
         let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
         let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
-        // todo: split the spendable_amount into equal amounts for participating agents
+        // split the spendable_amount into equal amounts for participating agents
         let amount_per_agent = (spendable_amount / fraction)?;
         let amount = Units::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
         for agent in participating_agents {
@@ -106,7 +104,7 @@ pub fn agent_behaviour(
             balance,
         );
     }
-    // thread::sleep(Duration::from_secs(1));
+    thread::sleep(Duration::from_secs(1));
 
     Ok(())
 }
