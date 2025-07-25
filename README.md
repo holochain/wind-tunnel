@@ -363,6 +363,7 @@ For more advanced scenarios or for distributed tests, this is not appropriate!
 #### Running scenarios
 
 Each scenario is expected to provide a README.md with at least:
+
 - A description of the scenario and what it is testing for.
 - A suggested command or commands to run the scenario, with justification for the configuration used.
 
@@ -386,6 +387,7 @@ Then you can move to writing and running the scenario.
 #### Standard Wind Tunnel tests
 
 For standard Wind Tunnel tests - start a sandbox for testing:
+
 ```bash
 hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
 ```
@@ -430,11 +432,12 @@ Replace `app_install` with the name of the scenario that you want to run.
 Once the scenario is built you can run the Nomad job with:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory nomad/run_scenario.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario-url=result/bin/app_install -var reporter=in-memory nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
+All the jobs are in the `nomad/jobs` directory, so you can replace `app_install_minimal` with the name of the job you want to run.
+
 - `-address` sets Nomad to talk to the locally running instance and not the dedicated Wind Tunnel cluster one.
-- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
 - `-var scenario-url=...` provides the path to the scenario binary that you built in the previous step.
 - `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
 
@@ -446,7 +449,7 @@ nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_insta
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario-url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 > [!Note]
@@ -580,11 +583,13 @@ If your bootstrap and signal servers run under a different port, adapt the comma
 ### Published crates
 
 Framework crates:
+
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_core)](https://crates.io/crates/wind_tunnel_core) Core functionality for use by other Wind Tunnel crates - [wind_tunnel_core](https://github.com/holochain/wind-tunnel/tree/main/framework/core)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments)](https://crates.io/crates/wind_tunnel_instruments) Instruments for measuring performance with Wind Tunnel - [wind_tunnel_instruments](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_instruments_derive)](https://crates.io/crates/wind_tunnel_instruments_derive) Derive macros for the wind_tunnel_instruments crate - [wind_tunnel_instruments_derive](https://github.com/holochain/wind-tunnel/tree/main/framework/instruments_derive)
 - [![crates.io](https://img.shields.io/crates/v/wind_tunnel_runner)](https://crates.io/crates/wind_tunnel_runner) The Wind Tunnel runner - [wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/framework/runner)
 
 Bindings crates for Holochain:
+
 - [![crates.io](https://img.shields.io/crates/v/holochain_client_instrumented)](https://crates.io/crates/holochain_client_instrumented) An instrumented wrapper around the holochain_client - [holochain_client_instrumented](https://github.com/holochain/wind-tunnel/tree/main/bindings/client)
 - [![crates.io](https://img.shields.io/crates/v/holochain_wind_tunnel_runner)](https://crates.io/crates/holochain_wind_tunnel_runner) Customises the wind_tunnel_runner for Holochain testing - [holochain_wind_tunnel_runner](https://github.com/holochain/wind-tunnel/tree/main/bindings/runner)
