@@ -18,12 +18,12 @@ jobs:
       # `required-nodes` defaults to `1` if not provided.
       matrix:
         scenario-name:
-          - remote_call_rate
-          - remote_signals
-          - two_party_countersigning
           - first_call
           - local_signals
+          - remote_call_rate
+          - remote_signals
           - single_write_many_read
+          - two_party_countersigning
           - write_query
           - write_read
           - write_validated
@@ -47,6 +47,10 @@ jobs:
         run: |
           nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
           cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
+
+      - name: Build Nomad Job
+        run: |
+          nix develop --command ./nomad/generate_jobs.sh ${{ matrix.scenario-name }}
 
       - name: Upload bundle as artifact
         id: upload-bundle
@@ -93,6 +97,6 @@ jobs:
           NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
         run: |-
-          nix run --impure --inputs-from . nixpkgs#nomad -- job run -var-file="nomad/var_files/${{ matrix.job-name || matrix.scenario-name }}.vars" nomad/run_scenario.nomad.hcl
+          nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${{ matrix.job-name || matrix.scenario-name }}.nomad.hcl
 
           echo "Ran ${{ matrix.job-name }} with run ID ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY

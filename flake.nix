@@ -52,6 +52,7 @@
             # The packages required in most devShells
             commonPackages = [
               pkgs.cmake
+              pkgs.gomplate
               pkgs.perl
               pkgs.rustPlatform.bindgenHook
               pkgs.shellcheck
