@@ -50,7 +50,7 @@ jobs:
 
       - name: Build Nomad Job
         run: |
-          nix develop --command ./nomad/generate_jobs.sh ${{ matrix.scenario-name }}
+          nix develop --command ./nomad/generate_jobs.sh ${{ matrix.job-name || matrix.scenario-name }}
 
       - name: Upload bundle as artifact
         id: upload-bundle
