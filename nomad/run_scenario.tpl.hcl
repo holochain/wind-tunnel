@@ -168,7 +168,7 @@ job "{{ (ds "vars").scenario_name }}" {
             destination = "${NOMAD_SECRETS_DIR}/secrets.env"
             env         = true
             data        = <<EOT
-            INFLUX_TOKEN={{ "{{" }} with nomadVar "nomad/jobs/{{ (ds "vars").scenario_name }}" {{ "}}" }}{{ "{{" }} .INFLUX_TOKEN {{ "}}" }}{{ "{{" }} end {{ "}}" }}
+            INFLUX_TOKEN={{ "{{ with nomadVar \"nomad/jobs\" }}{{ .INFLUX_TOKEN }}{{ end }}" }}
             EOT
           }
 
