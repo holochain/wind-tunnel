@@ -58,7 +58,7 @@ pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
     use polars::io::SerReader;
 
     let mut in_file = open_input_path("2_query_results", file_name_from_query(query)?)
-        .with_context(|| format!("For query: {:?}", query))?;
+        .with_context(|| format!("For query: {query:?}"))?;
 
     in_file.set_modified(std::time::SystemTime::now())?;
 
@@ -84,7 +84,7 @@ pub fn insert_summary_output(
         }
     };
 
-    log::debug!("Writing summary output to {:?}", out_file);
+    log::debug!("Writing summary output to {out_file:?}");
 
     serde_json::to_writer_pretty(out_file, output).context("Failed to write summary output")?;
 
@@ -132,7 +132,7 @@ fn open_input_path(stage: &str, file_name: String) -> anyhow::Result<std::fs::Fi
 
     match std::fs::OpenOptions::new().read(true).open(&path) {
         Ok(f) => Ok(f),
-        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {:?}", path)),
+        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {path:?}")),
     }
 }
 

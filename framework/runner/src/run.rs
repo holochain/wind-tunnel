@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
+use crate::postrun::PostRun;
 use crate::progress::start_progress;
 use crate::{
     context::{AgentContext, RunnerContext, UserValuesConstraint},
@@ -145,7 +146,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let delegated_shutdown_listener = shutdown_handle.new_listener();
 
         let assigned_behaviour = assigned_behaviour.clone();
-        let agent_name = format!("agent-{}", agent_index);
+        let agent_name = format!("agent-{agent_index}");
 
         handles.push(
             std::thread::Builder::new()
@@ -161,14 +162,12 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     );
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         if let Err(e) = setup_agent_fn(&mut context) {
-                            log::error!("Agent setup failed for agent {agent_name}: {:?}", e);
+                            log::error!("Agent setup failed for agent {agent_name}: {e:?}");
 
                             if let Some(teardown_agent_fn) = teardown_agent_fn {
                                 if let Err(e) = teardown_agent_fn(&mut context) {
                                     log::error!(
-                                        "Agent teardown failed for agent {}: {:?}",
-                                        agent_name,
-                                        e
+                                        "Agent teardown failed for agent {agent_name}: {e:?}"
                                     );
                                 }
                             }
@@ -182,7 +181,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     if let Some(behaviour) = agent_behaviour_fn {
                         loop {
                             if cycle_shutdown_receiver.should_shutdown() {
-                                log::debug!("Stopping agent {}", agent_name);
+                                log::debug!("Stopping agent {agent_name}");
                                 break;
                             }
 
@@ -195,14 +194,13 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                 Err(e) if e.is::<AgentBailError>() => {
                                     // A single agent has failed, we don't want to stop the whole
                                     // scenario so warn and exit the loop.
-                                    log::warn!("Agent {} bailed: {:?}", agent_name, e);
+                                    log::warn!("Agent {agent_name} bailed: {e:?}");
                                     behaviour_ran_to_complete = false;
                                     break;
                                 }
                                 Err(e) => {
                                     log::error!(
-                                        "Agent behaviour [{assigned_behaviour}] failed for agent {agent_name}: {:?}",
-                                        e
+                                        "Agent behaviour [{assigned_behaviour}] failed for agent {agent_name}: {e:?}"
                                     );
                                 }
                             }
@@ -211,7 +209,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
                     if let Some(teardown_agent_fn) = teardown_agent_fn {
                         if let Err(e) = teardown_agent_fn(&mut context) {
-                            log::error!("Agent teardown failed for agent {}: {:?}", agent_name, e);
+                            log::error!("Agent teardown failed for agent {agent_name}: {e:?}");
                         }
                     }
 
@@ -225,7 +223,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     for (index, handle) in handles.into_iter().enumerate() {
         if let Err(e) = handle.join() {
-            log::error!("Could not join thread for test agent {index}: {:?}", e)
+            log::error!("Could not join thread for test agent {index}: {e:?}")
         }
     }
 
@@ -233,19 +231,30 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         // Don't crash the runner if the teardown fails. We still want the reporting and runner
         // shutdown to happen cleanly. The hook is documented as 'best effort'
         if let Err(e) = teardown_fn(runner_context_for_teardown.clone()) {
-            log::error!("Teardown failed: {:?}", e);
+            log::error!("Teardown failed: {e:?}");
         }
     }
 
     // Manually shutdown the reporting once all the teardown steps are complete, this doesn't
     // respond to Ctrl+C like the user-provided code does.
     report_shutdown_handle.shutdown();
+
+    // run postrun to collect metrics and reports
+    if let Err(err) = PostRun::new(
+        runner_context_for_teardown.reporter().clone(),
+        definition.host_metrics_file.clone(),
+    )
+    .run()
+    {
+        log::error!("PostRun failed: {err}");
+    }
+
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
 
     summary.set_peer_end_count(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire));
     if let Err(e) = append_run_summary(summary, PathBuf::from("run_summary.jsonl")) {
-        log::error!("Failed to append run summary: {:?}", e);
+        log::error!("Failed to append run summary: {e:?}");
     }
 
     println!("#RunId: [{}]", definition.run_id);

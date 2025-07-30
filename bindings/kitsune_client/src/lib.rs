@@ -291,8 +291,8 @@ mod tests {
         let mut all_message_ids_1 = vec![];
         let mut all_message_ids_2 = vec![];
         for i in 0..3 {
-            let message_1 = format!("hello there {} {}", agent_1, i);
-            let message_2 = format!("hello there {} {}", agent_2, i);
+            let message_1 = format!("hello there {agent_1} {i}");
+            let message_2 = format!("hello there {agent_2} {i}");
             let mut message_ids_1 = chatter_1.say(vec![message_1]).await.unwrap();
             let mut message_ids_2 = chatter_2.say(vec![message_2]).await.unwrap();
             all_message_ids_1.append(&mut message_ids_1);

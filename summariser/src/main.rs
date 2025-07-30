@@ -19,12 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let latest_by_config_summaries = filter::latest_run_summaries_by_name_and_config(summary_runs);
 
     for (name, fingerprint, summary) in &latest_by_config_summaries {
-        log::debug!(
-            "Selected summary for {} ({}): {:?}",
-            name,
-            fingerprint,
-            summary
-        );
+        log::debug!("Selected summary for {name} ({fingerprint}): {summary:?}");
     }
 
     let client = influxdb::Client::new(
@@ -48,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
                     Err(e) => {
                         use futures::FutureExt;
 
-                        log::error!("Failed to insert test data for {:?}: {:?}", summary, e);
+                        log::error!("Failed to insert test data for {summary:?}: {e:?}");
                         return Some(async move { Err(e) }.boxed());
                     }
                 }

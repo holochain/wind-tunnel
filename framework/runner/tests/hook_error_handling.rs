@@ -23,6 +23,7 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
         agents: None,
         behaviour: vec![],
         duration: None,
+        host_metrics_file: None,
         soak: false,
         no_progress: true,
         reporter: ReporterOpt::Noop,

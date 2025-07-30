@@ -4,6 +4,7 @@ mod definition;
 mod executor;
 mod init;
 mod monitor;
+mod postrun;
 mod progress;
 mod run;
 mod shutdown;

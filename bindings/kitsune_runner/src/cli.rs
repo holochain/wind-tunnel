@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::common::to_connection_string;
 use clap::Parser;
 use wind_tunnel_runner::parse_agent_behaviour;
@@ -6,14 +8,6 @@ use wind_tunnel_runner::prelude::{ReporterOpt, WindTunnelScenarioCli};
 #[derive(Parser)]
 #[command(about, long_about = None)]
 pub struct WindTunnelKitsuneScenarioCli {
-    /// The bootstrap server URL.
-    #[clap(long)]
-    pub bootstrap_server_url: String,
-
-    /// The signal server URL.
-    #[clap(long)]
-    pub signal_server_url: String,
-
     /// The number of agents to run. All agents will run on the local machine.
     /// Each agent creates an instance of "Chatter", the WindTunnel Kitsune2 app.
     /// Once an agent has joined the chatter space, it will be communicating with
@@ -22,10 +16,6 @@ pub struct WindTunnelKitsuneScenarioCli {
     /// Defaults to 1.
     #[clap(long)]
     pub agents: Option<usize>,
-
-    /// The number of seconds to run the scenario for.
-    #[clap(long)]
-    pub duration: Option<u64>,
 
     /// Assign a behaviour to a number of agents. Specify the behaviour and number of agents to assign
     /// it to in the format `behaviour:count`. For example `--behaviour=login:5`.
@@ -42,9 +32,17 @@ pub struct WindTunnelKitsuneScenarioCli {
     #[clap(long, short, value_parser = parse_agent_behaviour)]
     pub behaviour: Vec<(String, usize)>,
 
-    /// Run this test as a soak test, ignoring any configured duration and continuing to run until stopped.
-    #[clap(long, default_value = "false")]
-    pub soak: bool,
+    /// The bootstrap server URL.
+    #[clap(long)]
+    pub bootstrap_server_url: String,
+
+    /// The number of seconds to run the scenario for.
+    #[clap(long)]
+    pub duration: Option<u64>,
+
+    /// Path to host metrics file. If not provided, host metrics will not be collected.
+    #[clap(long)]
+    pub host_metrics_file: Option<PathBuf>,
 
     /// Do not show a progress bar on the CLI.
     ///
@@ -61,6 +59,14 @@ pub struct WindTunnelKitsuneScenarioCli {
     /// If not set, a random ID is used.
     #[arg(long, short)]
     pub run_id: Option<String>,
+
+    /// The signal server URL.
+    #[clap(long)]
+    pub signal_server_url: String,
+
+    /// Run this test as a soak test, ignoring any configured duration and continuing to run until stopped.
+    #[clap(long, default_value = "false")]
+    pub soak: bool,
 }
 
 impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
@@ -76,6 +82,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
             agents: self.agents,
             behaviour: self.behaviour,
             duration: self.duration,
+            host_metrics_file: self.host_metrics_file,
             soak: self.soak,
             no_progress: self.no_progress,
             reporter: self.reporter,

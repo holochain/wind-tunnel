@@ -1,12 +1,10 @@
+use std::path::PathBuf;
+
 use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
 #[command(about, long_about = None)]
 pub struct WindTunnelScenarioCli {
-    /// A connection string for the service to test
-    #[clap(short, long)]
-    pub connection_string: String,
-
     /// The number of agents to run
     #[clap(long)]
     pub agents: Option<usize>,
@@ -26,13 +24,17 @@ pub struct WindTunnelScenarioCli {
     #[clap(long, short, value_parser = parse_agent_behaviour)]
     pub behaviour: Vec<(String, usize)>,
 
+    /// A connection string for the service to test
+    #[clap(short, long)]
+    pub connection_string: String,
+
     /// The number of seconds to run the scenario for
     #[clap(long)]
     pub duration: Option<u64>,
 
-    /// Run this test as a soak test, ignoring any configured duration and continuing to run until stopped
-    #[clap(long, default_value = "false")]
-    pub soak: bool,
+    /// Path to host metrics file. If not provided, host metrics will not be collected.
+    #[clap(long)]
+    pub host_metrics_file: Option<PathBuf>,
 
     /// Do not show a progress bar on the CLI.
     ///
@@ -49,6 +51,10 @@ pub struct WindTunnelScenarioCli {
     /// If not set, a random ID is used.
     #[arg(long, short)]
     pub run_id: Option<String>,
+
+    /// Run this test as a soak test, ignoring any configured duration and continuing to run until stopped
+    #[clap(long, default_value = "false")]
+    pub soak: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
