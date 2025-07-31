@@ -186,7 +186,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_PATH: &str = "tests/host_metrics.json";
+    const JSON_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/host_metrics.json");
     const METRIC_STR: &str = r#"{"fields":{"run_id":"123","active":7981232128,"available":26517172224,"available_percent":81.04687482395181,"buffered":10010624,"cached":6127505408,"commit_limit":47816503296,"committed_as":35352698880,"dirty":30318592,"free":21104721920,"high_free":0,"high_total":0,"huge_page_size":2097152,"huge_pages_free":0,"huge_pages_total":0,"inactive":2375311360,"low_free":0,"low_total":0,"mapped":1431642112,"page_tables":69566464,"shared":253870080,"slab":546750464,"sreclaimable":272355328,"sunreclaim":274395136,"swap_cached":0,"swap_free":31457345536,"swap_total":31457345536,"total":32718315520,"used":5476077568,"used_percent":16.737040036956035,"vmalloc_chunk":0,"vmalloc_total":35184372087808,"vmalloc_used":263839744,"write_back":0,"write_back_tmp":0},"name":"mem","tags":{"host":"msi-manjaro"},"timestamp":1753861050}"#;
 
     fn load_metrics_from_json() -> anyhow::Result<Vec<HostMetrics>> {
