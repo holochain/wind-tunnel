@@ -12,6 +12,7 @@ pub use self::tags::HostMetricsTags;
 use self::tags::ReportTags as _;
 
 const DEFAULT_RUN_ID: &str = "N/A";
+const RUN_ID: &str = "run_id";
 
 /// Name for [`HostMetrics`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,7 +88,7 @@ impl<'de> Deserialize<'de> for HostMetrics {
         } = HostMetricsRaw::deserialize(deserializer)?;
 
         // get run_id from fields
-        let run_id = fields.get("run_id").and_then(|v| v.as_str()).and_then(|s| {
+        let run_id = fields.get(RUN_ID).and_then(|v| v.as_str()).and_then(|s| {
             if s == DEFAULT_RUN_ID {
                 None
             } else {
@@ -167,7 +168,7 @@ impl HostMetrics {
         let metric = ReportMetric::new(&format!("wt.host.{}", self.name));
         // if run_id is set, add it to the metric
         let metric = if let Some(run_id) = &self.run_id {
-            metric.with_field("run_id", run_id.clone())
+            metric.with_field(RUN_ID, run_id.clone())
         } else {
             metric
         };
@@ -323,6 +324,6 @@ mod tests {
         assert_eq!(tag_name.clone().into_string(), "host");
         // verify fields (should have active field)
         let (field_name, _field_value) = &report_metric.fields[0];
-        assert_eq!(field_name.clone().into_string(), "run_id");
+        assert_eq!(field_name.clone().into_string(), RUN_ID);
     }
 }
