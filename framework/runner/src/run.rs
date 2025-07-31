@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::cli::ReporterOpt;
 use crate::monitor::start_monitor;
+use crate::postrun::PostRun;
 use crate::progress::start_progress;
 use crate::{
     context::{AgentContext, RunnerContext, UserValuesConstraint},
@@ -240,6 +241,16 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     // Manually shutdown the reporting once all the teardown steps are complete, this doesn't
     // respond to Ctrl+C like the user-provided code does.
     report_shutdown_handle.shutdown();
+
+    // run postrun to collect metrics and reports
+    if let Err(err) = PostRun::new(
+        runner_context_for_teardown.reporter().clone(),
+        definition.host_metrics_file.clone(),
+    )
+    .run()
+    {
+        log::error!("PostRun failed: {err}");
+    }
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
 

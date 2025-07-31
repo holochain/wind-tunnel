@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::cli::ReporterOpt;
@@ -44,6 +45,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) duration_s: Option<u64>,
     pub(crate) connection_string: String,
     pub(crate) capture_env: HashSet<String>,
+    pub(crate) host_metrics_file: Option<PathBuf>,
     pub(crate) no_progress: bool,
     pub(crate) reporter: ReporterOpt,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
@@ -153,7 +155,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         let previous = self.agent_behaviour.insert(name.to_string(), behaviour);
 
         if previous.is_some() {
-            panic!("Behaviour [{}] is already defined", name);
+            panic!("Behaviour [{name}] is already defined");
         }
 
         self
@@ -217,6 +219,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             duration_s: resolved_duration,
             connection_string: self.cli.connection_string,
             capture_env: self.capture_env,
+            host_metrics_file: self.cli.host_metrics_file,
             no_progress: self.cli.no_progress,
             reporter: self.cli.reporter,
             setup_fn: self.setup_fn,
@@ -270,6 +273,7 @@ mod tests {
                 agents: None,
                 behaviour: vec![],
                 duration: None,
+                host_metrics_file: None,
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
@@ -292,6 +296,7 @@ mod tests {
                 agents: None,
                 behaviour: vec![], // Not specified
                 duration: None,
+                host_metrics_file: None,
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
@@ -314,6 +319,7 @@ mod tests {
                 agents: None,
                 behaviour: vec![("login".to_string(), 3)], // 3 of 5
                 duration: None,
+                host_metrics_file: None,
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
@@ -338,6 +344,7 @@ mod tests {
                 agents: None,
                 behaviour: vec![("login".to_string(), 30)], // 30 of 5
                 duration: None,
+                host_metrics_file: None,
                 soak: false,
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
