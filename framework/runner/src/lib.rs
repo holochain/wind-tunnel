@@ -8,6 +8,8 @@ mod postrun;
 mod progress;
 mod run;
 mod shutdown;
+#[cfg(test)]
+mod test_utils;
 mod types;
 
 pub use cli::parse_agent_behaviour;

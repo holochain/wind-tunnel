@@ -70,8 +70,7 @@ impl HostMetricsReporter {
 #[cfg(test)]
 mod tests {
 
-    use wind_tunnel_core::prelude::ShutdownHandle;
-    use wind_tunnel_instruments::ReportConfig;
+    use crate::test_utils::test_reporter;
 
     use super::*;
 
@@ -84,16 +83,5 @@ mod tests {
         let host_metrics_reporter = HostMetricsReporter::new(metrics_file, reporter.clone());
 
         assert!(host_metrics_reporter.report().is_ok());
-    }
-
-    fn test_reporter() -> Arc<Reporter> {
-        let runtime = tokio::runtime::Handle::current();
-        let shutdown_listener = ShutdownHandle::new().new_listener();
-        Arc::new(
-            ReportConfig::new("".to_string(), "".to_string())
-                .enable_in_memory()
-                .init_reporter(&runtime, shutdown_listener)
-                .unwrap(),
-        )
     }
 }

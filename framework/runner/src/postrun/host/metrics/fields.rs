@@ -1,6 +1,21 @@
 use serde::{Deserialize, Serialize};
 use wind_tunnel_instruments::prelude::ReportMetric;
 
+/// Macro to conditionally add fields to a metric based on their presence.
+macro_rules! with_optional_fields {
+    ($self:ident, $metric:expr, $($field:ident),+) => {
+        {
+            let mut m = $metric;
+            $(
+                if let Some(value) = $self.$field {
+                    m = m.with_field(stringify!($field), value);
+                }
+            )+
+            m
+        }
+    };
+}
+
 /// Trait for reporting fields of host metrics.
 pub trait ReportFields {
     /// Returns the associated [`ReportMetric`] for this host metrics fields.
@@ -11,7 +26,6 @@ pub trait ReportFields {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum HostMetricsFields {
     /// [`super::HostMetricsName::Cpu`] [`super::HostMetrics`].
     Cpu(CpuMetrics),
@@ -22,11 +36,11 @@ pub enum HostMetricsFields {
     /// [`super::HostMetricsName::Kernel`] [`super::HostMetrics`].
     Kernel(KernelMetrics),
     /// [`super::HostMetricsName::Mem`] [`super::HostMetrics`].
-    Mem(MemMetrics),
+    Mem(Box<MemMetrics>),
     /// [`super::HostMetricsName::Netstat`] [`super::HostMetrics`].
     Netstat(NetstatMetrics),
     /// [`super::HostMetricsName::Net`] [`super::HostMetrics`].
-    Net(NetMetrics),
+    Net(Box<NetMetrics>),
     /// [`super::HostMetricsName::Processes`] [`super::HostMetrics`].
     Processes(ProcessesMetrics),
     /// [`super::HostMetricsName::System`] [`super::HostMetrics`].
@@ -349,290 +363,105 @@ pub struct NetMetrics {
 }
 
 impl ReportFields for NetMetrics {
-    fn report_fields(&self, mut metric: ReportMetric) -> ReportMetric {
-        if let Some(bytes_recv) = self.bytes_recv {
-            metric = metric.with_field("bytes_recv", bytes_recv);
-        }
-        if let Some(bytes_sent) = self.bytes_sent {
-            metric = metric.with_field("bytes_sent", bytes_sent);
-        }
-        if let Some(drop_in) = self.drop_in {
-            metric = metric.with_field("drop_in", drop_in);
-        }
-        if let Some(drop_out) = self.drop_out {
-            metric = metric.with_field("drop_out", drop_out);
-        }
-        if let Some(err_in) = self.err_in {
-            metric = metric.with_field("err_in", err_in);
-        }
-        if let Some(err_out) = self.err_out {
-            metric = metric.with_field("err_out", err_out);
-        }
-        if let Some(icmp_inaddrmaskreps) = self.icmp_inaddrmaskreps {
-            metric = metric.with_field("icmp_inaddrmaskreps", icmp_inaddrmaskreps);
-        }
-        if let Some(icmp_inaddrmasks) = self.icmp_inaddrmasks {
-            metric = metric.with_field("icmp_inaddrmasks", icmp_inaddrmasks);
-        }
-        if let Some(icmp_incsumerrors) = self.icmp_incsumerrors {
-            metric = metric.with_field("icmp_incsumerrors", icmp_incsumerrors);
-        }
-        if let Some(icmp_indestunreachs) = self.icmp_indestunreachs {
-            metric = metric.with_field("icmp_indestunreachs", icmp_indestunreachs);
-        }
-        if let Some(icmp_inechoreps) = self.icmp_inechoreps {
-            metric = metric.with_field("icmp_inechoreps", icmp_inechoreps);
-        }
-        if let Some(icmp_inechos) = self.icmp_inechos {
-            metric = metric.with_field("icmp_inechos", icmp_inechos);
-        }
-        if let Some(icmp_inerrors) = self.icmp_inerrors {
-            metric = metric.with_field("icmp_inerrors", icmp_inerrors);
-        }
-        if let Some(icmp_inmsgs) = self.icmp_inmsgs {
-            metric = metric.with_field("icmp_inmsgs", icmp_inmsgs);
-        }
-        if let Some(icmp_inparmprobs) = self.icmp_inparmprobs {
-            metric = metric.with_field("icmp_inparmprobs", icmp_inparmprobs);
-        }
-        if let Some(icmp_inredirects) = self.icmp_inredirects {
-            metric = metric.with_field("icmp_inredirects", icmp_inredirects);
-        }
-        if let Some(icmp_insrcquenchs) = self.icmp_insrcquenchs {
-            metric = metric.with_field("icmp_insrcquenchs", icmp_insrcquenchs);
-        }
-        if let Some(icmp_intimeexcds) = self.icmp_intimeexcds {
-            metric = metric.with_field("icmp_intimeexcds", icmp_intimeexcds);
-        }
-        if let Some(icmp_intimestampreps) = self.icmp_intimestampreps {
-            metric = metric.with_field("icmp_intimestampreps", icmp_intimestampreps);
-        }
-        if let Some(icmp_intimestamps) = self.icmp_intimestamps {
-            metric = metric.with_field("icmp_intimestamps", icmp_intimestamps);
-        }
-        if let Some(icmp_outaddrmaskreps) = self.icmp_outaddrmaskreps {
-            metric = metric.with_field("icmp_outaddrmaskreps", icmp_outaddrmaskreps);
-        }
-        if let Some(icmp_outaddrmasks) = self.icmp_outaddrmasks {
-            metric = metric.with_field("icmp_outaddrmasks", icmp_outaddrmasks);
-        }
-        if let Some(icmp_outdestunreachs) = self.icmp_outdestunreachs {
-            metric = metric.with_field("icmp_outdestunreachs", icmp_outdestunreachs);
-        }
-        if let Some(icmp_outechoreps) = self.icmp_outechoreps {
-            metric = metric.with_field("icmp_outechoreps", icmp_outechoreps);
-        }
-        if let Some(icmp_outechos) = self.icmp_outechos {
-            metric = metric.with_field("icmp_outechos", icmp_outechos);
-        }
-        if let Some(icmp_outerrors) = self.icmp_outerrors {
-            metric = metric.with_field("icmp_outerrors", icmp_outerrors);
-        }
-        if let Some(icmp_outmsgs) = self.icmp_outmsgs {
-            metric = metric.with_field("icmp_outmsgs", icmp_outmsgs);
-        }
-        if let Some(icmp_outparmprobs) = self.icmp_outparmprobs {
-            metric = metric.with_field("icmp_outparmprobs", icmp_outparmprobs);
-        }
-        if let Some(icmp_outratelimitglobal) = self.icmp_outratelimitglobal {
-            metric = metric.with_field("icmp_outratelimitglobal", icmp_outratelimitglobal);
-        }
-        if let Some(icmp_outratelimithost) = self.icmp_outratelimithost {
-            metric = metric.with_field("icmp_outratelimithost", icmp_outratelimithost);
-        }
-        if let Some(icmp_outredirects) = self.icmp_outredirects {
-            metric = metric.with_field("icmp_outredirects", icmp_outredirects);
-        }
-        if let Some(icmp_outsrcquenchs) = self.icmp_outsrcquenchs {
-            metric = metric.with_field("icmp_outsrcquenchs", icmp_outsrcquenchs);
-        }
-        if let Some(icmp_outtimeexcds) = self.icmp_outtimeexcds {
-            metric = metric.with_field("icmp_outtimeexcds", icmp_outtimeexcds);
-        }
-        if let Some(icmp_outtimestampreps) = self.icmp_outtimestampreps {
-            metric = metric.with_field("icmp_outtimestampreps", icmp_outtimestampreps);
-        }
-        if let Some(icmp_outtimestamps) = self.icmp_outtimestamps {
-            metric = metric.with_field("icmp_outtimestamps", icmp_outtimestamps);
-        }
-        if let Some(icmpmsg_intype3) = self.icmpmsg_intype3 {
-            metric = metric.with_field("icmpmsg_intype3", icmpmsg_intype3);
-        }
-        if let Some(icmpmsg_intype5) = self.icmpmsg_intype5 {
-            metric = metric.with_field("icmpmsg_intype5", icmpmsg_intype5);
-        }
-        if let Some(icmpmsg_outtype3) = self.icmpmsg_outtype3 {
-            metric = metric.with_field("icmpmsg_outtype3", icmpmsg_outtype3);
-        }
-        if let Some(ip_defaultttl) = self.ip_defaultttl {
-            metric = metric.with_field("ip_defaultttl", ip_defaultttl);
-        }
-        if let Some(ip_forwarding) = self.ip_forwarding {
-            metric = metric.with_field("ip_forwarding", ip_forwarding);
-        }
-        if let Some(ip_forwdatagrams) = self.ip_forwdatagrams {
-            metric = metric.with_field("ip_forwdatagrams", ip_forwdatagrams);
-        }
-        if let Some(ip_fragcreates) = self.ip_fragcreates {
-            metric = metric.with_field("ip_fragcreates", ip_fragcreates);
-        }
-        if let Some(ip_fragfails) = self.ip_fragfails {
-            metric = metric.with_field("ip_fragfails", ip_fragfails);
-        }
-        if let Some(ip_fragoks) = self.ip_fragoks {
-            metric = metric.with_field("ip_fragoks", ip_fragoks);
-        }
-        if let Some(ip_inaddrerrors) = self.ip_inaddrerrors {
-            metric = metric.with_field("ip_inaddrerrors", ip_inaddrerrors);
-        }
-        if let Some(ip_indelivers) = self.ip_indelivers {
-            metric = metric.with_field("ip_indelivers", ip_indelivers);
-        }
-        if let Some(ip_indiscards) = self.ip_indiscards {
-            metric = metric.with_field("ip_indiscards", ip_indiscards);
-        }
-        if let Some(ip_inhdrerrors) = self.ip_inhdrerrors {
-            metric = metric.with_field("ip_inhdrerrors", ip_inhdrerrors);
-        }
-        if let Some(ip_inreceives) = self.ip_inreceives {
-            metric = metric.with_field("ip_inreceives", ip_inreceives);
-        }
-        if let Some(ip_inunknownprotos) = self.ip_inunknownprotos {
-            metric = metric.with_field("ip_inunknownprotos", ip_inunknownprotos);
-        }
-        if let Some(ip_outdiscards) = self.ip_outdiscards {
-            metric = metric.with_field("ip_outdiscards", ip_outdiscards);
-        }
-        if let Some(ip_outnoroutes) = self.ip_outnoroutes {
-            metric = metric.with_field("ip_outnoroutes", ip_outnoroutes);
-        }
-        if let Some(ip_outrequests) = self.ip_outrequests {
-            metric = metric.with_field("ip_outrequests", ip_outrequests);
-        }
-        if let Some(ip_outtransmits) = self.ip_outtransmits {
-            metric = metric.with_field("ip_outtransmits", ip_outtransmits);
-        }
-        if let Some(ip_reasmfails) = self.ip_reasmfails {
-            metric = metric.with_field("ip_reasmfails", ip_reasmfails);
-        }
-        if let Some(ip_reasmoks) = self.ip_reasmoks {
-            metric = metric.with_field("ip_reasmoks", ip_reasmoks);
-        }
-        if let Some(ip_reasmreqds) = self.ip_reasmreqds {
-            metric = metric.with_field("ip_reasmreqds", ip_reasmreqds);
-        }
-        if let Some(ip_reasmtimeout) = self.ip_reasmtimeout {
-            metric = metric.with_field("ip_reasmtimeout", ip_reasmtimeout);
-        }
-        if let Some(packets_recv) = self.packets_recv {
-            metric = metric.with_field("packets_recv", packets_recv);
-        }
-        if let Some(packets_sent) = self.packets_sent {
-            metric = metric.with_field("packets_sent", packets_sent);
-        }
-        if let Some(speed) = self.speed {
-            metric = metric.with_field("speed", speed);
-        }
-        if let Some(tcp_activeopens) = self.tcp_activeopens {
-            metric = metric.with_field("tcp_activeopens", tcp_activeopens);
-        }
-        if let Some(tcp_attemptfails) = self.tcp_attemptfails {
-            metric = metric.with_field("tcp_attemptfails", tcp_attemptfails);
-        }
-        if let Some(tcp_currestab) = self.tcp_currestab {
-            metric = metric.with_field("tcp_currestab", tcp_currestab);
-        }
-        if let Some(tcp_estabresets) = self.tcp_estabresets {
-            metric = metric.with_field("tcp_estabresets", tcp_estabresets);
-        }
-        if let Some(tcp_incsumerrors) = self.tcp_incsumerrors {
-            metric = metric.with_field("tcp_incsumerrors", tcp_incsumerrors);
-        }
-        if let Some(tcp_inerrs) = self.tcp_inerrs {
-            metric = metric.with_field("tcp_inerrs", tcp_inerrs);
-        }
-        if let Some(tcp_insegs) = self.tcp_insegs {
-            metric = metric.with_field("tcp_insegs", tcp_insegs);
-        }
-        if let Some(tcp_maxconn) = self.tcp_maxconn {
-            metric = metric.with_field("tcp_maxconn", tcp_maxconn);
-        }
-        if let Some(tcp_outrsts) = self.tcp_outrsts {
-            metric = metric.with_field("tcp_outrsts", tcp_outrsts);
-        }
-        if let Some(tcp_outsegs) = self.tcp_outsegs {
-            metric = metric.with_field("tcp_outsegs", tcp_outsegs);
-        }
-        if let Some(tcp_passiveopens) = self.tcp_passiveopens {
-            metric = metric.with_field("tcp_passiveopens", tcp_passiveopens);
-        }
-        if let Some(tcp_retranssegs) = self.tcp_retranssegs {
-            metric = metric.with_field("tcp_retranssegs", tcp_retranssegs);
-        }
-        if let Some(tcp_rtoalgorithm) = self.tcp_rtoalgorithm {
-            metric = metric.with_field("tcp_rtoalgorithm", tcp_rtoalgorithm);
-        }
-        if let Some(tcp_rtomax) = self.tcp_rtomax {
-            metric = metric.with_field("tcp_rtomax", tcp_rtomax);
-        }
-        if let Some(tcp_rtomin) = self.tcp_rtomin {
-            metric = metric.with_field("tcp_rtomin", tcp_rtomin);
-        }
-        if let Some(udp_ignoredmulti) = self.udp_ignoredmulti {
-            metric = metric.with_field("udp_ignoredmulti", udp_ignoredmulti);
-        }
-        if let Some(udp_incsumerrors) = self.udp_incsumerrors {
-            metric = metric.with_field("udp_incsumerrors", udp_incsumerrors);
-        }
-        if let Some(udp_indatagrams) = self.udp_indatagrams {
-            metric = metric.with_field("udp_indatagrams", udp_indatagrams);
-        }
-        if let Some(udp_inerrors) = self.udp_inerrors {
-            metric = metric.with_field("udp_inerrors", udp_inerrors);
-        }
-        if let Some(udp_memerrors) = self.udp_memerrors {
-            metric = metric.with_field("udp_memerrors", udp_memerrors);
-        }
-        if let Some(udp_noports) = self.udp_noports {
-            metric = metric.with_field("udp_noports", udp_noports);
-        }
-        if let Some(udp_outdatagrams) = self.udp_outdatagrams {
-            metric = metric.with_field("udp_outdatagrams", udp_outdatagrams);
-        }
-        if let Some(udp_rcvbuferrors) = self.udp_rcvbuferrors {
-            metric = metric.with_field("udp_rcvbuferrors", udp_rcvbuferrors);
-        }
-        if let Some(udp_sndbuferrors) = self.udp_sndbuferrors {
-            metric = metric.with_field("udp_sndbuferrors", udp_sndbuferrors);
-        }
-        if let Some(udplite_ignoredmulti) = self.udplite_ignoredmulti {
-            metric = metric.with_field("udplite_ignoredmulti", udplite_ignoredmulti);
-        }
-        if let Some(udplite_incsumerrors) = self.udplite_incsumerrors {
-            metric = metric.with_field("udplite_incsumerrors", udplite_incsumerrors);
-        }
-        if let Some(udplite_indatagrams) = self.udplite_indatagrams {
-            metric = metric.with_field("udplite_indatagrams", udplite_indatagrams);
-        }
-        if let Some(udplite_inerrors) = self.udplite_inerrors {
-            metric = metric.with_field("udplite_inerrors", udplite_inerrors);
-        }
-        if let Some(udplite_memerrors) = self.udplite_memerrors {
-            metric = metric.with_field("udplite_memerrors", udplite_memerrors);
-        }
-        if let Some(udplite_noports) = self.udplite_noports {
-            metric = metric.with_field("udplite_noports", udplite_noports);
-        }
-        if let Some(udplite_outdatagrams) = self.udplite_outdatagrams {
-            metric = metric.with_field("udplite_outdatagrams", udplite_outdatagrams);
-        }
-        if let Some(udplite_rcvbuferrors) = self.udplite_rcvbuferrors {
-            metric = metric.with_field("udplite_rcvbuferrors", udplite_rcvbuferrors);
-        }
-        if let Some(udplite_sndbuferrors) = self.udplite_sndbuferrors {
-            metric = metric.with_field("udplite_sndbuferrors", udplite_sndbuferrors);
-        }
-        metric
+    fn report_fields(&self, metric: ReportMetric) -> ReportMetric {
+        with_optional_fields!(
+            self,
+            metric,
+            bytes_recv,
+            bytes_sent,
+            drop_in,
+            drop_out,
+            err_in,
+            err_out,
+            icmp_inaddrmaskreps,
+            icmp_inaddrmasks,
+            icmp_incsumerrors,
+            icmp_indestunreachs,
+            icmp_inechoreps,
+            icmp_inechos,
+            icmp_inerrors,
+            icmp_inmsgs,
+            icmp_inparmprobs,
+            icmp_inredirects,
+            icmp_insrcquenchs,
+            icmp_intimeexcds,
+            icmp_intimestampreps,
+            icmp_intimestamps,
+            icmp_outaddrmaskreps,
+            icmp_outaddrmasks,
+            icmp_outdestunreachs,
+            icmp_outechoreps,
+            icmp_outechos,
+            icmp_outerrors,
+            icmp_outmsgs,
+            icmp_outparmprobs,
+            icmp_outratelimitglobal,
+            icmp_outratelimithost,
+            icmp_outredirects,
+            icmp_outsrcquenchs,
+            icmp_outtimeexcds,
+            icmp_outtimestampreps,
+            icmp_outtimestamps,
+            icmpmsg_intype3,
+            icmpmsg_intype5,
+            icmpmsg_outtype3,
+            ip_defaultttl,
+            ip_forwarding,
+            ip_forwdatagrams,
+            ip_fragcreates,
+            ip_fragfails,
+            ip_fragoks,
+            ip_inaddrerrors,
+            ip_indelivers,
+            ip_indiscards,
+            ip_inhdrerrors,
+            ip_inreceives,
+            ip_inunknownprotos,
+            ip_outdiscards,
+            ip_outnoroutes,
+            ip_outrequests,
+            ip_outtransmits,
+            ip_reasmfails,
+            ip_reasmoks,
+            ip_reasmreqds,
+            ip_reasmtimeout,
+            packets_recv,
+            packets_sent,
+            speed,
+            tcp_activeopens,
+            tcp_attemptfails,
+            tcp_currestab,
+            tcp_estabresets,
+            tcp_incsumerrors,
+            tcp_inerrs,
+            tcp_insegs,
+            tcp_maxconn,
+            tcp_outrsts,
+            tcp_outsegs,
+            tcp_passiveopens,
+            tcp_retranssegs,
+            tcp_rtoalgorithm,
+            tcp_rtomax,
+            tcp_rtomin,
+            udp_ignoredmulti,
+            udp_incsumerrors,
+            udp_indatagrams,
+            udp_inerrors,
+            udp_memerrors,
+            udp_noports,
+            udp_outdatagrams,
+            udp_rcvbuferrors,
+            udp_sndbuferrors,
+            udplite_ignoredmulti,
+            udplite_incsumerrors,
+            udplite_indatagrams,
+            udplite_inerrors,
+            udplite_memerrors,
+            udplite_noports,
+            udplite_outdatagrams,
+            udplite_rcvbuferrors,
+            udplite_sndbuferrors
+        )
     }
 }
 
@@ -721,26 +550,8 @@ pub struct SwapMetrics {
 }
 
 impl ReportFields for SwapMetrics {
-    fn report_fields(&self, mut metric: ReportMetric) -> ReportMetric {
-        if let Some(free) = self.free {
-            metric = metric.with_field("free", free);
-        }
-        if let Some(total) = self.total {
-            metric = metric.with_field("total", total);
-        }
-        if let Some(used) = self.used {
-            metric = metric.with_field("used", used);
-        }
-        if let Some(used_percent) = self.used_percent {
-            metric = metric.with_field("used_percent", used_percent);
-        }
-        if let Some(r#in) = self.r#in {
-            metric = metric.with_field("in", r#in);
-        }
-        if let Some(out) = self.out {
-            metric = metric.with_field("out", out);
-        }
-        metric
+    fn report_fields(&self, metric: ReportMetric) -> ReportMetric {
+        with_optional_fields!(self, metric, free, total, used, used_percent, r#in, out)
     }
 }
 
@@ -760,27 +571,17 @@ pub struct SystemMetrics {
 
 impl ReportFields for SystemMetrics {
     fn report_fields(&self, mut metric: ReportMetric) -> ReportMetric {
-        if let Some(load1) = self.load1 {
-            metric = metric.with_field("load1", load1);
-        }
-        if let Some(load5) = self.load5 {
-            metric = metric.with_field("load5", load5);
-        }
-        if let Some(load15) = self.load15 {
-            metric = metric.with_field("load15", load15);
-        }
-        if let Some(n_cpus) = self.n_cpus {
-            metric = metric.with_field("n_cpus", n_cpus);
-        }
-        if let Some(n_unique_users) = self.n_unique_users {
-            metric = metric.with_field("n_unique_users", n_unique_users);
-        }
-        if let Some(n_users) = self.n_users {
-            metric = metric.with_field("n_users", n_users);
-        }
-        if let Some(uptime) = self.uptime {
-            metric = metric.with_field("uptime", uptime);
-        }
+        metric = with_optional_fields!(
+            self,
+            metric,
+            load1,
+            load5,
+            load15,
+            n_cpus,
+            n_unique_users,
+            n_users,
+            uptime
+        );
         if let Some(uptime_format) = &self.uptime_format {
             metric = metric.with_field("uptime_format", uptime_format.clone());
         }

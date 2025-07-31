@@ -38,8 +38,7 @@ impl PostRun {
 #[cfg(test)]
 mod tests {
 
-    use wind_tunnel_core::prelude::ShutdownHandle;
-    use wind_tunnel_instruments::ReportConfig;
+    use crate::test_utils::test_reporter;
 
     use super::*;
 
@@ -50,16 +49,5 @@ mod tests {
         let reporter = test_reporter();
         let postrun = PostRun::new(reporter.clone(), Some(JSON_PATH));
         assert!(postrun.run().is_ok());
-    }
-
-    fn test_reporter() -> Arc<Reporter> {
-        let runtime = tokio::runtime::Handle::current();
-        let shutdown_listener = ShutdownHandle::new().new_listener();
-        Arc::new(
-            ReportConfig::new("".to_string(), "".to_string())
-                .enable_in_memory()
-                .init_reporter(&runtime, shutdown_listener)
-                .unwrap(),
-        )
     }
 }
