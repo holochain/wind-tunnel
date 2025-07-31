@@ -11,6 +11,8 @@ use self::fields::ReportFields as _;
 pub use self::tags::HostMetricsTags;
 use self::tags::ReportTags as _;
 
+const DEFAULT_RUN_ID: &str = "N/A";
+
 /// Name for [`HostMetrics`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -50,6 +52,7 @@ impl fmt::Display for HostMetricsName {
 pub struct HostMetrics {
     pub fields: HostMetricsFields,
     pub name: HostMetricsName,
+    pub run_id: Option<String>,
     pub tags: HostMetricsTags,
     pub timestamp: u64,
 }
@@ -82,6 +85,15 @@ impl<'de> Deserialize<'de> for HostMetrics {
             tags,
             timestamp,
         } = HostMetricsRaw::deserialize(deserializer)?;
+
+        // get run_id from fields
+        let run_id = fields.get("run_id").and_then(|v| v.as_str()).and_then(|s| {
+            if s == DEFAULT_RUN_ID {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        });
 
         let fields = match name {
             HostMetricsName::Cpu => HostMetricsFields::Cpu(
@@ -142,6 +154,7 @@ impl<'de> Deserialize<'de> for HostMetrics {
         Ok(HostMetrics {
             fields,
             name,
+            run_id,
             tags,
             timestamp,
         })
@@ -151,9 +164,15 @@ impl<'de> Deserialize<'de> for HostMetrics {
 impl HostMetrics {
     /// Returns the associated [`ReportMetric`] for this host metrics.
     pub fn report_metric(&self) -> ReportMetric {
-        let mut metric = ReportMetric::new(&format!("wt.host.{}", self.name));
+        let metric = ReportMetric::new(&format!("wt.host.{}", self.name));
+        // if run_id is set, add it to the metric
+        let metric = if let Some(run_id) = &self.run_id {
+            metric.with_field("run_id", run_id.clone())
+        } else {
+            metric
+        };
         // add fields based on the fields of the host metrics
-        metric = self.fields.report_fields(metric);
+        let metric = self.fields.report_fields(metric);
         // add tags based on the tags of the host metrics
         self.tags.report_tags(metric)
     }
@@ -167,7 +186,7 @@ mod tests {
     use super::*;
 
     const JSON_PATH: &str = "tests/host_metrics.json";
-    const METRIC_STR: &str = r#"{"fields":{"active":7981232128,"available":26517172224,"available_percent":81.04687482395181,"buffered":10010624,"cached":6127505408,"commit_limit":47816503296,"committed_as":35352698880,"dirty":30318592,"free":21104721920,"high_free":0,"high_total":0,"huge_page_size":2097152,"huge_pages_free":0,"huge_pages_total":0,"inactive":2375311360,"low_free":0,"low_total":0,"mapped":1431642112,"page_tables":69566464,"shared":253870080,"slab":546750464,"sreclaimable":272355328,"sunreclaim":274395136,"swap_cached":0,"swap_free":31457345536,"swap_total":31457345536,"total":32718315520,"used":5476077568,"used_percent":16.737040036956035,"vmalloc_chunk":0,"vmalloc_total":35184372087808,"vmalloc_used":263839744,"write_back":0,"write_back_tmp":0},"name":"mem","tags":{"host":"msi-manjaro"},"timestamp":1753861050}"#;
+    const METRIC_STR: &str = r#"{"fields":{"run_id":"123","active":7981232128,"available":26517172224,"available_percent":81.04687482395181,"buffered":10010624,"cached":6127505408,"commit_limit":47816503296,"committed_as":35352698880,"dirty":30318592,"free":21104721920,"high_free":0,"high_total":0,"huge_page_size":2097152,"huge_pages_free":0,"huge_pages_total":0,"inactive":2375311360,"low_free":0,"low_total":0,"mapped":1431642112,"page_tables":69566464,"shared":253870080,"slab":546750464,"sreclaimable":272355328,"sunreclaim":274395136,"swap_cached":0,"swap_free":31457345536,"swap_total":31457345536,"total":32718315520,"used":5476077568,"used_percent":16.737040036956035,"vmalloc_chunk":0,"vmalloc_total":35184372087808,"vmalloc_used":263839744,"write_back":0,"write_back_tmp":0},"name":"mem","tags":{"host":"msi-manjaro"},"timestamp":1753861050}"#;
 
     fn load_metrics_from_json() -> anyhow::Result<Vec<HostMetrics>> {
         let mut metrics = Vec::new();
@@ -194,14 +213,15 @@ mod tests {
     fn test_should_parse_host_metrics_json() {
         let metrics = load_metrics_from_json().expect("Failed to parse host metrics");
 
-        // should have 343 lines
-        assert_eq!(metrics.len(), 343);
+        // should have 487 lines
+        assert_eq!(metrics.len(), 487);
         let first_metric = &metrics[0];
         assert_eq!(first_metric.name, HostMetricsName::Mem);
         let HostMetricsFields::Mem(mem_metrics) = &first_metric.fields else {
             panic!("Expected MemMetrics, found {:?}", first_metric.fields);
         };
-        assert_eq!(mem_metrics.active, 7981232128);
+        assert!(first_metric.run_id.is_none());
+        assert_eq!(mem_metrics.active, 17853476864);
         // should have default tags
         let HostMetricsTags::Default(default_tags) = &first_metric.tags else {
             panic!("Expected DefaultTags, found {:?}", first_metric.tags);
@@ -273,6 +293,12 @@ mod tests {
     }
 
     #[test]
+    fn test_host_metrics_should_have_run_id() {
+        let metrics: HostMetrics = METRIC_STR.parse().expect("Failed to parse metrics");
+        assert_eq!(metrics.run_id, Some("123".to_string()));
+    }
+
+    #[test]
     fn test_should_report_host_metrics() {
         let metrics = load_metrics_from_json().expect("Failed to parse host metrics");
 
@@ -284,5 +310,19 @@ mod tests {
         // verify fields (should have active field)
         let (field_name, _field_value) = &report_metric.fields[0];
         assert_eq!(field_name.clone().into_string(), "active");
+    }
+
+    #[test]
+    fn test_should_report_host_metrics_with_run_id() {
+        let metrics = load_metrics_from_json().expect("Failed to parse host metrics");
+
+        let metric_with_run_id = &metrics[1];
+        let report_metric = metric_with_run_id.report_metric();
+        // verify tags (should have only host tag)
+        let (tag_name, _) = &report_metric.tags[0];
+        assert_eq!(tag_name.clone().into_string(), "host");
+        // verify fields (should have active field)
+        let (field_name, _field_value) = &report_metric.fields[0];
+        assert_eq!(field_name.clone().into_string(), "run_id");
     }
 }
