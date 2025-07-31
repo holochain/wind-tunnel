@@ -188,7 +188,7 @@ where
             log::debug!("Enabled app: {installed_app_id}");
 
             let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
-            log::debug!("Got cell id: {cell_id:}");
+            log::debug!("Got cell id: {cell_id}");
 
             let credentials = client
                 .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
@@ -370,8 +370,8 @@ where
             }
 
             println!(
-                "Discovery for agent {agent_name} took: {}s",
-                start_discovery.elapsed().as_secs()
+                "Discovery for agent {agent_name} took: {duration}s",
+                duration = start_discovery.elapsed().as_secs()
             );
 
             Ok(())
