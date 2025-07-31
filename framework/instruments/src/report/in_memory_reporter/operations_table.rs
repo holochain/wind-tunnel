@@ -15,5 +15,5 @@ pub struct OperationRow {
 }
 
 fn float2(n: &f64) -> String {
-    format!("{n:.2}")
+    format!("{:.2}", n)
 }

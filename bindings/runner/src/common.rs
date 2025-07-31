@@ -49,7 +49,7 @@ pub fn configure_app_ws_url(
     let app_port = ctx
         .executor()
         .execute_in_place(async move {
-            log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
+            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
             let admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
                 .await
                 .context("Unable to connect admin client")?;
@@ -88,7 +88,7 @@ pub fn configure_app_ws_url(
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();
     let mut admin_ws_url = url::Url::parse(admin_ws_url)
-        .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
     admin_ws_url
         .set_port(Some(app_port))
         .map_err(|_| anyhow::anyhow!("Failed to set app port on admin URL"))?;
@@ -156,14 +156,14 @@ where
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
+            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
             let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
 
             let key = client
                 .generate_agent_pub_key()
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Generated agent pub key: {key}");
+            log::debug!("Generated agent pub key: {:}", key);
 
             let content = std::fs::read(app_path)?;
 
@@ -179,16 +179,16 @@ where
                 })
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Installed app: {installed_app_id}");
+            log::debug!("Installed app: {:}", installed_app_id);
 
             client
                 .enable_app(installed_app_id.clone())
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Enabled app: {installed_app_id}");
+            log::debug!("Enabled app: {:}", installed_app_id);
 
             let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
-            log::debug!("Got cell id: {cell_id}");
+            log::debug!("Got cell id: {:}", cell_id);
 
             let credentials = client
                 .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
@@ -294,7 +294,9 @@ where
             let issued = client
                 .issue_app_auth_token(installed_app_id.clone().into())
                 .await
-                .map_err(|e| anyhow::anyhow!("Could not issue auth token for app client: {e:?}"))?;
+                .map_err(|e| {
+                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
+                })?;
 
             let app_client =
                 AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
@@ -370,8 +372,9 @@ where
             }
 
             println!(
-                "Discovery for agent {agent_name} took: {duration}s",
-                duration = start_discovery.elapsed().as_secs()
+                "Discovery for agent {} took: {}s",
+                agent_name,
+                start_discovery.elapsed().as_secs()
             );
 
             Ok(())
@@ -509,7 +512,7 @@ where
 
         result
             .decode()
-            .map_err(|e| anyhow::anyhow!("Decoding failure: {e:?}"))
+            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
     })
 }
 
@@ -525,7 +528,7 @@ where
 ///
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     let peer_list = get_peer_list_randomized(ctx)?;
-///     println!("Connected peers: {peer_list:?}");
+///     println!("Connected peers: {:?}", peer_list);
 ///     Ok(())
 /// }
 /// ```
@@ -574,7 +577,8 @@ fn installed_app_id_for_agent<SV>(
 where
     SV: UserValuesConstraint,
 {
-    format!("{agent_name}-app", agent_name = ctx.agent_name())
+    let agent_name = ctx.agent_name().to_string();
+    format!("{}-app", agent_name).to_string()
 }
 
 fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow::Result<CellId> {

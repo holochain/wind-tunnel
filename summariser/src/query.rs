@@ -1,7 +1,6 @@
 use crate::frame::LoadError;
 use anyhow::Context;
 use influxdb::ReadQuery;
-use itertools::Itertools as _;
 use polars::frame::DataFrame;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -26,10 +25,10 @@ pub async fn query_instrument_data(
     operation_id: &str,
 ) -> anyhow::Result<DataFrame> {
     let q = ReadQuery::new(format!(
-        r#"SELECT value FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND operation_id = '{operation_id}' AND is_error = 'false'"#,
-        summary.run_id
+        r#"SELECT value FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND operation_id = '{}' AND is_error = 'false'"#,
+        summary.run_id, operation_id
     ));
-    log::debug!("Querying: {q:?}");
+    log::debug!("Querying: {:?}", q);
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
@@ -46,7 +45,7 @@ pub async fn query_instrument_data(
         frame
     };
 
-    log::trace!("Loaded frame: {frame}");
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }
@@ -59,7 +58,7 @@ pub async fn query_zome_call_instrument_data(
         r#"SELECT value, zome_name, fn_name, agent FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
         summary.run_id
     ));
-    log::debug!("Querying: {q:?}");
+    log::debug!("Querying: {:?}", q);
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
@@ -76,7 +75,7 @@ pub async fn query_zome_call_instrument_data(
         frame
     };
 
-    log::trace!("Loaded frame: {frame}");
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }
@@ -89,7 +88,7 @@ pub async fn query_zome_call_instrument_data_errors(
         r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'true'"#,
         summary.run_id
     ));
-    log::debug!("Querying: {q:?}");
+    log::debug!("Querying: {:?}", q);
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
@@ -97,7 +96,10 @@ pub async fn query_zome_call_instrument_data_errors(
         return match frame {
             Ok(frame) => crate::frame::parse_time_column(frame),
             Err(e) => {
-                log::trace!("Failed to load test data, treating as 'no data in response': {e:?}",);
+                log::trace!(
+                    "Failed to load test data, treating as 'no data in response': {:?}",
+                    e
+                );
                 Err(LoadError::NoSeriesInResult {
                     result: serde_json::Value::Null,
                 }
@@ -116,7 +118,7 @@ pub async fn query_zome_call_instrument_data_errors(
         frame
     };
 
-    log::trace!("Loaded frame: {frame}");
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }
@@ -127,13 +129,16 @@ pub async fn query_custom_data(
     metric: &str,
     tags: &[&str],
 ) -> anyhow::Result<DataFrame> {
-    let select_tags = ["value"].iter().chain(tags.iter()).join(", ");
+    let mut select_tags = tags.join(", ");
+    if !select_tags.is_empty() {
+        select_tags = format!(", {}", select_tags);
+    }
 
     let q = ReadQuery::new(format!(
-        r#"SELECT {select_tags} FROM "windtunnel"."autogen"."{metric}" WHERE run_id = '{run_id}'"#,
-        run_id = summary.run_id
+        r#"SELECT value{} FROM "windtunnel"."autogen"."{}" WHERE run_id = '{}'"#,
+        select_tags, metric, summary.run_id
     ));
-    log::debug!("Querying: {q:?}");
+    log::debug!("Querying: {:?}", q);
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
@@ -150,7 +155,7 @@ pub async fn query_custom_data(
         frame
     };
 
-    log::trace!("Loaded frame: {frame}");
+    log::trace!("Loaded frame: {}", frame);
 
     Ok(frame)
 }

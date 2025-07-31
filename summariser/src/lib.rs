@@ -119,7 +119,7 @@ pub fn execute_report_for_run_summary(
             .boxed(),
         ),
         _ => {
-            log::warn!("No report for scenario: {name}");
+            log::warn!("No report for scenario: {}", name);
             None
         }
     }
