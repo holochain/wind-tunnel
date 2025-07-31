@@ -1,18 +1,8 @@
-mod fields;
-mod tags;
-
 use std::{fmt, str::FromStr};
 
+use influxive_core::DataType;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_instruments::prelude::ReportMetric;
-
-pub use self::fields::HostMetricsFields;
-use self::fields::ReportFields as _;
-pub use self::tags::HostMetricsTags;
-use self::tags::ReportTags as _;
-
-const DEFAULT_RUN_ID: &str = "N/A";
-const RUN_ID: &str = "run_id";
 
 /// Name for [`HostMetrics`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,13 +38,12 @@ impl fmt::Display for HostMetricsName {
 }
 
 /// Wrapper of metrics for the host system.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct HostMetrics {
-    pub fields: HostMetricsFields,
+    pub fields: serde_json::Value,
     pub name: HostMetricsName,
-    pub run_id: Option<String>,
-    pub tags: HostMetricsTags,
+    pub tags: serde_json::Value,
     pub timestamp: u64,
 }
 
@@ -66,116 +55,38 @@ impl FromStr for HostMetrics {
     }
 }
 
-impl<'de> Deserialize<'de> for HostMetrics {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        // Deserialize the host metrics from a JSON object with a generic structure.
-        #[derive(Deserialize)]
-        struct HostMetricsRaw {
-            name: HostMetricsName,
-            timestamp: u64,
-            fields: serde_json::Value,
-            tags: serde_json::Value,
-        }
-
-        let HostMetricsRaw {
-            fields,
-            name,
-            tags,
-            timestamp,
-        } = HostMetricsRaw::deserialize(deserializer)?;
-
-        // get run_id from fields
-        let run_id = fields.get(RUN_ID).and_then(|v| v.as_str()).and_then(|s| {
-            if s == DEFAULT_RUN_ID {
-                None
-            } else {
-                Some(s.to_string())
-            }
-        });
-
-        let fields = match name {
-            HostMetricsName::Cpu => HostMetricsFields::Cpu(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Disk => HostMetricsFields::Disk(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Diskio => HostMetricsFields::Diskio(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Kernel => HostMetricsFields::Kernel(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Mem => HostMetricsFields::Mem(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Net => HostMetricsFields::Net(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Netstat => HostMetricsFields::Netstat(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Processes => HostMetricsFields::Processes(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Swap => HostMetricsFields::Swap(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::System => HostMetricsFields::System(
-                serde_json::from_value(fields).map_err(serde::de::Error::custom)?,
-            ),
-        };
-
-        let tags = match name {
-            HostMetricsName::Cpu => HostMetricsTags::Cpu(
-                serde_json::from_value(tags).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Disk => HostMetricsTags::Disk(
-                serde_json::from_value(tags).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Diskio => HostMetricsTags::Diskio(
-                serde_json::from_value(tags).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Kernel
-            | HostMetricsName::Mem
-            | HostMetricsName::Netstat
-            | HostMetricsName::Processes
-            | HostMetricsName::Swap
-            | HostMetricsName::System => HostMetricsTags::Default(
-                serde_json::from_value(tags).map_err(serde::de::Error::custom)?,
-            ),
-            HostMetricsName::Net => HostMetricsTags::Net(
-                serde_json::from_value(tags).map_err(serde::de::Error::custom)?,
-            ),
-        };
-
-        Ok(HostMetrics {
-            fields,
-            name,
-            run_id,
-            tags,
-            timestamp,
-        })
-    }
-}
-
 impl HostMetrics {
     /// Returns the associated [`ReportMetric`] for this host metrics.
     pub fn report_metric(&self) -> ReportMetric {
-        let metric = ReportMetric::new(&format!("wt.host.{}", self.name));
-        // if run_id is set, add it to the metric
-        let metric = if let Some(run_id) = &self.run_id {
-            metric.with_field(RUN_ID, run_id.clone())
-        } else {
-            metric
-        };
-        // add fields based on the fields of the host metrics
-        let metric = self.fields.report_fields(metric);
-        // add tags based on the tags of the host metrics
-        self.tags.report_tags(metric)
+        let mut metric = ReportMetric::new(&format!("wt.host.{}", self.name));
+        // add fields
+        for (key, value) in self.fields.as_object().unwrap_or(&serde_json::Map::new()) {
+            metric = metric.with_field(key.clone(), Self::value_to_data_type(value));
+        }
+        // add tags
+        for (key, value) in self.tags.as_object().unwrap_or(&serde_json::Map::new()) {
+            metric = metric.with_tag(key.clone(), Self::value_to_data_type(value));
+        }
+
+        metric
+    }
+
+    /// Converts a [`serde_json::Value`] to a [`DataType`].
+    fn value_to_data_type(value: &serde_json::Value) -> DataType {
+        match value {
+            serde_json::Value::Bool(b) => DataType::Bool(*b),
+            serde_json::Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    DataType::I64(i)
+                } else if let Some(f) = n.as_f64() {
+                    DataType::F64(f)
+                } else {
+                    DataType::String(n.to_string().into())
+                }
+            }
+            serde_json::Value::String(s) => DataType::String(s.to_string().into()),
+            _ => DataType::String(value.to_string().into()),
+        }
     }
 }
 
@@ -206,8 +117,6 @@ mod tests {
     fn test_should_parse_metrics_from_str() {
         let metrics: HostMetrics = METRIC_STR.parse().expect("Failed to parse metrics");
         assert_eq!(metrics.name, HostMetricsName::Mem);
-        assert!(matches!(metrics.fields, HostMetricsFields::Mem(_)));
-        assert!(matches!(metrics.tags, HostMetricsTags::Default(_)));
     }
 
     #[test]
@@ -218,85 +127,20 @@ mod tests {
         assert_eq!(metrics.len(), 487);
         let first_metric = &metrics[0];
         assert_eq!(first_metric.name, HostMetricsName::Mem);
-        let HostMetricsFields::Mem(mem_metrics) = &first_metric.fields else {
-            panic!("Expected MemMetrics, found {:?}", first_metric.fields);
-        };
-        assert!(first_metric.run_id.is_none());
-        assert_eq!(mem_metrics.active, 17853476864);
+        let active = first_metric
+            .fields
+            .get("active")
+            .and_then(|v| v.as_u64())
+            .unwrap();
+
+        assert_eq!(active, 17853476864);
         // should have default tags
-        let HostMetricsTags::Default(default_tags) = &first_metric.tags else {
-            panic!("Expected DefaultTags, found {:?}", first_metric.tags);
-        };
-        assert_eq!(default_tags.host, "msi-manjaro");
-
-        // verify all fields and tags are decoded
-        let cpu_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Cpu)
-            .expect("No CPU metrics found");
-        assert!(matches!(cpu_metric.tags, HostMetricsTags::Cpu(_)));
-        assert!(matches!(cpu_metric.fields, HostMetricsFields::Cpu(_)));
-        let disk_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Disk)
-            .expect("No Disk metrics found");
-        assert!(matches!(disk_metric.tags, HostMetricsTags::Disk(_)));
-        assert!(matches!(disk_metric.fields, HostMetricsFields::Disk(_)));
-        let diskio_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Diskio)
-            .expect("No DiskIO metrics found");
-        assert!(matches!(diskio_metric.tags, HostMetricsTags::Diskio(_)));
-        assert!(matches!(diskio_metric.fields, HostMetricsFields::Diskio(_)));
-        let kernel_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Kernel)
-            .expect("No Kernel metrics found");
-        assert!(matches!(kernel_metric.tags, HostMetricsTags::Default(_)));
-        assert!(matches!(kernel_metric.fields, HostMetricsFields::Kernel(_)));
-        let net_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Net)
-            .expect("No Net metrics found");
-        assert!(matches!(net_metric.tags, HostMetricsTags::Net(_)));
-        assert!(matches!(net_metric.fields, HostMetricsFields::Net(_)));
-        let netstat_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Netstat)
-            .expect("No Netstat metrics found");
-        assert!(matches!(netstat_metric.tags, HostMetricsTags::Default(_)));
-        assert!(matches!(
-            netstat_metric.fields,
-            HostMetricsFields::Netstat(_)
-        ));
-        let processes_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Processes)
-            .expect("No Processes metrics found");
-        assert!(matches!(processes_metric.tags, HostMetricsTags::Default(_)));
-
-        assert!(matches!(
-            processes_metric.fields,
-            HostMetricsFields::Processes(_)
-        ));
-        let swap_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::Swap)
-            .expect("No Swap metrics found");
-        assert!(matches!(swap_metric.tags, HostMetricsTags::Default(_)));
-        assert!(matches!(swap_metric.fields, HostMetricsFields::Swap(_)));
-        let system_metric = metrics
-            .iter()
-            .find(|m| m.name == HostMetricsName::System)
-            .expect("No System metrics found");
-        assert!(matches!(system_metric.tags, HostMetricsTags::Default(_)));
-        assert!(matches!(system_metric.fields, HostMetricsFields::System(_)));
-    }
-
-    #[test]
-    fn test_host_metrics_should_have_run_id() {
-        let metrics: HostMetrics = METRIC_STR.parse().expect("Failed to parse metrics");
-        assert_eq!(metrics.run_id, Some("123".to_string()));
+        let host = first_metric
+            .tags
+            .get("host")
+            .and_then(|v| v.as_str())
+            .unwrap();
+        assert_eq!(host, "msi-manjaro");
     }
 
     #[test]
@@ -311,19 +155,5 @@ mod tests {
         // verify fields (should have active field)
         let (field_name, _field_value) = &report_metric.fields[0];
         assert_eq!(field_name.clone().into_string(), "active");
-    }
-
-    #[test]
-    fn test_should_report_host_metrics_with_run_id() {
-        let metrics = load_metrics_from_json().expect("Failed to parse host metrics");
-
-        let metric_with_run_id = &metrics[1];
-        let report_metric = metric_with_run_id.report_metric();
-        // verify tags (should have only host tag)
-        let (tag_name, _) = &report_metric.tags[0];
-        assert_eq!(tag_name.clone().into_string(), "host");
-        // verify fields (should have active field)
-        let (field_name, _field_value) = &report_metric.fields[0];
-        assert_eq!(field_name.clone().into_string(), RUN_ID);
     }
 }
