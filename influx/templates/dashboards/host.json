@@ -2,9 +2,7 @@
   {
     "apiVersion": "influxdata.com/v2alpha1",
     "kind": "Dashboard",
-    "metadata": {
-      "name": "vivid-elbakyan-9dc001"
-    },
+    "metadata": { "name": "spectacular-wu-6f4001" },
     "spec": {
       "charts": [
         {
@@ -16,19 +14,13 @@
           "width": 12
         },
         {
-          "colors": [
-            {
-              "name": "laser",
-              "type": "text",
-              "hex": "#00C9FF"
-            }
-          ],
+          "colors": [{ "name": "laser", "type": "text", "hex": "#00C9FF" }],
           "height": 1,
           "kind": "Single_Stat",
           "name": "System Uptime",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"uptime\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) / 86400.00 }))"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"uptime\")\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) / 86400.00 }))"
             }
           ],
           "staticLegend": {},
@@ -38,22 +30,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y",
-              "scale": "linear",
-              "suffix": "%"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear", "suffix": "%" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -61,7 +40,7 @@
           "name": "Disk Usage",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"disk\")\n  |> filter(fn: (r) => r._field == \"used_percent\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"disk\")\n  |> filter(fn: (r) => r._field == \"used_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "staticLegend": {},
@@ -70,22 +49,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "2",
-              "label": "Bytes",
-              "name": "y",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "2", "label": "Bytes", "name": "y", "scale": "linear" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -93,7 +59,7 @@
           "name": "Disk IO",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"diskio\")\n  |> filter(fn: (r) => r._field == \"read_bytes\" or r._field == \"write_bytes\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> derivative(unit: v.windowPeriod, nonNegative: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"diskio\")\n  |> filter(fn: (r) => r._field == \"read_bytes\" or r._field == \"write_bytes\")\n  |> derivative(unit: v.windowPeriod, nonNegative: false)"
             }
           ],
           "staticLegend": {},
@@ -101,20 +67,14 @@
           "yPos": 5
         },
         {
-          "colors": [
-            {
-              "name": "laser",
-              "type": "text",
-              "hex": "#00C9FF"
-            }
-          ],
+          "colors": [{ "name": "laser", "type": "text", "hex": "#00C9FF" }],
           "decimalPlaces": 2,
           "height": 1,
           "kind": "Single_Stat",
           "name": "nCPUs",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"n_cpus\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> last()"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"n_cpus\")\n  |> last()"
             }
           ],
           "staticLegend": {},
@@ -125,22 +85,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y",
-              "scale": "linear",
-              "suffix": "%"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear", "suffix": "%" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -148,7 +95,7 @@
           "name": "CPU Usage",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> filter(fn: (r) => r._field == \"usage_user\" or r._field == \"usage_system\" or r._field == \"usage_idle\")\n  |> filter(fn: (r) => r.cpu == \"cpu-total\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> filter(fn: (r) => r._field == \"usage_user\" or r._field == \"usage_system\" or r._field == \"usage_idle\")\n  |> filter(fn: (r) => r.cpu == \"cpu-total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "staticLegend": {},
@@ -158,22 +105,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "2",
-              "label": "Bytes",
-              "name": "y",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "2", "label": "Bytes", "name": "y", "scale": "linear" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -181,7 +115,7 @@
           "name": "Network",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"net\")\n  |> filter(fn: (r) => r._field == \"bytes_recv\" or r._field == \"bytes_sent\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> derivative(unit: v.windowPeriod, nonNegative: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"net\")\n  |> filter(fn: (r) => r._field == \"bytes_recv\" or r._field == \"bytes_sent\")\n  |> derivative(unit: v.windowPeriod, nonNegative: false)"
             }
           ],
           "staticLegend": {},
@@ -192,20 +126,14 @@
           "yPos": 5
         },
         {
-          "colors": [
-            {
-              "name": "laser",
-              "type": "text",
-              "hex": "#00C9FF"
-            }
-          ],
+          "colors": [{ "name": "laser", "type": "text", "hex": "#00C9FF" }],
           "decimalPlaces": 2,
           "height": 1,
           "kind": "Single_Stat",
           "name": "System Load",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"load1\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> last()"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"load1\")\n  |> last()"
             }
           ],
           "staticLegend": {},
@@ -215,22 +143,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "label": "Load",
-              "name": "y",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "label": "Load", "name": "y", "scale": "linear" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -238,7 +153,7 @@
           "name": "System Load",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"load1\" or r._field == \"load5\" or r._field == \"load15\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r._field == \"load1\" or r._field == \"load5\" or r._field == \"load15\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "staticLegend": {},
@@ -248,21 +163,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -270,7 +173,7 @@
           "name": "Processes",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"processes\")\n  |> filter(fn: (r) => r._field == \"running\" or r._field == \"blocked\" or r._field == \"idle\" or r._field == \"unknown\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: max)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"processes\")\n  |> filter(fn: (r) => r._field == \"running\" or r._field == \"blocked\" or r._field == \"idle\" or r._field == \"unknown\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max)"
             }
           ],
           "staticLegend": {},
@@ -279,20 +182,14 @@
           "yPos": 5
         },
         {
-          "colors": [
-            {
-              "name": "laser",
-              "type": "text",
-              "hex": "#00C9FF"
-            }
-          ],
+          "colors": [{ "name": "laser", "type": "text", "hex": "#00C9FF" }],
           "decimalPlaces": 2,
           "height": 1,
           "kind": "Single_Stat",
           "name": "Total Memory",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"mem\")  \n  |> filter(fn: (r) => r._field == \"total\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> last()  \n  |> map(fn: (r) => ({r with _value: float(v: r._value) / 1024.0 / 1024.0 / 1024.0}))"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"mem\")  \n  |> filter(fn: (r) => r._field == \"total\")\n  |> last()  \n  |> map(fn: (r) => ({r with _value: float(v: r._value) / 1024.0 / 1024.0 / 1024.0}))"
             }
           ],
           "staticLegend": {},
@@ -303,29 +200,12 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y",
-              "scale": "linear",
-              "suffix": "%"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear", "suffix": "%" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "colors": [
-            {
-              "name": "laser",
-              "type": "text",
-              "hex": "#00C9FF"
-            },
+            { "name": "laser", "type": "text", "hex": "#00C9FF" },
             {
               "name": "Do Androids Dream of Electric Sheep?",
               "type": "scale",
@@ -348,7 +228,7 @@
           "name": "Memory Usage",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"mem\")\n  |> filter(fn: (r) => r._field == \"used_percent\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"mem\")\n  |> filter(fn: (r) => r._field == \"used_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "staticLegend": {},
@@ -359,21 +239,9 @@
         },
         {
           "axes": [
-            {
-              "base": "10",
-              "name": "x",
-              "scale": "linear"
-            },
-            {
-              "base": "2",
-              "name": "y",
-              "scale": "linear"
-            },
-            {
-              "base": "10",
-              "name": "y2",
-              "scale": "linear"
-            }
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "2", "name": "y", "scale": "linear" },
+            { "base": "10", "name": "y2", "scale": "linear" }
           ],
           "geom": "line",
           "height": 3,
@@ -381,7 +249,7 @@
           "name": "Swap",
           "queries": [
             {
-              "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"swap\")\n  |> filter(fn: (r) => r._field == \"total\" or r._field == \"used\")\n  |> filter(fn: (r) => r.host == v.linux_host)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"swap\")\n  |> filter(fn: (r) => r._field == \"total\" or r._field == \"used\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
             }
           ],
           "staticLegend": {},
@@ -390,7 +258,7 @@
           "yPos": 5
         }
       ],
-      "description": "System metrics for the host that is running Wind Tunnel scenarios",
+      "description": "Metrics for Host system",
       "name": "Host"
     }
   }
