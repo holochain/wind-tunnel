@@ -1,1 +1,756 @@
-[{"apiVersion":"influxdata.com/v2alpha1","kind":"Dashboard","metadata":{"name":"annoying-bhabha-d82001"},"spec":{"charts":[{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Initiated sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","yCol":"_value"},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","label":"Duration","name":"y","scale":"linear","suffix":"s"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Successful initiated session duration","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_duration\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":12,"widthRatio":1,"xCol":"_time","yCol":"_value","yPos":4},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Accepted sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","yCol":"_value","yPos":8},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","label":"Duration","name":"y","scale":"linear","suffix":"s"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Successful accepted session duration","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_duration\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":12,"widthRatio":1,"xCol":"_time","yCol":"_value","yPos":12},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Successful initiated sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")  \n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","xPos":4,"yCol":"_value"},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Successful accepted sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","xPos":4,"yCol":"_value","yPos":8},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Failed initiated sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"Initiated = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nSucceeded = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nunion(tables: [Initiated, Succeeded])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> difference()\n  |> yield(name: \"difference\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","xPos":8,"yCol":"_value"},{"axes":[{"base":"10","name":"x","scale":"linear"},{"base":"10","name":"y","scale":"linear"}],"colorizeRows":true,"colors":[{"id":"KUTtqo_3thkHsXMmw8AAx","name":"Color Blind Friendly - Light","type":"scale","hex":"#FFFFFF"},{"id":"746gR03rdZ6XitWhLnBQ0","name":"Color Blind Friendly - Light","type":"scale","hex":"#E69F00"},{"id":"d51OBsEuj4XCsSSy4IXGi","name":"Color Blind Friendly - Light","type":"scale","hex":"#56B4E9"},{"id":"tmIUeSU3NKTKKhnQBhAqk","name":"Color Blind Friendly - Light","type":"scale","hex":"#009E73"},{"id":"s7VBZJDbJbHxPVJZ48XHd","name":"Color Blind Friendly - Light","type":"scale","hex":"#F0E442"},{"id":"P72-bQCsx8W1i6Z1miSWn","name":"Color Blind Friendly - Light","type":"scale","hex":"#0072B2"},{"id":"EZdhHDCFyiqI8aqjRRAaa","name":"Color Blind Friendly - Light","type":"scale","hex":"#D55E00"},{"id":"TBqjw60qQwNkbVslVTBy0","name":"Color Blind Friendly - Light","type":"scale","hex":"#CC79A7"}],"geom":"line","height":4,"hoverDimension":"auto","kind":"Xy","legendColorizeRows":true,"legendOpacity":1,"legendOrientationThreshold":100000000,"name":"Failed accepted sessions","opacity":1,"orientationThreshold":100000000,"position":"overlaid","queries":[{"query":"accepted = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nsucceeded = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nunion(tables: [accepted, succeeded])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> difference()\n  |> yield(name: \"difference\")"}],"staticLegend":{"colorizeRows":true,"opacity":1,"orientationThreshold":100000000,"widthRatio":1},"width":4,"widthRatio":1,"xCol":"_time","xPos":8,"yCol":"_value","yPos":8}],"description":"Generic charts for countersigning scenarios","name":"Countersigning"}}]
+[
+  {
+    "apiVersion": "influxdata.com/v2alpha1",
+    "kind": "Dashboard",
+    "metadata": {
+      "name": "annoying-bhabha-d82001"
+    },
+    "spec": {
+      "charts": [
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Initiated sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "label": "Duration",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Successful initiated session duration",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_duration\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 12,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 4
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Accepted sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "label": "Duration",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Successful accepted session duration",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_duration\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 12,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 12
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Successful initiated sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")  \n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 4,
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Successful accepted sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 4,
+          "yCol": "_value",
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Failed initiated sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "Initiated = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nSucceeded = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_initiated_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nunion(tables: [Initiated, Succeeded])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> difference()\n  |> yield(name: \"difference\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 8,
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "KUTtqo_3thkHsXMmw8AAx",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "746gR03rdZ6XitWhLnBQ0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "d51OBsEuj4XCsSSy4IXGi",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "tmIUeSU3NKTKKhnQBhAqk",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "s7VBZJDbJbHxPVJZ48XHd",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "P72-bQCsx8W1i6Z1miSWn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "EZdhHDCFyiqI8aqjRRAaa",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "TBqjw60qQwNkbVslVTBy0",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Failed accepted sessions",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "accepted = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nsucceeded = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.countersigning_session_accepted_success\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> group(columns: [\"agent\"], mode:\"by\")\n\nunion(tables: [accepted, succeeded])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> difference()\n  |> yield(name: \"difference\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 4,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 8,
+          "yCol": "_value",
+          "yPos": 8
+        }
+      ],
+      "description": "Generic charts for countersigning scenarios",
+      "name": "Countersigning"
+    }
+  }
+]
