@@ -1,6 +1,5 @@
 mod config;
 
-use std::io::BufRead as _;
 use std::path::PathBuf;
 
 pub use self::config::TelegrafConfig;
@@ -36,12 +35,6 @@ impl Telegraf {
         let status = process.wait()?;
         // write stdout
         debug!("Telegraf process finished with status: {status}");
-        if let Some(stdout) = process.stdout.take() {
-            let reader = std::io::BufReader::new(stdout);
-            for line in reader.lines() {
-                debug!(target: "Telegraf", "{}", line?);
-            }
-        }
         if status.success() {
             info!("Telegraf ran successfully");
             Ok(())
