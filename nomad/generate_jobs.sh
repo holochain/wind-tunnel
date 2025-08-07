@@ -29,7 +29,7 @@ if [ -z "$GOMPLATE" ]; then
   exit 1
 fi
 
-JOB_NAME="$1"
+JOB_NAME="${1:-}"
 
 # generate all
 if [ -z "$JOB_NAME" ]; then
