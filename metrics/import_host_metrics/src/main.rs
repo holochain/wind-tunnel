@@ -1,13 +1,16 @@
 #[macro_use]
 extern crate log;
 
+use std::str::FromStr as _;
+
 use clap::Parser as _;
+use influxlp_tools::LineProtocol;
 use tempfile::NamedTempFile;
 
 use crate::aggregator::HostMetricsAggregator;
-use crate::influx::InfluxFileReporter;
+use crate::influx::{InfluxFileReporter, InfluxReader};
 use crate::jsonl::JsonlReader;
-use crate::metrics::HostMetrics;
+use crate::metrics::HostMetricsName;
 use crate::run_scenario::RunScenario;
 use crate::telegraf::{Telegraf, TelegrafConfig};
 
@@ -30,11 +33,12 @@ fn main() -> anyhow::Result<()> {
     info!("Using host metrics file: {}", args.host_metrics.display());
     info!("Using run summary file: {}", args.run_summary.display());
 
-    // parse the host metrics file
+    // parse the host metrics file and keep only the host metrics
     debug!("Parsing host metrics file: {}", args.host_metrics.display());
-    let host_metrics: Vec<HostMetrics> = JsonlReader::default()
-        .allow_invalid_entries(true)
-        .parse_from_file(&args.host_metrics)?;
+    let host_metrics = InfluxReader::read_from_file(&args.host_metrics)?
+        .into_iter()
+        .filter(filter_by_host_metric_name)
+        .collect::<Vec<LineProtocol>>();
     debug!("Parsed {} host metrics entries", host_metrics.len());
 
     // parse the run summary file
@@ -80,4 +84,10 @@ fn main() -> anyhow::Result<()> {
     info!("Host metrics import completed successfully");
 
     Ok(())
+}
+
+/// Utility function to filter a [`LineProtocol`] item by its name to keep only [`HostMetricsName`].
+#[inline(always)]
+fn filter_by_host_metric_name(item: &LineProtocol) -> bool {
+    HostMetricsName::from_str(&item.get_measurement_ref().0).is_ok()
 }

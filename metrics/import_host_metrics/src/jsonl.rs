@@ -8,14 +8,6 @@ pub struct JsonlReader {
 }
 
 impl JsonlReader {
-    /// Configures the reader to allow invalid entries.
-    ///
-    /// If set to `true`, the reader will skip lines that cannot be parsed into the specified type.
-    pub fn allow_invalid_entries(mut self, allow: bool) -> Self {
-        self.allow_invalid_entries = allow;
-        self
-    }
-
     /// Parses a JSON Lines file from the given reader into a vector of type `T`.
     pub fn parse<R, T>(&self, reader: R) -> Result<Vec<T>, JsonlError>
     where
@@ -65,49 +57,32 @@ mod tests {
 
     use std::fs;
 
-    use crate::metrics::HostMetrics;
+    use crate::run_scenario::RunScenario;
 
     use super::*;
 
-    const JSON_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/host_metrics.jsonl");
-    const MALFORMED_JSON_PATH: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/malformed_host_metrics.jsonl"
-    );
-    const METRICS_WITH_ONE_INVALID_ENTRY: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/host_metrics_with_one_invalid_entry.jsonl"
-    );
+    const JSON_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test_run_summary.jsonl");
+    const MALFORMED_JSON_PATH: &str =
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/invalid_summary.jsonl");
 
     #[test]
     fn test_should_parse_jsonl() {
         let reader = fs::File::open(JSON_PATH).expect("Failed to open test file");
-        let result: Result<Vec<HostMetrics>, JsonlError> = JsonlReader::default().parse(reader);
+        let result: Result<Vec<RunScenario>, JsonlError> = JsonlReader::default().parse(reader);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_should_parse_jsonl_from_file() {
-        let result: Result<Vec<HostMetrics>, JsonlError> =
+        let result: Result<Vec<RunScenario>, JsonlError> =
             JsonlReader::default().parse_from_file(JSON_PATH);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_should_allow_invalid_entries() {
-        let reader =
-            fs::File::open(METRICS_WITH_ONE_INVALID_ENTRY).expect("Failed to open test file");
-        let result: Result<Vec<HostMetrics>, JsonlError> = JsonlReader::default()
-            .allow_invalid_entries(true)
-            .parse(reader);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 1); // Assuming there is one valid entry in the file
-    }
-
-    #[test]
     fn test_should_fail_parsing_on_invalid_jsonl() {
         let reader = fs::File::open(MALFORMED_JSON_PATH).expect("Failed to open test file");
-        let result: Result<Vec<HostMetrics>, JsonlError> = JsonlReader::default().parse(reader);
+        let result: Result<Vec<RunScenario>, JsonlError> = JsonlReader::default().parse(reader);
         assert!(result.is_err());
     }
 }

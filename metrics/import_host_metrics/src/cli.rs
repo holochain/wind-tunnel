@@ -17,8 +17,8 @@ pub struct CliArgs {
     #[arg(long, env = "INFLUX_TOKEN")]
     pub influxdb_token: String,
 
-    /// Path to the host metrics file.
-    #[arg(long, default_value = "telegraf/metrics/metrics.jsonl")]
+    /// Path to the host metrics file with InfluxDB line protocol format.
+    #[arg(long, default_value = "telegraf/metrics/host.influx")]
     pub host_metrics: PathBuf,
 
     /// InfluxDB organization name.

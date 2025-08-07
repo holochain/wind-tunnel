@@ -1,9 +1,9 @@
-use influxdb::WriteQuery;
+use influxlp_tools::LineProtocol;
 
 /// A trait for reporting metrics.
 pub trait Report {
     type Error;
 
-    /// Report a [`WriteQuery`] metric.
-    fn report(&mut self, metric: WriteQuery) -> Result<(), Self::Error>;
+    /// Report a [`LineProtocol`] metric.
+    fn report(&mut self, metric: LineProtocol) -> Result<(), Self::Error>;
 }
