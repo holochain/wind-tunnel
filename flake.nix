@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
@@ -111,10 +111,35 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
+          local-telegraf = pkgs.writeShellApplication {
+            name = "local-telegraf";
+            runtimeInputs = [ pkgs.telegraf ];
+            text = ''
+              RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
+
+              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" ./telegraf/local-telegraf.conf
+
+              echo "Running telegraf for run ID: $RUN_ID"
+              telegraf --config telegraf/local-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+
+              rm ./telegraf/metrics/*.influx
+              git checkout -- telegraf/local-telegraf.conf
+            '';
+          };
           ci-telegraf = pkgs.writeShellApplication {
             name = "ci-telegraf";
             runtimeInputs = [ pkgs.telegraf ];
-            text = "telegraf --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)";
+            text = ''
+              RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
+
+              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" ./telegraf/runner-telegraf.conf
+
+              echo "Running telegraf for run ID: $RUN_ID"
+              telegraf --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+              rm ./telegraf/metrics/*.influx
+
+              git checkout -- telegraf/runner-telegraf.conf
+            '';
           };
         };
 
