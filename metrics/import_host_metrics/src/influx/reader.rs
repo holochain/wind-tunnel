@@ -44,4 +44,25 @@ pub enum InfluxReadError {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    const PATH_TO_TEST_FILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/host.influx");
+
+    use influxlp_tools::element::FieldValue;
+
+    use super::*;
+
+    #[test]
+    fn test_should_read_influx_file() {
+        let metrics = InfluxReader::read_from_file(PATH_TO_TEST_FILE).expect("Failed to read file");
+        assert!(!metrics.is_empty());
+        assert_eq!(metrics.len(), 32);
+
+        let first = &metrics[0];
+        assert_eq!(first.get_measurement_ref().0, "swap");
+        assert_eq!(
+            first.get_field("total").unwrap(),
+            FieldValue::Integer(31457345536)
+        );
+    }
+}
