@@ -51,22 +51,6 @@ impl TelegrafConfig {
         writeln!(
             writer,
             r#"
-[global_tags]
-  # Global tags can be specified here in key="value" format
-
-[agent]
-  interval = "5s"
-  round_interval = true
-  metric_batch_size = 10000
-  metric_buffer_limit = 10000
-  collection_jitter = "0s"
-  flush_interval = "5s"
-  flush_jitter = "0s"
-  precision = ""
-  hostname = ""
-  omit_hostname = false
-  quiet = false
-
 [[outputs.influxdb_v2]]
   ## The URLs of the InfluxDB cluster nodes.
   urls = ["{influxdb_url}"]
