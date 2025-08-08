@@ -272,7 +272,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"remote_call_rate\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"operation_id\"] == \"trycp_app_call_zome\")\n  |> filter(fn: (r) => r[\"zome_name\"] == \"remote_call\")\n  |> filter(fn: (r) => r[\"fn_name\"] == \"call_echo_timestamp\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"remote_call_rate\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"zome_name\"] == \"remote_call\")\n  |> filter(fn: (r) => r[\"fn_name\"] == \"call_echo_timestamp\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "staticLegend": {
