@@ -9,5 +9,5 @@ start_telegraf() {
         return 1
     fi
 
-    telegraf --config "$(pwd)/telegraf/telegraf.conf"
+    telegraf --config "$(pwd)/telegraf/local.conf"
 }
