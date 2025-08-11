@@ -89,6 +89,7 @@ jobs:
           echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
 
       - name: Run Nomad Job
+        id: run-nomad-job
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
@@ -97,6 +98,22 @@ jobs:
           NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run-id: ${{ github.run_id }}
         run: |-
-          nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${{ matrix.job-name || matrix.scenario-name }}.nomad.hcl
+          set -euo pipefail
+          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${{ matrix.job-name || matrix.scenario-name }}.nomad.hcl)
+          echo "$nomad_output"
+          echo "Ran ${{ matrix.job-name || matrix.scenario-name }} with run ID ${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+          alloc_id=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
+          if [ -z "$alloc_id" ]; then
+            echo "Failed to extract allocation ID from Nomad job output"
+            exit 1
+          fi
 
-          echo "Ran ${{ matrix.job-name }} with run ID ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "alloc_id=$alloc_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Nomad Job to finish
+        env:
+          RUN_ID: ${{ github.run_id }}
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: nix develop --command ./nomad/wait_for_jobs.sh ${{ matrix.job-name || matrix.scenario-name }} ${{ steps.run-nomad-job.outputs.alloc_id }}
