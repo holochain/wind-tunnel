@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+    unstable.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
@@ -23,11 +24,12 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
+  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, unstable, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
+        unstablePkgs = import unstable { inherit system; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
@@ -73,7 +75,7 @@
                 pkgs.influxdb2-cli
                 pkgs.influxdb2-server
                 # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
-                pkgs.telegraf
+                unstablePkgs.telegraf
                 pkgs.yq
                 pkgs.httpie
                 unfreePkgs.nomad
@@ -111,10 +113,68 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
+          local-telegraf = pkgs.writeShellApplication {
+            name = "local-telegraf";
+            runtimeInputs = [
+              pkgs.gnused
+              pkgs.jq
+              pkgs.yq
+              unstablePkgs.telegraf
+            ];
+            text = ''
+              # shellcheck disable=SC1091
+              source ./scripts/influx.sh
+              
+              use_influx
+              
+              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
+              export WT_METRICS_DIR
+
+              # Get run id from the latest run summary or set it to ""
+              RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
+
+              # get tempfile for telegraf config
+              TELEGRAF_CONFIG=$(mktemp --suffix ".conf")
+              cp ./telegraf/telegraf.local.conf "$TELEGRAF_CONFIG"
+
+              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" "$TELEGRAF_CONFIG"
+
+              echo "Running telegraf for run ID: $RUN_ID"
+              telegraf --config "$TELEGRAF_CONFIG" --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+
+              rm ./telegraf/metrics/*.influx
+            '';
+          };
           ci-telegraf = pkgs.writeShellApplication {
             name = "ci-telegraf";
-            runtimeInputs = [ pkgs.telegraf ];
-            text = "telegraf --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)";
+            runtimeInputs = [
+              pkgs.gnused
+              pkgs.jq
+              pkgs.yq
+              unstablePkgs.telegraf
+            ];
+            text = ''
+              # shellcheck disable=SC1091
+              source ./scripts/influx.sh
+              
+              use_influx
+
+              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
+              export WT_METRICS_DIR
+
+              RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
+              
+              # get tempfile for telegraf config
+              TELEGRAF_CONFIG=$(mktemp --suffix ".conf")
+              cp ./telegraf/telegraf.runner.conf "$TELEGRAF_CONFIG"
+
+              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" "$TELEGRAF_CONFIG"
+
+              echo "Running telegraf for run ID: $RUN_ID"
+              telegraf --config "$TELEGRAF_CONFIG" --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+
+              rm ./telegraf/metrics/*.influx
+            '';
           };
         };
 
