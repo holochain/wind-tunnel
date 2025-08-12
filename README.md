@@ -580,6 +580,45 @@ RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url htt
 
 If your bootstrap and signal servers run under a different port, adapt the command accordingly. The scenario creates 2 peer and runs for 20 seconds.
 
+### Import Host Metrics
+
+In order to import Host metrics into InfluxDB, you can use the `telegraf` tool. This is a tool that collects and sends metrics to InfluxDB.
+
+Currently, `telegraf` is configured to collect the following metrics:
+
+- CPU stats
+- Disk stats and usage
+- Kernel Info
+- Memory and Swap stats
+- Network stats
+- Processes
+- System stats
+
+You can run a `telegraf` agent to collect host metrics while running scenarios with 
+
+```sh
+nix develop --command telegraf --config ./telegraf/telegraf.host.conf
+```
+
+or by entering the Nix shell and running
+
+```sh
+start_host_metrics_telegraf
+```
+
+Once you've finished running a scenario, you can start the `telegraf` agent to collect both host and scenario metrics with
+
+```sh
+nix run .#local-telegraf
+```
+
+At this point the metrics will be imported to InfluxDB and you will be able to view the Host metrics in the InfluxDB Host dashboard by run_id.
+
+Running the `telegraf` agent will also clean up the previous metrics, so you are immediately ready to run the next scenario.
+
+> [!Warning]
+> The metrics must be imported after each scenario run and cleanup, since they are associated only to the latest scenario run.
+
 ### Published crates
 
 Framework crates:
