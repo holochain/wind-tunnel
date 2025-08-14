@@ -530,7 +530,7 @@ You can also override existing and omitted variables with the `-var` flag. For e
 (in seconds) or to set the reporter to print to `stdout`.
 
 ```bash
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http:://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
 ```
 
 > [!Note]

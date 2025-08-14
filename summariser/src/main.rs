@@ -1,10 +1,16 @@
 use anyhow::Context;
 use chrono::Utc;
+use log::debug;
 use std::fs::File;
 use std::path::PathBuf;
 use wind_tunnel_summary_model::load_summary_runs;
 
 pub(crate) mod filter;
+
+/// Environment variable name to set a custom run summary file path
+const RUN_SUMMARY_PATH_ENV: &str = "RUN_SUMMARY_PATH";
+/// Default path for the run summary file
+const DEFAULT_RUN_SUMMARY_PATH: &str = "run_summary.jsonl";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -13,8 +19,11 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "test_data")]
     log::info!("Test data generation enabled");
 
-    let summary_runs = load_summary_runs(PathBuf::from("run_summary.jsonl"))
-        .expect("Failed to load run summaries");
+    let summary_path = std::env::var(RUN_SUMMARY_PATH_ENV)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(DEFAULT_RUN_SUMMARY_PATH));
+    debug!("Loading summary from {}", summary_path.display());
+    let summary_runs = load_summary_runs(summary_path).expect("Failed to load run summaries");
 
     let latest_by_config_summaries = filter::latest_run_summaries_by_name_and_config(summary_runs);
 

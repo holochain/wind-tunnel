@@ -7,8 +7,8 @@ TIMEOUT="${TIMEOUT:-1800}"
 
 function check_envset() {
   local var_name="$1"
-  if [[ -z "${!var_name}" ]]; then
-    echo "Environment variable $var_name is not set." >&2
+  if [[ -z "${!var_name:-}" ]]; then
+    echo "Environment variable $var_name is not set or is an empty string." >&2
     exit 1
   fi
 }
@@ -21,12 +21,16 @@ function check_command() {
   fi
 }
 
+function get_nomad_status() {
+  local alloc_id="$1"
+  nomad alloc status -json "${alloc_id}"
+}
 
 function get_status() {
-    local alloc_id="$1"
+    local nomad_status="$1"
     # Fetch JSON and extract ClientStatus; fail fast if the command errors.
     local client_status
-    if ! client_status="$(nomad alloc status -json "${alloc_id}" | jq -r '.ClientStatus')"; then
+    if ! client_status="$(echo "$nomad_status" | jq -r '.ClientStatus')"; then
         echo "Failed to retrieve status for allocation ID: $alloc_id" >&2
         exit 1
     fi
@@ -52,6 +56,34 @@ function is_run_success() {
     [[ "$status" == "complete" ]]
 }
 
+function print_failed_tasks_and_logs() {
+  local alloc_id="$1"
+  local status="$2"
+
+  # get failed tasks and create an object for each status with the task name and the error message
+  failed_tasks=$(jq -r '
+    .TaskStates
+    | to_entries[]
+    | . as $entry
+    | $entry.value.Events[]?
+    | {
+      task: $entry.key,
+      message: .DisplayMessage,
+      details: .Details
+    }
+  ' <<< "$status")
+
+  # get logs for each (unique) task
+  local tasks="$(echo "$failed_tasks" | jq -r '.task' | sort -u)"
+  for task in $tasks; do
+    echo "Fetching logs for task: $task"
+    nomad alloc logs -stderr "$alloc_id" "$task" || echo "Failed to fetch stderr logs for task: $task"
+    nomad alloc logs -stdout "$alloc_id" "$task" || echo "Failed to fetch stdout logs for task: $task"
+  done
+
+  echo "Failed task: $failed_tasks"
+}
+
 function wait_for_job() {
     local scenario_name="$1"
     local alloc_id="$2"
@@ -61,7 +93,12 @@ function wait_for_job() {
     ELAPSED_SECS=0
     # Run until timeout or no scenario is still running
     while true; do
-        status=$(get_status "$alloc_id")
+        local nomad_status
+        if ! nomad_status="$(get_nomad_status "$alloc_id")"; then
+            echo "Failed to fetch Nomad status for $scenario_name ($alloc_id)" >&2
+            exit 1
+        fi
+        local status="$(get_status "$nomad_status")"
 
         if is_running "$status"; then
             echo "Scenario $scenario_name ($alloc_id) is still running (status=$status) (elapsed: $ELAPSED_SECS seconds)."
@@ -80,6 +117,7 @@ function wait_for_job() {
         fi
 
         echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $ELAPSED_SECS seconds."
+        print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
         exit 1
     done
     echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
@@ -88,7 +126,6 @@ function wait_for_job() {
 }
 
 
-# verify NOMAD variables are set
 # verify NOMAD variables are set
 check_envset "NOMAD_CACERT"
 check_envset "NOMAD_ADDR"
