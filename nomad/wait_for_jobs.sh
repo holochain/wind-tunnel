@@ -7,10 +7,14 @@ TIMEOUT="${TIMEOUT:-1800}"
 
 function check_envset() {
   local var_name="$1"
+  # temporarily allow fail to bind
+  set +u
   if [[ -z "${!var_name}" ]]; then
     echo "Environment variable $var_name is not set." >&2
+    set -u
     exit 1
   fi
+  set -u
 }
 
 function check_command() {
@@ -88,7 +92,6 @@ function wait_for_job() {
 }
 
 
-# verify NOMAD variables are set
 # verify NOMAD variables are set
 check_envset "NOMAD_CACERT"
 check_envset "NOMAD_ADDR"
