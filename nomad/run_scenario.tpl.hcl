@@ -98,6 +98,28 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
+      task "report_host_metrics" {
+        lifecycle {
+          hook = "prestart"
+          sidecar = true
+        }
+
+        env {
+          TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.host.conf"
+          WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+        }
+
+        driver = "raw_exec"
+
+        artifact {
+          source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/telegraf.host.conf"
+        }
+
+        config {
+          command = "telegraf"
+        }
+      }
+
       task "wait_for_holochain" {
         lifecycle {
           hook = "prestart"
@@ -162,6 +184,7 @@ job "{{ (ds "vars").scenario_name }}" {
           env {
             TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.runner.conf"
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+            RUN_ID               = "${var.run-id != null ? var.run-id : ""}"
           }
 
           template {
