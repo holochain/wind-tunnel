@@ -184,7 +184,7 @@ job "{{ (ds "vars").scenario_name }}" {
           env {
             TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.runner.conf"
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-            RUN_ID               = "${var.run-id}"
+            RUN_ID               = "${var.run-id != null ? var.run-id : ""}"
           }
 
           template {
