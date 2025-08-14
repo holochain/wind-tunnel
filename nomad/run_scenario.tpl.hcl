@@ -98,6 +98,22 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
+      task "report_host_metrics" {
+        lifecycle {
+          hook = "prestart"
+          sidecar = true
+        }
+
+        env {
+          WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+        }
+
+        config {
+          command = "telegraf"
+          args = ["--config", "${NOMAD_TASK_DIR}/telegraf/telegraf.host.conf"]
+        }
+      }
+
       task "wait_for_holochain" {
         lifecycle {
           hook = "prestart"
@@ -162,6 +178,7 @@ job "{{ (ds "vars").scenario_name }}" {
           env {
             TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.runner.conf"
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+            RUN_ID               = "${var.run-id}"
           }
 
           template {
