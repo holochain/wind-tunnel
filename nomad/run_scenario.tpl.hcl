@@ -98,6 +98,35 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
+      dynamic "task" {
+        // Only run host metrics collector if `var.reporter` is set to `influx-file`.
+        for_each = var.reporter == "influx-file" ? [var.reporter] : []
+        labels   = ["report_host_metrics"]
+
+        content {
+          lifecycle {
+            hook = "prestart"
+            sidecar = true
+          }
+
+          env {
+            TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.host.conf"
+            WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          }
+
+          driver = "raw_exec"
+
+          artifact {
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/telegraf.host.conf"
+          }
+
+          config {
+            command = "telegraf"
+            args    = []
+          }
+        }
+      }
+
       task "wait_for_holochain" {
         lifecycle {
           hook = "prestart"
@@ -123,10 +152,11 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         env {
-          RUST_LOG       = "info"
-          HOME           = "${NOMAD_TASK_DIR}"
-          WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS     = "${var.min-agents}"
+          RUST_LOG          = "info"
+          HOME              = "${NOMAD_TASK_DIR}"
+          WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          MIN_AGENTS        = "${var.min-agents}"
+          RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
         }
 
         config {
@@ -162,6 +192,8 @@ job "{{ (ds "vars").scenario_name }}" {
           env {
             TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/telegraf.runner.conf"
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+            RUN_ID               = "${var.run-id != null ? var.run-id : ""}"
+            RUN_SUMMARY_PATH     = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           }
 
           template {
@@ -175,12 +207,16 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/upload_metrics.sh"
+          }
+
+          artifact {
             source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/telegraf.runner.conf"
           }
 
           config {
-            command = "telegraf"
-            args    = ["--once"]
+            command = "bash"
+            args    = ["${NOMAD_TASK_DIR}/upload_metrics.sh"]
           }
         }
       }
