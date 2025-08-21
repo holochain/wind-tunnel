@@ -530,7 +530,7 @@ You can also override existing and omitted variables with the `-var` flag. For e
 (in seconds) or to set the reporter to print to `stdout`.
 
 ```bash
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http:://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
 ```
 
 > [!Note]
@@ -606,7 +606,7 @@ or by entering the Nix shell and running
 start_host_metrics_telegraf
 ```
 
-Once you've finished running a scenario, you can start the `telegraf` agent to collect both host and scenario metrics with
+Once you've finished running a scenario, you can start the `telegraf` agent to collect host, and scenario metrics with
 
 ```sh
 nix run .#local-telegraf
@@ -618,6 +618,26 @@ Running the `telegraf` agent will also clean up the previous metrics, so you are
 
 > [!Warning]
 > The metrics must be imported after each scenario run and cleanup, since they are associated only to the latest scenario run.
+
+### Import Holochain Metrics
+
+To import Holochain metrics into InfluxDB, Holochain must be run with metrics configured to be written to a file.
+Then `influx` can be used to transfer metrics from file to InfluxDB.
+
+To run Holochain with metrics, the `HOLOCHAIN_INFLUX_FILE` environment variable must be set to any valid absolute path. For example:
+```bash
+export HOLOCHAIN_INFLUX_FILE=$(pwd)/holochain.influx
+```
+Once you've finished running a scenario, you can run this command from inside the Nix shell to import the metrics:
+
+```bash
+import_hc_metrics_into_influx
+```
+
+At this point the metrics will be imported to InfluxDB and you will be able to view the Holochain metrics in the InfluxDB dashboards by RunId.
+
+> [!Warning]
+> The metrics must be imported after each scenario run and cleaned up, since they are associated only with the latest scenario run.
 
 ### Published crates
 

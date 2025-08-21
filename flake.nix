@@ -128,7 +128,7 @@
               source ./scripts/influx.sh
               
               use_influx
-              
+
               WT_METRICS_DIR="$(pwd)/telegraf/metrics"
               export WT_METRICS_DIR
 
@@ -138,15 +138,11 @@
               else
                 RUN_ID=""
               fi
-
-              # get tempfile for telegraf config
-              TELEGRAF_CONFIG=$(mktemp --suffix ".conf")
-              cp ./telegraf/telegraf.local.conf "$TELEGRAF_CONFIG"
-
-              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" "$TELEGRAF_CONFIG"
+              export RUN_ID
 
               echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config "$TELEGRAF_CONFIG" --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+
+              telegraf --config ./telegraf/telegraf.local.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
 
               rm ./telegraf/metrics/*.influx
             '';
@@ -176,15 +172,10 @@
               else
                 RUN_ID=""
               fi
-              
-              # get tempfile for telegraf config
-              TELEGRAF_CONFIG=$(mktemp --suffix ".conf")
-              cp ./telegraf/telegraf.runner.conf "$TELEGRAF_CONFIG"
-
-              sed --in-place "s/run_id = \"\"/run_id = \"$RUN_ID\"/" "$TELEGRAF_CONFIG"
+              export RUN_ID
 
               echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config "$TELEGRAF_CONFIG" --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+              telegraf --config ./telegraf/telegraf.runner.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
 
               rm ./telegraf/metrics/*.influx
             '';
