@@ -40,6 +40,10 @@ clear_influx() {
 
 # Import Holochain metrics from $HOLOCHAIN_INFLUX_FILE into InfluxDB with added RUN_ID tag
 import_hc_metrics_into_influx() {
+    if [[ -z "${INFLUX_BUCKET:-}" ]] || [[ -z "${INFLUX_TOKEN:-}" ]]; then
+      echo "Environment variables INFLUX_BUCKET and INFLUX_TOKEN have not been set. Run 'use_influx' to have them set." >&2
+      return
+    fi
     if [[ -z "$HOLOCHAIN_INFLUX_FILE" ]]; then
         echo "HOLOCHAIN_INFLUX_FILE variable is not set. Skipping import of Holochain metrics."
         return
@@ -68,7 +72,6 @@ import_hc_metrics_into_influx() {
     OUTPUT_FILE=$HOLOCHAIN_INFLUX_FILE.tmp.influx
     sed "s/\([^[:space:]]*\) \(.*\)/\1,run_id=$tmp_run_id \2/" "$HOLOCHAIN_INFLUX_FILE" > "$OUTPUT_FILE"
     # Import to influxDB
-    use_influx
     influx write \
     --bucket "$INFLUX_BUCKET" \
     --org holo \
