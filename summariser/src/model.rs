@@ -5,16 +5,19 @@ use wind_tunnel_summary_model::RunSummary;
 pub struct SummaryOutput {
     pub run_summary: RunSummary,
     pub data: serde_json::Value,
+    pub host_metrics: serde_json::Value,
 }
 
 impl SummaryOutput {
-    pub fn new<V>(run_summary: RunSummary, data: V) -> anyhow::Result<Self>
+    pub fn new<V, U>(run_summary: RunSummary, data: V, host_metrics: U) -> anyhow::Result<Self>
     where
         V: serde::Serialize,
+        U: serde::Serialize,
     {
         Ok(Self {
             run_summary,
             data: serde_json::to_value(data)?,
+            host_metrics: serde_json::to_value(host_metrics)?,
         })
     }
 }

@@ -80,7 +80,7 @@ pub(crate) fn parse_time_column(frame: DataFrame) -> anyhow::Result<DataFrame> {
                     None,
                     None,
                     StrptimeOptions {
-                        format: Some("%Y-%m-%dT%H:%M:%S.%9fZ".into()),
+                        format: Some("%Y-%m-%dT%H:%M:%SZ".into()),
                         strict: false, // Sometime date-times come back with a different precision from InfluxDB
                         ..Default::default()
                     },
@@ -90,7 +90,7 @@ pub(crate) fn parse_time_column(frame: DataFrame) -> anyhow::Result<DataFrame> {
                     None,
                     None,
                     StrptimeOptions {
-                        format: Some("%Y-%m-%d %H:%M:%S.%9f".into()),
+                        format: Some("%Y-%m-%d %H:%M:%S".into()),
                         strict: false, // Sometime date-times come back with a different precision from InfluxDB
                         ..Default::default()
                     },

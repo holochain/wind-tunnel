@@ -1,4 +1,6 @@
-use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
+use crate::analyze::{
+    partitioned_rate_stats, partitioned_timing_stats, standard_rate_for_aggregated_frames,
+};
 use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
@@ -28,6 +30,14 @@ pub(crate) async fn summarize_validation_receipts(
     .await
     .context("Load receipts complete data")?;
 
+    let host_metrics = standard_rate_for_aggregated_frames(
+        query::query_host_metrics(client.clone(), &summary)
+            .await
+            .context("Load host metrics")?,
+        "10s",
+    )
+    .context("Standard rate for Host metrics")?;
+
     SummaryOutput::new(
         summary.clone(),
         ValidationReceiptsSummary {
@@ -47,5 +57,6 @@ pub(crate) async fn summarize_validation_receipts(
             .context("Receipts complete rate")?,
             error_count: zome_call_error_count(client, &summary).await?,
         },
+        host_metrics,
     )
 }
