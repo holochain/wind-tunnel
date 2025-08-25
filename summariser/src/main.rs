@@ -55,10 +55,10 @@ async fn main() -> anyhow::Result<()> {
                 match holochain_summariser::test_data::insert_run_summary(&summary) {
                     Ok(()) => log::info!("Inserted test data for {}", summary.scenario_name),
                     Err(e) => {
-                        use futures::FutureExt;
+                        use futures::{future::ready, FutureExt};
 
-                        log::error!("Failed to insert test data for {:?}: {:?}", summary, e);
-                        return Some(async move { Err(e) }.boxed());
+                        log::error!("Failed to insert test data for {summary:?}: {e:?}",);
+                        return Some(ready(Err(e)).boxed());
                     }
                 }
 

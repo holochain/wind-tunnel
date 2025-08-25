@@ -1,5 +1,8 @@
-use crate::frame::LoadError;
+pub mod host_metrics;
+
+use crate::{frame::LoadError, query::host_metrics::Values as _};
 use anyhow::Context;
+use chrono::DateTime;
 use influxdb::ReadQuery;
 use polars::frame::DataFrame;
 use serde::{Deserialize, Serialize};
@@ -170,5 +173,95 @@ pub async fn zome_call_error_count(
             Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
             None => Err(e).context("Load zome call error data"),
         },
+    }
+}
+
+/// Get SELECT query for a [`host_metrics::HostMetricField`].
+///
+/// Given a [`host_metrics::HostMetricField`], it returns the select statement for the field and the relative timestamp
+pub fn host_metrics_query(
+    field: host_metrics::HostMetricField,
+    filter: &host_metrics::SelectFilter,
+) -> anyhow::Result<String> {
+    let values = field.values().join(",");
+
+    match filter {
+        host_metrics::SelectFilter::RunId(run_id) => Ok(format!(
+            r#"SELECT {values},time
+            FROM "windtunnel"."autogen"."{table}"
+            WHERE run_id = '{run_id}'
+    "#,
+            table = field.measurement()
+        )),
+        host_metrics::SelectFilter::TimeInterval {
+            started_at,
+            duration,
+            run_id,
+        } => {
+            let ended_at = started_at.saturating_add(duration.as_secs() as i64);
+
+            let start_datetime = DateTime::from_timestamp(*started_at, 0)
+                .context("Failed to convert started_at to DateTime")?
+                .to_rfc3339();
+            let end_datetime = DateTime::from_timestamp(ended_at, 0)
+                .context("Failed to convert ended_at to DateTime")?
+                .to_rfc3339();
+
+            Ok(format!(
+                r#"SELECT {values},time
+                FROM "windtunnel"."autogen"."{table}"
+                WHERE run_id = '{run_id}' AND time >= '{start_datetime}' AND time <= '{end_datetime}'
+                "#,
+                table = field.measurement()
+            ))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::time::Duration;
+
+    use crate::query::host_metrics::{HostMetricField, NetField, SelectFilter};
+
+    use super::*;
+
+    #[test]
+    fn test_should_get_query_with_run_id_filter() {
+        let field = HostMetricField::Net(NetField::BytesRecv);
+
+        let query = host_metrics_query(field, &SelectFilter::RunId("test_run_id".to_string()))
+            .expect("Failed to build query");
+        assert_eq!(
+            query,
+            r#"SELECT interface,bytes_recv,time
+            FROM "windtunnel"."autogen"."net"
+            WHERE run_id = 'test_run_id'
+    "#,
+        );
+    }
+
+    #[test]
+    fn test_should_get_query_with_time_filter() {
+        let field = HostMetricField::Net(NetField::BytesRecv);
+
+        let query = host_metrics_query(
+            field,
+            &SelectFilter::TimeInterval {
+                started_at: 1756301266, // 2025-08-27 01:27:46
+                duration: Duration::from_secs(300),
+                run_id: "test_run_id".to_string(),
+            },
+        )
+        .expect("Failed to build query");
+
+        assert_eq!(
+            query,
+            r#"SELECT interface,bytes_recv,time
+                FROM "windtunnel"."autogen"."net"
+                WHERE run_id = 'test_run_id' AND time >= '2025-08-27T13:27:46+00:00' AND time <= '2025-08-27T13:32:46+00:00'
+                "#,
+        );
     }
 }
