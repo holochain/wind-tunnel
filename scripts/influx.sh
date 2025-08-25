@@ -42,20 +42,20 @@ clear_influx() {
 import_hc_metrics_into_influx() {
     if [[ -z "${INFLUX_BUCKET:-}" ]] || [[ -z "${INFLUX_TOKEN:-}" ]]; then
       echo "Environment variables INFLUX_BUCKET and INFLUX_TOKEN have not been set. Run 'use_influx' to have them set." >&2
-      return
+      return 1
     fi
     if [[ -z "$HOLOCHAIN_INFLUX_FILE" ]]; then
         echo "HOLOCHAIN_INFLUX_FILE variable is not set. Skipping import of Holochain metrics."
-        return
+        return 1
     fi
     if [ ! -f "$HOLOCHAIN_INFLUX_FILE" ]; then
         echo "HOLOCHAIN_INFLUX_FILE is set, but file is missing: $HOLOCHAIN_INFLUX_FILE. Make sure Holochain is running with this env variable."
-        return
+        return 1
     fi
     # Determine RUN_ID
-    local tmp_run_id=$RUN_ID
+    local tmp_run_id="${RUN_ID:-}"
     if [ -z "$tmp_run_id" ]; then
-      summary_path="run_summary.jsonl"
+      local summary_path="run_summary.jsonl"
       if [ -n "$RUN_SUMMARY_PATH" ]; then
           summary_path="$RUN_SUMMARY_PATH"
       fi
