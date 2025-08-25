@@ -193,7 +193,10 @@ pub async fn query_host_metrics(
         log::debug!("Querying measurement for {measurement}: {query:?}");
 
         let res = client.json_query(query.clone()).await?;
-        let frame = crate::frame::load_from_response(res)?;
+        let Ok(frame) = crate::frame::load_from_response(res) else {
+            log::debug!("No data for measurement {measurement}; skipping");
+            continue;
+        };
 
         log::trace!("Loaded frame: {frame}");
 
