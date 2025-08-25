@@ -1,4 +1,4 @@
-use crate::analyze::{standard_rate, standard_timing_stats};
+use crate::analyze::{standard_rate, standard_rate_for_aggregated_frames, standard_timing_stats};
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
@@ -30,6 +30,14 @@ pub(crate) async fn summarize_zome_call_single_value(
         .filter(col("fn_name").eq(lit("get_value")))
         .collect()?;
 
+    let host_metrics = standard_rate_for_aggregated_frames(
+        query::query_host_metrics(client.clone(), &summary)
+            .await
+            .context("Load host metrics")?,
+        "10s",
+    )
+    .context("Standard rate for Host metrics")?;
+
     SummaryOutput::new(
         summary.clone(),
         ZomeCallSingleValueSummary {
@@ -40,5 +48,6 @@ pub(crate) async fn summarize_zome_call_single_value(
                 .await
                 .context("Load zome call error data")?,
         },
+        host_metrics,
     )
 }

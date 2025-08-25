@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::model::{
     PartitionKey, PartitionRateStats, PartitionTimingStats, PartitionedRateStats,
     PartitionedTimingStats, StandardRateStats, StandardTimingsStats, TimingTrend,
@@ -19,8 +21,8 @@ pub(crate) fn standard_timing_stats(
     }
     let value_series = value_col.as_materialized_series();
 
-    let mean = value_series.mean().context("Mean")?;
-    let std = value_series.std(0).context("Std")?;
+    let mean = value_series.mean().unwrap_or_default();
+    let std = value_series.std(0).unwrap_or_default();
 
     let out = frame
         .clone()
@@ -175,16 +177,62 @@ pub(crate) fn partitioned_timing_stats(
     })
 }
 
+/// Get the standard rate for all the columns in the provided frames.
+///
+/// Frames are passed as a [`HashMap`] where the key is the aggregator name and the value is the [`DataFrame`].
+/// Columns are then collected with the name prefixed by the aggregator name (i.e. `aggregator_name.column_name`).
+///
+/// The `time` field is always skipped, since it's reserved for the time value by influxdb.
+pub(crate) fn standard_rate_for_aggregated_frames(
+    frames: HashMap<String, DataFrame>,
+    window_duration: &str,
+) -> anyhow::Result<HashMap<String, StandardRateStats>> {
+    // iter columns
+    frames
+        .iter()
+        .flat_map(|(aggregator, frame)| {
+            frame
+                .get_columns()
+                .iter()
+                .map(|col| (aggregator.clone(), frame.clone(), col))
+        })
+        .filter_map(|(aggregator, frame, col)| {
+            let col_name = col.name().to_string();
+            log::trace!("Processing column {col_name}");
+
+            if col_name == "time" {
+                return None;
+            }
+
+            let rate = standard_rate(frame, &col_name, window_duration)
+                .with_context(|| format!("Standard rate for column {col_name}"))
+                .map_err(|e| anyhow::anyhow!("Standard rate for column {col_name}: {e}"));
+
+            let aggregated_col_name = format!("{aggregator}.{col_name}");
+
+            match rate {
+                Ok(rate) => Some(Ok((aggregated_col_name, rate))),
+                Err(e) => Some(Err(e)),
+            }
+        })
+        .fold_ok(HashMap::default(), |mut acc, (col_name, rate)| {
+            acc.insert(col_name, rate);
+
+            acc
+        })
+        .context("Standard rate for all columns")
+}
+
 pub(crate) fn standard_rate(
     frame: DataFrame,
     column: &str,
     window_duration: &str,
 ) -> anyhow::Result<StandardRateStats> {
     let rate = frame
-        .clone()
         .lazy()
         .select([col("time"), col(column)])
         .filter(col("time").is_not_null())
+        .filter(col(column).is_not_null())
         .sort(
             ["time"],
             SortMultipleOptions::default().with_maintain_order(true),

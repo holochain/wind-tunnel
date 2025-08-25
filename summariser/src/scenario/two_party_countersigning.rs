@@ -1,4 +1,6 @@
-use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
+use crate::analyze::{
+    partitioned_rate_stats, partitioned_timing_stats, standard_rate_for_aggregated_frames,
+};
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
     SummaryOutput,
@@ -91,6 +93,14 @@ pub(crate) async fn summarize_countersigning_two_party(
 
     let initiated_failures = initiated - initiated_success.clone();
 
+    let host_metrics = standard_rate_for_aggregated_frames(
+        query::query_host_metrics(client.clone(), &summary)
+            .await
+            .context("Load host metrics")?,
+        "10s",
+    )
+    .context("Standard rate for Host metrics")?;
+
     SummaryOutput::new(
         summary,
         TwoPartyCountersigningSummary {
@@ -108,6 +118,7 @@ pub(crate) async fn summarize_countersigning_two_party(
             initiated_success_rate: initiated_success,
             initiated_failure_rate: initiated_failures,
         },
+        host_metrics,
     )
 }
 

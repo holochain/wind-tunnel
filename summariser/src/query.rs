@@ -1,3 +1,7 @@
+mod host_metrics;
+
+use std::collections::HashMap;
+
 use crate::frame::LoadError;
 use anyhow::Context;
 use influxdb::ReadQuery;
@@ -171,4 +175,30 @@ pub async fn zome_call_error_count(
             None => Err(e).context("Load zome call error data"),
         },
     }
+}
+
+/// Query Host metrics from the influxdb.
+///
+/// It returns a [`DataFrame`] for each measurement class.
+pub async fn query_host_metrics(
+    client: influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<HashMap<String, DataFrame>> {
+    let mut results = HashMap::new();
+    for measurement in host_metrics::HostMetricMeasurement::all() {
+        let query = ReadQuery::new(host_metrics::host_metrics_select(
+            measurement,
+            &summary.run_id,
+        ));
+        log::debug!("Querying measurement for {measurement}: {query:?}");
+
+        let res = client.json_query(query.clone()).await?;
+        let frame = crate::frame::load_from_response(res)?;
+
+        log::trace!("Loaded frame: {frame}");
+
+        results.insert(measurement.to_string(), frame);
+    }
+
+    Ok(results)
 }

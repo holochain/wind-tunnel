@@ -1,4 +1,4 @@
-use crate::analyze::standard_timing_stats;
+use crate::analyze::{standard_rate_for_aggregated_frames, standard_timing_stats};
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
@@ -27,6 +27,14 @@ pub(crate) async fn summarize_app_install(
         .context("First")?
         .try_extract::<f64>()?;
 
+    let host_metrics = standard_rate_for_aggregated_frames(
+        query::query_host_metrics(client.clone(), &summary)
+            .await
+            .context("Load host metrics")?,
+        "10s",
+    )
+    .context("Standard rate for Host metrics")?;
+
     SummaryOutput::new(
         summary,
         AppInstallSummary {
@@ -34,5 +42,6 @@ pub(crate) async fn summarize_app_install(
             install_app_timing: standard_timing_stats(frame, "value", "10s", Some(1))
                 .context("Standard timing stats")?,
         },
+        host_metrics,
     )
 }

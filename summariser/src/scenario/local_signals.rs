@@ -1,4 +1,4 @@
-use crate::analyze::{round_to_n_dp, standard_timing_stats};
+use crate::analyze::{round_to_n_dp, standard_rate_for_aggregated_frames, standard_timing_stats};
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
@@ -38,6 +38,14 @@ pub(crate) async fn summarize_local_signals(
     .await
     .context("Load success ratio")?;
 
+    let host_metrics = standard_rate_for_aggregated_frames(
+        query::query_host_metrics(client.clone(), &summary)
+            .await
+            .context("Load host metrics")?,
+        "10s",
+    )
+    .context("Standard rate for Host metrics")?;
+
     SummaryOutput::new(
         summary,
         LocalSignalsSummary {
@@ -47,6 +55,7 @@ pub(crate) async fn summarize_local_signals(
                 .context("Recv timing stats")?,
             success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
         },
+        host_metrics,
     )
 }
 
@@ -54,7 +63,7 @@ pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<Rati
     let value_col = frame.column(column)?.clone();
     let values_series = value_col.as_materialized_series();
 
-    let mean = values_series.mean().context("Mean")?;
+    let mean = values_series.mean().unwrap_or_default();
     let std = values_series.std(0).context("Std")?;
     let min = values_series
         .min::<f64>()
