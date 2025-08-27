@@ -8,15 +8,15 @@ A command-line tool that reads InfluxDB line protocol files, adds custom tags, a
 1. Clone or download the source code
 2. Initialize the Go module and download dependencies:
 
-```bash
-go mod tidy
-```
+    ```bash
+    go mod tidy
+    ```
 
 3. Build the executable:
 
-```bash
-go build -C lp-tool -o lp-tool
-```
+    ```bash
+    go build -C lp-tool -o lp-tool
+    ```
 
 ## Usage
 
@@ -26,21 +26,21 @@ go build -C lp-tool -o lp-tool
 
 ### Options
 
-- `-input`: Input line protocol file path (default: "holochain.influx")
-- `-output`: Output line protocol file path (default: "holochain.tmp.influx") 
-- `-tag`: Custom tag to add, in format 'key=value' (can be used multiple times)
+- `-input`: Input line protocol file path (required)
+- `-output`: Output line protocol file path (default "\<input file\>.tmp.influx") 
+- `-tag`: Add a tag in format 'key=value' (can be used multiple times)
 
 
 ### Examples
 
-Basic usage with default input and output files:
+Basic usage with a default output file:
 ```bash
-./lp-tool -tag run_id=123456789
+./lp-tool -input metrics.lp -tag run_id=123456789
 ```
 
 Advanced usage with multiple custom tags:
 ```bash
-./lp-tool -input metrics.lp -output tagged_metrics.lp -tag env=prod -tag run_id=123456789
+./lp-tool -input metrics.lp -output tagged_metrics.lp -tag env=prod -tag region=europe -tag run_id=123456789
 ```
 
 ## Dependencies

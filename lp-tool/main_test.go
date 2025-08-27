@@ -112,8 +112,28 @@ func TestParseFlags(t *testing.T) {
 				OutputFile: "holochain.tmp.influx",
 				Tags:       TagMap{"env": "prod"},
 			},
+			wantErr: true,
+		},
+		{
+			name: "empty output file should use input as base and remove previous ext",
+			args: []string{"cmd", "-input", "holochain.influx", "-tag", "env=prod"},
+			wantConfig: Config{
+				InputFile:  "holochain.influx",
+				OutputFile: "holochain.tmp.influx",
+				Tags:       TagMap{"env": "prod"},
+			},
 			wantErr: false,
 		},
+        {
+            name: "empty output file should use input as base",
+            args: []string{"cmd", "-input", "holochain", "-tag", "env=prod"},
+            wantConfig: Config{
+                InputFile:  "holochain",
+                OutputFile: "holochain.tmp.influx",
+                Tags:       TagMap{"env": "prod"},
+            },
+            wantErr: false,
+        },
 		{
 			name: "custom input and output with multiple tags",
 			args: []string{"cmd", "-input", "custom.influx", "-output", "result.influx", "-tag", "env=dev", "-tag", "region=eu"},
@@ -137,20 +157,20 @@ func TestParseFlags(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name:       "same input and output files",
-			args:       []string{"cmd", "-input", "same.influx", "-output", "same.influx", "-tag", "env=test"},
-			wantConfig: Config{InputFile: "same.influx", OutputFile: "same.influx", Tags: TagMap{"env": "test"}},
-			wantErr:    true,
-		},
-		{
-			name: "empty output file should use default",
+			name: "empty output file",
 			args: []string{"cmd", "-input", "data.influx", "-output", "", "-tag", "env=test"},
 			wantConfig: Config{
 				InputFile:  "data.influx",
 				OutputFile: "data.influx.tmp.influx",
 				Tags:       TagMap{"env": "test"},
 			},
-			wantErr: false,
+			wantErr: true,
+		},
+		{
+			name:       "same input and output files",
+			args:       []string{"cmd", "-input", "same.influx", "-output", "same.influx", "-tag", "env=test"},
+			wantConfig: Config{InputFile: "same.influx", OutputFile: "same.influx", Tags: TagMap{"env": "test"}},
+			wantErr:    true,
 		},
 	}
 

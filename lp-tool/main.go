@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+    "path/filepath"
 	"os"
 	"strings"
 
@@ -76,8 +77,10 @@ func parseFlags() (Config, error) {
 	var config Config
 	config.Tags = make(TagMap)
 
-	flag.StringVar(&config.InputFile, "input", "holochain.influx", "Input line protocol file path")
-	flag.StringVar(&config.OutputFile, "output", "holochain.tmp.influx", "Output line protocol file path")
+    const unsetOption = "<input file>.tmp.influx"
+
+	flag.StringVar(&config.InputFile, "input", "", "Input line protocol file path (required)")
+	flag.StringVar(&config.OutputFile, "output", unsetOption, "Output line protocol file path")
 	flag.Var(&config.Tags, "tag", "Add a tag in format 'key=value' (can be used multiple times)")
 
 	flag.Usage = func() {
@@ -91,15 +94,28 @@ func parseFlags() (Config, error) {
 
 	flag.Parse()
 
-	if config.InputFile == "" || len(config.Tags) == 0 {
-		return config, fmt.Errorf("input file or tags not specified")
+    // Check for invalid options.
+	if config.InputFile == "" {
+		return config, fmt.Errorf("no input file specified")
+	}
+	if len(config.Tags) == 0 {
+		return config, fmt.Errorf("tags not specified")
 	}
     if config.OutputFile == "" {
-        config.OutputFile = config.InputFile + ".tmp.influx"
+        return config, fmt.Errorf("empty output filename specified")
     }
     if config.OutputFile == config.InputFile {
 		return config, fmt.Errorf("input and output files must be different.")
 	}
+
+    // Generate output file name if it has not been provided.
+    if config.OutputFile == unsetOption {
+        // Trim the extension from the file name
+    	ext := filepath.Ext(config.InputFile)
+    	nameWithoutExt := strings.TrimSuffix(config.InputFile, ext)
+        config.OutputFile = nameWithoutExt + ".tmp.influx"
+    }
+
 	return config, nil
 }
 
@@ -110,6 +126,14 @@ func processLineProtocol(config Config) error {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer inputFile.Close()
+
+    // Check if output file already exists.
+    if _, err := os.Stat(config.OutputFile) ; !os.IsNotExist(err) {
+        if err != nil {
+            return fmt.Errorf("An unexpected error occurred when attempting to read output file: %w\n", err)
+        }
+        fmt.Fprintf(os.Stderr, "Warning: Output file %s already exists and will be overwritten\n", config.OutputFile)
+    }
 
 	// Create output file
 	outputFile, err := os.Create(config.OutputFile)
