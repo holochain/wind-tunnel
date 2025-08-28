@@ -22,10 +22,11 @@ check_rust_static() {
 
 check_go() {
   set -euo pipefail
+  cd lp-tool
   go mod tidy
-  go build -C lp-tool -o lp-tool
-  go test -v ./...
-  ./lp-tool/lp-tool -h
+  go build
+  go test -v
+  ./lp-tool -h
 }
 
 check_all() {

@@ -6,6 +6,10 @@ A command-line tool that reads InfluxDB line protocol files, adds custom tags, a
 ## Installation
 
 1. Clone or download the source code
+2. Go to the `lp-tool` directory:
+    ```bash
+    cd lp-tool
+    ```
 2. Initialize the Go module and download dependencies:
 
     ```bash
@@ -15,11 +19,15 @@ A command-line tool that reads InfluxDB line protocol files, adds custom tags, a
 3. Build the executable:
 
     ```bash
-    go build -C lp-tool -o lp-tool
+    go build
     ```
 
 ## Usage
-
+From the `lp-tool` directory, you can run it directly:
+```bash
+go run . [options]
+```
+Or if the tool was built successfully, you can run it with:
 ```bash
 ./lp-tool [options]
 ```
@@ -35,12 +43,12 @@ A command-line tool that reads InfluxDB line protocol files, adds custom tags, a
 
 Basic usage with a default output file:
 ```bash
-./lp-tool -input metrics.lp -tag run_id=123456789
+./lp-tool -input metrics.influx -tag run_id=123456789
 ```
 
 Advanced usage with multiple custom tags:
 ```bash
-./lp-tool -input metrics.lp -output tagged_metrics.lp -tag env=prod -tag region=europe -tag run_id=123456789
+./lp-tool -input metrics.influx -output tagged_metrics.influx -tag env=prod -tag region=europe -tag run_id=123456789
 ```
 
 ## Dependencies
