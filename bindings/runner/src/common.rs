@@ -1,4 +1,5 @@
 use crate::context::HolochainAgentContext;
+use crate::holochain_sandbox::HolochainSandbox;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
 use holochain_client_instrumented::prelude::{
@@ -83,7 +84,7 @@ pub fn configure_app_ws_url(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed to set up app port")?;
+        .context("Failed to set up app port, is a conductor running? Try calling 'clean_create_run_sandbox' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();
@@ -592,4 +593,11 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
         CellInfo::Provisioned(c) => Ok(c.cell_id.clone()),
         _ => anyhow::bail!("Cell not provisioned"),
     }
+}
+
+pub fn clean_create_run_sandbox(
+    ctx: &mut RunnerContext<HolochainRunnerContext>,
+) -> WindTunnelResult<()> {
+    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::clean_create_run());
+    Ok(())
 }
