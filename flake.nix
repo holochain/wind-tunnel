@@ -71,6 +71,10 @@
           in
           {
             default = pkgs.mkShell {
+              buildInputs = [
+                pkgs.go
+              ];
+
               packages = commonPackages ++ [
                 pkgs.influxdb2-cli
                 pkgs.influxdb2-server
@@ -97,7 +101,9 @@
             };
 
             ci = pkgs.mkShell {
-              packages = commonPackages;
+              packages = commonPackages ++ [
+                pkgs.go
+              ];
             };
 
             kitsune = pkgs.mkShell {
