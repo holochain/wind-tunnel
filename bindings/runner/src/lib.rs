@@ -1,6 +1,7 @@
 mod common;
 
 mod context;
+mod holochain_sandbox;
 mod macros;
 mod runner_context;
 
@@ -8,9 +9,12 @@ pub mod prelude {
     /// Common operations for Holochain scenarios.
     ///
     /// This is a good place to start if you are getting started writing scenarios.
-    pub use crate::common::*;
+    /// Explicit export [`run`] so that it takes precedence over the one provided by
+    /// [`wind_tunnel_runner::prelude::run`].
+    pub use crate::common::{run, *};
 
     pub use crate::context::HolochainAgentContext;
+    pub use crate::holochain_sandbox::HolochainSandbox;
     pub use crate::runner_context::HolochainRunnerContext;
 
     /// Re-export of the `wind_tunnel_runner` prelude.

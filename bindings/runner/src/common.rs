@@ -1,4 +1,5 @@
 use crate::context::HolochainAgentContext;
+use crate::holochain_sandbox::HolochainSandbox;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
 use holochain_client_instrumented::prelude::{
@@ -19,7 +20,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
+    AgentContext, HookResult, Reporter, RunnerContext, ScenarioDefinitionBuilder,
+    UserValuesConstraint, WindTunnelResult,
 };
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
@@ -592,4 +594,13 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
         CellInfo::Provisioned(c) => Ok(c.cell_id.clone()),
         _ => anyhow::bail!("Cell not provisioned"),
     }
+}
+
+pub fn run<SV: UserValuesConstraint>(
+    definition: ScenarioDefinitionBuilder<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> anyhow::Result<usize> {
+    // Create the Holochain sandbox and run a conductor.
+    let _holochain_runner = HolochainSandbox::clean_create_run();
+
+    wind_tunnel_runner::prelude::run(definition)
 }
