@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
@@ -91,6 +92,10 @@ pub(crate) async fn summarize_countersigning_two_party(
 
     let initiated_failures = initiated - initiated_success.clone();
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary,
         TwoPartyCountersigningSummary {
@@ -108,6 +113,7 @@ pub(crate) async fn summarize_countersigning_two_party(
             initiated_success_rate: initiated_success,
             initiated_failure_rate: initiated_failures,
         },
+        host_metrics,
     )
 }
 

@@ -57,8 +57,9 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
 pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
     use polars::io::SerReader;
 
-    let mut in_file = open_input_path("2_query_results", file_name_from_query(query)?)
-        .with_context(|| format!("For query: {:?}", query))?;
+    let filename = file_name_from_query(query)?;
+    let mut in_file = open_input_path("2_query_results", &filename)
+        .with_context(|| format!("For query: {query:?}, filename: {filename}"))?;
 
     in_file.set_modified(std::time::SystemTime::now())?;
 
@@ -124,11 +125,14 @@ fn open_output_path(
 }
 
 #[cfg(feature = "query_test_data")]
-fn open_input_path(stage: &str, file_name: String) -> anyhow::Result<std::fs::File> {
+fn open_input_path<S>(stage: &str, file_name: S) -> anyhow::Result<std::fs::File>
+where
+    S: AsRef<str>,
+{
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
         .join(stage)
-        .join(file_name);
+        .join(file_name.as_ref());
 
     match std::fs::OpenOptions::new().read(true).open(&path) {
         Ok(f) => Ok(f),

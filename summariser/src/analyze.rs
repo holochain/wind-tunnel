@@ -1,6 +1,7 @@
 use crate::model::{
-    PartitionKey, PartitionRateStats, PartitionTimingStats, PartitionedRateStats,
-    PartitionedTimingStats, StandardRateStats, StandardTimingsStats, TimingTrend,
+    CounterStats, GaugeStats, PartitionKey, PartitionRateStats, PartitionTimingStats,
+    PartitionedRateStats, PartitionedTimingStats, StandardRateStats, StandardTimingsStats,
+    TimingTrend,
 };
 use anyhow::Context;
 use itertools::Itertools;
@@ -181,7 +182,6 @@ pub(crate) fn standard_rate(
     window_duration: &str,
 ) -> anyhow::Result<StandardRateStats> {
     let rate = frame
-        .clone()
         .lazy()
         .select([col("time"), col(column)])
         .filter(col("time").is_not_null())
@@ -234,6 +234,94 @@ pub(crate) fn standard_rate(
         mean: round_to_n_dp(mean, 2),
         trend,
         window_duration: window_duration.to_string(),
+    })
+}
+
+/// Get the [`GaugeStats`] for a frame and the given column calculating:
+///
+/// - Count
+/// - Arithmetic mean
+/// - Min
+/// - Max
+/// - Std deviation
+pub(crate) fn gauge_stats(frame: DataFrame, column: &str) -> anyhow::Result<GaugeStats> {
+    let select = frame
+        .lazy()
+        .select([col("time"), col(column)])
+        .filter(col("time").is_not_null())
+        .filter(col(column).is_not_null())
+        .collect()?;
+
+    let series = select.column(column)?.as_materialized_series();
+
+    let count = series.len();
+    let mean = series.mean().context("Calculate average")?;
+    let min = series.min().context("Get min")?.unwrap_or(0.0);
+    let max = series.max().context("Get max")?.unwrap_or(0.0);
+    let std = series.std(0).context("Std")?;
+
+    Ok(GaugeStats {
+        count,
+        max,
+        mean: round_to_n_dp(mean, 2),
+        min,
+        std: round_to_n_dp(std, 2),
+    })
+}
+
+/// Get the [`CounterStats`] for a frame and the given column calculating:
+///
+/// - start value
+/// - end value
+/// - delta (end - start)
+/// - rate
+pub(crate) fn counter_stats(frame: DataFrame, column: &str) -> anyhow::Result<CounterStats> {
+    let select = frame
+        .lazy()
+        .select([col("time"), col(column)])
+        .filter(col("time").is_not_null())
+        .filter(col(column).is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    let times = select.column("time")?.as_materialized_series();
+    let series = select
+        .column(column)?
+        .as_materialized_series()
+        .i64()
+        .context("Get series as i64")?;
+
+    // get the window duration
+    let times = times.datetime().context("Get times")?;
+    let window_duration = times
+        .max()
+        .context("Get max time")?
+        .checked_sub(times.min().context("Get min time")?)
+        .context("Get window duration")?;
+    let window_duration = std::time::Duration::from_nanos(window_duration as u64);
+    log::debug!("Window duration: {window_duration:?}",);
+
+    // get first element
+    let min = series.first().context("Get first")? as u64;
+    let max = series.last().context("Get last")? as u64;
+    let delta = max
+        .checked_sub(min)
+        .ok_or(anyhow::anyhow!("Counter underflow: min {min} > max {max}",))?;
+    let rate = if delta == 0 || select.height() < 2 {
+        0.0
+    } else {
+        (delta as f64) / window_duration.as_secs_f64()
+    };
+
+    Ok(CounterStats {
+        start: min,
+        end: max,
+        delta,
+        rate_per_second: round_to_n_dp(rate, 2),
+        measurement_duration: window_duration,
     })
 }
 

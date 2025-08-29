@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{round_to_n_dp, standard_timing_stats};
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
@@ -38,6 +39,10 @@ pub(crate) async fn summarize_local_signals(
     .await
     .context("Load success ratio")?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary,
         LocalSignalsSummary {
@@ -47,6 +52,7 @@ pub(crate) async fn summarize_local_signals(
                 .context("Recv timing stats")?,
             success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
         },
+        host_metrics,
     )
 }
 

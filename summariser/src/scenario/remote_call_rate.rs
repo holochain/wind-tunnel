@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::model::{PartitionedTimingStats, SummaryOutput};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
@@ -36,6 +37,10 @@ pub(crate) async fn summarize_remote_call_rate(
     .await
     .context("Load round trip data")?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary.clone(),
         RemoteCallRateSummary {
@@ -48,7 +53,8 @@ pub(crate) async fn summarize_remote_call_rate(
                 &["agent"],
             )
             .context("Timing stats for round trip")?,
-            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            error_count: query::zome_call_error_count(client, &summary).await?,
         },
+        host_metrics,
     )
 }

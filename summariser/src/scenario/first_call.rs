@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::standard_timing_stats;
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
@@ -20,11 +21,16 @@ pub(crate) async fn summarize_first_call(
         .await
         .context("Load instrument data")?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary,
         FirstCallSummary {
             zome_call_timing: standard_timing_stats(frame, "value", "10s", None)
                 .context("Standard timing stats")?,
         },
+        host_metrics,
     )
 }

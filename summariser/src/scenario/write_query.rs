@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
@@ -30,15 +31,20 @@ pub(crate) async fn summarize_write_query(
         .filter(col("fn_name").eq(lit("create_sample_entry")))
         .collect()?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary.clone(),
         WriteQuerySummary {
             write_timing: standard_timing_stats(zome_calls.clone(), "value", "10s", None)
                 .context("Write timing stats")?,
             write_rate: standard_rate(zome_calls, "value", "10s").context("Write rate")?,
-            errors: zome_call_error_count(client.clone(), &summary)
+            errors: zome_call_error_count(client, &summary)
                 .await
                 .context("Load zome call error data")?,
         },
+        host_metrics,
     )
 }

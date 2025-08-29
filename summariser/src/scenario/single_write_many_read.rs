@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
@@ -41,12 +42,17 @@ pub(crate) async fn summarize_single_write_many_read(
             },
         };
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary,
         SingleWriteManyReadSummary {
             read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
-            rate_10s: standard_rate(zome_calls.clone(), "value", "10s")?,
+            rate_10s: standard_rate(zome_calls, "value", "10s")?,
             error_count,
         },
+        host_metrics,
     )
 }
