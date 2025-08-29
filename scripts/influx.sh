@@ -37,3 +37,47 @@ clear_influx() {
      http "http://localhost:8087/debug/flush"
      rm "$INFLUX_CONFIGS_PATH"
 }
+
+# Import Holochain metrics from $HOLOCHAIN_INFLUX_FILE into InfluxDB with added RUN_ID tag
+import_hc_metrics_into_influx() {
+    set -e
+
+    if [[ -z "${INFLUX_BUCKET:-}" ]] || [[ -z "${INFLUX_TOKEN:-}" ]] || [[ -z "${INFLUX_HOST:-}" ]]; then
+      echo "Environment variables INFLUX_BUCKET, INFLUX_TOKEN and INFLUX_HOST have not been set. Run 'use_influx' to have them set." >&2
+      return 1
+    fi
+    if [[ -z "$HOLOCHAIN_INFLUX_FILE" ]]; then
+        echo "HOLOCHAIN_INFLUX_FILE variable is not set. Skipping import of Holochain metrics."
+        return 1
+    fi
+    if [ ! -f "$HOLOCHAIN_INFLUX_FILE" ]; then
+        echo "HOLOCHAIN_INFLUX_FILE is set, but file is missing: $HOLOCHAIN_INFLUX_FILE. Make sure Holochain is running with this env variable."
+        return 1
+    fi
+    # Determine RUN_ID
+    local tmp_run_id="${RUN_ID:-}"
+    if [ -z "$tmp_run_id" ]; then
+      local summary_path="run_summary.jsonl"
+      if [ -n "$RUN_SUMMARY_PATH" ]; then
+          summary_path="$RUN_SUMMARY_PATH"
+      fi
+      if [ -f "$summary_path" ]; then
+          echo "Reading RUN_ID from file: $summary_path"
+          tmp_run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
+      else
+          echo "Aborting. RUN_ID not set and run summary file not found: $summary_path" >&2
+          return 1
+      fi
+    fi
+    echo "Importing Holochain metrics from '$HOLOCHAIN_INFLUX_FILE' and adding tag run_id=$tmp_run_id"
+    # Create new influx file with added run_id tag for each metric
+    local OUTPUT_FILE=$HOLOCHAIN_INFLUX_FILE-$tmp_run_id.influx
+    lp-tool -input "$HOLOCHAIN_INFLUX_FILE" -output "$OUTPUT_FILE" -tag run_id="$tmp_run_id"
+    # Import to influxDB
+    influx write \
+    --bucket "$INFLUX_BUCKET" \
+    --org holo \
+    --file "$OUTPUT_FILE"
+    # Clean up temp file
+    rm -f "$OUTPUT_FILE"
+}

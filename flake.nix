@@ -36,6 +36,13 @@
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        lp-tool = pkgs.buildGoModule {
+          pname = "lp-tool";
+          version = "0.1.0";
+          src = ./lp-tool;
+          vendorHash = "sha256-7IGJGP2K0H0eKYU+gveykhGYt9ZufJNBUEv3jM66Wt0=";
+        };
       in
       {
         imports = [
@@ -73,6 +80,7 @@
             default = pkgs.mkShell {
               buildInputs = [
                 pkgs.go
+                lp-tool
               ];
 
               packages = commonPackages ++ [
@@ -119,6 +127,7 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
+          inherit lp-tool;
           local-telegraf = pkgs.writeShellApplication {
             name = "local-telegraf";
             runtimeInputs = [
