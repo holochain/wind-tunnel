@@ -77,20 +77,20 @@ pub(crate) fn parse_time_column(frame: DataFrame) -> anyhow::Result<DataFrame> {
             col("time")
                 .str()
                 .to_datetime(
-                    None,
+                    Some(TimeUnit::Nanoseconds),
                     None,
                     StrptimeOptions {
-                        format: Some("%Y-%m-%dT%H:%M:%S.%9fZ".into()),
+                        format: None,
                         strict: false, // Sometime date-times come back with a different precision from InfluxDB
                         ..Default::default()
                     },
                     lit("raise"),
                 )
                 .fill_null(col("time").str().to_datetime(
-                    None,
+                    Some(TimeUnit::Nanoseconds),
                     None,
                     StrptimeOptions {
-                        format: Some("%Y-%m-%d %H:%M:%S.%9f".into()),
+                        format: None,
                         strict: false, // Sometime date-times come back with a different precision from InfluxDB
                         ..Default::default()
                     },
