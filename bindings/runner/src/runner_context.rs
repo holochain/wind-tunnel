@@ -12,7 +12,7 @@ impl HolochainRunnerContext {
     /// Get the `app_ws_url` that was configured during setup.
     pub fn app_ws_url(&self) -> String {
         self.app_ws_url.clone().expect(
-            "app_port is not set, did you forget to call `configure_app_port` in your setup?",
+            "app_ws_url is not set, did you forget to call `configure_app_port` in your setup?",
         )
     }
 }
