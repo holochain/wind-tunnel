@@ -1,6 +1,8 @@
-use crate::aggregator::HostMetricsAggregator;
+use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
-use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
+use crate::model::{
+    HolochainMetricsConfig, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
+};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
@@ -33,6 +35,9 @@ pub(crate) async fn summarize_validation_receipts(
         .try_aggregate()
         .await;
 
+    let holochain_metrics =
+        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
+
     SummaryOutput::new(
         summary.clone(),
         ValidationReceiptsSummary {
@@ -53,5 +58,6 @@ pub(crate) async fn summarize_validation_receipts(
             error_count: zome_call_error_count(client, &summary).await?,
         },
         host_metrics,
+        holochain_metrics,
     )
 }
