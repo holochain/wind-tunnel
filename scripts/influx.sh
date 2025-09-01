@@ -71,7 +71,7 @@ import_hc_metrics_into_influx() {
     fi
     echo "Importing Holochain metrics from '$HOLOCHAIN_INFLUX_FILE' and adding tag run_id=$tmp_run_id"
     # Create new influx file with added run_id tag for each metric
-    local OUTPUT_FILE=$HOLOCHAIN_INFLUX_FILE-$tmp_run_id.influx
+    local OUTPUT_FILE=$(mktemp)
     lp-tool -input "$HOLOCHAIN_INFLUX_FILE" -output "$OUTPUT_FILE" -tag run_id="$tmp_run_id"
     # Import to influxDB
     influx write \
