@@ -1,8 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::time::Duration;
 
-use anyhow::Context;
-use influxdb::ReadQuery;
 use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::prelude::{col, lit, IntoLazy};
 use wind_tunnel_summary_model::RunSummary;
@@ -10,10 +7,9 @@ use wind_tunnel_summary_model::RunSummary;
 use crate::analyze::{counter_stats, gauge_stats};
 use crate::model::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
 use crate::query::host_metrics::{
-    self as host_metrics_query, Column as _, CpuField, HostMetricField, NetField, SelectFilter,
-    TAG_INTERFACE,
+    self as host_metrics_query, Column as _, CpuField, HostMetricField, NetField, TAG_INTERFACE,
 };
-use crate::query::host_metrics_query;
+use crate::query::query_host_metrics;
 
 /// The host metrics aggregator takes care of collecting the [`HostMetrics`] and aggregate them accordingly.
 ///
@@ -21,28 +17,13 @@ use crate::query::host_metrics_query;
 /// and providing a unified interface for accessing it.
 pub struct HostMetricsAggregator<'a> {
     client: &'a influxdb::Client,
-    select_filter: SelectFilter,
     summary: &'a RunSummary,
 }
 
 impl<'a> HostMetricsAggregator<'a> {
     /// Create a new host metrics aggregator.
     pub fn new(client: &'a influxdb::Client, summary: &'a RunSummary) -> Self {
-        let filter = if let Some(run_duration) = summary.run_duration {
-            SelectFilter::TimeInterval {
-                started_at: summary.started_at,
-                duration: Duration::from_secs(run_duration),
-                run_id: summary.run_id.clone(),
-            }
-        } else {
-            SelectFilter::RunId(summary.run_id.clone())
-        };
-
-        Self {
-            client,
-            select_filter: filter,
-            summary,
-        }
+        Self { client, summary }
     }
 }
 
@@ -220,7 +201,7 @@ impl HostMetricsAggregator<'_> {
         F: Fn(DataFrame, &str) -> anyhow::Result<T>,
         T: Default,
     {
-        let data = self.query(field).await?;
+        let data = query_host_metrics(self.client, self.summary, field).await?;
         Ok(match collect_stats(data, field.column()) {
             Ok(stats) => stats,
             Err(e) => {
@@ -245,7 +226,7 @@ impl HostMetricsAggregator<'_> {
         F: Fn(DataFrame, &str) -> anyhow::Result<T>,
         T: Default,
     {
-        let data = self.query(field).await?;
+        let data = query_host_metrics(self.client, self.summary, field).await?;
 
         Ok(self
             .aggregate_data_frame_by_tag(data, tag)
@@ -296,30 +277,5 @@ impl HostMetricsAggregator<'_> {
         }
 
         Ok(aggregated)
-    }
-
-    /// Query [`DataFrame`] for the given [`HostMetricField`].
-    async fn query(&self, field: HostMetricField) -> anyhow::Result<DataFrame> {
-        let query =
-            ReadQuery::new(host_metrics_query(field, &self.select_filter).context("Select query")?);
-        log::debug!("Querying field {field}: {query:?}");
-
-        #[cfg(feature = "query_test_data")]
-        if cfg!(feature = "query_test_data") {
-            return crate::frame::parse_time_column(crate::test_data::load_query_result(&query)?);
-        }
-
-        let res = self.client.json_query(query.clone()).await?;
-        let frame = crate::frame::load_from_response(res).context("Empty query result")?;
-        log::trace!("Loaded frame for {field}: {frame:?}");
-
-        #[cfg(feature = "test_data")]
-        let frame = {
-            let mut frame = frame;
-            crate::test_data::insert_query_result(&query, &mut frame)?;
-            frame
-        };
-
-        Ok(frame)
     }
 }

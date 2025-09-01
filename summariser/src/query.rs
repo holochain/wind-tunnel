@@ -1,6 +1,9 @@
 pub mod host_metrics;
 
-use crate::{frame::LoadError, query::host_metrics::Values as _};
+use crate::{
+    frame::LoadError,
+    query::host_metrics::{HostMetricField, Values as _},
+};
 use anyhow::Context;
 use chrono::DateTime;
 use influxdb::ReadQuery;
@@ -176,10 +179,48 @@ pub async fn zome_call_error_count(
     }
 }
 
+/// Query [`DataFrame`] for the given [`HostMetricField`].
+pub async fn query_host_metrics(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    field: HostMetricField,
+) -> anyhow::Result<DataFrame> {
+    let select_filter = if let Some(run_duration) = summary.run_duration {
+        host_metrics::SelectFilter::TimeInterval {
+            started_at: summary.started_at,
+            duration: std::time::Duration::from_secs(run_duration),
+            run_id: summary.run_id.clone(),
+        }
+    } else {
+        host_metrics::SelectFilter::RunId(summary.run_id.clone())
+    };
+
+    let query = ReadQuery::new(host_metrics_query(field, &select_filter).context("Select query")?);
+    log::debug!("Querying field {field}: {query:?}");
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return crate::frame::parse_time_column(crate::test_data::load_query_result(&query)?);
+    }
+
+    let res = client.json_query(query.clone()).await?;
+    let frame = crate::frame::load_from_response(res).context("Empty query result")?;
+    log::trace!("Loaded frame for {field}: {frame:?}");
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&query, &mut frame)?;
+        frame
+    };
+
+    Ok(frame)
+}
+
 /// Get SELECT query for a [`host_metrics::HostMetricField`].
 ///
 /// Given a [`host_metrics::HostMetricField`], it returns the select statement for the field and the relative timestamp
-pub fn host_metrics_query(
+fn host_metrics_query(
     field: host_metrics::HostMetricField,
     filter: &host_metrics::SelectFilter,
 ) -> anyhow::Result<String> {
