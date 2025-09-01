@@ -179,6 +179,67 @@ pub async fn zome_call_error_count(
     }
 }
 
+/// Query [`DataFrame`] for any given wind-tunnel metric
+///
+/// Query will filter by time if `summary.run_duration` has been set.
+/// Query may also filter for a specific a tag value if provided.
+pub async fn query_metrics(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    columns: &[&str],
+    filter_by_tag: Option<(&str, &str)>,
+) -> anyhow::Result<DataFrame> {
+    let mut cols = columns.join(", ");
+    if !cols.is_empty() {
+        cols = format!(", {}", cols);
+    }
+    let mut query_str = format!(
+        r#"SELECT value{cols} FROM "windtunnel"."autogen"."{measurement}" WHERE run_id = '{run_id}'"#,
+        run_id = summary.run_id
+    )
+    .to_string();
+    // Add time filter if there is a run duration
+    if let Some(run_duration) = summary.run_duration {
+        let duration = std::time::Duration::from_secs(run_duration);
+        let ended_at = summary.started_at.saturating_add(duration.as_secs() as i64);
+        let start = DateTime::from_timestamp(summary.started_at, 0)
+            .context("Failed to convert started_at to DateTime")?
+            .to_rfc3339();
+        let end = DateTime::from_timestamp(ended_at, 0)
+            .context("Failed to convert ended_at to DateTime")?
+            .to_rfc3339();
+        query_str += format!(r#" AND time >= '{start}' AND time <= '{end}'"#).as_str();
+    }
+    // Add tag filter if provided
+    if let Some((tag_name, tag_value)) = filter_by_tag {
+        query_str += format!(r#" AND {tag_name} = '{tag_value}'"#).as_str();
+    };
+
+    let q = ReadQuery::new(query_str);
+    log::debug!("Querying: {:?}", q);
+
+    #[cfg(feature = "query_test_data")]
+    if cfg!(feature = "query_test_data") {
+        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
+    }
+
+    let res = client.json_query(q.clone()).await?;
+    let frame = crate::frame::load_from_response(res)?;
+    log::debug!("Rows found: {}", frame.height());
+
+    #[cfg(feature = "test_data")]
+    let frame = {
+        let mut frame = frame;
+        crate::test_data::insert_query_result(&q, &mut frame)?;
+        frame
+    };
+
+    log::trace!("Loaded frame: {}", frame);
+
+    Ok(frame)
+}
+
 /// Query [`DataFrame`] for the given [`HostMetricField`].
 pub async fn query_host_metrics(
     client: &influxdb::Client,

@@ -1,7 +1,9 @@
-use crate::aggregator::HostMetricsAggregator;
+use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
-use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
+use crate::model::{
+    HolochainMetricsConfig, StandardRateStats, StandardTimingsStats, SummaryOutput,
+};
 use crate::query;
 use anyhow::Context;
 use polars::prelude::*;
@@ -46,6 +48,9 @@ pub(crate) async fn summarize_single_write_many_read(
         .try_aggregate()
         .await;
 
+    let holochain_metrics =
+        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
+
     SummaryOutput::new(
         summary,
         SingleWriteManyReadSummary {
@@ -54,5 +59,6 @@ pub(crate) async fn summarize_single_write_many_read(
             error_count,
         },
         host_metrics,
+        holochain_metrics,
     )
 }

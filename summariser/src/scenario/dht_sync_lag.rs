@@ -1,6 +1,8 @@
-use crate::aggregator::HostMetricsAggregator;
+use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
 use crate::analyze::partitioned_rate_stats;
-use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
+use crate::model::{
+    HolochainMetricsConfig, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
+};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
@@ -43,6 +45,9 @@ pub(crate) async fn summarize_dht_sync_lag(
         .try_aggregate()
         .await;
 
+    let holochain_metrics =
+        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
+
     SummaryOutput::new(
         summary.clone(),
         DhtSyncLagSummary {
@@ -55,5 +60,6 @@ pub(crate) async fn summarize_dht_sync_lag(
             error_count: query::zome_call_error_count(client, &summary).await?,
         },
         host_metrics,
+        holochain_metrics,
     )
 }
