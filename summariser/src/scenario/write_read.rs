@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
@@ -38,6 +39,10 @@ pub(crate) async fn summarize_write_read(
         .filter(col("fn_name").eq(lit("get_sample_entry")))
         .collect()?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary.clone(),
         WriteQuerySummary {
@@ -51,5 +56,6 @@ pub(crate) async fn summarize_write_read(
                 .await
                 .context("Load zome call error data")?,
         },
+        host_metrics,
     )
 }

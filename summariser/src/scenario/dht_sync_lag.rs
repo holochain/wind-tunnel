@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::partitioned_rate_stats;
 use crate::model::{PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::{analyze, query};
@@ -38,6 +39,10 @@ pub(crate) async fn summarize_dht_sync_lag(
     .await
     .context("Load lag data")?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary.clone(),
         DhtSyncLagSummary {
@@ -47,7 +52,8 @@ pub(crate) async fn summarize_dht_sync_lag(
                 .context("Timing stats for sync lag")?,
             sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
                 .context("Rate stats for sync lag")?,
-            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            error_count: query::zome_call_error_count(client, &summary).await?,
         },
+        host_metrics,
     )
 }

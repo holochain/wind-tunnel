@@ -5,10 +5,11 @@ use futures::FutureExt;
 use scenario::*;
 use wind_tunnel_summary_model::RunSummary;
 
-pub(crate) mod analyze;
-pub(crate) mod frame;
+mod aggregator;
+mod analyze;
+mod frame;
 pub mod model;
-pub(crate) mod query;
+mod query;
 pub mod scenario;
 
 #[cfg(any(feature = "test_data", feature = "query_test_data"))]

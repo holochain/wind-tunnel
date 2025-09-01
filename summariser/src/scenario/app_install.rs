@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::standard_timing_stats;
 use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
@@ -27,6 +28,10 @@ pub(crate) async fn summarize_app_install(
         .context("First")?
         .try_extract::<f64>()?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary,
         AppInstallSummary {
@@ -34,5 +39,6 @@ pub(crate) async fn summarize_app_install(
             install_app_timing: standard_timing_stats(frame, "value", "10s", Some(1))
                 .context("Standard timing stats")?,
         },
+        host_metrics,
     )
 }
