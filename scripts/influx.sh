@@ -65,15 +65,17 @@ import_lp_metrics() {
     fi
 
     # for each metric file, import to influx
+    local tmp_output_file
     for metric_file in "$wt_metrics_dir"/*.influx; do
         echo "Importing $metric_file"
-        local tmp_output_file="$(mktemp -u)"
+        tmp_output_file="$(mktemp -u)"
         # Tag metrics with run_id, if set
         if [[ "${run_id:-x}" != "x" ]]; then
             lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
         fi
         # import metrics to influx
         influx write \
+            --host "$influx_url" \
             --bucket "$INFLUX_BUCKET" \
             --org "holo" \
             --file "$tmp_output_file"
