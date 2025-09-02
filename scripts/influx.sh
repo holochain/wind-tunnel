@@ -51,10 +51,7 @@ import_lp_metrics() {
 
     # get run summary path
     local summary_path
-    summary_path="run_summary.jsonl"
-    if [[ "${RUN_SUMMARY_PATH:-x}" != "x" ]]; then
-        summary_path="$RUN_SUMMARY_PATH"
-    fi
+    summary_path=${RUN_SUMMARY_PATH:-"run_summary.jsonl"}
 
     # Get run id from the latest run summary or set it to ""
     local run_id
@@ -74,7 +71,7 @@ import_lp_metrics() {
         echo "Importing $metric_file"
         tmp_output_file="$(mktemp -u)"
         # Tag metrics with run_id, if set
-        if [[ "${run_id:-x}" != "x" ]]; then
+        if [[ "${run_id:+x}" == "x" ]]; then
             lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
         fi
         # import metrics to influx
