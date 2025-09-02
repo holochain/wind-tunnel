@@ -144,6 +144,7 @@
               # shellcheck disable=SC1091
               source ./scripts/influx.sh
               
+              use_influx
               import_lp_metrics
 
               rm -f ./telegraf/metrics/*.influx 2>/dev/null || true

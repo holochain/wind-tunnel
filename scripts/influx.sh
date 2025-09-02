@@ -34,12 +34,16 @@ configure_influx() {
 
 # Remove data and config
 clear_influx() {
-     http "http://localhost:8087/debug/flush"
-     rm "$INFLUX_CONFIGS_PATH"
+    http "http://localhost:8087/debug/flush"
+    rm "$INFLUX_CONFIGS_PATH"
 }
 
 import_lp_metrics() {
-    use_influx
+    if [ -z "${INFLUX_TOKEN:-}" ]; then
+        echo "INFLUX_TOKEN is not set"
+        return 1
+    fi
+
     local influx_url
     influx_url="${1:-$INFLUX_HOST}"
     local influx_bucket
