@@ -37,3 +37,40 @@ clear_influx() {
      http "http://localhost:8087/debug/flush"
      rm "$INFLUX_CONFIGS_PATH"
 }
+
+import_lp_metrics() {
+    use_influx
+    local influx_url="${1:-$INFLUX_HOST}"
+
+    set -euo pipefail
+    local wt_metrics_dir="$(pwd)/telegraf/metrics"
+
+    # get run summary path
+    local summary_path="run_summary.jsonl"
+    if [[ "${RUN_SUMMARY_PATH:-x}" != "x" ]]; then
+        summary_path="$RUN_SUMMARY_PATH"
+    fi
+
+    # Get run id from the latest run summary or set it to ""
+    local run_id=""
+    if [ -f "$summary_path" ]; then
+        run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
+    fi
+
+    # for each metric file, import to influx
+    for metric_file in "$wt_metrics_dir"/*.influx; do
+        echo "Importing $metric_file"
+        local tmp_output_file="$(mktemp -u)"
+        # Tag metrics with run_id
+        lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
+        # import metrics to influx
+        influx write \
+            --bucket "$INFLUX_BUCKET" \
+            --org "holo" \
+            --file "$tmp_output_file"
+        # remove temp file
+        rm -f "$tmp_output_file"
+        echo "Finished importing $metric_file"
+    done
+
+}

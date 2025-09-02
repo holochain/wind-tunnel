@@ -36,6 +36,13 @@
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        lp-tool = pkgs.buildGoModule {
+          pname = "lp-tool";
+          version = "0.1.0";
+          src = ./lp-tool;
+          vendorHash = "sha256-7IGJGP2K0H0eKYU+gveykhGYt9ZufJNBUEv3jM66Wt0=";
+        };
       in
       {
         imports = [
@@ -73,6 +80,7 @@
             default = pkgs.mkShell {
               buildInputs = [
                 pkgs.go
+                lp-tool
               ];
 
               packages = commonPackages ++ [
@@ -119,10 +127,13 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
+          inherit lp-tool;
           local-telegraf = pkgs.writeShellApplication {
             name = "local-telegraf";
             runtimeInputs = [
+              lp-tool
               pkgs.gnused
+              pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
               unstablePkgs.telegraf
@@ -133,21 +144,7 @@
               # shellcheck disable=SC1091
               source ./scripts/influx.sh
               
-              use_influx
-              
-              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
-              export WT_METRICS_DIR
-
-              # Get run id from the latest run summary or set it to ""
-              if [ -f run_summary.jsonl ]; then
-                RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
-              else
-                RUN_ID=""
-              fi
-              export RUN_ID
-
-              echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config ./telegraf/telegraf.local.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+              import_lp_metrics
 
               rm ./telegraf/metrics/*.influx
             '';
@@ -155,7 +152,9 @@
           ci-telegraf = pkgs.writeShellApplication {
             name = "ci-telegraf";
             runtimeInputs = [
+              lp-tool
               pkgs.gnused
+              pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
               unstablePkgs.telegraf
@@ -166,21 +165,7 @@
               # shellcheck disable=SC1091
               source ./scripts/influx.sh
               
-              use_influx
-
-              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
-              export WT_METRICS_DIR
-
-              # Get run id from the latest run summary or set it to ""
-              if [ -f run_summary.jsonl ]; then
-                RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
-              else
-                RUN_ID=""
-              fi
-              export RUN_ID
-
-              echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config ./telegraf/telegraf.runner.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
+              import_lp_metrics "https://ifdb.holochain.org"
 
               rm ./telegraf/metrics/*.influx
             '';
