@@ -42,6 +42,8 @@ import_lp_metrics() {
     use_influx
     local influx_url
     influx_url="${1:-$INFLUX_HOST}"
+    local influx_bucket
+    influx_bucket="${INFLUX_BUCKET:-windtunnel}"
 
     set -euo pipefail
     local wt_metrics_dir
@@ -58,9 +60,11 @@ import_lp_metrics() {
     local run_id
     if [ -f "$summary_path" ]; then
         run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
+    else
+        run_id=""
     fi
 
-    if [[ "${run_id:-x}" == "x" ]]; then
+    if [ -z "${run_id}" ]; then
         echo "No run ID found, using empty run ID"
     fi
 
@@ -76,7 +80,7 @@ import_lp_metrics() {
         # import metrics to influx
         influx write \
             --host "$influx_url" \
-            --bucket "$INFLUX_BUCKET" \
+            --bucket "$influx_bucket" \
             --org "holo" \
             --file "$tmp_output_file"
         # remove temp file

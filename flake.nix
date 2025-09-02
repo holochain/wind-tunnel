@@ -146,7 +146,7 @@
               
               import_lp_metrics
 
-              rm ./telegraf/metrics/*.influx
+              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
           ci-telegraf = pkgs.writeShellApplication {
@@ -167,7 +167,7 @@
               
               import_lp_metrics "https://ifdb.holochain.org"
 
-              rm ./telegraf/metrics/*.influx
+              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
         };
