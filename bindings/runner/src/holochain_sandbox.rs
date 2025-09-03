@@ -1,8 +1,12 @@
 use std::{
     io::Write,
+    path::Path,
     process::{Child, Command, Stdio},
     time::Duration,
 };
+
+use anyhow::Context;
+use wind_tunnel_runner::prelude::WindTunnelResult;
 
 #[derive(Debug)]
 pub struct HolochainSandbox {
@@ -12,9 +16,9 @@ pub struct HolochainSandbox {
 impl HolochainSandbox {
     /// Creates a new Holochain sandbox and runs it, storing the [`Child`] process internally so it
     /// can be gracefully shutdown on [`Drop::drop`].
-    pub fn create_and_run(admin_port: usize) -> Self {
+    pub fn create_and_run(hc_path: &Path, admin_port: usize) -> WindTunnelResult<Self> {
         log::trace!("Creating new sandbox");
-        let mut create_sandbox = Command::new("hc")
+        let mut create_sandbox = Command::new(hc_path)
             .arg("sandbox")
             .arg("--piped")
             .arg("create")
@@ -25,24 +29,24 @@ impl HolochainSandbox {
             .arg("wss://sbd.holo.host")
             .stdin(Stdio::piped())
             .spawn()
-            .expect("Failed to run 'hc sandbox --piped create'");
+            .context("Failed to run 'hc sandbox --piped create'")?;
 
         log::trace!("Passing passcode to new sandbox");
         create_sandbox
             .stdin
             .as_mut()
-            .expect("Failed to get stdin for the process creating the sandbox")
+            .context("Failed to get stdin for the process creating the sandbox")?
             .write_all(b"1234\n")
-            .expect("Failed to write the passcode to the process creating the sandbox");
+            .context("Failed to write the passcode to the process creating the sandbox")?;
 
         create_sandbox
             .wait()
-            .expect("Failed to create the Holochain sandbox");
+            .context("Failed to create the Holochain sandbox")?;
 
         log::info!("Setting admin port of conductor to '{admin_port}'");
 
         log::trace!("Running the sandbox");
-        let mut run_sandbox_handle = Command::new("hc")
+        let mut run_sandbox_handle = Command::new(hc_path)
             .arg("sandbox")
             .arg("--piped")
             .arg(format!("--force-admin-ports={admin_port}"))
@@ -50,19 +54,19 @@ impl HolochainSandbox {
             .arg("--last")
             .stdin(Stdio::piped())
             .spawn()
-            .expect("Failed to start process to run Holochain sandbox");
+            .context("Failed to start process to run Holochain sandbox")?;
 
         log::trace!("Passing passcode to running sandbox");
         run_sandbox_handle
             .stdin
             .as_mut()
-            .expect("Failed to get stdin for the process running Holochain sandbox")
+            .context("Failed to get stdin for the process running Holochain sandbox")?
             .write_all(b"1234\n")
-            .expect("Failed to write the passcode to the process running the sandbox");
+            .context("Failed to write the passcode to the process running the sandbox")?;
 
         std::thread::sleep(Duration::from_secs(5));
 
-        Self { run_sandbox_handle }
+        Ok(Self { run_sandbox_handle })
     }
 }
 
