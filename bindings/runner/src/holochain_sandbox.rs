@@ -10,18 +10,9 @@ pub struct HolochainSandbox {
 }
 
 impl HolochainSandbox {
-    /// Cleans existing sandboxes, creates a new one and runs it, storing the [`Child`] process
-    /// internally so it can be gracefully shutdown on [`Drop::drop`].
-    pub fn clean_create_run() -> Self {
-        log::trace!("Cleaning sandbox");
-        Command::new("hc")
-            .arg("sandbox")
-            .arg("clean")
-            .spawn()
-            .expect("Failed to run 'hc sandbox clean'")
-            .wait()
-            .expect("Failed to clean the Holochain sandbox");
-
+    /// Creates a new Holochain sandbox and runs it, storing the [`Child`] process internally so it
+    /// can be gracefully shutdown on [`Drop::drop`].
+    pub fn create_and_run() -> Self {
         log::trace!("Creating new sandbox");
         let mut create_sandbox = Command::new("hc")
             .arg("sandbox")
@@ -54,6 +45,7 @@ impl HolochainSandbox {
             .arg("--piped")
             .arg("--force-admin-ports=8888")
             .arg("run")
+            .arg("--last")
             .stdin(Stdio::piped())
             .spawn()
             .expect("Failed to start process to run Holochain sandbox");
