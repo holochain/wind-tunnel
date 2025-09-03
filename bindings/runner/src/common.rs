@@ -1,7 +1,7 @@
 use crate::context::HolochainAgentContext;
 use crate::holochain_sandbox::HolochainSandbox;
 use crate::runner_context::HolochainRunnerContext;
-use anyhow::Context;
+use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
     handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
@@ -19,6 +19,7 @@ use rand::thread_rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::{env, io};
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
@@ -610,6 +611,32 @@ pub fn create_and_run_sandbox(
     let admin_port = admin_port_str.parse().with_context(|| {
         format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
     })?;
-    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::create_and_run(admin_port));
-    Ok(())
+
+    let hc_path = if let Ok(hc_path) = env::var("WT_HC_PATH") {
+        let hc_path = PathBuf::from(hc_path);
+        if !hc_path.exists() {
+            bail!(
+                "Path to 'hc' binary overwritten with 'WT_HC_PATH={}' but that path doesn't exist",
+                hc_path.display()
+            );
+        }
+        hc_path
+    } else {
+        PathBuf::from("hc")
+    };
+
+    match HolochainSandbox::create_and_run(&hc_path, admin_port) {
+        Ok(sandbox) => {
+            ctx.get_mut().holochain_sandbox = Some(sandbox);
+            Ok(())
+        }
+        Err(mut err) => {
+            if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
+                if io_error.kind() == io::ErrorKind::NotFound {
+                    err = err.context("'hc' binary not found, make sure it's in your PATH or overwrite the path with 'WT_HC_PATH'");
+                }
+            }
+            Err(err)
+        }
+    }
 }
