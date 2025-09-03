@@ -12,7 +12,7 @@ pub struct HolochainSandbox {
 impl HolochainSandbox {
     /// Creates a new Holochain sandbox and runs it, storing the [`Child`] process internally so it
     /// can be gracefully shutdown on [`Drop::drop`].
-    pub fn create_and_run() -> Self {
+    pub fn create_and_run(admin_port: usize) -> Self {
         log::trace!("Creating new sandbox");
         let mut create_sandbox = Command::new("hc")
             .arg("sandbox")
@@ -39,11 +39,13 @@ impl HolochainSandbox {
             .wait()
             .expect("Failed to create the Holochain sandbox");
 
+        log::info!("Setting admin port of conductor to '{admin_port}'");
+
         log::trace!("Running the sandbox");
         let mut run_sandbox_handle = Command::new("hc")
             .arg("sandbox")
             .arg("--piped")
-            .arg("--force-admin-ports=8888")
+            .arg(format!("--force-admin-ports={admin_port}"))
             .arg("run")
             .arg("--last")
             .stdin(Stdio::piped())
