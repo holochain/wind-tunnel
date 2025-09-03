@@ -84,7 +84,7 @@ pub fn configure_app_ws_url(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed to set up app port, is a conductor running? Try calling 'clean_create_run_sandbox' in the scenario 'setup'")?;
+        .context("Failed to set up app port, is a conductor running? Try calling 'create_and_run_sandbox' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();
@@ -595,9 +595,9 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
     }
 }
 
-pub fn clean_create_run_sandbox(
+pub fn create_and_run_sandbox(
     ctx: &mut RunnerContext<HolochainRunnerContext>,
 ) -> WindTunnelResult<()> {
-    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::clean_create_run());
+    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::create_and_run());
     Ok(())
 }
