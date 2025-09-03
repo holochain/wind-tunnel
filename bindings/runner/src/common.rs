@@ -598,6 +598,18 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
 pub fn create_and_run_sandbox(
     ctx: &mut RunnerContext<HolochainRunnerContext>,
 ) -> WindTunnelResult<()> {
-    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::create_and_run());
+    let connection_string = ctx.get_connection_string();
+    let admin_port_str = connection_string
+        .rsplit_once(':')
+        .map(|(_, ap)| ap)
+        .with_context(|| {
+            format!(
+                "connection_string of '{connection_string}' not in valid format of 'address:port'"
+            )
+        })?;
+    let admin_port = admin_port_str.parse().with_context(|| {
+        format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
+    })?;
+    ctx.get_mut().holochain_sandbox = Some(HolochainSandbox::create_and_run(admin_port));
     Ok(())
 }
