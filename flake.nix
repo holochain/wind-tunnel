@@ -131,7 +131,9 @@
           local-telegraf = pkgs.writeShellApplication {
             name = "local-telegraf";
             runtimeInputs = [
+              lp-tool
               pkgs.gnused
+              pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
               unstablePkgs.telegraf
@@ -143,28 +145,17 @@
               source ./scripts/influx.sh
               
               use_influx
-              
-              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
-              export WT_METRICS_DIR
+              import_lp_metrics
 
-              # Get run id from the latest run summary or set it to ""
-              if [ -f run_summary.jsonl ]; then
-                RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
-              else
-                RUN_ID=""
-              fi
-              export RUN_ID
-
-              echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config ./telegraf/telegraf.local.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
-
-              rm ./telegraf/metrics/*.influx
+              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
           ci-telegraf = pkgs.writeShellApplication {
             name = "ci-telegraf";
             runtimeInputs = [
+              lp-tool
               pkgs.gnused
+              pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
               unstablePkgs.telegraf
@@ -175,23 +166,9 @@
               # shellcheck disable=SC1091
               source ./scripts/influx.sh
               
-              use_influx
+              import_lp_metrics "https://ifdb.holochain.org"
 
-              WT_METRICS_DIR="$(pwd)/telegraf/metrics"
-              export WT_METRICS_DIR
-
-              # Get run id from the latest run summary or set it to ""
-              if [ -f run_summary.jsonl ]; then
-                RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < run_summary.jsonl)
-              else
-                RUN_ID=""
-              fi
-              export RUN_ID
-
-              echo "Running telegraf for run ID: $RUN_ID"
-              telegraf --config ./telegraf/telegraf.runner.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)
-
-              rm ./telegraf/metrics/*.influx
+              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
         };
