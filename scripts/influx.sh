@@ -34,6 +34,59 @@ configure_influx() {
 
 # Remove data and config
 clear_influx() {
-     http "http://localhost:8087/debug/flush"
-     rm "$INFLUX_CONFIGS_PATH"
+    http "http://localhost:8087/debug/flush"
+    rm "$INFLUX_CONFIGS_PATH"
+}
+
+import_lp_metrics() {
+    if [ -z "${INFLUX_TOKEN:-}" ]; then
+        echo "INFLUX_TOKEN is not set"
+        return 1
+    fi
+
+    local influx_url
+    influx_url="${1:-$INFLUX_HOST}"
+    local influx_bucket
+    influx_bucket="${INFLUX_BUCKET:-windtunnel}"
+
+    set -euo pipefail
+    local wt_metrics_dir
+    wt_metrics_dir="$(pwd)/telegraf/metrics"
+
+    # get run summary path
+    local summary_path
+    summary_path=${RUN_SUMMARY_PATH:-"run_summary.jsonl"}
+
+    # Get run id from the latest run summary or set it to ""
+    local run_id
+    if [ -f "$summary_path" ]; then
+        run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
+    else
+        run_id=""
+    fi
+
+    if [ -z "${run_id}" ]; then
+        echo "No run ID found, using empty run ID"
+    fi
+
+    # for each metric file, import to influx
+    local tmp_output_file
+    for metric_file in "$wt_metrics_dir"/*.influx; do
+        echo "Importing $metric_file"
+        tmp_output_file="$(mktemp -u)"
+        # Tag metrics with run_id, if set
+        if [[ "${run_id:+x}" == "x" ]]; then
+            lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
+        fi
+        # import metrics to influx
+        influx write \
+            --host "$influx_url" \
+            --bucket "$influx_bucket" \
+            --org "holo" \
+            --file "$tmp_output_file"
+        # remove temp file
+        rm -f "$tmp_output_file"
+        echo "Finished importing $metric_file"
+    done
+
 }
