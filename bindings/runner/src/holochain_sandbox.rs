@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::Context;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use wind_tunnel_runner::prelude::WindTunnelResult;
 
 #[derive(Debug)]
@@ -17,6 +18,14 @@ impl HolochainSandbox {
     /// Creates a new Holochain sandbox and runs it, storing the [`Child`] process internally so it
     /// can be gracefully shutdown on [`Drop::drop`].
     pub fn create_and_run(hc_path: &Path, admin_port: usize) -> WindTunnelResult<Self> {
+        log::trace!("Generating sandbox password");
+        let password: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .chain(['\n'])
+            .collect();
+
         log::trace!("Creating new sandbox");
         let mut create_sandbox = Command::new(hc_path)
             .arg("sandbox")
@@ -31,12 +40,12 @@ impl HolochainSandbox {
             .spawn()
             .context("Failed to run 'hc sandbox --piped create'")?;
 
-        log::trace!("Passing passcode to new sandbox");
+        log::trace!("Passing password to new sandbox");
         create_sandbox
             .stdin
             .as_mut()
             .context("Failed to get stdin for the process creating the sandbox")?
-            .write_all(b"1234\n")
+            .write_all(password.as_bytes())
             .context("Failed to write the passcode to the process creating the sandbox")?;
 
         create_sandbox
@@ -56,12 +65,12 @@ impl HolochainSandbox {
             .spawn()
             .context("Failed to start process to run Holochain sandbox")?;
 
-        log::trace!("Passing passcode to running sandbox");
+        log::trace!("Passing password to running sandbox");
         run_sandbox_handle
             .stdin
             .as_mut()
             .context("Failed to get stdin for the process running Holochain sandbox")?
-            .write_all(b"1234\n")
+            .write_all(password.as_bytes())
             .context("Failed to write the passcode to the process running the sandbox")?;
 
         std::thread::sleep(Duration::from_secs(5));
