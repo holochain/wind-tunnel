@@ -1,0 +1,468 @@
+[
+  {
+    "apiVersion": "influxdata.com/v2alpha1",
+    "kind": "Dashboard",
+    "metadata": {
+      "name": "sad-boyd-be4001"
+    },
+    "spec": {
+      "charts": [
+        {
+          "axes": [
+            {
+              "name": "x"
+            },
+            {
+              "label": "ms",
+              "name": "y"
+            }
+          ],
+          "binSize": 10,
+          "colors": [
+            {
+              "hex": "#000004"
+            },
+            {
+              "hex": "#100b2d"
+            },
+            {
+              "hex": "#2c115f"
+            },
+            {
+              "hex": "#51127c"
+            },
+            {
+              "hex": "#721f81"
+            },
+            {
+              "hex": "#932b80"
+            },
+            {
+              "hex": "#b73779"
+            },
+            {
+              "hex": "#d8456c"
+            },
+            {
+              "hex": "#f1605d"
+            },
+            {
+              "hex": "#fc8961"
+            },
+            {
+              "hex": "#feb078"
+            },
+            {
+              "hex": "#fed799"
+            }
+          ],
+          "height": 4,
+          "kind": "Heatmap",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Conductor db connection use time",
+          "queries": [
+            {
+              "query": "import \"math\"\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.connections.use_time.s\")\n  |> filter(fn: (r) => r[\"kind\"] == \"conductor\")\n  |> filter(fn: (r) => r[\"id\"] == \"Conductor\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => {\n      us = r._value * 1000000.0\n      roundedMicroseconds = math.round(x: us)\n      ms = roundedMicroseconds / 1000.0\n      return { r with _value: ms }\n    })    \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xCol": "_time",
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "name": "x"
+            },
+            {
+              "label": "ms",
+              "name": "y"
+            }
+          ],
+          "binSize": 10,
+          "colors": [
+            {
+              "hex": "#000004"
+            },
+            {
+              "hex": "#100b2d"
+            },
+            {
+              "hex": "#2c115f"
+            },
+            {
+              "hex": "#51127c"
+            },
+            {
+              "hex": "#721f81"
+            },
+            {
+              "hex": "#932b80"
+            },
+            {
+              "hex": "#b73779"
+            },
+            {
+              "hex": "#d8456c"
+            },
+            {
+              "hex": "#f1605d"
+            },
+            {
+              "hex": "#fc8961"
+            },
+            {
+              "hex": "#feb078"
+            },
+            {
+              "hex": "#fed799"
+            }
+          ],
+          "height": 4,
+          "kind": "Heatmap",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "All DHT databases connection use time",
+          "queries": [
+            {
+              "query": "import \"math\"\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.connections.use_time.s\")\n  |> filter(fn: (r) => r[\"kind\"] == \"dht\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => {\n      us = r._value * 1000000.0\n      roundedMicroseconds = math.round(x: us)\n      ms = roundedMicroseconds / 1000.0\n      return { r with _value: ms }\n    })    \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 4
+        },
+        {
+          "colors": [
+            {
+              "id": "0",
+              "name": "laser",
+              "type": "min",
+              "hex": "#00C9FF"
+            },
+            {
+              "id": "1",
+              "name": "comet",
+              "type": "max",
+              "hex": "#9394FF",
+              "value": 100
+            }
+          ],
+          "decimalPlaces": 0,
+          "height": 4,
+          "kind": "Gauge",
+          "name": "Conductor database load",
+          "queries": [
+            {
+              "query": "import \"math\"\n\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.pool.utilization\")\n  |> filter(fn: (r) => r[\"kind\"] == \"conductor\")\n  |> filter(fn: (r) => r[\"id\"] == \"Conductor\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => ({ r with _value: math.round(x: r._value * 100.0) }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "%",
+          "width": 3,
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "name": "x"
+            },
+            {
+              "label": "ms",
+              "name": "y"
+            }
+          ],
+          "binSize": 10,
+          "colors": [
+            {
+              "hex": "#000004"
+            },
+            {
+              "hex": "#100b2d"
+            },
+            {
+              "hex": "#2c115f"
+            },
+            {
+              "hex": "#51127c"
+            },
+            {
+              "hex": "#721f81"
+            },
+            {
+              "hex": "#932b80"
+            },
+            {
+              "hex": "#b73779"
+            },
+            {
+              "hex": "#d8456c"
+            },
+            {
+              "hex": "#f1605d"
+            },
+            {
+              "hex": "#fc8961"
+            },
+            {
+              "hex": "#feb078"
+            },
+            {
+              "hex": "#fed799"
+            }
+          ],
+          "height": 4,
+          "kind": "Heatmap",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Cascade query duration",
+          "queries": [
+            {
+              "query": "import \"math\"\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.cascade.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => {\n      us = r._value * 1000000.0\n      roundedMicroseconds = math.round(x: us)\n      ms = roundedMicroseconds / 1000.0\n      return { r with _value: ms }\n    })     \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 12
+        },
+        {
+          "colors": [
+            {
+              "id": "0",
+              "name": "laser",
+              "type": "min",
+              "hex": "#00C9FF"
+            },
+            {
+              "id": "1",
+              "name": "comet",
+              "type": "max",
+              "hex": "#9394FF",
+              "value": 100
+            }
+          ],
+          "decimalPlaces": 0,
+          "height": 4,
+          "kind": "Gauge",
+          "name": "WASM database load",
+          "queries": [
+            {
+              "query": "import \"math\"\n\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.pool.utilization\")\n  |> filter(fn: (r) => r[\"kind\"] == \"wasm\")\n  |> filter(fn: (r) => r[\"id\"] == \"Wasm\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => ({ r with _value: math.round(x: r._value * 100.0) }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "%",
+          "width": 3,
+          "xPos": 3,
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "name": "x"
+            },
+            {
+              "label": "ms",
+              "name": "y"
+            }
+          ],
+          "binSize": 10,
+          "colors": [
+            {
+              "hex": "#000004"
+            },
+            {
+              "hex": "#100b2d"
+            },
+            {
+              "hex": "#2c115f"
+            },
+            {
+              "hex": "#51127c"
+            },
+            {
+              "hex": "#721f81"
+            },
+            {
+              "hex": "#932b80"
+            },
+            {
+              "hex": "#b73779"
+            },
+            {
+              "hex": "#d8456c"
+            },
+            {
+              "hex": "#f1605d"
+            },
+            {
+              "hex": "#fc8961"
+            },
+            {
+              "hex": "#feb078"
+            },
+            {
+              "hex": "#fed799"
+            }
+          ],
+          "height": 4,
+          "kind": "Heatmap",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Wasm db connection use time",
+          "queries": [
+            {
+              "query": "import \"math\"\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.connections.use_time.s\")\n  |> filter(fn: (r) => r[\"kind\"] == \"wasm\")\n  |> filter(fn: (r) => r[\"id\"] == \"Wasm\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => {\n    us = r._value * 1000000.0\n    roundedMicroseconds = math.round(x: us)\n    ms = roundedMicroseconds / 1000.0\n    return { r with _value: ms }\n  })   \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "name": "x"
+            },
+            {
+              "label": "ms",
+              "name": "y"
+            }
+          ],
+          "binSize": 10,
+          "colors": [
+            {
+              "hex": "#000004"
+            },
+            {
+              "hex": "#100b2d"
+            },
+            {
+              "hex": "#2c115f"
+            },
+            {
+              "hex": "#51127c"
+            },
+            {
+              "hex": "#721f81"
+            },
+            {
+              "hex": "#932b80"
+            },
+            {
+              "hex": "#b73779"
+            },
+            {
+              "hex": "#d8456c"
+            },
+            {
+              "hex": "#f1605d"
+            },
+            {
+              "hex": "#fc8961"
+            },
+            {
+              "hex": "#feb078"
+            },
+            {
+              "hex": "#fed799"
+            }
+          ],
+          "height": 4,
+          "kind": "Heatmap",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "All authored databases connection use time",
+          "queries": [
+            {
+              "query": "import \"math\"\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.connections.use_time.s\")\n  |> filter(fn: (r) => r[\"kind\"] == \"authored\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\") \n  |> map(fn: (r) => {\n      us = r._value * 1000000.0\n      roundedMicroseconds = math.round(x: us)\n      ms = roundedMicroseconds / 1000.0\n      return { r with _value: ms }\n    })     \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 4
+        },
+        {
+          "colors": [
+            {
+              "id": "0",
+              "name": "laser",
+              "type": "min",
+              "hex": "#00C9FF"
+            },
+            {
+              "id": "1",
+              "name": "comet",
+              "type": "max",
+              "hex": "#9394FF",
+              "value": 100
+            }
+          ],
+          "decimalPlaces": 0,
+          "height": 4,
+          "kind": "Gauge",
+          "name": "DHT databases average load",
+          "queries": [
+            {
+              "query": "import \"math\"\n\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.pool.utilization\")\n  |> filter(fn: (r) => r[\"kind\"] == \"dht\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => ({ r with _value: math.round(x: r._value * 100.0) }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "%",
+          "width": 3,
+          "xPos": 6,
+          "yPos": 8
+        },
+        {
+          "colors": [
+            {
+              "id": "0",
+              "name": "laser",
+              "type": "min",
+              "hex": "#00C9FF"
+            },
+            {
+              "id": "1",
+              "name": "comet",
+              "type": "max",
+              "hex": "#9394FF",
+              "value": 100
+            }
+          ],
+          "decimalPlaces": 0,
+          "height": 4,
+          "kind": "Gauge",
+          "name": "Authored databases average load",
+          "queries": [
+            {
+              "query": "import \"math\"\n\nfrom(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.db.pool.utilization\")\n  |> filter(fn: (r) => r[\"kind\"] == \"authored\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> map(fn: (r) => ({ r with _value: math.round(x: r._value * 100.0) }))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "%",
+          "width": 3,
+          "xPos": 9,
+          "yPos": 8
+        }
+      ],
+      "description": "Generic charts for Holochain database metrics.",
+      "name": "Holochain Database"
+    }
+  }
+]
