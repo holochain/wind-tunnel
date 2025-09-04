@@ -55,11 +55,11 @@ pub struct WindTunnelScenarioCli {
 pub enum ReporterOpt {
     /// Disable reporting.
     Noop,
-    /// Recommended during scenario development for quick feedback with no extra services needed.
+    /// Recommended during scenario development for quick feedback with no extra services needed. Metrics will be printed to the console.
     InMemory,
-    /// Recommended for running tests locally where you need to see the metrics in InfluxDB.
+    /// Recommended for running tests locally. Metrics will be uploaded to a running InfluxDB.
     InfluxClient,
-    /// Recommended for running distributed tests and requires both InfluxDB and Telegraf.
+    /// Recommended for running distributed tests. Metrics will be written to a local influx file that can later be imported to InfluxDB.
     InfluxFile,
 }
 

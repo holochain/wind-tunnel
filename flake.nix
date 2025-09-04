@@ -128,15 +128,14 @@
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
           inherit lp-tool;
-          local-telegraf = pkgs.writeShellApplication {
-            name = "local-telegraf";
+          local-import-metrics = pkgs.writeShellApplication {
+            name = "local-import-metrics";
             runtimeInputs = [
               lp-tool
               pkgs.gnused
               pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
-              unstablePkgs.telegraf
             ];
             text = ''
               set -euo pipefail
@@ -150,15 +149,14 @@
               rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
-          ci-telegraf = pkgs.writeShellApplication {
-            name = "ci-telegraf";
+          ci-import-metrics = pkgs.writeShellApplication {
+            name = "ci-import-metrics";
             runtimeInputs = [
               lp-tool
               pkgs.gnused
               pkgs.influxdb2-cli
               pkgs.jq
               pkgs.yq
-              unstablePkgs.telegraf
             ];
             text = ''
               set -euo pipefail

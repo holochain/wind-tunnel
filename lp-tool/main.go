@@ -70,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully processed %s and wrote to %s\n", config.InputFile, config.OutputFile)
+	fmt.Printf("Successfully processed %s\n", config.InputFile)
 }
 
 func parseFlags() (Config, error) {
@@ -181,7 +181,7 @@ func processLineProtocol(config Config) error {
 			// Add custom tags
             for key, value := range config.Tags {
                 // Warn if tag already exists
-                if tag, has := telegrafMetric.GetTag(key) ; has {
+                if tag, has := telegrafMetric.GetTag(key) ; has  && tag != value {
                 	fmt.Fprintf(os.Stderr, "[%d] Warning: tag %s=%s has been overwritten\n", lineCount, key, tag)
                 }
                 // Add (or replace) tag
