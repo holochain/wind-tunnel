@@ -24,6 +24,7 @@ pub struct ScenarioValues {
 impl UserValuesConstraint for ScenarioValues {}
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
+    create_and_run_sandbox(ctx)?;
     configure_app_ws_url(ctx)?;
     Ok(())
 }
