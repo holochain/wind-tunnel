@@ -73,7 +73,19 @@ impl HolochainSandbox {
             .write_all(password.as_bytes())
             .context("Failed to write the passcode to the process running the sandbox")?;
 
-        std::thread::sleep(Duration::from_secs(5));
+        log::trace!("Waiting for the conductor to start");
+        while !Command::new(hc_path)
+            .arg("sandbox")
+            .arg("call")
+            .arg(format!("--running={admin_port}"))
+            .arg("dump-conductor-state")
+            .stderr(Stdio::null())
+            .status()
+            .context("Failed to run the process to wait for Holochain conductor")?
+            .success()
+        {
+            std::thread::sleep(Duration::from_millis(500));
+        }
 
         Ok(Self { run_sandbox_handle })
     }
