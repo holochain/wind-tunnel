@@ -1,5 +1,5 @@
 use crate::context::HolochainAgentContext;
-use crate::holochain_sandbox::HolochainSandbox;
+use crate::holochain_sandbox::{HolochainSandbox, HolochainSandboxConfig};
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
@@ -625,7 +625,11 @@ pub fn create_and_run_sandbox(
         PathBuf::from("hc")
     };
 
-    match HolochainSandbox::create_and_run(&hc_path, admin_port) {
+    let config = HolochainSandboxConfig::default()
+        .with_bin_path(hc_path)
+        .with_admin_port(admin_port);
+
+    match HolochainSandbox::create_and_run(&config) {
         Ok(sandbox) => {
             ctx.get_mut().holochain_sandbox = Some(sandbox);
             Ok(())
