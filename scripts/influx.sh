@@ -38,9 +38,10 @@ clear_influx() {
     rm "$INFLUX_CONFIGS_PATH"
 }
 
+# Adds a run_id tag all metrics in $WT_METRICS_DIR and imports them into InfluxDB
 import_lp_metrics() {
     if [ -z "${INFLUX_TOKEN:-}" ]; then
-        echo "INFLUX_TOKEN is not set"
+        echo "Environment variable INFLUX_TOKEN has not been set. Run 'use_influx' to set it." >&2
         return 1
     fi
 
@@ -49,15 +50,15 @@ import_lp_metrics() {
     local influx_bucket
     influx_bucket="${INFLUX_BUCKET:-windtunnel}"
 
-    set -euo pipefail
     local wt_metrics_dir
-    wt_metrics_dir="$(pwd)/telegraf/metrics"
+    wt_metrics_dir="${WT_METRICS_DIR:-"$(pwd)/telegraf/metrics"}"
 
-    # get run summary path
     local summary_path
     summary_path=${RUN_SUMMARY_PATH:-"run_summary.jsonl"}
 
-    # Get run id from the latest run summary or set it to ""
+    set -euo pipefail
+
+    # Get run-id from the latest run summary or set it to ""
     local run_id
     if [ -f "$summary_path" ]; then
         run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
@@ -66,7 +67,9 @@ import_lp_metrics() {
     fi
 
     if [ -z "${run_id}" ]; then
-        echo "No run ID found, using empty run ID"
+        echo "No run_id found, using empty run_id"
+    else
+        echo "Metrics will be imported with tag: run_id=$run_id"
     fi
 
     # for each metric file, import to influx
@@ -88,5 +91,4 @@ import_lp_metrics() {
         rm -f "$tmp_output_file"
         echo "Finished importing $metric_file"
     done
-
 }

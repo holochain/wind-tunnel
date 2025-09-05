@@ -54,22 +54,9 @@ jobs:
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "# Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
 
-      - name: Run Telegraf to upload influx metrics
+      - name: Upload influx metrics
         run: |
-          if ! nix run .#ci-telegraf
-          then
-            echo "::group::Telegraf errors"
-            status=1
-            # Print errors as such in GitHub logs.
-            grep "E!" logs/telegraf-stderr.log | xargs -l echo "::error ::"
-            echo "::endgroup::"
-          fi
-
-          echo "::group::Telegraf warnings"
-          # Print warnings as such in GitHub logs.
-          grep "W!" logs/telegraf-stderr.log | xargs -l echo "::warning ::"
-          echo "::endgroup::"
-
+          nix run .#ci-import-metrics
           exit ${status-0}
 
       - name: Upload logs as artifacts
@@ -81,8 +68,6 @@ jobs:
           path: |
             logs/scenario-stdout.log
             logs/scenario-stderr.log
-            logs/telegraf-stdout.log
-            logs/telegraf-stderr.log
 
       - name: Output Path to logs in summary
         run: |-
