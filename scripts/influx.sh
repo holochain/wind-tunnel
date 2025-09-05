@@ -41,7 +41,7 @@ clear_influx() {
 # Adds a run_id tag all metrics in $WT_METRICS_DIR and imports them into InfluxDB
 import_lp_metrics() {
     if [ -z "${INFLUX_TOKEN:-}" ]; then
-      echo "Environment variable INFLUX_TOKEN has not been set. Run 'use_influx' to set it." >&2
+        echo "Environment variable INFLUX_TOKEN has not been set. Run 'use_influx' to set it." >&2
         return 1
     fi
 
