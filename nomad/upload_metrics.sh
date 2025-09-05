@@ -15,15 +15,15 @@ function check_envset() {
 
 check_envset "WT_METRICS_DIR"
 check_envset "INFLUX_TOKEN"
+check_envset "INFLUX_HOST"
 check_envset "TELEGRAF_CONFIG_PATH"
+
+influx_bucket="${INFLUX_BUCKET:-windtunnel}"
 
 # read RUN_ID if not set in the environment
 if [ -z "$RUN_ID" ]; then
     # if is set RUN_SUMMARY_PATH
-    summary_path="run_summary.jsonl"
-    if [ ! -z "$RUN_SUMMARY_PATH" ]; then
-        summary_path="$RUN_SUMMARY_PATH"
-    fi
+    summary_path=${RUN_SUMMARY_PATH:-"run_summary.jsonl"}
 
     if [ -f "$summary_path" ]; then
         RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
@@ -36,4 +36,21 @@ fi
 
 echo "RUN_ID: '$RUN_ID'"
 
-telegraf --once
+# for each metric file, import to influx
+for metric_file in "$WT_METRICS_DIR"/*.influx; do
+    echo "Importing $metric_file"
+    tmp_output_file="$(mktemp -u)"
+    # Tag metrics with RUN_ID, if set
+    if [[ "${RUN_ID:+x}" == "x" ]]; then
+        lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$RUN_ID"
+    fi
+    # import metrics to influx
+    influx write \
+        --host "$INFLUX_HOST" \
+        --bucket "$influx_bucket" \
+        --org "holo" \
+        --file "$tmp_output_file"
+    # remove temp file
+    rm -f "$tmp_output_file"
+    echo "Finished importing $metric_file"
+done
