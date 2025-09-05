@@ -1,7 +1,7 @@
 mod common;
 
 mod context;
-mod holochain_sandbox;
+mod holochain_runner;
 mod macros;
 mod runner_context;
 
@@ -12,7 +12,7 @@ pub mod prelude {
     pub use crate::common::*;
 
     pub use crate::context::HolochainAgentContext;
-    pub use crate::holochain_sandbox::HolochainSandbox;
+    pub use crate::holochain_runner::HolochainRunner;
     pub use crate::runner_context::HolochainRunnerContext;
 
     /// Re-export of the `wind_tunnel_runner` prelude.

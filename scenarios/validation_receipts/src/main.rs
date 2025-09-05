@@ -49,7 +49,7 @@ impl ScenarioValues {
 impl UserValuesConstraint for ScenarioValues {}
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    create_and_run_sandbox(ctx)?;
+    run_holochain_conductor(ctx)?;
     configure_app_ws_url(ctx)?;
     Ok(())
 }
