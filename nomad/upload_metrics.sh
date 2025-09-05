@@ -16,7 +16,6 @@ function check_envset() {
 check_envset "WT_METRICS_DIR"
 check_envset "INFLUX_TOKEN"
 check_envset "INFLUX_HOST"
-check_envset "TELEGRAF_CONFIG_PATH"
 
 influx_bucket="${INFLUX_BUCKET:-windtunnel}"
 
