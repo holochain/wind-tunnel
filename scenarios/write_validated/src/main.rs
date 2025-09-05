@@ -4,7 +4,7 @@ use holochain_wind_tunnel_runner::scenario_happ_path;
 use validated_integrity::UpdateSampleEntryInput;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    create_and_run_sandbox(ctx)?;
+    run_holochain_conductor(ctx)?;
     configure_app_ws_url(ctx)?;
     Ok(())
 }

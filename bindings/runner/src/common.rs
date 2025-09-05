@@ -1,5 +1,5 @@
 use crate::context::HolochainAgentContext;
-use crate::holochain_sandbox::{HolochainSandbox, HolochainSandboxConfig};
+use crate::holochain_runner::{HolochainConfigBuilder, HolochainRunner};
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
@@ -85,7 +85,7 @@ pub fn configure_app_ws_url(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed to set up app port, is a conductor running? Try calling 'create_and_run_sandbox' in the scenario 'setup'")?;
+        .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let admin_ws_url = ctx.get_connection_string();
@@ -596,7 +596,7 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
     }
 }
 
-pub fn create_and_run_sandbox(
+pub fn run_holochain_conductor(
     ctx: &mut RunnerContext<HolochainRunnerContext>,
 ) -> WindTunnelResult<()> {
     let connection_string = ctx.get_connection_string();
@@ -612,32 +612,34 @@ pub fn create_and_run_sandbox(
         format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
     })?;
 
-    let hc_path = if let Ok(hc_path) = env::var("WT_HC_PATH") {
-        let hc_path = PathBuf::from(hc_path);
-        if !hc_path.exists() {
+    let holochain_path = if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
+        let holochain_path = PathBuf::from(holochain_path);
+        if !holochain_path.exists() {
             bail!(
-                "Path to 'hc' binary overwritten with 'WT_HC_PATH={}' but that path doesn't exist",
-                hc_path.display()
+                "Path to Holochain binary overwritten with 'WT_HOLOCHAIN_PATH={}' but that path doesn't exist",
+                holochain_path.display()
             );
         }
-        hc_path
+        holochain_path
     } else {
-        PathBuf::from("hc")
+        PathBuf::from("holochain")
     };
 
-    let config = HolochainSandboxConfig::default()
-        .with_bin_path(hc_path)
-        .with_admin_port(admin_port);
+    let config = HolochainConfigBuilder::default()
+        .with_bin_path(holochain_path)
+        .with_conductor_root_path(PathBuf::from(format!("./{}", ctx.get_run_id())))
+        .with_admin_port(admin_port)
+        .build()?;
 
-    match HolochainSandbox::create_and_run(&config) {
-        Ok(sandbox) => {
-            ctx.get_mut().holochain_sandbox = Some(sandbox);
+    match HolochainRunner::run(&config) {
+        Ok(holochain) => {
+            ctx.get_mut().holochain_runner = Some(holochain);
             Ok(())
         }
         Err(mut err) => {
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
                 if io_error.kind() == io::ErrorKind::NotFound {
-                    err = err.context("'hc' binary not found, make sure it's in your PATH or overwrite the path with 'WT_HC_PATH'");
+                    err = err.context("'holochain' binary not found, make sure it's in your PATH or overwrite the path with 'WT_HOLOCHAIN_PATH'");
                 }
             }
             Err(err)
