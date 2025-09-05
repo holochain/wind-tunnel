@@ -1,3 +1,4 @@
+mod holochain_metrics;
 mod host_metrics;
 
 use std::time::Duration;
@@ -5,6 +6,10 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
+pub use self::holochain_metrics::{
+    HolochainDatabaseKind, HolochainDatabaseMetrics, HolochainMetrics, HolochainMetricsConfig,
+    HolochainWorkflowKind, StrumVariantSelector,
+};
 pub use self::host_metrics::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -12,6 +17,7 @@ pub struct SummaryOutput {
     pub run_summary: RunSummary,
     pub scenario_metrics: serde_json::Value,
     pub host_metrics: Option<HostMetrics>,
+    pub holochain_metrics: Option<HolochainMetrics>,
 }
 
 impl SummaryOutput {
@@ -19,6 +25,7 @@ impl SummaryOutput {
         run_summary: RunSummary,
         data: V,
         host_metrics: Option<HostMetrics>,
+        holochain_metrics: Option<HolochainMetrics>,
     ) -> anyhow::Result<Self>
     where
         V: serde::Serialize,
@@ -27,6 +34,7 @@ impl SummaryOutput {
             run_summary,
             scenario_metrics: serde_json::to_value(data)?,
             host_metrics,
+            holochain_metrics,
         })
     }
 }
