@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    path::Path,
+    path::PathBuf,
     process::{Child, Command, Stdio},
     time::Duration,
 };
@@ -10,14 +10,42 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use wind_tunnel_runner::prelude::WindTunnelResult;
 
 #[derive(Debug)]
+pub struct HolochainSandboxConfig {
+    bin_path: PathBuf,
+    admin_port: u16,
+}
+
+impl Default for HolochainSandboxConfig {
+    fn default() -> Self {
+        Self {
+            bin_path: PathBuf::from("hc"),
+            admin_port: 8888,
+        }
+    }
+}
+
+impl HolochainSandboxConfig {
+    pub(crate) fn with_bin_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.bin_path = path.into();
+        self
+    }
+
+    pub(crate) fn with_admin_port(mut self, port: u16) -> Self {
+        self.admin_port = port;
+        self
+    }
+}
+
+#[derive(Debug)]
 pub struct HolochainSandbox {
     run_sandbox_handle: Child,
 }
 
 impl HolochainSandbox {
-    /// Creates a new Holochain sandbox and runs it, storing the [`Child`] process internally so it
-    /// can be gracefully shutdown on [`Drop::drop`].
-    pub fn create_and_run(hc_path: &Path, admin_port: usize) -> WindTunnelResult<Self> {
+    /// Creates and runs a new Holochain sandbox, using the passed [`HolochainSandboxConfig`].
+    /// Storing the [`Child`] process internally so it can be gracefully shutdown on
+    /// [`Drop::drop`].
+    pub fn create_and_run(config: &HolochainSandboxConfig) -> WindTunnelResult<Self> {
         log::trace!("Generating sandbox password");
         let password: String = thread_rng()
             .sample_iter(&Alphanumeric)
@@ -27,7 +55,7 @@ impl HolochainSandbox {
             .collect();
 
         log::trace!("Creating new sandbox");
-        let mut create_sandbox = Command::new(hc_path)
+        let mut create_sandbox = Command::new(&config.bin_path)
             .arg("sandbox")
             .arg("--piped")
             .arg("create")
@@ -52,13 +80,13 @@ impl HolochainSandbox {
             .wait()
             .context("Failed to create the Holochain sandbox")?;
 
-        log::info!("Setting admin port of conductor to '{admin_port}'");
+        log::info!("Setting admin port of conductor to '{}'", config.admin_port);
 
         log::trace!("Running the sandbox");
-        let mut run_sandbox_handle = Command::new(hc_path)
+        let mut run_sandbox_handle = Command::new(&config.bin_path)
             .arg("sandbox")
             .arg("--piped")
-            .arg(format!("--force-admin-ports={admin_port}"))
+            .arg(format!("--force-admin-ports={}", config.admin_port))
             .arg("run")
             .arg("--last")
             .stdin(Stdio::piped())
@@ -74,10 +102,10 @@ impl HolochainSandbox {
             .context("Failed to write the passcode to the process running the sandbox")?;
 
         log::trace!("Waiting for the conductor to start");
-        while !Command::new(hc_path)
+        while !Command::new(&config.bin_path)
             .arg("sandbox")
             .arg("call")
-            .arg(format!("--running={admin_port}"))
+            .arg(format!("--running={}", config.admin_port))
             .arg("dump-conductor-state")
             .stderr(Stdio::null())
             .status()
