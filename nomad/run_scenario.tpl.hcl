@@ -208,7 +208,7 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/259-change-nomad-upload-metrics-script-to-use-lp-tool-and-influx-write/nomad/upload_metrics.sh"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/upload_metrics.sh"
           }
 
           config {
