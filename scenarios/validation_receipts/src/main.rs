@@ -48,14 +48,10 @@ impl ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
-fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    run_holochain_conductor(ctx)?;
-    Ok(())
-}
-
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    run_holochain_conductor(ctx)?;
     configure_app_ws_url(ctx)?;
     install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
@@ -160,7 +156,6 @@ fn main() -> WindTunnelResult<()> {
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(300)
     .add_capture_env("NO_VALIDATION_COMPLETE")
-    .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);

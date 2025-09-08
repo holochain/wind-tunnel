@@ -9,14 +9,10 @@ struct ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
-fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    run_holochain_conductor(ctx)?;
-    Ok(())
-}
-
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    run_holochain_conductor(ctx)?;
     configure_app_ws_url(ctx)?;
     let admin_url = ctx.runner_context().get_connection_string();
     let reporter = ctx.runner_context().reporter();
@@ -66,7 +62,6 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(120)
-    .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("minimal", agent_behaviour_minimal)
     .use_named_agent_behaviour("large", agent_behaviour_large)
