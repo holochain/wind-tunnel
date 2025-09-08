@@ -43,12 +43,13 @@ use wind_tunnel_runner::prelude::{
 /// - If there are no app interfaces, attaches a new one.
 /// - Reads the current admin URL from the [RunnerContext] and swaps the admin port for the app port.
 /// - Sets the `app_ws_url` value in [HolochainRunnerContext].
-pub fn configure_app_ws_url(
-    ctx: &mut RunnerContext<HolochainRunnerContext>,
+pub fn configure_app_ws_url<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    let admin_ws_url = ctx.get_connection_string().to_string();
-    let reporter = ctx.reporter();
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let reporter = ctx.runner_context().reporter();
     let app_port = ctx
+        .runner_context()
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
@@ -88,7 +89,7 @@ pub fn configure_app_ws_url(
         .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
-    let admin_ws_url = ctx.get_connection_string();
+    let admin_ws_url = ctx.runner_context().get_connection_string();
     let mut admin_ws_url = url::Url::parse(admin_ws_url)
         .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
     admin_ws_url
@@ -149,7 +150,7 @@ where
     SV: UserValuesConstraint,
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let app_ws_url = ctx.get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
     let run_id = ctx.runner_context().get_run_id().to_string();
@@ -261,7 +262,7 @@ where
     SV: UserValuesConstraint,
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let app_ws_url = ctx.get().app_ws_url();
     let reporter = ctx.runner_context().reporter();
     let installed_app_id = installed_app_id_for_agent(ctx);
 
