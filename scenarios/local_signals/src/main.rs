@@ -6,13 +6,13 @@ use std::time::Instant;
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     run_holochain_conductor(ctx)?;
-    configure_app_ws_url(ctx)?;
     Ok(())
 }
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
+    configure_app_ws_url(ctx)?;
     install_app(ctx, scenario_happ_path!("signal"), &"signal".into())?;
 
     Ok(())
