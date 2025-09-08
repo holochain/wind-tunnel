@@ -3,14 +3,10 @@ use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use validated_integrity::UpdateSampleEntryInput;
 
-fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    run_holochain_conductor(ctx)?;
-    Ok(())
-}
-
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
+    run_holochain_conductor(ctx)?;
     configure_app_ws_url(ctx)?;
     install_app(
         ctx,
@@ -50,7 +46,6 @@ fn main() -> WindTunnelResult<()> {
             env!("CARGO_PKG_NAME"),
         )
         .with_default_duration_s(60)
-        .use_setup(setup)
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(agent_behaviour)
         .use_agent_teardown(|ctx| {

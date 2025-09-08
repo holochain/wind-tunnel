@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
+use crate::holochain_runner::HolochainRunner;
+
 #[derive(Debug, Default)]
 pub struct DefaultScenarioValues {
     pub values: HashMap<String, String>,
@@ -18,6 +20,7 @@ pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues
     pub(crate) cell_id: Option<CellId>,
     pub(crate) app_client: Option<AppWebsocket>,
     pub(crate) app_ws_url: Option<String>,
+    pub(crate) holochain_runner: Option<HolochainRunner>,
     pub scenario_values: T,
 }
 

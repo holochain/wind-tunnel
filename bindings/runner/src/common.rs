@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{env, io};
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
+    AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
 };
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
@@ -597,10 +597,10 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
     }
 }
 
-pub fn run_holochain_conductor(
-    ctx: &mut RunnerContext<HolochainRunnerContext>,
+pub fn run_holochain_conductor<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    let connection_string = ctx.get_connection_string();
+    let connection_string = ctx.runner_context().get_connection_string();
     let admin_port_str = connection_string
         .rsplit_once(':')
         .map(|(_, ap)| ap)
@@ -628,11 +628,14 @@ pub fn run_holochain_conductor(
 
     let config = HolochainConfigBuilder::default()
         .with_bin_path(holochain_path)
-        .with_conductor_root_path(PathBuf::from(format!("./{}", ctx.get_run_id())))
+        .with_conductor_root_path(PathBuf::from(format!(
+            "./{}",
+            ctx.runner_context().get_run_id()
+        )))
         .with_admin_port(admin_port)
         .build()?;
 
-    ctx.get_mut().holochain_runner = ctx
+    ctx.get_mut().holochain_runner = ctx.runner_context()
         .executor()
         .execute_in_place(async move { HolochainRunner::run(&config).await.map(Some).map_err(|mut err| {
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
