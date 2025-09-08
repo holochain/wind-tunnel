@@ -1,0 +1,375 @@
+[
+  {
+    "apiVersion": "influxdata.com/v2alpha1",
+    "kind": "Dashboard",
+    "metadata": {
+      "name": "ridiculous-shtern-3e4001"
+    },
+    "spec": {
+      "charts": [
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "oCNl9QcEj4xfOvLvo54Eq",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#31C0F6"
+            },
+            {
+              "id": "7AmEjILLJy-865YeT04Wp",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#A500A5"
+            },
+            {
+              "id": "BKzQVprWCvnb0IUDO-Mtg",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#FF7E27"
+            }
+          ],
+          "geom": "line",
+          "height": 5,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Wasm usage",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> keep(columns: [\"fn\", \"zome\", \"_value\", \"_time\"])"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 12,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": " us"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "oCNl9QcEj4xfOvLvo54Eq",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#31C0F6"
+            },
+            {
+              "id": "7AmEjILLJy-865YeT04Wp",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#A500A5"
+            },
+            {
+              "id": "BKzQVprWCvnb0IUDO-Mtg",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#FF7E27"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Elapsed time between calls",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> elapsed(unit: 1us)\n  |> keep(columns: [\"_time\", \"elapsed\", \"fn\", \"zome\"])"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "elapsed",
+          "yPos": 5
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": " us"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "oCNl9QcEj4xfOvLvo54Eq",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#31C0F6"
+            },
+            {
+              "id": "7AmEjILLJy-865YeT04Wp",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#A500A5"
+            },
+            {
+              "id": "BKzQVprWCvnb0IUDO-Mtg",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#FF7E27"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Elapsed time difference",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> elapsed(unit: 1us)\n  |> difference(nonNegative: false, columns: [\"elapsed\"])\n  |> keep(columns: [\"_time\", \"elapsed\", \"fn\", \"zome\"])"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "elapsed",
+          "yPos": 9
+        },
+        {
+          "colors": [
+            {
+              "id": "base",
+              "name": "white",
+              "type": "text",
+              "hex": "#ffffff"
+            }
+          ],
+          "fieldOptions": [
+            {
+              "displayName": "_value",
+              "fieldName": "_value",
+              "visible": true
+            },
+            {
+              "displayName": "fn",
+              "fieldName": "fn",
+              "visible": true
+            },
+            {
+              "displayName": "zome",
+              "fieldName": "zome",
+              "visible": true
+            },
+            {
+              "displayName": "agent",
+              "fieldName": "agent",
+              "visible": true
+            }
+          ],
+          "height": 4,
+          "kind": "Table",
+          "name": "Call Count per fn",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)  \n  |> count(column: \"_value\")\n  |> keep(columns: [\"_value\", \"fn\", \"zome\"])"
+            }
+          ],
+          "staticLegend": {},
+          "tableOptions": {
+            "verticalTimeAxis": true
+          },
+          "timeFormat": "YYYY-MM-DD HH:mm:ss",
+          "width": 6,
+          "yPos": 13
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "oCNl9QcEj4xfOvLvo54Eq",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#31C0F6"
+            },
+            {
+              "id": "7AmEjILLJy-865YeT04Wp",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#A500A5"
+            },
+            {
+              "id": "BKzQVprWCvnb0IUDO-Mtg",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#FF7E27"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Usage difference between calls",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> difference(nonNegative: false, columns: [\"_value\"])\n  |> keep(columns: [\"_value\", \"fn\", \"zome\", \"_time\"])"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 5
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "oCNl9QcEj4xfOvLvo54Eq",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#31C0F6"
+            },
+            {
+              "id": "7AmEjILLJy-865YeT04Wp",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#A500A5"
+            },
+            {
+              "id": "BKzQVprWCvnb0IUDO-Mtg",
+              "name": "Nineteen Eighty Four",
+              "type": "scale",
+              "hex": "#FF7E27"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "2nd order difference",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hc.ribosome.wasm.usage\")\n  |> filter(fn: (r) => r[\"dna\"] + \"___\" + r[\"agent\"] == v.CellId)\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> difference(nonNegative: false, columns: [\"_value\"])\n  |> difference(nonNegative: false, columns: [\"_value\"])\n  |> keep(columns: [\"_value\", \"fn\", \"zome\", \"_time\"])"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 9
+        }
+      ],
+      "description": "Generic charts related to wasm usage meter per Cell",
+      "name": "Wasm Usage"
+    }
+  }
+]
