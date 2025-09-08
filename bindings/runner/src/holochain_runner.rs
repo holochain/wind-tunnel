@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::{Child, Command, Stdio},
-};
+use std::{fs, path::PathBuf, process::Stdio, time::Duration};
 
 use anyhow::{anyhow, Context};
 use holochain_conductor_api::{
@@ -13,6 +8,11 @@ use holochain_conductor_api::{
 use holochain_conductor_config::config::write_config;
 use holochain_types::websocket::AllowedOrigins;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    process::{Child, Command},
+    time::timeout,
+};
 use wind_tunnel_runner::prelude::WindTunnelResult;
 
 #[derive(Debug, Default)]
@@ -79,14 +79,14 @@ pub struct HolochainConfig {
 
 #[derive(Debug)]
 pub struct HolochainRunner {
-    holochain_handle: Child,
+    _holochain_handle: Child,
     conductor_root_path: PathBuf,
 }
 
 impl HolochainRunner {
     /// Runs an instance of Holochain, using the passed [`HolochainConfig`]. Storing the [`Child`]
     /// process internally so it can be gracefully shutdown on [`Drop::drop`].
-    pub fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
+    pub async fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
         let conductor_root_path = config.conductor_config_root_path.to_path_buf();
         if !fs::exists(&conductor_root_path)? {
             fs::create_dir(&conductor_root_path).with_context(|| {
@@ -118,6 +118,8 @@ impl HolochainRunner {
             .arg(conductor_config_path)
             .arg("--piped")
             .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .kill_on_drop(true)
             .spawn()
             .context("Failed to run Holochain conductor")?;
 
@@ -125,14 +127,44 @@ impl HolochainRunner {
         holochain_handle
             .stdin
             .as_mut()
-            .context("Failed to get stdin for the process running Holochain conductor")?
+            .context("Failed to get stdin for the running Holochain conductor")?
             .write_all(password.as_bytes())
+            .await
             .context("Failed to write the password to the process running the conductor")?;
 
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        log::trace!("Waiting for the conductor to start");
+        let holochain_stdout = holochain_handle
+            .stdout
+            .take()
+            .context("Failed to get stdout for the running Holochain conductor")?;
+
+        timeout(Duration::from_secs(5), async move {
+            let mut stdout_lines = BufReader::new(holochain_stdout).lines();
+            loop {
+                let line = stdout_lines
+                    .next_line()
+                    .await
+                    .context("Failed to read line from Holochain conductor stdout")?
+                    .ok_or(anyhow!("Holochain conductor shutdown before it was ready"))?;
+                log::info!(target: "holochain_conductor", "{line}");
+                if line == "Conductor ready." {
+                    if log::log_enabled!(target: "holochain_conductor", log::Level::Info) {
+                        tokio::spawn(async move {
+                            while let Ok(Some(line)) = stdout_lines.next_line().await {
+                                log::info!(target: "holochain_conductor", "{line}");
+                            }
+                        });
+                    }
+
+                    return Ok::<(), anyhow::Error>(());
+                }
+            }
+        })
+        .await
+        .context("Timed-out whilst waiting for the Holochain conductor to be ready")??;
 
         Ok(Self {
-            holochain_handle,
+            _holochain_handle: holochain_handle,
             conductor_root_path,
         })
     }
@@ -140,19 +172,6 @@ impl HolochainRunner {
 
 impl Drop for HolochainRunner {
     fn drop(&mut self) {
-        log::trace!("Killing the running Holochain conductor");
-
-        self.holochain_handle
-            .kill()
-            .expect("Failed to kill the Holochain conductor");
-
-        log::trace!("Waiting for the running Holochain conductor to exit");
-        self.holochain_handle
-            .wait()
-            .expect("Failed to wait for the Holochain conductor to exit after being killed");
-
-        log::info!("Successfully killed the Holochain conductor");
-
         log::trace!("Cleaning up the conductor files");
         if let Err(err) = fs::remove_dir_all(&self.conductor_root_path) {
             log::error!("Failed to cleanup the conductor files: {err}");
