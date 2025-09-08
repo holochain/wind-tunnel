@@ -1,8 +1,6 @@
-use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
-use crate::model::{
-    HolochainMetricsConfig, StandardRateStats, StandardTimingsStats, SummaryOutput,
-};
+use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
@@ -37,9 +35,6 @@ pub(crate) async fn summarize_zome_call_single_value(
         .try_aggregate()
         .await;
 
-    let holochain_metrics =
-        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
-
     SummaryOutput::new(
         summary.clone(),
         ZomeCallSingleValueSummary {
@@ -51,6 +46,5 @@ pub(crate) async fn summarize_zome_call_single_value(
                 .context("Load zome call error data")?,
         },
         host_metrics,
-        holochain_metrics,
     )
 }

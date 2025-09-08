@@ -1,6 +1,11 @@
 use polars::prelude::{col, lit, AnyValue, DataFrame, IntoLazy, UniqueKeepStrategy};
 use std::collections::{BTreeMap, HashSet};
 
+pub enum Partition {
+    Unpartitioned,
+    Partitioned(BTreeMap<String, DataFrame>),
+}
+
 /// Partition the [`DataFrame`] by unique combination of tag values across multiple tags.
 ///
 /// Values in Tag column MUST be in String format.
@@ -8,11 +13,8 @@ use std::collections::{BTreeMap, HashSet};
 /// Returns all the sub-DataFrames for each unique combination of tag values as a [`HashMap`]
 /// where the key is the string concatenation of key-value pairs of all given tags.
 ///
-/// If no tags are provided, returns the original DataFrame with an empty key.
-pub fn partition_by_tags(
-    data_frame: DataFrame,
-    tags: &[&str],
-) -> anyhow::Result<BTreeMap<String, DataFrame>> {
+/// If no tags are provided, returns [`Partition::Unpartitioned`]
+pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result<Partition> {
     // Check for duplicate tag names
     let mut unique_tags = HashSet::with_capacity(tags.len());
     for &tag in tags {
@@ -20,13 +22,10 @@ pub fn partition_by_tags(
             return Err(anyhow::anyhow!("Duplicate tag name found: {}", tag));
         }
     }
-    // If no tags provided, return the original DataFrame with an empty key
+    // If no tags provided, return [`Partition::Unpartitioned`]
     if tags.is_empty() {
-        let mut result = BTreeMap::new();
-        result.insert("".to_string(), data_frame);
-        return Ok(result);
+        return Ok(Partition::Unpartitioned);
     }
-
     // Get unique combinations of all tag values
     let tag_columns: Vec<String> = tags.iter().map(|&tag| tag.to_string()).collect();
     let selectors = data_frame
@@ -92,7 +91,7 @@ pub fn partition_by_tags(
         }
     }
 
-    Ok(partitioned)
+    Ok(Partition::Partitioned(partitioned))
 }
 
 #[cfg(test)]
@@ -115,11 +114,10 @@ mod tests {
     fn test_partition_with_no_tags() -> anyhow::Result<()> {
         let df = create_test_dataframe();
         let partitioned = partition_by_tags(df.clone(), &[])?;
-        // Should have 1 group with an empty key
-        assert_eq!(partitioned.len(), 1);
-        assert!(partitioned.contains_key(""));
         // The group should contain all rows from the original DataFrame
-        assert_eq!(partitioned[""].height(), df.height());
+        let Partition::Unpartitioned = partitioned else {
+            panic!("Expected Unpartitioned DataFrame");
+        };
         Ok(())
     }
 
@@ -153,7 +151,10 @@ mod tests {
     #[test]
     fn test_partition_by_single_tag() -> anyhow::Result<()> {
         let df = create_test_dataframe();
-        let partitioned = partition_by_tags(df.clone(), &["tag1"])?;
+        let partition = partition_by_tags(df.clone(), &["tag1"])?;
+        let Partition::Partitioned(partitioned) = partition else {
+            panic!("Expected Partitioned DataFrame");
+        };
         // Should have 3 groups: a, b, c
         assert_eq!(partitioned.len(), 3);
         // Check group "a" has 3 rows
@@ -192,7 +193,10 @@ mod tests {
     #[test]
     fn test_partition_by_two_tags() -> anyhow::Result<()> {
         let df = create_test_dataframe();
-        let partitioned = partition_by_tags(df.clone(), &["tag1", "tag2"])?;
+        let partition = partition_by_tags(df.clone(), &["tag1", "tag2"])?;
+        let Partition::Partitioned(partitioned) = partition else {
+            panic!("Expected Partitioned DataFrame");
+        };
         // Should have 5 combinations: (a,x), (a,y), (b,x), (b,y), (c,z)
         assert_eq!(partitioned.len(), 5);
         // Check specific combinations
@@ -218,7 +222,10 @@ mod tests {
     fn test_partition_with_numerical_tag() -> anyhow::Result<()> {
         let df = create_test_dataframe();
         // Test partition with one string tag and one numeric tag
-        let partitioned = partition_by_tags(df.clone(), &["tag1", "numeric_tag"])?;
+        let partition = partition_by_tags(df.clone(), &["tag1", "numeric_tag"])?;
+        let Partition::Partitioned(partitioned) = partition else {
+            panic!("Expected Partitioned DataFrame");
+        };
 
         // Should have 3 combinations: a,b,c
         assert_eq!(partitioned.len(), 3);

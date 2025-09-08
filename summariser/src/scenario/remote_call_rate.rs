@@ -1,5 +1,5 @@
-use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
-use crate::model::{HolochainMetricsConfig, PartitionedTimingStats, SummaryOutput};
+use crate::aggregator::HostMetricsAggregator;
+use crate::model::{PartitionedTimingStats, SummaryOutput};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
@@ -41,9 +41,6 @@ pub(crate) async fn summarize_remote_call_rate(
         .try_aggregate()
         .await;
 
-    let holochain_metrics =
-        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
-
     SummaryOutput::new(
         summary.clone(),
         RemoteCallRateSummary {
@@ -59,6 +56,5 @@ pub(crate) async fn summarize_remote_call_rate(
             error_count: query::zome_call_error_count(client, &summary).await?,
         },
         host_metrics,
-        holochain_metrics,
     )
 }

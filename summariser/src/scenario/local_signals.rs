@@ -1,6 +1,6 @@
-use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{round_to_n_dp, standard_timing_stats};
-use crate::model::{HolochainMetricsConfig, StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use polars::frame::DataFrame;
@@ -43,8 +43,6 @@ pub(crate) async fn summarize_local_signals(
         .try_aggregate()
         .await;
 
-    let holochain_metrics =
-        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
     SummaryOutput::new(
         summary,
         LocalSignalsSummary {
@@ -55,7 +53,6 @@ pub(crate) async fn summarize_local_signals(
             success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
         },
         host_metrics,
-        holochain_metrics,
     )
 }
 
