@@ -371,7 +371,7 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn h
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
 
-To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `$WT_METRICS_DIR` (set by the Nix shell).
+To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `WT_METRICS_DIR` (set by the Nix shell).
 For example:
 ```bash
 export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
@@ -387,24 +387,28 @@ Each scenario is expected to provide a README.md with at least:
 For example, see the [zome_call_single_value](https://github.com/holochain/wind-tunnel/blob/main/scenarios/zome_call_single_value/README.md) scenario.
 
 As well as the command you use to run the scenario, you will need to select an appropriate reporter. Run the scenario with the `--help` flag to see the available options.
-
+For local development, the default `in-memory` reporter will do.
+If you have influx running and only want scenario metrics, then you can use the `influx-client` option.
+If you have set up Holochain or host metrics then you can use the `influx-file` option and then import all metrics in the next step.
 
 #### Importing Metrics
 
-Once you've finished running a scenario, you can collect host, Holochain and scenario metrics with
+Once you've finished running a scenario, you can collect host, Holochain and scenario metrics with:
 
 ```sh
-nix run .#local-import-metrics
+nix run .#local-upload-metrics
 ```
 
-At this point the metrics will be imported to InfluxDB, and you will be able to view the metrics in the InfluxDB dashboards by run_id.
+At this point the metrics will be uploaded to InfluxDB, and you will be able to view the metrics in the InfluxDB dashboards by `run_id`.
 
-Running this nix command will also clean up the current metrics from disk, so you are immediately ready to run the next scenario.
+Running this Nix command will also clean up the current metrics from disk, so you are immediately ready to run the next scenario.
 
 > [!Warning]
 > The metrics must be imported after each scenario run since they are associated only with the latest scenario run.
 > [!Warning]
 > If Holochain ran with metrics enabled, it must be restarted after each scenario run since its output file is deleted after importing.
+> [!Warning]
+> If host metrics were enabled with Telegraf, it must be restarted after each scenario run since its output file is deleted after importing.
 
 ### Developer guide (for wind-tunnel)
 

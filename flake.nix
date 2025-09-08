@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
-    unstable.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     holonix = {
@@ -24,12 +23,11 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, unstable, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
+  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
-        unstablePkgs = import unstable { inherit system; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
@@ -87,7 +85,7 @@
                 pkgs.influxdb2-cli
                 pkgs.influxdb2-server
                 # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
-                unstablePkgs.telegraf
+                pkgs.telegraf
                 pkgs.yq
                 pkgs.httpie
                 unfreePkgs.nomad
@@ -128,8 +126,8 @@
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
           inherit lp-tool;
-          local-import-metrics = pkgs.writeShellApplication {
-            name = "local-import-metrics";
+          local-upload-metrics = pkgs.writeShellApplication {
+            name = "local-upload-metrics";
             runtimeInputs = [
               lp-tool
               pkgs.gnused
@@ -149,8 +147,8 @@
               rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
-          ci-import-metrics = pkgs.writeShellApplication {
-            name = "ci-import-metrics";
+          ci-upload-metrics = pkgs.writeShellApplication {
+            name = "ci-upload-metrics";
             runtimeInputs = [
               lp-tool
               pkgs.gnused
