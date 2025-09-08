@@ -39,13 +39,13 @@ impl UserValuesConstraint for ScenarioValues {}
 
 fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     run_holochain_conductor(ctx)?;
-    configure_app_ws_url(ctx)?;
     Ok(())
 }
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    configure_app_ws_url(ctx)?;
     install_app(
         ctx,
         scenario_happ_path!("remote_signal"),
