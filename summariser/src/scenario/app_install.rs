@@ -1,6 +1,6 @@
-use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::standard_timing_stats;
-use crate::model::{HolochainMetricsConfig, StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardTimingsStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use serde::Serialize;
@@ -32,9 +32,6 @@ pub(crate) async fn summarize_app_install(
         .try_aggregate()
         .await;
 
-    let holochain_metrics =
-        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
-
     SummaryOutput::new(
         summary,
         AppInstallSummary {
@@ -43,6 +40,5 @@ pub(crate) async fn summarize_app_install(
                 .context("Standard timing stats")?,
         },
         host_metrics,
-        holochain_metrics,
     )
 }

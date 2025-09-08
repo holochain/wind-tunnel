@@ -1,8 +1,8 @@
-use crate::aggregator::{try_aggregate_holochain_metrics, HostMetricsAggregator};
+use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
-    HolochainMetricsConfig, PartitionRateStats, PartitionedRateStats, PartitionedTimingStats,
-    StandardRateStats, SummaryOutput,
+    PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
+    SummaryOutput,
 };
 use crate::query;
 use anyhow::Context;
@@ -96,9 +96,6 @@ pub(crate) async fn summarize_countersigning_two_party(
         .try_aggregate()
         .await;
 
-    let holochain_metrics =
-        try_aggregate_holochain_metrics(&client, &summary, HolochainMetricsConfig::none()).await;
-
     SummaryOutput::new(
         summary,
         TwoPartyCountersigningSummary {
@@ -117,7 +114,6 @@ pub(crate) async fn summarize_countersigning_two_party(
             initiated_failure_rate: initiated_failures,
         },
         host_metrics,
-        holochain_metrics,
     )
 }
 
