@@ -631,18 +631,16 @@ pub fn run_holochain_conductor(
         .with_admin_port(admin_port)
         .build()?;
 
-    match HolochainRunner::run(&config) {
-        Ok(holochain) => {
-            ctx.get_mut().holochain_runner = Some(holochain);
-            Ok(())
-        }
-        Err(mut err) => {
+    ctx.get_mut().holochain_runner = ctx
+        .executor()
+        .execute_in_place(async move { HolochainRunner::run(&config).await.map(Some).map_err(|mut err| {
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
                 if io_error.kind() == io::ErrorKind::NotFound {
                     err = err.context("'holochain' binary not found, make sure it's in your PATH or overwrite the path with 'WT_HOLOCHAIN_PATH'");
                 }
             }
-            Err(err)
-        }
-    }
+            err
+        })})?;
+
+    Ok(())
 }
