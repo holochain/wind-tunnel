@@ -626,15 +626,13 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
             .with_bin_path(holochain_path);
     };
 
-    let config = ctx
-        .get_mut()
-        .take_holochain_config()
-        .with_conductor_root_path(PathBuf::from(format!(
-            "./{}",
-            ctx.runner_context().get_run_id()
-        )))
-        .with_admin_port(admin_port)
-        .build()?;
+    let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
+    ctx.get_mut()
+        .holochain_config_mut()
+        .with_conductor_root_path(conductor_root_path)
+        .with_admin_port(admin_port);
+
+    let config = ctx.get_mut().take_holochain_config().build()?;
 
     ctx.get_mut().holochain_runner = ctx.runner_context()
         .executor()
