@@ -597,6 +597,9 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
     }
 }
 
+/// Runs an instance of the Holochain conductor, using the configuration built from the
+/// [`HolochainAgentContext::holochain_config`] and stores the running process in
+/// [`HolochainAgentContext::holochain_runner`].
 pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
