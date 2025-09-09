@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
-use crate::holochain_runner::HolochainRunner;
+use crate::holochain_runner::{HolochainConfigBuilder, HolochainRunner};
 
 #[derive(Debug, Default)]
 pub struct DefaultScenarioValues {
@@ -20,6 +20,7 @@ pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues
     pub(crate) cell_id: Option<CellId>,
     pub(crate) app_client: Option<AppWebsocket>,
     pub(crate) app_ws_url: Option<String>,
+    pub(crate) holochain_config: Option<HolochainConfigBuilder>,
     pub(crate) holochain_runner: Option<HolochainRunner>,
     pub scenario_values: T,
 }
@@ -51,5 +52,17 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
         self.app_ws_url.clone().expect(
             "app_ws_url is not set, did you forget to call `configure_app_port` in your agent_setup?",
         )
+    }
+
+    /// Get a mutable reference to the [`HolochainConfigBuilder`] used when running holochain with
+    /// [`crate::common::run_holochain_conductor`].
+    pub fn holochain_config_mut(&mut self) -> &mut HolochainConfigBuilder {
+        self.holochain_config.get_or_insert_default()
+    }
+
+    /// Call [`Option::take`] on [`Self::holochain_config`], returning the current value or default
+    /// value if not set, and setting the current internal value to [`None`].
+    pub(crate) fn take_holochain_config(&mut self) -> HolochainConfigBuilder {
+        self.holochain_config.take().unwrap_or_default()
     }
 }

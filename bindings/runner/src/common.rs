@@ -1,5 +1,5 @@
 use crate::context::HolochainAgentContext;
-use crate::holochain_runner::{HolochainConfigBuilder, HolochainRunner};
+use crate::holochain_runner::HolochainRunner;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
@@ -626,7 +626,9 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         PathBuf::from("holochain")
     };
 
-    let config = HolochainConfigBuilder::default()
+    let config = ctx
+        .get_mut()
+        .take_holochain_config()
         .with_bin_path(holochain_path)
         .with_conductor_root_path(PathBuf::from(format!(
             "./{}",
