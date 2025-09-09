@@ -12,6 +12,11 @@ variable "reporter" {
   default     = {{ index (ds "vars") "reporter" | default "influx-file" | quote }}
 }
 
+variable "holochain_bin_url" {
+  type        = string
+  description = "URL from which to download the `holochain` binary from to start conductors with"
+}
+
 variable "scenario_url" {
   type        = string
   description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path" 
@@ -88,12 +93,17 @@ job "{{ (ds "vars").scenario_name }}" {
           }
         }
 
+        artifact {
+          source = var.holochain_bin_url
+        }
+
         env {
           RUST_LOG          = "info"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "{{ mul (index (ds "vars") "agents_per_node" | default 1) (len (index (ds "vars") "behaviours" | default (coll.Slice "") )) }}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
+          WT_HOLOCHAIN_PATH = "${NOMAD_TASK_DIR}/holochain"
         }
 
         config {
