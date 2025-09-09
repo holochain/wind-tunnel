@@ -77,27 +77,6 @@ job "{{ (ds "vars").scenario_name }}" {
     labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
 
     content {
-      task "start_holochain" {
-        lifecycle {
-          hook    = "prestart"
-          sidecar = true
-        }
-
-        env {
-          RUST_LOG = "info"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
-        }
-
-        resources {
-          memory = 2048
-        }
-      }
-
       dynamic "task" {
         // Only run host metrics collector if `var.reporter` is set to `influx-file`.
         for_each = var.reporter == "influx-file" ? [var.reporter] : []
@@ -124,18 +103,6 @@ job "{{ (ds "vars").scenario_name }}" {
             command = "telegraf"
             args    = []
           }
-        }
-      }
-
-      task "wait_for_holochain" {
-        lifecycle {
-          hook = "prestart"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "echo -n 'Waiting for Holochain to start'; until hc s call --running=8888 dump-conductor-state 2>/dev/null >/dev/null; do echo '.'; sleep 0.5; done; echo 'done'; sleep 1"]
         }
       }
 
