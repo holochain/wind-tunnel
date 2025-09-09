@@ -29,7 +29,7 @@ impl HolochainConfigBuilder {
         self
     }
 
-    pub(crate) fn with_bin_path(mut self, path: impl Into<PathBuf>) -> Self {
+    pub(crate) fn with_bin_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
         self.bin_path = Some(path.into());
         self
     }

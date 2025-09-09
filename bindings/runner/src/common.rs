@@ -613,7 +613,7 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
     })?;
 
-    let holochain_path = if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
+    if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
         let holochain_path = PathBuf::from(holochain_path);
         if !holochain_path.exists() {
             bail!(
@@ -621,15 +621,14 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
                 holochain_path.display()
             );
         }
-        holochain_path
-    } else {
-        PathBuf::from("holochain")
+        ctx.get_mut()
+            .holochain_config_mut()
+            .with_bin_path(holochain_path);
     };
 
     let config = ctx
         .get_mut()
         .take_holochain_config()
-        .with_bin_path(holochain_path)
         .with_conductor_root_path(PathBuf::from(format!(
             "./{}",
             ctx.runner_context().get_run_id()
