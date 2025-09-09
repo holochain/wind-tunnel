@@ -1,10 +1,3 @@
-variable "connection_string" {
-  type        = string
-  description = "The URL to be used to connect to the service being tested"
-  {{- /* Default: read `connection_string` from the JSON data source `vars`, or set to `"ws://localhost:8888"` if not provided.*/}}
-  default     = {{ index (ds "vars") "connection_string" | default "ws://localhost:8888" | quote }}
-}
-
 variable "duration" {
   type        = number
   description = "The maximum duration of the scenario run"
@@ -54,29 +47,6 @@ job "{{ (ds "vars").scenario_name }}" {
         delay            = "120s"
       }
 
-      task "start_holochain" {
-        lifecycle {
-          hook    = "prestart"
-          sidecar = true
-        }
-
-        env {
-          RUST_LOG = "info"
-          HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "mkdir -p ${NOMAD_ALLOC_DIR}/data/telegraf/metrics/ && hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://dev-test-bootstrap2.holochain.org webrtc wss://dev-test-bootstrap2.holochain.org && echo 1234 | hc s --piped -f 8888 run"]
-        }
-
-        resources {
-          cores = 2
-          memory = 2048
-        }
-      }
-
       dynamic "task" {
         // Only run host metrics collector if `var.reporter` is set to `influx-file`.
         for_each = var.reporter == "influx-file" ? [var.reporter] : []
@@ -106,18 +76,6 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
-      task "wait_for_holochain" {
-        lifecycle {
-          hook = "prestart"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "echo -n 'Waiting for Holochain to start'; until hc s call --running=8888 dump-conductor-state 2>/dev/null >/dev/null; do echo '.'; sleep 0.5; done; echo 'done'; sleep 1"]
-        }
-      }
-
       task "run_scenario" {
         driver = "raw_exec"
 
@@ -143,7 +101,6 @@ job "{{ (ds "vars").scenario_name }}" {
           command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : {{ (ds "vars").scenario_name | quote }}
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
-            "--connection-string=${var.connection_string}",
             var.duration != null ? "--duration=${var.duration}" : null,
             "--reporter=${var.reporter}",
             group.value != "" ? "--behaviour=${group.value}:1" : null,
