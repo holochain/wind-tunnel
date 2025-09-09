@@ -34,12 +34,12 @@ impl HolochainConfigBuilder {
         self
     }
 
-    pub(crate) fn with_admin_port(mut self, port: u16) -> Self {
+    pub(crate) fn with_admin_port(&mut self, port: u16) -> &mut Self {
         self.admin_port = Some(port);
         self
     }
 
-    pub(crate) fn with_conductor_root_path(mut self, path: impl Into<PathBuf>) -> Self {
+    pub(crate) fn with_conductor_root_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
         self.conductor_config_root_path = Some(path.into().into());
         self
     }
