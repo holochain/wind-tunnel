@@ -85,12 +85,13 @@ job "{{ (ds "vars").scenario_name }}" {
 
         env {
           RUST_LOG = "info"
+          HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
         }
 
         driver = "raw_exec"
         config {
           command = "bash"
-          args    = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
+          args    = ["-c", "mkdir -p ${NOMAD_ALLOC_DIR}/data/telegraf/metrics/ && hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
         }
 
         resources {
