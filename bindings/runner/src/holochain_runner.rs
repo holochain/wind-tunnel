@@ -20,9 +20,15 @@ pub struct HolochainConfigBuilder {
     bin_path: Option<PathBuf>,
     admin_port: Option<u16>,
     conductor_config_root_path: Option<ConfigRootPath>,
+    target_arc_factor: Option<u32>,
 }
 
 impl HolochainConfigBuilder {
+    pub fn with_target_arc_factor(&mut self, target_arc_factor: u32) -> &mut Self {
+        self.target_arc_factor = Some(target_arc_factor);
+        self
+    }
+
     pub(crate) fn with_bin_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.bin_path = Some(path.into());
         self
@@ -44,7 +50,7 @@ impl HolochainConfigBuilder {
             "Conductor config root path not set, this should be set by the Wind Tunnel runner"
         ))?;
         let conductor_data_root_path = conductor_config_root_path.is_also_data_root_path();
-        let conductor_config = if let Some(admin_port) = self.admin_port {
+        let mut conductor_config = if let Some(admin_port) = self.admin_port {
             ConductorConfig {
                 data_root_path: Some(conductor_data_root_path.clone()),
                 admin_interfaces: Some(vec![AdminInterfaceConfig {
@@ -61,6 +67,9 @@ impl HolochainConfigBuilder {
         } else {
             ConductorConfig::default()
         };
+        if let Some(target_arc_factor) = self.target_arc_factor {
+            conductor_config.network.target_arc_factor = target_arc_factor;
+        }
 
         Ok(HolochainConfig {
             bin_path,
