@@ -32,12 +32,6 @@ variable "behaviours" {
   default = {{ index (ds "vars") "behaviours" | default (coll.Slice "") | toJSON }}
 }
 
-variable "holochain-bin-url" {
-  type        = string
-  description = "URL from which to download the `holochain` binary from to start conductors with. The one in PATH will be used if not set"
-  default     = null
-}
-
 variable "scenario-url" {
   type        = string
   description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path" 
@@ -112,29 +106,29 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
-      dynamic "task" {
-        // Only run this task if holochain-bin-url is set.
-        for_each = var.holochain-bin-url != null ? [var.holochain-bin-url] : []
-        labels   = ["download_holochain_bin"]
+      task "download_holochain_nix_store" {
+        lifecycle {
+          hook = "prestart"
+          sidecar = false
+        }
 
-        content {
-          lifecycle {
-            hook = "prestart"
-            sidecar = false
-          }
+        driver = "raw_exec"
 
-          driver = "raw_exec"
+        config {
+          command = "/run/current-system/sw/bin/nix"
+          args = [
+            "copy",
+            "--to",
+            "${NOMAD_ALLOC_DIR}",
+            "--substitute-on-destination",
+            "--out-link",
+            "${NOMAD_ALLOC_DIR}/holochain",
+            "github:holochain/holonix#holochain"
+          ]
+        }
 
-          artifact {
-            source = var.holochain-bin-url
-            mode = "file"
-            destination = "${NOMAD_ALLOC_DIR}/holochain"
-          }
-
-          config {
-            command = "chmod"
-            args    = ["+x", "${NOMAD_ALLOC_DIR}/holochain"]
-          }
+        resources {
+          memory = 2048
         }
       }
 
@@ -156,6 +150,7 @@ job "{{ (ds "vars").scenario_name }}" {
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "${var.min-agents}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
+          WT_HOLOCHAIN_PATH = "${NOMAD_ALLOC_DIR}/holochain/bin/holochain"
         }
 
         config {
