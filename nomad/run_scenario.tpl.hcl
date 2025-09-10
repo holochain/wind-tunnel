@@ -117,12 +117,10 @@ job "{{ (ds "vars").scenario_name }}" {
         config {
           command = "/run/current-system/sw/bin/nix"
           args = [
+            "--accept-flake-config",
             "copy",
             "--to",
             "${NOMAD_ALLOC_DIR}",
-            "--substitute-on-destination",
-            "--out-link",
-            "${NOMAD_ALLOC_DIR}/holochain",
             "github:holochain/holonix#holochain"
           ]
         }
@@ -150,7 +148,7 @@ job "{{ (ds "vars").scenario_name }}" {
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "${var.min-agents}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
-          WT_HOLOCHAIN_PATH = "${NOMAD_ALLOC_DIR}/holochain/bin/holochain"
+          WT_HOLOCHAIN_PATH = "${NOMAD_ALLOC_DIR}/nix/store/*-holochain-*/bin/holochain"
         }
 
         config {
