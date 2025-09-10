@@ -10,7 +10,7 @@ pub enum Partition {
 ///
 /// Values in Tag column MUST be in String format.
 ///
-/// Returns all the sub-DataFrames for each unique combination of tag values as a [`HashMap`]
+/// Returns all the sub-DataFrames for each unique combination of tag values as a [`BTreeMap`]
 /// where the key is the string concatenation of key-value pairs of all given tags.
 ///
 /// If no tags are provided, returns [`Partition::Unpartitioned`]
