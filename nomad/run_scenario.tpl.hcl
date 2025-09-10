@@ -149,18 +149,8 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         config {
-          // If `var.scenario-url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario-url)) ? abspath(var.scenario-url) : var.scenario-name
-          // The `compact` function removes empty strings and `null` items from the list.
-          args = compact([
-            "--connection-string=${var.connection-string}",
-            var.duration != null ? "--duration=${var.duration}" : null,
-            var.reporter != null ? "--reporter=${var.reporter}" : null,
-            group.value != "" ? "--behaviour=${group.value}:1" : null,
-            var.run-id != null ? "--run-id=${var.run-id}" : null,
-            "--agents=${var.agents-per-node}",
-            "--no-progress"
-          ])
+          command = "${NOMAD_ALLOC_DIR}/holochain"
+          args = [ "--help" ]
         }
 
         resources {
