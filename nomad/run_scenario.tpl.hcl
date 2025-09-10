@@ -83,9 +83,15 @@ job "{{ (ds "vars").scenario_name }}" {
           sidecar = true
         }
 
+        restart {
+          interval         = "30m"
+          attempts         = 5
+          delay            = "120s"
+        }
+
         env {
-          RUST_LOG = "info"
           HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
+          RUST_LOG = "info"
         }
 
         driver = "raw_exec"
@@ -95,6 +101,7 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         resources {
+          cores = 2
           memory = 2048
         }
       }
