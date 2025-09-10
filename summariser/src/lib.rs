@@ -9,6 +9,7 @@ mod aggregator;
 mod analyze;
 mod frame;
 pub mod model;
+mod partition;
 mod query;
 pub mod scenario;
 
