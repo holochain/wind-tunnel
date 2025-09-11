@@ -604,16 +604,28 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
     if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
-        let holochain_path = PathBuf::from(holochain_path);
-        if !holochain_path.exists() {
-            bail!(
+        if holochain_path.is_empty() {
+            bail!("'WT_HOLOCHAIN_PATH' set to empty string");
+        }
+        if holochain_path == "holochain" {
+            log::warn!("'WT_HOLOCHAIN_PATH' set to 'holochain' so looking in user's 'PATH'");
+        } else {
+            let holochain_path = PathBuf::from(holochain_path);
+            if !holochain_path.exists() {
+                bail!(
                 "Path to Holochain binary overwritten with 'WT_HOLOCHAIN_PATH={}' but that path doesn't exist",
                 holochain_path.display()
             );
+            }
+            ctx.get_mut()
+                .holochain_config_mut()
+                .with_bin_path(holochain_path);
         }
-        ctx.get_mut()
-            .holochain_config_mut()
-            .with_bin_path(holochain_path);
+    } else {
+        log::info!(
+            "'WT_HOLOCHAIN_PATH' not set so assuming a Holochain conductor is running externally"
+        );
+        return Ok(());
     };
 
     let connection_string = ctx.runner_context().get_connection_string();
@@ -642,7 +654,11 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         .execute_in_place(async move { HolochainRunner::run(&config).await.map(Some).map_err(|mut err| {
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
                 if io_error.kind() == io::ErrorKind::NotFound {
-                    err = err.context("'holochain' binary not found, make sure it's in your PATH or overwrite the path with 'WT_HOLOCHAIN_PATH'");
+                    if  env::var("WT_HOLOCHAIN_PATH").is_ok_and(|holochain_path| holochain_path == "holochain") {
+                        err = err.context("'holochain' binary not found in your PATH");
+                    } else {
+                        err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
+                    }
                 }
             }
             err
