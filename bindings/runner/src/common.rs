@@ -1,6 +1,7 @@
 use crate::context::HolochainAgentContext;
+use crate::holochain_runner::HolochainRunner;
 use crate::runner_context::HolochainRunnerContext;
-use anyhow::Context;
+use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
     handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
@@ -18,8 +19,9 @@ use rand::thread_rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::{env, fs, io};
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
+    AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
 };
 
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
@@ -41,12 +43,13 @@ use wind_tunnel_runner::prelude::{
 /// - If there are no app interfaces, attaches a new one.
 /// - Reads the current admin URL from the [RunnerContext] and swaps the admin port for the app port.
 /// - Sets the `app_ws_url` value in [HolochainRunnerContext].
-pub fn configure_app_ws_url(
-    ctx: &mut RunnerContext<HolochainRunnerContext>,
+pub fn configure_app_ws_url<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    let admin_ws_url = ctx.get_connection_string().to_string();
-    let reporter = ctx.reporter();
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let reporter = ctx.runner_context().reporter();
     let app_port = ctx
+        .runner_context()
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
@@ -83,10 +86,10 @@ pub fn configure_app_ws_url(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed to set up app port")?;
+        .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
-    let admin_ws_url = ctx.get_connection_string();
+    let admin_ws_url = ctx.runner_context().get_connection_string();
     let mut admin_ws_url = url::Url::parse(admin_ws_url)
         .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
     admin_ws_url
@@ -147,7 +150,7 @@ where
     SV: UserValuesConstraint,
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let app_ws_url = ctx.get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
     let run_id = ctx.runner_context().get_run_id().to_string();
@@ -259,7 +262,7 @@ where
     SV: UserValuesConstraint,
 {
     let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
-    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let app_ws_url = ctx.get().app_ws_url();
     let reporter = ctx.runner_context().reporter();
     let installed_app_id = installed_app_id_for_agent(ctx);
 
@@ -592,4 +595,81 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
         CellInfo::Provisioned(c) => Ok(c.cell_id.clone()),
         _ => anyhow::bail!("Cell not provisioned"),
     }
+}
+
+/// Runs an instance of the Holochain conductor, using the configuration built from the
+/// [`HolochainAgentContext::holochain_config`] and stores the running process in
+/// [`HolochainAgentContext::holochain_runner`].
+pub fn run_holochain_conductor<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
+    if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
+        if holochain_path.is_empty() {
+            bail!("'WT_HOLOCHAIN_PATH' set to empty string");
+        }
+        if holochain_path == "holochain" {
+            log::warn!("'WT_HOLOCHAIN_PATH' set to 'holochain' so looking in user's 'PATH'");
+        } else {
+            let holochain_path = PathBuf::from(holochain_path);
+            if !holochain_path.exists() {
+                bail!(
+                "Path to Holochain binary overwritten with 'WT_HOLOCHAIN_PATH={}' but that path doesn't exist",
+                holochain_path.display()
+            );
+            }
+            ctx.get_mut()
+                .holochain_config_mut()
+                .with_bin_path(holochain_path);
+        }
+    } else {
+        log::info!(
+            "'WT_HOLOCHAIN_PATH' not set so assuming a Holochain conductor is running externally"
+        );
+        return Ok(());
+    };
+
+    let connection_string = ctx.runner_context().get_connection_string();
+    let admin_port_str = connection_string
+        .rsplit_once(':')
+        .map(|(_, ap)| ap)
+        .with_context(|| {
+            format!(
+                "connection_string of '{connection_string}' not in valid format of 'address:port'"
+            )
+        })?;
+    let admin_port = admin_port_str.parse().with_context(|| {
+        format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
+    })?;
+
+    let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
+    ctx.get_mut()
+        .holochain_config_mut()
+        .with_conductor_root_path(&conductor_root_path)
+        .with_admin_port(admin_port);
+
+    let config = ctx.get_mut().take_holochain_config().build()?;
+
+    ctx.get_mut().holochain_runner = ctx.runner_context()
+        .executor()
+        .execute_in_place(async move { HolochainRunner::run(&config).await.map(Some).map_err(|mut err| {
+            log::trace!("Error whilst starting conductor so cleaning up directory");
+            if let Err(err) = fs::remove_dir_all(conductor_root_path) {
+                log::error!("Failed to cleanup the conductor files: {err}");
+            } else {
+                log::info!("Successfully cleaned up the conductor files after error");
+            }
+
+            if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
+                if io_error.kind() == io::ErrorKind::NotFound {
+                    if  env::var("WT_HOLOCHAIN_PATH").is_ok_and(|holochain_path| holochain_path == "holochain") {
+                        err = err.context("'holochain' binary not found in your PATH");
+                    } else {
+                        err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
+                    }
+                }
+            }
+            err
+        })})?;
+
+    Ok(())
 }
