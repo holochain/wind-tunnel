@@ -19,7 +19,7 @@ use rand::thread_rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use std::{env, io};
+use std::{env, fs, io};
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
 };
@@ -644,7 +644,7 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
     ctx.get_mut()
         .holochain_config_mut()
-        .with_conductor_root_path(conductor_root_path)
+        .with_conductor_root_path(&conductor_root_path)
         .with_admin_port(admin_port);
 
     let config = ctx.get_mut().take_holochain_config().build()?;
@@ -652,6 +652,13 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx.get_mut().holochain_runner = ctx.runner_context()
         .executor()
         .execute_in_place(async move { HolochainRunner::run(&config).await.map(Some).map_err(|mut err| {
+            log::trace!("Error whilst starting conductor so cleaning up directory");
+            if let Err(err) = fs::remove_dir_all(conductor_root_path) {
+                log::error!("Failed to cleanup the conductor files: {err}");
+            } else {
+                log::info!("Successfully cleaned up the conductor files after error");
+            }
+
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
                 if io_error.kind() == io::ErrorKind::NotFound {
                     if  env::var("WT_HOLOCHAIN_PATH").is_ok_and(|holochain_path| holochain_path == "holochain") {
