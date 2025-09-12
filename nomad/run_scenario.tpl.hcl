@@ -90,8 +90,8 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         env {
-          HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
           RUST_LOG = "info"
+          HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
         }
 
         driver = "raw_exec"

@@ -70,7 +70,6 @@ jobs:
           echo "Waiting for ${{ matrix.required-nodes || 1 }} node(s) to be free"
           while true; do
               count=$(nix run --impure --inputs-from . nixpkgs#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
-              echo "Free nodes: ${count:-0}"
               if (( ${count:-0} >= ${{ matrix.required-nodes || 1 }} )); then
                   break
               else
