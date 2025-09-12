@@ -77,6 +77,12 @@ job "{{ (ds "vars").scenario_name }}" {
     labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
 
     content {
+      restart {
+        interval         = "30m"
+        attempts         = 5
+        delay            = "120s"
+      }
+
       task "start_holochain" {
         lifecycle {
           hook    = "prestart"
@@ -95,6 +101,7 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         resources {
+          cores = 2
           memory = 2048
         }
       }
