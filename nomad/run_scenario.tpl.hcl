@@ -76,13 +76,13 @@ job "{{ (ds "vars").scenario_name }}" {
     for_each = var.behaviours
     labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
 
-    restart {
-      interval = "30m"
-      attempts = 5
-      delay    = "120s"
-    }
-
     content {
+      restart {
+        interval         = "30m"
+        attempts         = 5
+        delay            = "120s"
+      }
+
       task "start_holochain" {
         lifecycle {
           hook    = "prestart"
