@@ -25,6 +25,33 @@ use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
 };
 
+/// Sets the [`HolochainAgentContext::admin_ws_url`], if not already set, getting the value from
+/// [`wind_tunnel_runner::context::RunnerContext::connection_string`].
+///
+/// After calling this function you will be able to use the [`HolochainAgentContext::app_ws_url`]
+/// in your agent hooks:
+/// ```rust
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext};
+/// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     let admin_ws_url = ctx.get().admin_ws_url();
+///     Ok(())
+/// }
+/// ```
+pub fn configure_admin_ws_url<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
+    let connection_string = ctx
+        .runner_context()
+        .get_connection_string()
+        .to_socket_addr()
+        .context("Failed to convert connection-string to admin_ws_url")?;
+    ctx.get_mut().admin_ws_url.get_or_insert(connection_string);
+
+    Ok(())
+}
+
 /// Sets the `app_ws_url` value in [HolochainRunnerContext] using a valid app port on the target conductor.
 ///
 /// After calling this function you will be able to use the `app_ws_url` in your agent hooks:
@@ -47,7 +74,7 @@ use wind_tunnel_runner::prelude::{
 pub fn configure_app_ws_url<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
     let reporter = ctx.runner_context().reporter();
     let app_port = ctx
         .runner_context()
@@ -90,15 +117,8 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
         .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
-    let app_ws_url = {
-        let mut admin_ws_url = ctx
-            .runner_context()
-            .get_connection_string()
-            .to_socket_addr()
-            .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
-        admin_ws_url.set_port(app_port);
-        admin_ws_url
-    };
+    let mut app_ws_url = admin_ws_url;
+    app_ws_url.set_port(app_port);
 
     ctx.get_mut().app_ws_url = Some(app_ws_url);
 
@@ -153,7 +173,7 @@ pub fn install_app<SV>(
 where
     SV: UserValuesConstraint,
 {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
     let app_ws_url = ctx.get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
@@ -265,7 +285,7 @@ pub fn use_installed_app<SV>(
 where
     SV: UserValuesConstraint,
 {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
     let app_ws_url = ctx.get().app_ws_url();
     let reporter = ctx.runner_context().reporter();
     let installed_app_id = installed_app_id_for_agent(ctx);
@@ -353,7 +373,7 @@ pub fn try_wait_for_min_agents<SV>(
 where
     SV: UserValuesConstraint,
 {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
     let reporter = ctx.runner_context().reporter();
     let agent_name = ctx.agent_name().to_string();
 
@@ -438,7 +458,7 @@ pub fn uninstall_app<SV>(
 where
     SV: UserValuesConstraint,
 {
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
 
     let installed_app_id = installed_app_id.or_else(|| ctx.get().installed_app_id().ok());
     if installed_app_id.is_none() {
@@ -552,7 +572,7 @@ where
 {
     let cell_id = ctx.get().cell_id();
     let reporter: Arc<Reporter> = ctx.runner_context().reporter();
-    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let admin_ws_url = ctx.get().admin_ws_url();
 
     ctx.runner_context()
         .executor()
@@ -644,6 +664,11 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     let admin_port = admin_port_str.parse().with_context(|| {
         format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
     })?;
+    ctx.get_mut().admin_ws_url = Some(
+        format!("ws://localhost:{admin_port}")
+            .to_socket_addr()
+            .context("Failed to create admin_ws_url from localhost and admin_port")?,
+    );
 
     let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
     ctx.get_mut()
