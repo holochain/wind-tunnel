@@ -6,6 +6,7 @@ use holochain_client_instrumented::prelude::{
     handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
 };
+use holochain_client_instrumented::ToSocketAddr;
 use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
 use holochain_types::prelude::*;
 use holochain_types::prelude::{
@@ -32,7 +33,7 @@ use wind_tunnel_runner::prelude::{
 /// use wind_tunnel_runner::prelude::{AgentContext, HookResult};
 ///
 /// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
-///     let app_ws_url = ctx.runner_context().get().app_ws_url();
+///     let app_ws_url = ctx.get().app_ws_url();
 ///     Ok(())
 /// }
 /// ```
@@ -89,14 +90,17 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
         .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
-    let admin_ws_url = ctx.runner_context().get_connection_string();
-    let mut admin_ws_url = url::Url::parse(admin_ws_url)
-        .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
-    admin_ws_url
-        .set_port(Some(app_port))
-        .map_err(|_| anyhow::anyhow!("Failed to set app port on admin URL"))?;
+    let app_ws_url = {
+        let mut admin_ws_url = ctx
+            .runner_context()
+            .get_connection_string()
+            .to_socket_addr()
+            .map_err(|e| anyhow::anyhow!("Failed to parse admin URL: {}", e))?;
+        admin_ws_url.set_port(app_port);
+        admin_ws_url
+    };
 
-    ctx.get_mut().app_ws_url = Some(admin_ws_url.to_string());
+    ctx.get_mut().app_ws_url = Some(app_ws_url);
 
     Ok(())
 }
