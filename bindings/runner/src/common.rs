@@ -663,10 +663,12 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         ctx.runner_context().get_run_id(),
         ctx.agent_name()
     ));
+    let agent_name = ctx.agent_name().to_string();
     ctx.get_mut()
         .holochain_config_mut()
         .with_conductor_root_path(&conductor_root_path)
-        .with_admin_port(admin_port);
+        .with_admin_port(admin_port)
+        .with_agent_name(agent_name);
 
     let config = ctx.get_mut().take_holochain_config().build()?;
 
