@@ -1,63 +1,34 @@
-variable "scenario-name" {
-  type        = string
-  description = "The name of the scenario to run"
-  default = {{ (ds "vars").scenario_name | quote }}
-}
-
-variable "connection-string" {
+variable "connection_string" {
   type        = string
   description = "The URL to be used to connect to the service being tested"
-  {{/* Default: read `connection_string` from the JSON data source `vars`, or set to `"ws://localhost:8888"` if not provided.*/}}
+  {{- /* Default: read `connection_string` from the JSON data source `vars`, or set to `"ws://localhost:8888"` if not provided.*/}}
   default     = {{ index (ds "vars") "connection_string" | default "ws://localhost:8888" | quote }}
 }
 
 variable "duration" {
   type        = number
   description = "The maximum duration of the scenario run"
-  {{/* Default: read `duration` from the JSON data source `vars`, or set to `null` if not provided.*/}}
+  {{- /* Default: read `duration` from the JSON data source `vars`, or set to `null` if not provided.*/}}
   default     = {{ with index (ds "vars") "duration" }}{{ . | quote }}{{ else }}null{{ end }}
 }
 
 variable "reporter" {
   type        = string
   description = "The method used to report the logs"
-  {{/* Default: read `reporter` from the JSON data source `vars`, or set to `"influx-file"` if not provided.*/}}
+  {{- /* Default: read `reporter` from the JSON data source `vars`, or set to `"influx-file"` if not provided.*/}}
   default     = {{ index (ds "vars") "reporter" | default "influx-file" | quote }}
 }
 
-variable "behaviours" {
-  type        = list(string)
-  description = "Custom behaviours defined and used by the scenarios"
-  {{/* Default: read `behaviours` from the JSON data source `vars`, or set to `[]` if not provided.*/}}
-  default = {{ index (ds "vars") "behaviours" | default (coll.Slice "") | toJSON }}
-}
-
-variable "scenario-url" {
+variable "scenario_url" {
   type        = string
   description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path" 
-  {{/* Default: read `scenario_url` from the JSON data source `vars`, or set to `""` if not provided.*/}}
-  default = {{ index (ds "vars") "scenario_url" | default "" | quote }}
 }
 
-variable "run-id" {
+variable "run_id" {
   type        = string
   description = "The ID of this run to distinguish it from other runs"
-  {{/* Default: read `run_id` from the JSON data source `vars`, or set to `null` if not provided. */}}
+  {{- /* Default: read `run_id` from the JSON data source `vars`, or set to `null` if not provided. */}}
   default     = {{ with index (ds "vars") "run_id" }}{{ . | quote }}{{ else }}null{{ end }}
-}
-
-variable "agents-per-node" {
-  type        = number
-  description = "The number of agents to run per client node that is running the scenario"
-  {{/* Default: read `agents_per_node` from the JSON data source `vars`, or set to `1` if not provided. */}}
-  default     = {{ index (ds "vars") "agents_per_node" | default 1 }}
-}
-
-variable "min-agents" {
-  type        = number
-  description = "The minimum number of agents to wait for in the scenario"
-  {{/* Default: read `min_agents` from the JSON data source `vars`, or set to `2` if not provided. */}}
-  default     = {{ index (ds "vars") "min_agents" | default 2 }}
 }
 
 job "{{ (ds "vars").scenario_name }}" {
@@ -73,8 +44,8 @@ job "{{ (ds "vars").scenario_name }}" {
   }
 
   dynamic "group" {
-    for_each = var.behaviours
-    labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
+    for_each = {{ index (ds "vars") "behaviours" | default (coll.Slice "") | toJSON }}
+    labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value}"]
 
     content {
       restart {
@@ -152,10 +123,10 @@ job "{{ (ds "vars").scenario_name }}" {
 
         dynamic "artifact" {
           // Download the scenario from the URL if it is not a valid local path.
-          for_each = fileexists(abspath(var.scenario-url)) ? [] : [var.scenario-url]
+          for_each = fileexists(abspath(var.scenario_url)) ? [] : [var.scenario_url]
 
           content {
-            source = var.scenario-url
+            source = var.scenario_url
           }
         }
 
@@ -163,21 +134,21 @@ job "{{ (ds "vars").scenario_name }}" {
           RUST_LOG          = "info"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS        = "${var.min-agents}"
+          MIN_AGENTS        = "{{ index (ds "vars") "min_agents" | default 2 }}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
         }
 
         config {
-          // If `var.scenario-url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario-url)) ? abspath(var.scenario-url) : var.scenario-name
+          // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
+          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : {{ (ds "vars").scenario_name | quote }}
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
-            "--connection-string=${var.connection-string}",
+            "--connection-string=${var.connection_string}",
             var.duration != null ? "--duration=${var.duration}" : null,
-            var.reporter != null ? "--reporter=${var.reporter}" : null,
+            "--reporter=${var.reporter}",
             group.value != "" ? "--behaviour=${group.value}:1" : null,
-            var.run-id != null ? "--run-id=${var.run-id}" : null,
-            "--agents=${var.agents-per-node}",
+            var.run_id != null ? "--run-id=${var.run_id}" : null,
+            "--agents={{ index (ds "vars") "agents_per_node" | default 1 }}",
             "--no-progress"
           ])
         }
@@ -199,7 +170,7 @@ job "{{ (ds "vars").scenario_name }}" {
 
           env {
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-            RUN_ID               = "${var.run-id != null ? var.run-id : ""}"
+            RUN_ID               = "${var.run_id != null ? var.run_id : ""}"
             RUN_SUMMARY_PATH     = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
             INFLUX_HOST          = "https://ifdb.holochain.org"
             INFLUX_BUCKET        = "windtunnel"

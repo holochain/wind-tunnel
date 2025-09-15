@@ -477,24 +477,24 @@ Replace `app_install` with the name of the scenario that you want to run.
 Once the scenario is built you can run the Nomad job with:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario-url=result/bin/app_install -var reporter=in-memory nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 All the jobs are in the `nomad/jobs` directory, so you can replace `app_install_minimal` with the name of the job you want to run.
 
 - `-address` sets Nomad to talk to the locally running instance and not the dedicated Wind Tunnel cluster one.
-- `-var scenario-url=...` provides the path to the scenario binary that you built in the previous step.
+- `-var scenario_url=...` provides the path to the scenario binary that you built in the previous step.
 - `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
 
 > [!Warning]
-> When running locally as in this guide, the `reporter` must be set to `in-memory` and the `scenario-url` must be a
+> When running locally as in this guide, the `reporter` must be set to `in-memory` and the `scenario_url` must be a
 > local path due to the way Nomad handles downloading. To get around this limitation you must disable file system
 > isolation, see <https://developer.hashicorp.com/nomad/docs/configuration/client#disable_filesystem_isolation>.
 
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario-url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 > [!Note]
@@ -565,17 +565,17 @@ accessible.
 Now that the bundle is publicly available you can run the scenario with the following:
 
 ```bash
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} nomad/run_scenario.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 - `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
-- `-var scenario-url=...` provides the URL to the scenario binary that you uploaded in the previous step.
+- `-var scenario_url=...` provides the URL to the scenario binary that you uploaded in the previous step.
 
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration
 (in seconds) or to set the reporter to print to `stdout`.
 
 ```bash
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 > [!Note]
