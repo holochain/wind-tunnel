@@ -26,6 +26,12 @@ pub struct HolochainConfigBuilder {
     /// If [`None`] when [`Self::build`] is called then it uses the binary in the user's `PATH`.
     bin_path: Option<PathBuf>,
 
+    /// The name of the agent that runs on this conductor.
+    ///
+    /// If [`None`] when [`Self::build`] is called, then the [`HolochainConfig::agent_name`] field
+    /// will also be [`None`].
+    agent_name: Option<String>,
+
     /// If set when [`Self::build`] is called then an admin interface is created on the conductor
     /// that is accessible via this port.
     admin_port: Option<u16>,
@@ -56,6 +62,12 @@ impl HolochainConfigBuilder {
     /// Create an admin interface on the conductor that is accessible via this port.
     pub(crate) fn with_admin_port(&mut self, port: u16) -> &mut Self {
         self.admin_port = Some(port);
+        self
+    }
+
+    /// Set the name of the agent that will be running on this conductor.
+    pub(crate) fn with_agent_name(&mut self, agent_name: impl Into<String>) -> &mut Self {
+        self.agent_name = Some(agent_name.into());
         self
     }
 
@@ -98,6 +110,7 @@ impl HolochainConfigBuilder {
 
         Ok(HolochainConfig {
             bin_path,
+            agent_name: self.agent_name,
             conductor_config_root_path,
             conductor_config,
         })
@@ -113,6 +126,9 @@ impl HolochainConfigBuilder {
 pub struct HolochainConfig {
     /// The path to the `holochain` binary used to start a conductor.
     bin_path: PathBuf,
+
+    /// The name of the agent that runs on this conductor.
+    agent_name: Option<String>,
 
     /// The path where the generated config and the data for the Holochain conductor is stored.
     conductor_config_root_path: ConfigRootPath,
@@ -198,12 +214,17 @@ impl HolochainRunner {
                     .await
                     .context("Failed to read line from Holochain conductor stdout")?
                     .ok_or(anyhow!("Holochain conductor shutdown before it was ready"))?;
-                log::info!(target: "holochain_conductor", "{line}");
+                let mut log_target = "holochain_conductor".to_string();
+                if let Some(agent_name) = &config.agent_name {
+                    log_target.push_str("::");
+                    log_target.push_str(agent_name);
+                }
+                log::info!(target: &log_target, "{line}");
                 if line == "Conductor ready." {
-                    if log::log_enabled!(target: "holochain_conductor", log::Level::Info) {
+                    if log::log_enabled!(target: &log_target, log::Level::Info) {
                         tokio::spawn(async move {
                             while let Ok(Some(line)) = stdout_lines.next_line().await {
-                                log::info!(target: "holochain_conductor", "{line}");
+                                log::info!(target: &log_target, "{line}");
                             }
                         });
                     }
