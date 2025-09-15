@@ -16,7 +16,7 @@ use holochain_types::websocket::AllowedOrigins;
 use kitsune2_api::AgentInfoSigned;
 use kitsune2_core::Ed25519Verifier;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{random, thread_rng};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -46,7 +46,7 @@ pub fn configure_admin_ws_url<SV: UserValuesConstraint>(
         ctx.get_mut().admin_ws_url = Some(
             ctx.runner_context()
                 .get_connection_string()
-                .context("connection-string not set but is required")?
+                .context("Need to call run_holochain_conductor in agent_setup or set connection-string so an admin_port can be established")?
                 .to_socket_addr()
                 .context("Failed to convert connection-string to admin_ws_url")?,
         );
@@ -117,7 +117,7 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
                 Ok(attached_app_port)
             }
         })
-        .context("Failed to set up app port, is a conductor running? Try calling 'run_holochain_conductor' in the scenario 'setup'")?;
+        .context("Failed to set up app port, is a conductor running?")?;
 
     // Use the admin URL with the app port we just got to derive a URL for the app websocket
     let mut app_ws_url = admin_ws_url;
@@ -630,6 +630,13 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
 pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
+    if ctx.runner_context().get_connection_string().is_some() {
+        log::info!(
+            "connection-string is set so assuming a Holochain conductor is running externally"
+        );
+        return Ok(());
+    }
+
     if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
         if holochain_path.is_empty() {
             bail!("'WT_HOLOCHAIN_PATH' set to empty string");
@@ -648,34 +655,9 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
                 .holochain_config_mut()
                 .with_bin_path(holochain_path);
         }
-    } else {
-        log::info!(
-            "'WT_HOLOCHAIN_PATH' not set so assuming a Holochain conductor is running externally"
-        );
-        return Ok(());
     };
 
-    let connection_string = ctx
-        .runner_context()
-        .get_connection_string()
-        .context("connection-string not set but is required to run a conductor internally")?;
-    let admin_port_str = connection_string
-        .rsplit_once(':')
-        .map(|(_, ap)| ap)
-        .with_context(|| {
-            format!(
-                "connection_string of '{connection_string}' not in valid format of 'address:port'"
-            )
-        })?;
-    let admin_port = admin_port_str.parse().with_context(|| {
-        format!("admin port '{admin_port_str}' from connection_string '{connection_string}' not a valid number")
-    })?;
-    ctx.get_mut().admin_ws_url = Some(
-        format!("ws://localhost:{admin_port}")
-            .to_socket_addr()
-            .context("Failed to create admin_ws_url from localhost and admin_port")?,
-    );
-
+    let admin_port = random();
     let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
     ctx.get_mut()
         .holochain_config_mut()
@@ -705,6 +687,16 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
             }
             err
         })})?;
+
+    ctx.get_mut().admin_ws_url = Some(
+        format!("ws://localhost:{admin_port}")
+            .to_socket_addr()
+            .with_context(|| {
+                format!(
+                    "Failed to create admin_ws_url from localhost and admin_port '{admin_port}'"
+                )
+            })?,
+    );
 
     Ok(())
 }
