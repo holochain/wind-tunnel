@@ -52,6 +52,7 @@ fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     run_holochain_conductor(ctx)?;
+    configure_admin_ws_url(ctx)?;
     configure_app_ws_url(ctx)?;
     install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
