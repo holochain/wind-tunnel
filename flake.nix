@@ -147,26 +147,6 @@
               rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
-          ci-upload-metrics = pkgs.writeShellApplication {
-            name = "ci-upload-metrics";
-            runtimeInputs = [
-              lp-tool
-              pkgs.gnused
-              pkgs.influxdb2-cli
-              pkgs.jq
-              pkgs.yq
-            ];
-            text = ''
-              set -euo pipefail
-
-              # shellcheck disable=SC1091
-              source ./scripts/influx.sh
-              
-              import_lp_metrics "https://ifdb.holochain.org"
-
-              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
-            '';
-          };
         };
 
         checks = {
