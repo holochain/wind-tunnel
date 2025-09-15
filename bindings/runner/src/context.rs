@@ -1,7 +1,7 @@
 use holochain_client_instrumented::prelude::AppWebsocket;
 use holochain_types::prelude::CellId;
-use std::collections::HashMap;
 use std::fmt::Debug;
+use std::{collections::HashMap, net::SocketAddr};
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
 use crate::holochain_runner::{HolochainConfigBuilder, HolochainRunner};
@@ -19,7 +19,7 @@ pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues
     pub(crate) installed_app_id: Option<String>,
     pub(crate) cell_id: Option<CellId>,
     pub(crate) app_client: Option<AppWebsocket>,
-    pub(crate) app_ws_url: Option<String>,
+    pub(crate) app_ws_url: Option<SocketAddr>,
     pub(crate) holochain_config: Option<HolochainConfigBuilder>,
     pub(crate) holochain_runner: Option<HolochainRunner>,
     pub scenario_values: T,
@@ -48,9 +48,9 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
     }
 
     /// Get the `app_ws_url` that was configured during agent setup.
-    pub fn app_ws_url(&self) -> String {
-        self.app_ws_url.clone().expect(
-            "app_ws_url is not set, did you forget to call `configure_app_port` in your agent_setup?",
+    pub fn app_ws_url(&self) -> SocketAddr {
+        self.app_ws_url.expect(
+            "app_ws_url is not set, did you forget to call `configure_app_ws_url` in your agent_setup?",
         )
     }
 
