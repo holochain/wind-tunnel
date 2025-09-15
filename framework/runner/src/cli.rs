@@ -5,7 +5,7 @@ use clap::{Parser, ValueEnum};
 pub struct WindTunnelScenarioCli {
     /// A connection string for the service to test
     #[clap(short, long)]
-    pub connection_string: String,
+    pub connection_string: Option<String>,
 
     /// The number of agents to run
     #[clap(long)]

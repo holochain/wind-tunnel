@@ -42,12 +42,15 @@ use wind_tunnel_runner::prelude::{
 pub fn configure_admin_ws_url<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    let connection_string = ctx
-        .runner_context()
-        .get_connection_string()
-        .to_socket_addr()
-        .context("Failed to convert connection-string to admin_ws_url")?;
-    ctx.get_mut().admin_ws_url.get_or_insert(connection_string);
+    if ctx.get().admin_ws_url.is_none() {
+        ctx.get_mut().admin_ws_url = Some(
+            ctx.runner_context()
+                .get_connection_string()
+                .context("connection-string not set but is required")?
+                .to_socket_addr()
+                .context("Failed to convert connection-string to admin_ws_url")?,
+        );
+    }
 
     Ok(())
 }
@@ -652,7 +655,10 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         return Ok(());
     };
 
-    let connection_string = ctx.runner_context().get_connection_string();
+    let connection_string = ctx
+        .runner_context()
+        .get_connection_string()
+        .context("connection-string not set but is required to run a conductor internally")?;
     let admin_port_str = connection_string
         .rsplit_once(':')
         .map(|(_, ap)| ap)

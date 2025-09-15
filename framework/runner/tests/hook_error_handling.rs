@@ -19,7 +19,7 @@ impl UserValuesConstraint for AgentContextValue {}
 
 fn sample_cli_cfg() -> WindTunnelScenarioCli {
     WindTunnelScenarioCli {
-        connection_string: "test_connection_string".to_string(),
+        connection_string: Some("test_connection_string".to_string()),
         agents: None,
         behaviour: vec![],
         duration: None,

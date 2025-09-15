@@ -19,9 +19,12 @@ struct KitsuneServerUrls {
 pub fn get_server_urls(
     ctx: &AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> anyhow::Result<(String, String)> {
-    let connections =
-        serde_json::from_str::<KitsuneServerUrls>(ctx.runner_context().get_connection_string())
-            .context("failed to parse bootstrap and server URL from connection string")?;
+    let connection_string = ctx
+        .runner_context()
+        .get_connection_string()
+        .expect("connection-string is empty even though it is required");
+    let connections = serde_json::from_str::<KitsuneServerUrls>(connection_string)
+        .context("failed to parse bootstrap and server URL from connection string")?;
     Ok((
         connections.bootstrap_server_url,
         connections.signal_server_url,
@@ -29,13 +32,18 @@ pub fn get_server_urls(
 }
 
 /// Convert bootstrap and signal server URL into single connection string.
-pub fn to_connection_string(bootstrap_server_url: String, signal_server_url: String) -> String {
+pub fn to_connection_string(
+    bootstrap_server_url: String,
+    signal_server_url: String,
+) -> Option<String> {
     let server_urls = KitsuneServerUrls {
         bootstrap_server_url,
         signal_server_url,
     };
-    serde_json::to_string(&server_urls)
-        .expect("failed to convert bootstrap and signal server URLs to connection string")
+    Some(
+        serde_json::to_string(&server_urls)
+            .expect("failed to convert bootstrap and signal server URLs to connection string"),
+    )
 }
 
 /// Create a Kitsune chatter instance.
