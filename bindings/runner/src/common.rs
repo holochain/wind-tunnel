@@ -658,7 +658,11 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     };
 
     let admin_port = random();
-    let conductor_root_path = PathBuf::from(format!("./{}", ctx.runner_context().get_run_id()));
+    let conductor_root_path = PathBuf::from(format!(
+        "./{}/{}",
+        ctx.runner_context().get_run_id(),
+        ctx.agent_name()
+    ));
     ctx.get_mut()
         .holochain_config_mut()
         .with_conductor_root_path(&conductor_root_path)
