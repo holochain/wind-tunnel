@@ -9,7 +9,6 @@ use holochain_conductor_api::{
 };
 use holochain_conductor_config::config::write_config;
 use holochain_types::websocket::AllowedOrigins;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{Child, Command},
@@ -172,14 +171,6 @@ impl HolochainRunner {
         .context("Failed to write conductor config file")?
         .to_path_buf();
 
-        log::trace!("Generating conductor password");
-        let password: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(8)
-            .map(char::from)
-            .chain(['\n'])
-            .collect();
-
         log::info!("Running a Holochain conductor");
         let mut holochain_handle = Command::new(&config.bin_path)
             .arg("--config-path")
@@ -196,7 +187,7 @@ impl HolochainRunner {
             .stdin
             .as_mut()
             .context("Failed to get stdin for the running Holochain conductor")?
-            .write_all(password.as_bytes())
+            .write_all(b"1234\n")
             .await
             .context("Failed to write the password to the process running the conductor")?;
 
