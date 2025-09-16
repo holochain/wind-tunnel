@@ -684,7 +684,7 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
             if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
                 if io_error.kind() == io::ErrorKind::NotFound {
-                    if  env::var("WT_HOLOCHAIN_PATH").is_ok_and(|holochain_path| holochain_path == "holochain") {
+                    if let Err(_) | Ok("holochain") = env::var("WT_HOLOCHAIN_PATH").as_deref() {
                         err = err.context("'holochain' binary not found in your PATH");
                     } else {
                         err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
