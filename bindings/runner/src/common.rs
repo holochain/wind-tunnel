@@ -16,7 +16,7 @@ use holochain_types::websocket::AllowedOrigins;
 use kitsune2_api::AgentInfoSigned;
 use kitsune2_core::Ed25519Verifier;
 use rand::seq::SliceRandom;
-use rand::{random, thread_rng};
+use rand::thread_rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -657,7 +657,12 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         }
     };
 
-    let admin_port = random();
+    let admin_port = {
+        // Bind to an ephemeral port to reserve it, then release before starting the conductor.
+        let listener = std::net::TcpListener::bind(("localhost", 0))
+            .context("Failed to bind ephemeral port for admin interface")?;
+        listener.local_addr()?.port()
+    };
     let conductor_root_path = PathBuf::from(format!(
         "./{}/{}",
         ctx.runner_context().get_run_id(),
