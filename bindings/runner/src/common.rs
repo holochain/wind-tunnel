@@ -28,7 +28,7 @@ use wind_tunnel_runner::prelude::{
 /// Sets the [`HolochainAgentContext::admin_ws_url`], if not already set, getting the value from
 /// [`wind_tunnel_runner::context::RunnerContext::connection_string`].
 ///
-/// After calling this function you will be able to use the [`HolochainAgentContext::app_ws_url`]
+/// After calling this function you will be able to use the [`HolochainAgentContext::admin_ws_url`]
 /// in your agent hooks:
 /// ```rust
 /// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext};
