@@ -156,7 +156,7 @@ impl HolochainRunner {
     pub async fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
         let conductor_root_path = config.conductor_config_root_path.to_path_buf();
         if !fs::exists(&conductor_root_path)? {
-            fs::create_dir(&conductor_root_path).with_context(|| {
+            fs::create_dir_all(&conductor_root_path).with_context(|| {
                 format!(
                     "Failed to create conductor root directory '{}'",
                     conductor_root_path.display()
