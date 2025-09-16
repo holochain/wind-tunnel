@@ -32,18 +32,13 @@ pub fn get_server_urls(
 }
 
 /// Convert bootstrap and signal server URL into single connection string.
-pub fn to_connection_string(
-    bootstrap_server_url: String,
-    signal_server_url: String,
-) -> Option<String> {
+pub fn to_connection_string(bootstrap_server_url: String, signal_server_url: String) -> String {
     let server_urls = KitsuneServerUrls {
         bootstrap_server_url,
         signal_server_url,
     };
-    Some(
-        serde_json::to_string(&server_urls)
-            .expect("failed to convert bootstrap and signal server URLs to connection string"),
-    )
+    serde_json::to_string(&server_urls)
+        .expect("failed to convert bootstrap and signal server URLs to connection string")
 }
 
 /// Create a Kitsune chatter instance.
