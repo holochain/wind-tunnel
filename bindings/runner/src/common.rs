@@ -724,3 +724,21 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
     Ok(())
 }
+
+/// Helper function to be called from `agent_setup` to config and start a conductor with admin and
+/// app URLs.
+///
+/// Calls [`run_holochain_conductor`] which runs a conductor with the config from
+/// [`HolochainAgentContext::holochain_config`] if
+/// [`wind_tunnel_runner::prelude::RunnerContext::connection_string`] is not set, then sets
+/// [`HolochainAgentContext::admin_ws_url`] and [`HolochainAgentContext::app_ws_url`]
+///
+/// Override the binary used to start the conductor with the `WT_HOLOCHAIN_PATH` environment
+/// variable.
+pub fn start_conductor_and_configure_urls<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
+    run_holochain_conductor(ctx)?;
+    configure_admin_ws_url(ctx)?;
+    configure_app_ws_url(ctx)
+}

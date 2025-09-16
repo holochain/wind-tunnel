@@ -5,9 +5,7 @@ use holochain_wind_tunnel_runner::scenario_happ_path;
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
-    run_holochain_conductor(ctx)?;
-    configure_admin_ws_url(ctx)?;
-    configure_app_ws_url(ctx)?;
+    start_conductor_and_configure_urls(ctx)?;
     install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
 
     Ok(())
