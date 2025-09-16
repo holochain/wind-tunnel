@@ -2,6 +2,8 @@ name: "Run performance tests on Nomad cluster"
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
 
 concurrency:
   group: ${{ github.workflow }}
@@ -39,6 +41,9 @@ jobs:
             required-nodes: 2
 
           - scenario-name: validation_receipts
+            required-nodes: 2
+
+          - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
     steps:
       - uses: actions/checkout@v4
