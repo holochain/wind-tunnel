@@ -24,5 +24,5 @@ immediately see one agent after app installation.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --connection-string ws://localhost:8888 --agents 2 --duration 30
+RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --agents 2 --duration 30
 ```

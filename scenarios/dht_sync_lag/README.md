@@ -15,7 +15,7 @@ This scenario has two roles:
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 900
+RUST_LOG=info cargo run --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 900
 ```
 
 However, doing so is not that meaningful because data is all local so the lag should be minimal.
@@ -23,11 +23,11 @@ However, doing so is not that meaningful because data is all local so the lag sh
 Running the scenario distributed is suggested to be done by partitioning your nodes. The first group run the command:
 
 ```bash
-RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --behaviour write --duration 300
+RUST_LOG=info cargo run --package dht_sync_lag -- --behaviour write --duration 300
 ```
 
 Then the second group run command:
 
 ```bash
-RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --behaviour record_lag --duration 900
+RUST_LOG=info cargo run --package dht_sync_lag -- --behaviour record_lag --duration 900
 ```

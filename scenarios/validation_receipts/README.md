@@ -28,7 +28,7 @@ By default, this scenario will wait for a complete set of validation receipts be
 Example:
 
 ```bash
-NO_VALIDATION_COMPLETE=1 RUST_LOG=info MIN_AGENTS=10 cargo run --package validation_receipts -- --connection-string ws://localhost:8888 --agents 10 --duration 300
+NO_VALIDATION_COMPLETE=1 RUST_LOG=info MIN_AGENTS=10 cargo run --package validation_receipts -- --agents 10 --duration 300
 ```
 
 ### Suggested command
@@ -36,5 +36,5 @@ NO_VALIDATION_COMPLETE=1 RUST_LOG=info MIN_AGENTS=10 cargo run --package validat
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=10 cargo run --package validation_receipts -- --connection-string ws://localhost:8888 --agents 10 --duration 300
+RUST_LOG=info MIN_AGENTS=10 cargo run --package validation_receipts -- --agents 10 --duration 300
 ```
