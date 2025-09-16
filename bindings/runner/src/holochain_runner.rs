@@ -242,5 +242,11 @@ impl Drop for HolochainRunner {
         } else {
             log::info!("Successfully cleaned up the conductor files");
         }
+
+        if let Some(parent) = self.conductor_root_path.parent() {
+            if fs::remove_dir(parent).is_ok() {
+                log::info!("Successfully cleaned up all conductor directories");
+            }
+        }
     }
 }
