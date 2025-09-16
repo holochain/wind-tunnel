@@ -72,7 +72,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
             to_connection_string(self.bootstrap_server_url, self.signal_server_url);
 
         Ok(WindTunnelScenarioCli {
-            connection_string,
+            connection_string: Some(connection_string),
             agents: self.agents,
             behaviour: self.behaviour,
             duration: self.duration,
