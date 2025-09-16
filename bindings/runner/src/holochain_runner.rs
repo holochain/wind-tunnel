@@ -212,13 +212,13 @@ impl HolochainRunner {
                 }
                 log::info!(target: &log_target, "{line}");
                 if line == "Conductor ready." {
-                    if log::log_enabled!(target: &log_target, log::Level::Info) {
-                        tokio::spawn(async move {
-                            while let Ok(Some(line)) = stdout_lines.next_line().await {
+                    tokio::spawn(async move {
+                        while let Ok(Some(line)) = stdout_lines.next_line().await {
+                            if log::log_enabled!(target: &log_target, log::Level::Info) {
                                 log::info!(target: &log_target, "{line}");
                             }
-                        });
-                    }
+                        }
+                    });
 
                     return Ok::<(), anyhow::Error>(());
                 }
