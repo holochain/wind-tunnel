@@ -362,17 +362,32 @@ start_host_metrics_telegraf
 
 #### Running Holochain
 
-For a zero-config and quick way to run Holochain, you can use the following command:
+Wind Tunnel scenarios configure and run a Holochain conductor per agent by
+default. You can override the `holochain` binary used to start the conductors
+with the `WT_HOLOCHAIN_PATH` environment variable, by setting it to the path of
+the custom `holochain` binary.
+
+Alternatively, if you want to run a Holochain conductor separately and have all
+agents connect to the same conductor then you first need to start a conductor.
+For a zero-config and quick way to do this, you can use the following command:
 
 ```bash
 hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn hc s --piped -f 8888 run
 ```
 
+This will run a sandboxed Holochain conductor and force the admin interface to
+be accessible at `localhost` port `8888`.
+
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
+With an external conductor running you will need to set the
+`--connection-string` when running a scenario. This should be set to
+`ws://localhost:<admin-port>`, which, in this case would be
+`ws://localhost:8888`.
 
 To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `WT_METRICS_DIR` (set by the Nix shell).
 For example:
+
 ```bash
 export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
 ```
@@ -423,19 +438,25 @@ Then you can move to writing and running the scenario.
 
 #### Standard Wind Tunnel tests
 
-For standard Wind Tunnel tests - start a sandbox for testing:
+For standard Wind Tunnel tests it is recommended to allow Wind Tunnel to manage
+the Holochain conductor which is configured by the scenario itself.
+
+You can also run a Holochain conductor separately and manage it yourself - see
+the [Running Holochain](#running-holochain) section above. When doing this it
+is recommended to stop and start the sandboxed conductor between test runs,
+because getting a Holochain conductor back to a clean state through its API is
+not yet implemented.
+
+You can run one of the scenarios in the `scenarios` directory:
 
 ```bash
-hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run
+RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60
 ```
 
-It is recommended to stop and start this sandbox conductor between test runs, because getting Holochain back to a clean state
-through its API is not yet implemented.
-
-You can then start a second terminal and run one of the scenarios in the `scenarios` directory:
+Or, if using a separate Holochain conductor:
 
 ```bash
-RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 -c ws://localhost:8888
+RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 --connection-string=ws://localhost:8888
 ```
 
 #### Running Wind Tunnel Scenarios with Nomad
