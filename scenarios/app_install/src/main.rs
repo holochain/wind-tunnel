@@ -12,9 +12,7 @@ impl UserValuesConstraint for ScenarioValues {}
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    run_holochain_conductor(ctx)?;
-    configure_admin_ws_url(ctx)?;
-    configure_app_ws_url(ctx)?;
+    start_conductor_and_configure_urls(ctx)?;
     let admin_url = ctx.get().admin_ws_url();
     let reporter = ctx.runner_context().reporter();
     let admin_client = ctx
