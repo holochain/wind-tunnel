@@ -15,5 +15,5 @@ of the batch that was received out of the 10,000 sent.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info cargo run --package local_signals -- --connection-string ws://localhost:8888 --duration 300
+RUST_LOG=info cargo run --package local_signals -- --duration 300
 ```
