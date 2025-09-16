@@ -624,9 +624,16 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
     }
 }
 
-/// Runs an instance of the Holochain conductor, using the configuration built from the
+/// If [`wind_tunnel_runner::prelude::RunnerContext::connection_string`] is not set then this
+/// function runs an instance of the Holochain conductor, using the configuration built from the
 /// [`HolochainAgentContext::holochain_config`] and stores the running process in
 /// [`HolochainAgentContext::holochain_runner`].
+///
+/// This function also creates an admin interface bound to a random, available port and sets
+/// [`HolochainAgentContext::admin_ws_url`] to a localhost address with that port.
+///
+/// Override the binary used to start the conductor with the `WT_HOLOCHAIN_PATH` environment
+/// variable.
 pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
