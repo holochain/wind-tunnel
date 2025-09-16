@@ -185,7 +185,7 @@ impl HolochainRunner {
         log::trace!("Passing password to running conductor");
         holochain_handle
             .stdin
-            .as_mut()
+            .take()
             .context("Failed to get stdin for the running Holochain conductor")?
             .write_all(b"1234\n")
             .await
