@@ -5,11 +5,17 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum LoadError {
-    #[error("No series in result: {result:?}")]
-    NoSeriesInResult { result: serde_json::Value },
+    #[error("No series in table {table}: {result:?}")]
+    NoSeriesInResult {
+        table: String,
+        result: serde_json::Value,
+    },
 }
 
-pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Result<DataFrame> {
+pub(crate) fn load_from_response(
+    table: &str,
+    response: DatabaseQueryResult,
+) -> anyhow::Result<DataFrame> {
     let result = &response.results[0];
 
     let series = result
@@ -18,6 +24,7 @@ pub(crate) fn load_from_response(response: DatabaseQueryResult) -> anyhow::Resul
         .and_then(|s| s.as_array());
     if series.is_none() {
         return Err(LoadError::NoSeriesInResult {
+            table: table.to_string(),
             result: result.clone(),
         }
         .into());
