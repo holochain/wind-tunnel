@@ -21,15 +21,15 @@ jobs:
       matrix:
         scenario-name:
           - first_call
-          - local_signals
-          - remote_call_rate
-          - remote_signals
-          - single_write_many_read
-          - two_party_countersigning
-          - write_query
-          - write_read
-          - write_validated
-          - zome_call_single_value
+          # - local_signals
+          # - remote_call_rate
+          # - remote_signals
+          # - single_write_many_read
+          # - two_party_countersigning
+          # - write_query
+          # - write_read
+          # - write_validated
+          # - zome_call_single_value
         include:
           - job-name: app_install_large
             scenario-name: app_install
@@ -37,11 +37,11 @@ jobs:
           - job-name: app_install_minimal
             scenario-name: app_install
 
-          - scenario-name: dht_sync_lag
-            required-nodes: 2
+        #- scenario-name: dht_sync_lag
+        #  required-nodes: 2
 
-          - scenario-name: validation_receipts
-            required-nodes: 2
+        #- scenario-name: validation_receipts
+        #  required-nodes: 2
     steps:
       - uses: actions/checkout@v4
 
@@ -120,7 +120,8 @@ jobs:
             echo "${{ matrix.job-name || matrix.scenario-name }},${alloc_id}" >> alloc_ids.csv
           done
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload alloc_ids
+        uses: actions/upload-artifact@v4
         with:
           name: alloc_ids_${{ matrix.job-name || matrix.scenario-name }}
           path: alloc_ids.csv
@@ -132,7 +133,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
           path: ./alloc_ids
 
@@ -149,3 +151,37 @@ jobs:
             echo "Waiting for $scenario_name with allocation ID $alloc_id"
             nix develop --command ./nomad/wait_for_jobs.sh $scenario_name $alloc_id
           done < all_alloc_ids.csv
+
+      - name: Prepare run summary
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          RUN_SUMMARY_PATH: ./run_summary.jsonl
+        run: |
+          cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
+          touch $RUN_SUMMARY_PATH
+          while IFS= read -r line; do
+            alloc_id=$(echo "$line" | cut -d',' -f2)
+            scenario_name=$(echo "$line" | cut -d',' -f1)
+            echo "Fetching summary for $scenario_name with allocation ID $alloc_id"
+            nix run --impure --inputs-from . nixpkgs#nomad -- alloc fs $alloc_id
+            nix run --impure --inputs-from . nixpkgs#nomad -- alloc fs $alloc_id alloc
+            alloc_summary=$(nix run --impure --inputs-from . nixpkgs#nomad -- alloc fs $alloc_id alloc/run_summary.jsonl || echo "")
+            if [ -n "$alloc_summary" ]; then
+              echo "$alloc_summary" >> $RUN_SUMMARY_PATH
+            else
+              echo "run summary not found for $scenario_name with alloc ID $alloc_id"
+            fi
+          done < all_alloc_ids.csv
+          cat $RUN_SUMMARY_PATH >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run summariser
+        env:
+          INFLUX_HOST: "https://ifdb.holochain.org"
+          INFLUX_BUCKET: "windtunnel"
+          INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+          RUN_SUMMARY_PATH: ./run_summary.jsonl
+          RUST_LOG: debug
+        run: nix develop --command cargo run --release --bin holochain-summariser

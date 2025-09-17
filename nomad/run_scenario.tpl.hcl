@@ -62,7 +62,7 @@ job "{{ (ds "vars").scenario_name }}" {
 
         env {
           RUST_LOG = "info"
-          HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
+          # HOLOCHAIN_INFLUXIVE_FILE = "${var.reporter == "influx-file" ? "${NOMAD_ALLOC_DIR}/data/telegraf/metrics/holochain_${group.value}.influx" : ""}"
         }
 
         driver = "raw_exec"
@@ -187,7 +187,7 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/upload_metrics.sh"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/269-run-the-summariser-after-each-nomad-run/nomad/upload_metrics.sh"
           }
 
           config {
