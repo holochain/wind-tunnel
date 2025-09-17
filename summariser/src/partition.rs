@@ -15,16 +15,16 @@ pub enum Partition {
 ///
 /// If no tags are provided, returns [`Partition::Unpartitioned`]
 pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result<Partition> {
+    // If no tags provided, return [`Partition::Unpartitioned`]
+    if tags.is_empty() {
+        return Ok(Partition::Unpartitioned);
+    }
     // Check for duplicate tag names
     let mut unique_tags = HashSet::with_capacity(tags.len());
     for &tag in tags {
         if !unique_tags.insert(tag) {
             return Err(anyhow::anyhow!("Duplicate tag name found: {}", tag));
         }
-    }
-    // If no tags provided, return [`Partition::Unpartitioned`]
-    if tags.is_empty() {
-        return Ok(Partition::Unpartitioned);
     }
     // Get unique combinations of all tag values
     let tag_columns: Vec<String> = tags.iter().map(|&tag| tag.to_string()).collect();

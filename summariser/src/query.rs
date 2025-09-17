@@ -197,7 +197,7 @@ pub async fn query_metrics(
 ) -> anyhow::Result<DataFrame> {
     let mut cols = columns.join(", ");
     if !cols.is_empty() {
-        cols = format!(", {}", cols);
+        cols.insert_str(0, ", ");
     }
     let mut query_str = format!(
         r#"SELECT value{cols} FROM "windtunnel"."autogen"."{measurement}" WHERE run_id = '{run_id}'"#,
