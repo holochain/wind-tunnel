@@ -6,9 +6,8 @@ use crate::model::{
 };
 use crate::query::holochain_metrics::{
     query_cascade_duration, query_database_connection_use_time, query_database_utilization,
-    query_database_utilization_by_id, query_p2p_request_duration, query_post_commit_duration,
-    query_wasm_usage, query_wasm_usage_by_fn, query_workflow_duration,
-    query_workflow_duration_by_agent,
+    query_database_utilization_by_id, query_post_commit_duration, query_wasm_usage,
+    query_wasm_usage_by_fn, query_workflow_duration, query_workflow_duration_by_agent,
 };
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
@@ -30,7 +29,6 @@ struct DhtSyncLagSummary {
     wasm_usage_total: Option<CounterStats>,
     wasm_usage_by_fn: Option<BTreeMap<String, CounterStats>>,
     post_commit_duration: Option<StandardTimingsStats>,
-    p2p_request_duration: Option<StandardTimingsStats>,
     publish_dht_ops_workflow_duration: Option<StandardTimingsStats>,
     integrate_dht_ops_workflow_duration: Option<StandardTimingsStats>,
     countersigning_workflow_duration: Option<BTreeMap<String, StandardTimingsStats>>,
@@ -87,7 +85,6 @@ pub(crate) async fn summarize_dht_sync_lag(
             wasm_usage_total: query_wasm_usage(&client, &summary).await?,
             wasm_usage_by_fn: query_wasm_usage_by_fn(&client, &summary).await?,
             post_commit_duration: query_post_commit_duration(&client, &summary).await?,
-            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
 
             publish_dht_ops_workflow_duration: query_workflow_duration(
                 &client,

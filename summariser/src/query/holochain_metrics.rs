@@ -74,6 +74,7 @@ pub async fn query_post_commit_duration(
 }
 
 /// Query `hc.holochain_p2p.request.duration` metric and compute its stats.
+#[allow(dead_code)]
 pub async fn query_p2p_request_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
