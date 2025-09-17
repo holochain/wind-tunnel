@@ -116,7 +116,7 @@ pub(crate) async fn summarize_dht_sync_lag(
             system_validation_workflow_duration: query_workflow_duration(
                 &client,
                 &summary,
-                HolochainWorkflowKind::SystemValidation,
+                HolochainWorkflowKind::SysValidation,
             )
             .await?,
             validation_receipt_workflow_duration: query_workflow_duration(
