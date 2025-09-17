@@ -81,6 +81,27 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
+      task "download_holochain_bin" {
+        lifecycle {
+          hook = "prestart"
+          sidecar = false
+        }
+
+        driver = "raw_exec"
+
+        artifact {
+          source      = var.holochain_bin_url
+          destination = "${NOMAD_ALLOC_DIR}/holochain"
+          mode        = "file"
+          chown       = true
+        }
+
+        config {
+          command = "chmod"
+          args    = ["+x", "${NOMAD_ALLOC_DIR}/holochain"]
+        }
+      }
+
       task "run_scenario" {
         driver = "raw_exec"
 
@@ -93,17 +114,13 @@ job "{{ (ds "vars").scenario_name }}" {
           }
         }
 
-        artifact {
-          source = var.holochain_bin_url
-        }
-
         env {
           RUST_LOG          = "info"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "{{ mul (index (ds "vars") "agents_per_node" | default 1) (len (index (ds "vars") "behaviours" | default (coll.Slice "") )) }}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
-          WT_HOLOCHAIN_PATH = "${NOMAD_TASK_DIR}/holochain"
+          WT_HOLOCHAIN_PATH = "${NOMAD_ALLOC_DIR}/holochain"
         }
 
         config {
