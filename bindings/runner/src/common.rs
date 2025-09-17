@@ -630,7 +630,7 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
 /// [`HolochainAgentContext::holochain_runner`].
 ///
 /// This function also creates an admin interface bound to a random, available port and sets
-/// [`HolochainAgentContext::admin_ws_url`] to a localhost address with that port.
+/// [`HolochainAgentContext::admin_ws_url`] to a 127.0.0.1 address with that port.
 ///
 /// Override the binary used to start the conductor with the `WT_HOLOCHAIN_PATH` environment
 /// variable.
@@ -666,7 +666,7 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
     let admin_port = {
         // Bind to an ephemeral port to reserve it, then release before starting the conductor.
-        let listener = std::net::TcpListener::bind(("localhost", 0))
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0))
             .context("Failed to bind ephemeral port for admin interface")?;
         listener.local_addr()?.port()
     };
@@ -713,12 +713,10 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
             })?;
 
     ctx.get_mut().admin_ws_url = Some(
-        format!("ws://localhost:{admin_port}")
+        format!("ws://127.0.0.1:{admin_port}")
             .to_socket_addr()
             .with_context(|| {
-                format!(
-                    "Failed to create admin_ws_url from localhost and admin_port '{admin_port}'"
-                )
+                format!("Failed to create admin_ws_url from 'ws://127.0.0.1:{admin_port}'")
             })?,
     );
 
