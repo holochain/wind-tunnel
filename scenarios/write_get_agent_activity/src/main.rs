@@ -58,7 +58,7 @@ fn agent_behaviour_get_agent_activity(
                 ReportMetric::new("write_get_agent_activity")
                     .with_tag("agent", write_peer.to_string())
                     .with_field("highest_observed_action_seq", activity.highest_observed.map_or(0, |v| v.action_seq))
-                    .with_field("zome_call_seconds", elapsed.as_secs_f64()),
+                    .with_field("value", elapsed.as_secs_f64()),
             );
         },
         _ => {
