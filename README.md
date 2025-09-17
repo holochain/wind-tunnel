@@ -600,7 +600,7 @@ accessible.
 At this point you have to generate the Nomad job for the scenario you want to run. This is done with:
 
 ```bash
-./nomad/generate_jobs.sh app_install_minimal
+./nomad/scripts/generate_jobs.sh app_install_minimal
 ```
 
 Now that the scenario zip file is publicly available you can run the scenario with the following:
