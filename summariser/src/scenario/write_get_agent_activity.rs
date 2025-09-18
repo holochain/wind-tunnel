@@ -21,11 +21,11 @@ pub(crate) async fn summarize_write_get_agent_activity(
     let frame = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.write_get_agent_activity",
+        "wt.custom.read_get_agent_activity",
         &["agent"],
     )
     .await
-    .context("Load write_get_agent_activity data")?;
+    .context("Load read_get_agent_activity data")?;
 
     let host_metrics = HostMetricsAggregator::new(&client, &summary)
         .try_aggregate()
@@ -35,7 +35,7 @@ pub(crate) async fn summarize_write_get_agent_activity(
         summary.clone(),
         WriteGetAgentActivitySummary {
             timing: partitioned_timing_stats(frame, "value", "10s", &["agent"])
-                .context("Timing stats for get_agent_activity")?,
+                .context("Timing stats for requesting get_agent_activity")?,
             error_count: query::zome_call_error_count(client, &summary).await?,
         },
         host_metrics,

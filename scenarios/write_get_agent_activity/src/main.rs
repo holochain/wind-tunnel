@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
     write_peer: Option<AgentPubKey>,
+    entries_count: u64,
 }
 
 impl UserValuesConstraint for ScenarioValues {}
@@ -40,6 +41,19 @@ fn agent_behaviour_write(
         "this is a test entry value",
     )?;
 
+    ctx.get_mut().scenario_values.entries_count += 1;
+
+    let reporter = ctx.runner_context().reporter();
+    let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
+    reporter.add_custom(
+        ReportMetric::new("create_entry_count")
+            .with_tag(
+                "agent",
+                agent_pub_key
+            )
+            .with_field("value", ctx.get().scenario_values.entries_count as f64),
+    );
+
     Ok(())
 }
 
@@ -47,6 +61,7 @@ fn agent_behaviour_get_agent_activity(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
+
     match ctx.get().scenario_values.write_peer.clone() {
         Some(write_peer) => {
             let now = Instant::now();
@@ -58,8 +73,13 @@ fn agent_behaviour_get_agent_activity(
             )?;
             let elapsed = now.elapsed();
 
+            let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
             reporter.add_custom(
-                ReportMetric::new("write_get_agent_activity")
+                ReportMetric::new("read_get_agent_activity")
+                    .with_tag(
+                        "agent",
+                        agent_pub_key
+                    )
                     .with_field(
                         "highest_observed_action_seq",
                         activity.highest_observed.map_or(0, |v| v.action_seq),
