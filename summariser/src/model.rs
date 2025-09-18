@@ -1,3 +1,4 @@
+mod holochain_metrics;
 mod host_metrics;
 
 use std::time::Duration;
@@ -5,6 +6,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
+pub use self::holochain_metrics::{HolochainDatabaseKind, HolochainWorkflowKind};
 pub use self::host_metrics::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
