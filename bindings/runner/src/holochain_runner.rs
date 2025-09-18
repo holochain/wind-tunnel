@@ -236,17 +236,17 @@ impl HolochainRunner {
 
 impl Drop for HolochainRunner {
     fn drop(&mut self) {
-        log::trace!("Cleaning up the conductor files");
-        if let Err(err) = fs::remove_dir_all(&self.conductor_root_path) {
-            log::error!("Failed to cleanup the conductor files: {err}");
-        } else {
-            log::info!("Successfully cleaned up the conductor files");
-        }
+        // log::trace!("Cleaning up the conductor files");
+        // if let Err(err) = fs::remove_dir_all(&self.conductor_root_path) {
+        //     log::error!("Failed to cleanup the conductor files: {err}");
+        // } else {
+        //     log::info!("Successfully cleaned up the conductor files");
+        // }
 
-        if let Some(parent) = self.conductor_root_path.parent() {
-            if fs::remove_dir(parent).is_ok() {
-                log::info!("Successfully cleaned up all conductor directories");
-            }
-        }
+        // if let Some(parent) = self.conductor_root_path.parent() {
+        //     if fs::remove_dir(parent).is_ok() {
+        //         log::info!("Successfully cleaned up all conductor directories");
+        //     }
+        // }
     }
 }
