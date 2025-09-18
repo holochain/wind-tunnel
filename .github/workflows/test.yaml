@@ -343,7 +343,7 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - kitsune continuous flow
+      - name: Smoke test - kitsune_continuous_flow
         run: |
           set -x
 
@@ -360,7 +360,7 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - write get agent activity
+      - name: Smoke test - write_get_agent_activity
         run: |
           # Start a sandbox conductor and run it in the background
           nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
