@@ -8,7 +8,5 @@ fn create_sample_entry(value: String) -> ExternResult<ActionHash> {
 
 #[hdk_extern]
 fn get_agent_activity_full(agent: AgentPubKey) -> ExternResult<AgentActivity> {
-    let activity = get_agent_activity(agent, ChainQueryFilter::new(), ActivityRequest::Full)?;
-
-    Ok(activity)
+    get_agent_activity(agent, ChainQueryFilter::new(), ActivityRequest::Full)
 }
