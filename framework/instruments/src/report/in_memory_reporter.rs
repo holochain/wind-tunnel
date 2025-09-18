@@ -1,7 +1,9 @@
+mod custom_metrics_table;
 mod operations_table;
 
+use crate::report::in_memory_reporter::custom_metrics_table::CustomMetricsTableBuilder;
 use crate::report::in_memory_reporter::operations_table::OperationRow;
-use crate::report::ReportCollector;
+use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use std::collections::HashMap;
 use tabled::settings::Style;
@@ -11,12 +13,14 @@ use tabled::Table;
 /// and custom metrics in memory and prints a summary of the operations at the end of the run.
 pub struct InMemoryReporter {
     operation_records: Vec<OperationRecord>,
+    custom_metrics: Vec<ReportMetric>,
 }
 
 impl InMemoryReporter {
     pub fn new() -> Self {
         Self {
             operation_records: Vec::new(),
+            custom_metrics: Vec::new(),
         }
     }
 
@@ -75,6 +79,9 @@ impl InMemoryReporter {
         table.with(Style::modern());
 
         println!("{}", table);
+
+        // Print custom metrics using the dedicated module
+        CustomMetricsTableBuilder::print_custom_metrics(&self.custom_metrics);
     }
 }
 
@@ -83,8 +90,8 @@ impl ReportCollector for InMemoryReporter {
         self.operation_records.push(operation_record.clone());
     }
 
-    fn add_custom(&mut self, _metric: crate::report::ReportMetric) {
-        // No custom metrics for the summary report
+    fn add_custom(&mut self, metric: crate::report::ReportMetric) {
+        self.custom_metrics.push(metric);
     }
 
     fn finalize(&self) {
