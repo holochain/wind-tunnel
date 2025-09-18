@@ -68,13 +68,8 @@ fn agent_behaviour_get_agent_activity(
             );
         },
         _ => {
-            match get_peer_list_randomized(ctx)?.first() {
-                Some(write_peer) => {
-                    ctx.get_mut().scenario_values.write_peer = Some(write_peer.clone());
-                },
-                _ => {
-                    println!("Peer list is empty, could not set write_peer");
-                }
+            if let Some(write_peer) = get_peer_list_randomized(ctx)?.first() {
+                ctx.get_mut().scenario_values.write_peer = Some(write_peer.clone());
             }
         }
     }
