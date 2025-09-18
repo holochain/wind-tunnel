@@ -562,6 +562,12 @@ accessible.
 > Unlike when running locally in the section above, we cannot just pass a path because the path needs to be
 > accessible to the client and Nomad doesn't have native support for uploading artefacts.
 
+At this point you have to generate the Nomad job for the scenario you want to run. This is done with:
+
+```bash
+./nomad/generate_jobs.sh app_install_minimal
+```
+
 Now that the bundle is publicly available you can run the scenario with the following:
 
 ```bash
