@@ -391,10 +391,10 @@ be accessible at `localhost` port `8888`.
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
-With an external conductor running you will need to set the
-`--connection-string` when running a scenario. This should be set to
-`ws://localhost:<admin-port>`, which, in this case would be
-`ws://localhost:8888`.
+Once the external conductor is running, you will need to set the
+`--connection-string` when running a scenario. This should be set to the
+WebSocket address of the admin interface of the running conductor, which, in
+the case above, would be `ws://localhost:8888`.
 
 To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `WT_METRICS_DIR` (set by the Nix shell).
 For example:
