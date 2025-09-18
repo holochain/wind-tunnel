@@ -47,7 +47,10 @@ impl AppWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn agent_info(&self, dna_hashes: Option<Vec<DnaHash>>) -> ConductorApiResult<Vec<String>> {
+    pub async fn agent_info(
+        &self,
+        dna_hashes: Option<Vec<DnaHash>>,
+    ) -> ConductorApiResult<Vec<String>> {
         self.inner.agent_info(dna_hashes).await
     }
 
