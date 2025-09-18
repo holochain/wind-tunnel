@@ -2,7 +2,7 @@
 
 ### Description
 
-An agent creates an entry, then gets their own agent activity with `get_agent_activity`
+An agent creates entries, while another agent gets their agent activity with `get_agent_activity`.
 
 ### Suggested command
 
