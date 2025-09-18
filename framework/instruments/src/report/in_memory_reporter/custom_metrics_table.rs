@@ -247,7 +247,7 @@ impl CustomMetricsTableBuilder {
             Ok(duration) => {
                 let secs = duration.as_secs();
                 let dt = chrono::DateTime::from_timestamp(secs as i64, 0)
-                    .unwrap_or_else(|| chrono::DateTime::UNIX_EPOCH);
+                    .unwrap_or(chrono::DateTime::UNIX_EPOCH);
                 dt.format("%H:%M:%S").to_string()
             }
             Err(_) => "Invalid timestamp".to_string(),
