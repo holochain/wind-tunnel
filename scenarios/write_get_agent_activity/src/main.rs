@@ -93,7 +93,7 @@ fn agent_behaviour_get_agent_activity(
                         Ok(peer_list)
                     })?;
 
-            ctx.get_mut().scenario_values.write_peer = new_peers.first().map(|p| p.clone());
+            ctx.get_mut().scenario_values.write_peer = new_peers.first().cloned();
         }
     }
 
