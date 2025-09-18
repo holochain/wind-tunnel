@@ -371,8 +371,8 @@ The `stdout` for the in-process Holochain conductor that is managed by Wind
 Tunnel is piped to the scenarios' logs with the log target of
 `holochain_conductor::<agent-name>` at the log level of `INFO`. Therefore, to
 view the `stdout` of the conductors, you need to set the `RUST_LOG` environment
-variable to `RUST_LOG=holochain_conductor=info`. To view the logs, as well as
-the `stdout`, from the conductors, you can set `RUST_LOG` to
+variable to `RUST_LOG=holochain_conductor=info`. To view the logs as well as
+the `stdout` from the conductors, you can set `RUST_LOG` to
 `RUST_LOG=holochain=info`, or simply set it to `RUST_LOG=info`, which will
 print all logs from all sources at the `INFO` level or above. If you want to
 view only warnings from the conductors but also the `stdout` then set it to
