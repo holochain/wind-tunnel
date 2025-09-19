@@ -693,10 +693,15 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
                     .map(Some)
                     .map_err(|mut err| {
                         log::trace!("Error whilst starting conductor so cleaning up directory");
-                        if let Err(err) = fs::remove_dir_all(conductor_root_path) {
+                        if let Err(err) = fs::remove_dir_all(&conductor_root_path) {
                             log::error!("Failed to cleanup the conductor files: {err}");
                         } else {
                             log::info!("Successfully cleaned up the conductor files after error");
+                        }
+                        if let Some(parent) = conductor_root_path.parent() {
+                            if fs::remove_dir(parent).is_ok() {
+                                log::info!("Successfully cleaned up all conductor directories after error");
+                            }
                         }
 
                         if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
