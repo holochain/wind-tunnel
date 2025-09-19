@@ -30,6 +30,7 @@ members = [
   "scenarios/write_validated",
   "scenarios/validation_receipts",
   "scenarios/kitsune_continuous_flow",
+  "scenarios/write_get_agent_activity",
 
   "zomes/return_single_value/coordinator",
   "zomes/crud/coordinator",
@@ -48,6 +49,8 @@ members = [
   "zomes/countersigning/integrity",
   "zomes/validated/coordinator",
   "zomes/validated/integrity",
+  "zomes/agent_activity/coordinator",
+  "zomes/agent_activity/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -165,6 +168,7 @@ remote_call_integrity = { path = "./zomes/remote_call/integrity" }
 remote_signal_integrity = { path = "./zomes/remote_signal/integrity" }
 countersigning_integrity = { path = "./zomes/countersigning/integrity" }
 validated_integrity = { path = "./zomes/validated/integrity" }
+agent_activity_integrity = { path = "./zomes/agent_activity/integrity" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
