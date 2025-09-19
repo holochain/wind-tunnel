@@ -131,7 +131,7 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         env {
-          RUST_LOG          = "info"
+          RUST_LOG          = "debug"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "{{ mul (index (ds "vars") "agents_per_node" | default 1) (len (index (ds "vars") "behaviours" | default (coll.Slice "") )) }}"
