@@ -29,7 +29,7 @@ if [ "${RUN_ID:+x}" == "x" ]; then
         RUN_ID=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
     else
         echo "Run summary file not found: $summary_path" >&2
-        RUN_ID=""
+        exit 1
     fi
     export RUN_ID
     echo "RUN_ID: '$RUN_ID'"

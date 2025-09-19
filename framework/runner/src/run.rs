@@ -13,7 +13,6 @@ use crate::{
     shutdown::start_shutdown_listener,
 };
 use anyhow::Context;
-use log::debug;
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 use wind_tunnel_summary_model::append_run_summary;
@@ -28,6 +27,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 ) -> anyhow::Result<usize> {
     let definition = definition.build()?;
 
+    log::info!("Scenario setup complete; run_id: {}", definition.run_id);
     println!("#RunId: [{}]", definition.run_id);
 
     // Create the summary for the run. This is used to link the run with the report and build a
@@ -64,6 +64,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let shutdown_handle = start_shutdown_listener(&runtime)?;
     let report_shutdown_handle = ShutdownHandle::default();
 
+    log::info!("Setting up reporter");
     let reporter = {
         let _h = runtime.handle().enter();
         let mut report_config =
@@ -92,6 +93,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             report_config.init_reporter(runtime.handle(), report_shutdown_handle.new_listener())?,
         )
     };
+    log::info!("Reporter setup complete; setting up runner context");
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(
         executor,
@@ -102,11 +104,13 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     );
 
     if let Some(setup_fn) = &definition.setup_fn {
+        log::info!("Running setup function");
         setup_fn(&mut runner_context)?;
     }
 
     // After the setup has run, and if this is a time bounded scenario, then we need to take additional actions
     if let Some(duration) = definition.duration_s {
+        log::info!("Running time bounded scenario with duration: {duration}",);
         if !definition.no_progress {
             // If the scenario is time bounded then start the progress monitor to show the user how long is left
             start_progress(
@@ -128,6 +132,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     // Ready to start spawning agents so start the resource monitor to report high usage by agents
     // which might lead to a misleading outcome.
+    log::info!("Starting resource monitor");
     start_monitor(shutdown_handle.new_listener());
 
     let assigned_behaviours = definition.assigned_behaviours_flat();
@@ -135,6 +140,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let agents_run_to_completion = Arc::new(AtomicUsize::new(0));
 
     let mut handles = Vec::new();
+    log::info!("Spawning {} agents", assigned_behaviours.len());
     for (agent_index, assigned_behaviour) in assigned_behaviours.iter().enumerate() {
         // Read access to the runner context for each agent
         let runner_context = runner_context.clone();
@@ -233,6 +239,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         if let Err(e) = handle.join() {
             log::error!("Could not join thread for test agent {index}: {:?}", e)
         }
+        log::debug!("Joined thread for test agent {index}");
     }
 
     if let Some(teardown_fn) = definition.teardown_fn {
@@ -241,13 +248,16 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         if let Err(e) = teardown_fn(runner_context_for_teardown.clone()) {
             log::error!("Teardown failed: {:?}", e);
         }
+        log::debug!("Teardown complete");
     }
 
     // Manually shutdown the reporting once all the teardown steps are complete, this doesn't
     // respond to Ctrl+C like the user-provided code does.
     report_shutdown_handle.shutdown();
+    log::debug!("Report shutdown initiated");
     // Then wait for the reporting to finish
     runner_context_for_teardown.reporter().finalize();
+    log::debug!("Report finalized");
 
     summary.set_peer_end_count(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire));
 
@@ -255,10 +265,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let summary_path = std::env::var(RUN_SUMMARY_PATH_ENV)
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(DEFAULT_RUN_SUMMARY_PATH));
-    debug!("Appending run summary to {}", summary_path.display());
+    log::info!("Appending run summary to {}", summary_path.display());
     if let Err(e) = append_run_summary(summary, summary_path) {
-        log::error!("Failed to append run summary: {:?}", e);
-    }
+        anyhow::bail!("Failed to append run summary: {:?}", e);
+    };
 
     println!("#RunId: [{}]", definition.run_id);
 
