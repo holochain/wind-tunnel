@@ -13,7 +13,7 @@ use crate::{
     shutdown::start_shutdown_listener,
 };
 use anyhow::Context;
-use log::debug;
+use log::info;
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 use wind_tunnel_summary_model::append_run_summary;
@@ -255,10 +255,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let summary_path = std::env::var(RUN_SUMMARY_PATH_ENV)
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(DEFAULT_RUN_SUMMARY_PATH));
-    debug!("Appending run summary to {}", summary_path.display());
+    info!("Appending run summary to {}", summary_path.display());
     if let Err(e) = append_run_summary(summary, summary_path) {
-        log::error!("Failed to append run summary: {:?}", e);
-    }
+        anyhow::bail!("Failed to append run summary: {:?}", e);
+    };
 
     println!("#RunId: [{}]", definition.run_id);
 
