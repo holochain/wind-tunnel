@@ -27,6 +27,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 ) -> anyhow::Result<usize> {
     let definition = definition.build()?;
 
+    log::info!("Scenario setup complete; run_id: {}", definition.run_id);
     println!("#RunId: [{}]", definition.run_id);
 
     // Create the summary for the run. This is used to link the run with the report and build a
