@@ -15,10 +15,10 @@ You can run the scenario locally with the following command:
 
 For the `minimal` case:
 ```bash
-RUST_LOG=info cargo run --package app_install -- --connection-string ws://localhost:8888 --behaviour minimal --duration 300
+RUST_LOG=info cargo run --package app_install -- --behaviour minimal --duration 300
 ```
 
 For the `large` case:
 ```bash
-RUST_LOG=info cargo run --package app_install -- --connection-string ws://localhost:8888 --behaviour large --duration 300
+RUST_LOG=info cargo run --package app_install -- --behaviour large --duration 300
 ```

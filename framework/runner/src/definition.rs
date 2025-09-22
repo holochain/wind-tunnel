@@ -42,7 +42,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) name: String,
     pub(crate) assigned_behaviours: Vec<AssignedBehaviour>,
     pub(crate) duration_s: Option<u64>,
-    pub(crate) connection_string: String,
+    pub(crate) connection_string: Option<String>,
     pub(crate) capture_env: HashSet<String>,
     pub(crate) no_progress: bool,
     pub(crate) reporter: ReporterOpt,
@@ -266,7 +266,7 @@ mod tests {
     pub fn build_assigned_behaviours_default() {
         let assigned = build_assigned_behaviours(
             &crate::cli::WindTunnelScenarioCli {
-                connection_string: "".to_string(),
+                connection_string: None,
                 agents: None,
                 behaviour: vec![],
                 duration: None,
@@ -288,7 +288,7 @@ mod tests {
     pub fn build_assigned_behaviours_exact() {
         let assigned = build_assigned_behaviours(
             &crate::cli::WindTunnelScenarioCli {
-                connection_string: "".to_string(),
+                connection_string: None,
                 agents: None,
                 behaviour: vec![], // Not specified
                 duration: None,
@@ -310,7 +310,7 @@ mod tests {
     pub fn build_assigned_behaviours_partial() {
         let assigned = build_assigned_behaviours(
             &crate::cli::WindTunnelScenarioCli {
-                connection_string: "".to_string(),
+                connection_string: None,
                 agents: None,
                 behaviour: vec![("login".to_string(), 3)], // 3 of 5
                 duration: None,
@@ -334,7 +334,7 @@ mod tests {
     pub fn build_assigned_behaviours_too_many() {
         let result = build_assigned_behaviours(
             &crate::cli::WindTunnelScenarioCli {
-                connection_string: "".to_string(),
+                connection_string: None,
                 agents: None,
                 behaviour: vec![("login".to_string(), 30)], // 30 of 5
                 duration: None,

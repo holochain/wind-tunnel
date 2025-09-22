@@ -4,14 +4,10 @@ use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::Instant;
 
-fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    configure_app_ws_url(ctx)?;
-    Ok(())
-}
-
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
+    start_conductor_and_configure_urls(ctx)?;
     install_app(ctx, scenario_happ_path!("signal"), &"signal".into())?;
 
     Ok(())
@@ -83,7 +79,6 @@ fn main() -> WindTunnelResult<()> {
             env!("CARGO_PKG_NAME"),
         )
         .with_default_duration_s(180)
-        .use_setup(setup)
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(agent_behaviour)
         .use_agent_teardown(|ctx| {

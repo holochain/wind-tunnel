@@ -36,5 +36,5 @@ This configuration defaults to 2 agents.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=5 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 5 --behaviour initiate:2 --behaviour participate:3 --duration 300
+RUST_LOG=info MIN_AGENTS=5 cargo run --package two_party_countersigning -- --agents 5 --behaviour initiate:2 --behaviour participate:3 --duration 300
 ```
