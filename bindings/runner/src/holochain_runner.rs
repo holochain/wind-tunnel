@@ -154,7 +154,10 @@ impl HolochainRunner {
     /// process internally so it can be gracefully shutdown and clean up directories on
     /// [`Drop::drop`].
     pub async fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
-        let conductor_root_path = config.conductor_config_root_path.to_path_buf();
+        let conductor_root_path = config
+            .conductor_config_root_path
+            .to_path_buf()
+            .canonicalize()?;
         if !fs::exists(&conductor_root_path)? {
             fs::create_dir_all(&conductor_root_path).with_context(|| {
                 format!(
@@ -164,6 +167,10 @@ impl HolochainRunner {
             })?;
         }
 
+        log::trace!(
+            "Writing conductor config file to '{}'",
+            conductor_root_path.display()
+        );
         let conductor_config_path = write_config(
             config.conductor_config_root_path.clone(),
             &config.conductor_config,
