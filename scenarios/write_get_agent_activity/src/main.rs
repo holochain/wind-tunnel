@@ -13,14 +13,10 @@ pub struct ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
-fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    configure_app_ws_url(ctx)?;
-    Ok(())
-}
-
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    start_conductor_and_configure_urls(ctx)?;
     install_app(
         ctx,
         scenario_happ_path!("agent_activity"),
@@ -93,7 +89,6 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(60)
-    .use_setup(setup)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("write", agent_behaviour_write)
     .use_named_agent_behaviour("get_agent_activity", agent_behaviour_get_agent_activity)
