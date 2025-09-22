@@ -134,15 +134,7 @@ jobs:
 
       - name: Smoke test - zome_call_single_value
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package zome_call_single_value -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package zome_call_single_value -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -150,15 +142,7 @@ jobs:
 
       - name: Smoke test - single_write_many_read
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package single_write_many_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package single_write_many_read -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -166,15 +150,7 @@ jobs:
 
       - name: Smoke test - dht_sync_lag
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package dht_sync_lag -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -182,15 +158,7 @@ jobs:
 
       - name: Smoke test - app_install
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package app_install -- --connection-string ws://localhost:8888 --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -198,15 +166,7 @@ jobs:
 
       - name: Smoke test - first_call
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package first_call -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package first_call -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -214,15 +174,7 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package write_read -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package write_read -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -230,15 +182,7 @@ jobs:
 
       - name: Smoke test - write_query
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package write_query -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package write_query -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -246,15 +190,7 @@ jobs:
 
       - name: Smoke test - local_signals
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package local_signals -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package local_signals -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -262,15 +198,7 @@ jobs:
 
       - name: Smoke test - write_validated
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=info cargo run --package write_validated -- --connection-string ws://localhost:8888 --duration 5 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=info cargo run --package write_validated -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -278,15 +206,7 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --agents 2 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -294,15 +214,7 @@ jobs:
 
       - name: Smoke test - two_party_countersigning
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --connection-string ws://localhost:8888 --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
 
           echo "==> Available space after step"
           echo
@@ -312,15 +224,7 @@ jobs:
         run: |
           set -x
 
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package validation_receipts -- --connection-string ws://localhost:8888 --duration 45 --no-progress
-
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package validation_receipts -- --duration 45 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -328,16 +232,7 @@ jobs:
 
       - name: Smoke test - remote_signals
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 30 --no-progress
-
-          # Stop sandbox conductor
-          pkill hc && pkill holochain && pkill lair-keystore
+          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_signals -- --agents 2 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo

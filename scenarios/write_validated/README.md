@@ -8,5 +8,5 @@ by the included hApp.
 ### Suggested command
 
 ```bash
-RUST_LOG=info cargo run --package write_validated -- --connection-string ws://localhost:8888 --duration 300
+RUST_LOG=info cargo run --package write_validated -- --duration 300
 ```
