@@ -490,13 +490,14 @@ nomad agent -dev
 
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 
-Next, in a new terminal window, generate the nomad jobs for each scenario with:
+Next, in a new terminal window, generate the nomad job for each scenario by
+passing the scenario name into the `generate_jobs` script, such as:
 
 ```bash
-nix develop --command ./nomad/generate_jobs.sh
+nix develop --command ./nomad/generate_jobs.sh app_install_minimal
 ```
 
-The generated jobs will be in the `nomad/jobs` directory.
+The generated job will be in the `nomad/jobs` directory.
 
 Next, in a new terminal window, build the scenario you want to run with:
 
