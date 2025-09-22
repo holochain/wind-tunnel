@@ -10,5 +10,5 @@ it can re-install it on the next iteration. This is required to re-run the initi
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info cargo run --package first_call -- --connection-string ws://localhost:8888 --duration 300
+RUST_LOG=info cargo run --package first_call -- --duration 300
 ```

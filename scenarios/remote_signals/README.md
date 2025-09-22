@@ -30,5 +30,5 @@ immediately see one agent after app installation.
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=2 cargo run -p remote_signals -- --connection-string ws://localhost:8888 --agents 2 --duration 500
+RUST_LOG=info MIN_AGENTS=2 cargo run -p remote_signals -- --agents 2 --duration 500
 ```
