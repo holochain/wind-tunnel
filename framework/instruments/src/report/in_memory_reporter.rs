@@ -20,7 +20,7 @@ impl InMemoryReporter {
         }
     }
 
-    fn print_summary_of_operations(&self) {
+    pub(crate) fn print_summary_of_operations(&self) {
         println!("\nSummary of operations");
         let rows = self
             .operation_records
