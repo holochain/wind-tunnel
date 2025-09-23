@@ -1,22 +1,25 @@
-pub(crate) mod operations_table;
+mod custom_metrics_table;
 
 use crate::report::in_memory_reporter::operations_table::OperationRow;
-use crate::report::ReportCollector;
+use crate::report::in_memory_with_custom_metrics_reporter::custom_metrics_table::CustomMetricsTableBuilder;
+use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
 use std::collections::HashMap;
 use tabled::settings::Style;
 use tabled::Table;
 
 /// A very basic reporter that is useful while developing scenarios. It keeps all of the operations
-/// in memory and prints a summary of the operations at the end of the run.
-pub struct InMemoryReporter {
+/// and custom metrics in memory and prints a summary of the operations at the end of the run.
+pub struct InMemoryWithCustomMetricsReporter {
     operation_records: Vec<OperationRecord>,
+    custom_metrics: Vec<ReportMetric>,
 }
 
-impl InMemoryReporter {
+impl InMemoryWithCustomMetricsReporter {
     pub fn new() -> Self {
         Self {
             operation_records: Vec::new(),
+            custom_metrics: Vec::new(),
         }
     }
 
@@ -75,16 +78,19 @@ impl InMemoryReporter {
         table.with(Style::modern());
 
         println!("{}", table);
+
+        // Print custom metrics using the dedicated module
+        CustomMetricsTableBuilder::print_custom_metrics(&self.custom_metrics);
     }
 }
 
-impl ReportCollector for InMemoryReporter {
+impl ReportCollector for InMemoryWithCustomMetricsReporter {
     fn add_operation(&mut self, operation_record: &OperationRecord) {
         self.operation_records.push(operation_record.clone());
     }
 
-    fn add_custom(&mut self, _metric: crate::report::ReportMetric) {
-        // no-op because custom metrics are ignored
+    fn add_custom(&mut self, metric: crate::report::ReportMetric) {
+        self.custom_metrics.push(metric);
     }
 
     fn finalize(&self) {

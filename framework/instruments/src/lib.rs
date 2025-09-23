@@ -18,6 +18,7 @@ pub struct ReportConfig {
     pub run_id: String,
     pub scenario_name: String,
     pub enable_in_memory: bool,
+    pub enable_in_memory_with_custom_metrics: bool,
     pub enable_influx_client: bool,
     pub enable_influx_file: bool,
 }
@@ -29,6 +30,7 @@ impl ReportConfig {
             run_id,
             scenario_name,
             enable_in_memory: false,
+            enable_in_memory_with_custom_metrics: false,
             enable_influx_client: false,
             enable_influx_file: false,
         }
@@ -36,6 +38,11 @@ impl ReportConfig {
 
     pub fn enable_in_memory(mut self) -> Self {
         self.enable_in_memory = true;
+        self
+    }
+
+    pub fn enable_in_memory_with_custom_metrics(mut self) -> Self {
+        self.enable_in_memory_with_custom_metrics = true;
         self
     }
 
@@ -63,6 +70,10 @@ impl ReportConfig {
             inner: [
                 self.enable_in_memory.then(|| {
                     RwLock::new(Box::new(report::InMemoryReporter::new())
+                        as Box<(dyn ReportCollector + Send + Sync)>)
+                }),
+                self.enable_in_memory_with_custom_metrics.then(|| {
+                    RwLock::new(Box::new(report::InMemoryWithCustomMetricsReporter::new())
                         as Box<(dyn ReportCollector + Send + Sync)>)
                 }),
                 if self.enable_influx_client {
