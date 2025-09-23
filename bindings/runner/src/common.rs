@@ -584,17 +584,21 @@ where
             // No more agents available to signal, get a new list.
             // This is also the initial condition.
             let agent_infos_encoded = admin_client
-                .agent_info(Some(cell_id.clone()))
+                .agent_info(None)
                 .await
                 .context("Failed to get agent info")?;
             let mut agent_infos = Vec::new();
             for info in agent_infos_encoded {
                 let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
-                agent_infos.push(AgentPubKey::from_k2_agent(&a.agent))
+                agent_infos.push(a);
             }
             let mut peer_list = agent_infos
                 .into_iter()
-                .filter(|k| k != cell_id.agent_pubkey()) // Don't include ourselves!
+                // Filtering by CellId in agent_info() call does not return agent_infos of remote agents.
+                // This is fixed in 0.6.x.
+                .filter(|i| &DnaHash::from_k2_space(&i.space) == cell_id.dna_hash())
+                .filter(|i| &AgentPubKey::from_k2_agent(&i.agent) != cell_id.agent_pubkey()) // Don't include ourselves!
+                .map(|i| AgentPubKey::from_k2_agent(&i.agent))
                 .collect::<Vec<_>>();
             peer_list.shuffle(&mut thread_rng());
             Ok(peer_list)
