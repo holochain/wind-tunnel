@@ -64,7 +64,7 @@ fn agent_behaviour_get_agent_activity(
 
             let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
             reporter.add_custom(
-                ReportMetric::new("read_get_agent_activity")
+                ReportMetric::new("write_get_agent_activity")
                     .with_tag("agent", agent_pub_key)
                     .with_field(
                         "highest_observed_action_seq",

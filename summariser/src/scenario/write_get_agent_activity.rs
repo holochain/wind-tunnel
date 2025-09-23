@@ -21,11 +21,11 @@ pub(crate) async fn summarize_write_get_agent_activity(
     let frame = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.read_get_agent_activity",
+        "wt.custom.write_get_agent_activity",
         &["agent"],
     )
     .await
-    .context("Load read_get_agent_activity data")?;
+    .context("Load write_get_agent_activity data")?;
 
     let host_metrics = HostMetricsAggregator::new(&client, &summary)
         .try_aggregate()
