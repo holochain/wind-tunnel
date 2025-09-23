@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add job to comment the changelog preview on PRs by @cdunster in [#221](https://github.com/holochain/wind-tunnel/pull/221)
 - Add missing CACHIX_AUTH_TOKEN env to cachix push step by @cdunster in [#219](https://github.com/holochain/wind-tunnel/pull/219)
 - Add holochain_serialized_bytes dependency by @cdunster in [#213](https://github.com/holochain/wind-tunnel/pull/213)
-- Add reporter `InMemoryWithCustomMetricsReporter` which is the same as `InMemoryReporter` except that it also prints the full table of custom metrics in [#279](https://github.com/holochain/wind-tunnel/pull/279)
 
 ### Changed
 
