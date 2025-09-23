@@ -597,8 +597,8 @@ where
                 // Filtering by CellId in agent_info() call does not return agent_infos of remote agents in holochain 0.5.x
                 // See https://github.com/holochain/holochain/pull/5293
                 .filter(|i| &DnaHash::from_k2_space(&i.space) == cell_id.dna_hash())
-                .filter(|i| &AgentPubKey::from_k2_agent(&i.agent) != cell_id.agent_pubkey()) // Don't include ourselves!
                 .map(|i| AgentPubKey::from_k2_agent(&i.agent))
+                .filter(|a| a != cell_id.agent_pubkey()) // Don't include ourselves!
                 .collect::<Vec<_>>();
             peer_list.shuffle(&mut thread_rng());
             Ok(peer_list)
