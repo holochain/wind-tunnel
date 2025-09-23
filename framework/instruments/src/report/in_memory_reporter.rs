@@ -1,4 +1,4 @@
-pub(crate) mod operations_table;
+mod operations_table;
 
 use crate::report::in_memory_reporter::operations_table::OperationRow;
 use crate::report::ReportCollector;
