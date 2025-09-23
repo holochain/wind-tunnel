@@ -101,8 +101,8 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          NOMAD_VAR_scenario-url: ${{ steps.get-download-url.outputs.download-url }}
-          NOMAD_VAR_run-id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
+          NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
+          NOMAD_VAR_run_id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
           RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |-
           set -euo pipefail

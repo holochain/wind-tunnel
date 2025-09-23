@@ -19,9 +19,12 @@ struct KitsuneServerUrls {
 pub fn get_server_urls(
     ctx: &AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
 ) -> anyhow::Result<(String, String)> {
-    let connections =
-        serde_json::from_str::<KitsuneServerUrls>(ctx.runner_context().get_connection_string())
-            .context("failed to parse bootstrap and server URL from connection string")?;
+    let connection_string = ctx
+        .runner_context()
+        .get_connection_string()
+        .expect("connection-string is empty even though it is required");
+    let connections = serde_json::from_str::<KitsuneServerUrls>(connection_string)
+        .context("failed to parse bootstrap and server URL from connection string")?;
     Ok((
         connections.bootstrap_server_url,
         connections.signal_server_url,

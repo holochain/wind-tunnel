@@ -22,12 +22,12 @@ pub mod prelude {
 /// Conversions to a socket address to allow for example `ws://localhost:1234` to be used
 /// where a socket address is needed.
 pub trait ToSocketAddr {
-    fn to_socket_addr(&self) -> anyhow::Result<SocketAddr>;
+    fn to_socket_addr(self) -> anyhow::Result<SocketAddr>;
 }
 
 impl ToSocketAddr for &str {
-    fn to_socket_addr(&self) -> anyhow::Result<SocketAddr> {
-        let url: url::Url = (*self)
+    fn to_socket_addr(self) -> anyhow::Result<SocketAddr> {
+        let url: url::Url = self
             .try_into()
             .map_err(|e| anyhow::anyhow!("Failed to convert to URL: {:?}", e))?;
 
@@ -46,7 +46,13 @@ impl ToSocketAddr for &str {
 }
 
 impl ToSocketAddr for String {
-    fn to_socket_addr(&self) -> anyhow::Result<SocketAddr> {
+    fn to_socket_addr(self) -> anyhow::Result<SocketAddr> {
         self.as_str().to_socket_addr()
+    }
+}
+
+impl ToSocketAddr for SocketAddr {
+    fn to_socket_addr(self) -> anyhow::Result<SocketAddr> {
+        Ok(self)
     }
 }

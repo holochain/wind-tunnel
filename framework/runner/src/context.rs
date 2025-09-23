@@ -15,7 +15,7 @@ pub struct RunnerContext<RV: UserValuesConstraint> {
     reporter: Arc<Reporter>,
     shutdown_handle: ShutdownHandle,
     run_id: String,
-    connection_string: String,
+    connection_string: Option<String>,
     value: RV,
 }
 
@@ -25,7 +25,7 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
         reporter: Arc<Reporter>,
         shutdown_handle: ShutdownHandle,
         run_id: String,
-        connection_string: String,
+        connection_string: Option<String>,
     ) -> Self {
         Self {
             executor,
@@ -66,8 +66,8 @@ impl<RV: UserValuesConstraint> RunnerContext<RV> {
     }
 
     /// Connection string for the target service of the scenario, supplied by the user via the CLI.
-    pub fn get_connection_string(&self) -> &str {
-        &self.connection_string
+    pub fn get_connection_string(&self) -> Option<&str> {
+        self.connection_string.as_deref()
     }
 
     /// Get mutable access to the user-defined state for the runner.
