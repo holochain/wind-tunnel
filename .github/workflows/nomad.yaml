@@ -48,15 +48,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Maximize build space
-        if: runner.os == 'Linux'
-        uses: AdityaGarg8/remove-unwanted-software@v5
-        with:
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
-
       - name: Bundle scenario
         run: |
           nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
