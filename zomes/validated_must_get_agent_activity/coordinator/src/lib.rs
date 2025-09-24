@@ -1,11 +1,11 @@
 use hdk::prelude::*;
-use std::cell::LazyCell;
 use validated_must_get_agent_activity_integrity::{
     EntryTypes, LinkTypes, SampleEntry, ValidatedSampleEntry,
 };
 
-const CHAIN_HEAD_ANCHOR: LazyCell<AnyLinkableHash> =
-    LazyCell::new(|| Path::from("LATEST_ENTRY").path_entry_hash().unwrap().into());
+fn chain_head_anchor() -> ExternResult<AnyLinkableHash> {
+    Ok(Path::from("LATEST_ENTRY").path_entry_hash()?.into())
+}
 
 #[hdk_extern]
 fn create_sample_entries_batch(count: u64) -> ExternResult<usize> {
@@ -23,7 +23,7 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<usize> {
     // Link to last created action hash
     if let Some(last_ah) = action_hashes.last() {
         let _ = create_link(
-            CHAIN_HEAD_ANCHOR.clone(),
+            chain_head_anchor()?,
             last_ah.clone(),
             LinkTypes::LatestAction,
             (),
@@ -37,7 +37,7 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<usize> {
 fn create_validated_sample_entry(agent: AgentPubKey) -> ExternResult<ActionHash> {
     // Get last created action hash
     let mut links: Vec<Link> = get_links(
-        GetLinksInputBuilder::try_new(CHAIN_HEAD_ANCHOR.clone(), LinkTypes::LatestAction)?.build(),
+        GetLinksInputBuilder::try_new(chain_head_anchor()?, LinkTypes::LatestAction)?.build(),
     )?;
     links.sort_by_key(|l| l.timestamp);
     let chain_head: ActionHash = links

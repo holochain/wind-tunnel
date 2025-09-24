@@ -28,13 +28,10 @@ pub enum LinkTypes {
 #[hdk_extern]
 fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     match op.flattened::<EntryTypes, LinkTypes>()? {
-        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry, .. }) => match app_entry {
-            EntryTypes::ValidatedSampleEntry(entry) => {
-                let _ = must_get_agent_activity(entry.agent, ChainFilter::new(entry.chain_head))?;
+        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry:  EntryTypes::ValidatedSampleEntry(entry), .. }) => {
+            let _ = must_get_agent_activity(entry.agent, ChainFilter::new(entry.chain_head))?;
 
-                Ok(ValidateCallbackResult::Valid)
-            }
-            _ => Ok(ValidateCallbackResult::Valid),
+            Ok(ValidateCallbackResult::Valid)
         },
         _ => Ok(ValidateCallbackResult::Valid),
     }
