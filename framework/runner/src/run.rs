@@ -73,6 +73,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             ReporterOpt::InMemory => {
                 report_config = report_config.enable_in_memory();
             }
+            ReporterOpt::InMemoryWithCustomMetrics => {
+                report_config = report_config.enable_in_memory_with_custom_metrics();
+            }
             ReporterOpt::InfluxClient => {
                 report_config = report_config.enable_influx_client();
             }
