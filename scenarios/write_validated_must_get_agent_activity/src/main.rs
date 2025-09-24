@@ -35,14 +35,6 @@ fn agent_behaviour_write(
         25_u64,
     )?;
 
-    let reporter = ctx.runner_context().reporter();
-    let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    reporter.add_custom(
-        ReportMetric::new("write_validated_must_get_agent_activity")
-            .with_tag("agent", agent_pub_key)
-            .with_field("chain_len", chain_len as f64),
-    );
-
     Ok(())
 }
 
@@ -51,12 +43,18 @@ fn agent_behaviour_must_get_agent_activity(
 ) -> HookResult {
     match ctx.get().scenario_values.write_peer.clone() {
         Some(write_peer) => {
-            let _: ActionHash = call_zome(
+            let chain_len: usize = call_zome(
                 ctx,
                 "validated_must_get_agent_activity",
                 "create_validated_sample_entry",
                 write_peer,
             )?;
+
+            let reporter = ctx.runner_context().reporter();
+            reporter.add_custom(
+                ReportMetric::new("write_validated_must_get_agent_activity")
+                    .with_field("chain_len", chain_len as f64),
+            );
         }
         _ => {
             if let Some(write_peer) = get_peer_list_randomized(ctx)?.first() {

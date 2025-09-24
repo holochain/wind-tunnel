@@ -9,6 +9,7 @@ pub struct SampleEntry {
 pub struct ValidatedSampleEntry {
     pub agent: AgentPubKey,
     pub chain_head: ActionHash,
+    pub chain_len: usize,
 }
 
 #[derive(Serialize, Deserialize)]
