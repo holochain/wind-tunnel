@@ -8,7 +8,7 @@ pub struct SampleEntry {
 #[hdk_entry_helper]
 pub struct ValidatedSampleEntry {
     pub agent: AgentPubKey,
-    pub chain_head: ActionHash
+    pub chain_head: ActionHash,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,8 +27,8 @@ pub enum LinkTypes {
 
 #[hdk_extern]
 fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
-    match op.flattened::<EntryTypes, ()>()? {
-        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry, action }) => match app_entry {
+    match op.flattened::<EntryTypes, LinkTypes>()? {
+        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry, .. }) => match app_entry {
             EntryTypes::ValidatedSampleEntry(entry) => {
                 let _ = must_get_agent_activity(entry.agent, ChainFilter::new(entry.chain_head))?;
 

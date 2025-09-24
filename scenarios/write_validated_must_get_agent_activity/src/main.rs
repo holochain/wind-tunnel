@@ -32,7 +32,7 @@ fn agent_behaviour_write(
         ctx,
         "validated_must_get_agent_activity",
         "create_sample_entries_batch",
-        25
+        25_u64,
     )?;
 
     let reporter = ctx.runner_context().reporter();
@@ -64,7 +64,7 @@ fn agent_behaviour_must_get_agent_activity(
             }
         }
     }
-    
+
     std::thread::sleep(Duration::from_secs(1));
 
     Ok(())
