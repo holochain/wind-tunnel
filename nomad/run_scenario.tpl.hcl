@@ -125,7 +125,7 @@ job "{{ (ds "vars").scenario_name }}" {
 
         config {
           // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : {{ (ds "vars").scenario_name | quote }}
+          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_TASK_DIR}/bin/{{ (ds "vars").scenario_name }}"
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
             var.duration != null ? "--duration=${var.duration}" : null,
