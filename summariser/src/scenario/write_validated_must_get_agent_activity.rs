@@ -1,27 +1,51 @@
 use crate::aggregator::HostMetricsAggregator;
-use crate::model::SummaryOutput;
-use crate::{analyze, query};
+use crate::analyze::standard_timing_stats;
+use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::query;
+use anyhow::Context;
+use polars::prelude::{col, lit, IntoLazy};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct WriteValidatedMustGetAgentActivitySummary {
     error_count: usize,
+    create_validated_sample_entry_timing: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_write_validated_must_get_agent_activity(
     client: influxdb::Client,
     summary: RunSummary,
 ) -> anyhow::Result<SummaryOutput> {
-    assert_eq!(summary.scenario_name, "write_validated_must_get_agent_activity");
+    assert_eq!(
+        summary.scenario_name,
+        "write_validated_must_get_agent_activity"
+    );
 
     let host_metrics = HostMetricsAggregator::new(&client, &summary)
         .try_aggregate()
         .await;
 
+    let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
+        .await
+        .context("Load zome call data")?;
+
+    let create_validated_sample_entry_zome_calls = zome_calls
+        .clone()
+        .lazy()
+        .filter(col("fn_name").eq(lit("create_validated_sample_entry")))
+        .collect()?;
+
     SummaryOutput::new(
         summary.clone(),
         WriteValidatedMustGetAgentActivitySummary {
+            create_validated_sample_entry_timing: standard_timing_stats(
+                create_validated_sample_entry_zome_calls.clone(),
+                "value",
+                "10s",
+                None,
+            )
+            .context("Write timing stats")?,
             error_count: query::zome_call_error_count(client, &summary).await?,
         },
         host_metrics,
