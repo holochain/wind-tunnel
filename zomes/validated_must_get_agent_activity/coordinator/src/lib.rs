@@ -13,7 +13,7 @@ fn chain_head_anchor() -> ExternResult<AnyLinkableHash> {
 struct ChainLenTag(pub usize);
 
 #[hdk_extern]
-fn create_sample_entries_batch(count: u64) -> ExternResult<usize> {
+fn create_sample_entries_batch(count: u64) -> ExternResult<()> {
     // Create batch entries
     let mut action_hashes: Vec<ActionHash> = vec![];
     for _ in 0..count {
@@ -40,7 +40,7 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<usize> {
         )?;
     }
 
-    Ok(chain_len)
+    Ok(())
 }
 
 #[hdk_extern]

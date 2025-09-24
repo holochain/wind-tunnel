@@ -1,5 +1,4 @@
 use holochain_types::dna::AgentPubKey;
-use holochain_types::prelude::ActionHash;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::time::Duration;
@@ -28,7 +27,7 @@ fn agent_setup(
 fn agent_behaviour_write(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let chain_len: usize = call_zome(
+    let _: () = call_zome(
         ctx,
         "validated_must_get_agent_activity",
         "create_sample_entries_batch",
