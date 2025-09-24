@@ -68,7 +68,7 @@ job "{{ (ds "vars").scenario_name }}" {
         driver = "raw_exec"
         config {
           command = "bash"
-          args    = ["-c", "mkdir -p ${NOMAD_ALLOC_DIR}/data/telegraf/metrics/ && hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
+          args    = ["-c", "mkdir -p ${NOMAD_ALLOC_DIR}/data/telegraf/metrics/ && hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://dev-test-bootstrap2.holochain.org webrtc wss://dev-test-bootstrap2.holochain.org && echo 1234 | hc s --piped -f 8888 run"]
         }
 
         resources {
