@@ -8,7 +8,7 @@ use tabled::settings::Style;
 use tabled::Table;
 
 /// A very basic reporter that is useful while developing scenarios. It keeps all of the operations
-/// and custom metrics in memory and prints a summary of the operations at the end of the run.
+/// in memory and prints a summary of the operations at the end of the run.
 pub struct InMemoryReporter {
     operation_records: Vec<OperationRecord>,
 }
@@ -20,7 +20,7 @@ impl InMemoryReporter {
         }
     }
 
-    fn print_summary_of_operations(&self) {
+    pub(crate) fn print_summary_of_operations(&self) {
         println!("\nSummary of operations");
         let rows = self
             .operation_records
@@ -84,7 +84,7 @@ impl ReportCollector for InMemoryReporter {
     }
 
     fn add_custom(&mut self, _metric: crate::report::ReportMetric) {
-        // No custom metrics for the summary report
+        // no-op because custom metrics are ignored
     }
 
     fn finalize(&self) {
