@@ -1,4 +1,4 @@
-use holochain_types::dna::AgentPubKey;
+use holochain_types::prelude::AgentPubKey;
 use holochain_types::prelude::ActionHash;
 use holochain_types::prelude::AgentActivity;
 use holochain_wind_tunnel_runner::prelude::*;
