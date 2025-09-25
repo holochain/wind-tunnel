@@ -45,20 +45,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle scenario
-        run: |
-          nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
-          cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
-
       - name: Build Nomad Job
         run: |
           nix develop --command ./nomad/generate_jobs.sh ${{ matrix.job-name || matrix.scenario-name }}
 
-      - name: Upload bundle as artifact
-        id: upload-bundle
+      - name: Build scenario
+        run: nix build .#packages.x86_64-linux.${{ matrix.scenario-name }}
+
+      - name: Upload scenario as artifact
+        id: upload-scenario
         uses: actions/upload-artifact@v4
         with:
-          path: ./${{ matrix.scenario-name }}
+          path: |
+            ./result/bin/
+            ./result/happs/
           name: ${{ matrix.job-name || matrix.scenario-name }}
           if-no-files-found: error
 
@@ -88,7 +88,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-bundle.outputs.artifact-id}}/zip")
+            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-scenario.outputs.artifact-id}}/zip")
           echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
 
       - name: Run Nomad Job
