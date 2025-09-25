@@ -15,6 +15,7 @@ variable "reporter" {
 variable "holochain_bin_url" {
   type        = string
   description = "URL from which to download the `holochain` binary from to start conductors with"
+  default     = null
 }
 
 variable "scenario_url" {
@@ -81,24 +82,30 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
-      task "download_holochain_bin" {
-        lifecycle {
-          hook = "prestart"
-          sidecar = false
-        }
+      dynamic "task" {
+        // Only download the holochain binary if `var.holochain_bin_url` is set.
+        for_each = var.holochain_bin_url != null ? [var.holochain_bin_url] : []
+        labels   = ["download_holochain_bin"]
 
-        driver = "raw_exec"
+        content {
+          lifecycle {
+            hook = "prestart"
+            sidecar = false
+          }
 
-        artifact {
-          source      = var.holochain_bin_url
-          destination = "${NOMAD_ALLOC_DIR}/holochain"
-          mode        = "file"
-          chown       = true
-        }
+          driver = "raw_exec"
 
-        config {
-          command = "chmod"
-          args    = ["+x", "${NOMAD_ALLOC_DIR}/holochain"]
+          artifact {
+            source      = var.holochain_bin_url
+            destination = "${NOMAD_ALLOC_DIR}/holochain"
+            mode        = "file"
+            chown       = true
+          }
+
+          config {
+            command = "chmod"
+            args    = ["+x", "${NOMAD_ALLOC_DIR}/holochain"]
+          }
         }
       }
 
@@ -120,7 +127,7 @@ job "{{ (ds "vars").scenario_name }}" {
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS        = "{{ mul (index (ds "vars") "agents_per_node" | default 1) (len (index (ds "vars") "behaviours" | default (coll.Slice "") )) }}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
-          WT_HOLOCHAIN_PATH = "${NOMAD_ALLOC_DIR}/holochain"
+          WT_HOLOCHAIN_PATH = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
         }
 
         config {
