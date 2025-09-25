@@ -1,0 +1,305 @@
+[
+  {
+    "apiVersion": "influxdata.com/v2alpha1",
+    "kind": "Dashboard",
+    "metadata": { "name": "unyt-comprehensive-dashboard-v3" },
+    "spec": {
+      "name": "Unyt Scenario Comprehensive Dashboard",
+      "variables": [
+        {
+          "name": "RunId",
+          "type": "query",
+          "arguments": {
+            "query": "from(bucket: \"windtunnel\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> keep(columns: [\"run_id\"])\n  |> distinct(column: \"run_id\")\n  |> sort()"
+          }
+        }
+      ],
+      "charts": [
+        {
+          "height": 1,
+          "kind": "Markdown",
+          "name": "Dashboard Header",
+          "note": "# Unyt Scenario Comprehensive Dashboard\n\nUse the **RunId** dropdown to filter data for specific test runs. This dashboard shows admin calls, zome calls, and test run statistics.",
+          "staticLegend": {},
+          "width": 12
+        },
+        {
+          "height": 1,
+          "kind": "Markdown",
+          "name": "Test Run Overview",
+          "note": "## Test Run Statistics",
+          "staticLegend": {},
+          "width": 12,
+          "yPos": 1
+        },
+        {
+          "colors": [{ "name": "laser", "type": "text", "hex": "#00C9FF" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Total Agents",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.ledger_state\")\n  |> filter(fn: (r) => r._field == \"ledger_balance\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\"])\n  |> count()\n  |> group()\n  |> count()"
+            }
+          ],
+          "staticLegend": {},
+          "width": 2,
+          "yPos": 2
+        },
+        {
+          "colors": [{ "name": "honeydew", "type": "text", "hex": "#9394FF" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Test Run Length",
+          "queries": [
+            {
+              "query": "start_time = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> first()\n  |> keep(columns: [\"_time\"])\n\nend_time = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> last()\n  |> keep(columns: [\"_time\"])\n\njoin(tables: {start: start_time, end: end_time}, on: [])\n  |> map(fn: (r) => ({_value: float(v: uint(v: r._time_end) - uint(v: r._time_start)) / 1000000000.0}))"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "s",
+          "width": 2,
+          "xPos": 2,
+          "yPos": 2
+        },
+        {
+          "colors": [{ "name": "ocean", "type": "text", "hex": "#31C0F6" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Total Zome Calls",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> count()"
+            }
+          ],
+          "staticLegend": {},
+          "width": 2,
+          "xPos": 4,
+          "yPos": 2
+        },
+        {
+          "colors": [{ "name": "rainforest", "type": "text", "hex": "#32B08C" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Network Init Time",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.global_definition_propagation_time\")\n  |> filter(fn: (r) => r._field == \"at\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> mean()"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "s",
+          "width": 2,
+          "xPos": 5,
+          "yPos": 2
+        },
+        {
+          "axes": [
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear" }
+          ],
+          "geom": "stacked",
+          "height": 2,
+          "kind": "Xy",
+          "name": "Agent Transaction Statistics",
+          "queries": [
+            {
+              "query": "completed = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.completed_transactions\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> map(fn: (r) => ({r with type: \"completed\"}))\n\nactionable = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.actionable_transactions\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> map(fn: (r) => ({r with type: \"actionable\"}))\n\nparked = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.parked_spends\")\n  |> filter(fn: (r) => r._field == \"parked_spends\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\"])\n  |> last()\n  |> map(fn: (r) => ({r with type: \"parked\"}))\n\nexecuted = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.executed_agreements\")\n  |> filter(fn: (r) => r._field == \"number\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\"])\n  |> last()\n  |> map(fn: (r) => ({r with type: \"executed\"}))\n\nunion(tables: [completed, actionable, parked, executed])"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xPos": 6,
+          "yPos": 2
+        },
+        {
+          "height": 1,
+          "kind": "Markdown",
+          "name": "Admin Calls Section",
+          "note": "## Admin Calls Analysis",
+          "staticLegend": {},
+          "width": 12,
+          "yPos": 4
+        },
+        {
+          "colors": [{ "name": "rainforest", "type": "text", "hex": "#32B08C" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Average Admin Call Duration",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id =~ /^admin/)\n  |> mean()"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "s",
+          "width": 2,
+          "yPos": 5
+        },
+        {
+          "axes": [
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear", "suffix": "s" }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#E69F00" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#56B4E9" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#009E73" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#F0E442" }
+          ],
+          "geom": "bar",
+          "height": 2,
+          "kind": "Xy",
+          "name": "Admin Calls Duration Comparison",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id =~ /^admin/)\n  |> group(columns: [\"operation_id\"])\n  |> mean()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)"
+            }
+          ],
+          "staticLegend": { "colorizeRows": true },
+          "width": 5,
+          "xPos": 2,
+          "yPos": 5
+        },
+        {
+          "height": 2,
+          "kind": "Table",
+          "name": "Admin Calls Statistics",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id =~ /^admin/)\n  |> group(columns: [\"operation_id\"])\n  |> reduce(\n    fn: (r, accumulator) => ({\n      operation_id: r.operation_id,\n      count: accumulator.count + 1,\n      total: accumulator.total + r._value,\n      min: if r._value < accumulator.min then r._value else accumulator.min,\n      max: if r._value > accumulator.max then r._value else accumulator.max\n    }),\n    identity: {operation_id: \"\", count: 0, total: 0.0, min: 999999.0, max: 0.0}\n  )\n  |> map(fn: (r) => ({operation_id: r.operation_id, count: r.count, avg: r.total / float(v: r.count), min: r.min, max: r.max}))\n  |> sort(columns: [\"avg\"], desc: true)"
+            }
+          ],
+          "staticLegend": {},
+          "width": 5,
+          "xPos": 7,
+          "yPos": 5
+        },
+        {
+          "height": 1,
+          "kind": "Markdown",
+          "name": "Zome Calls Section",
+          "note": "## Zome Calls Analysis (Non-Admin)",
+          "staticLegend": {},
+          "width": 12,
+          "yPos": 7
+        },
+        {
+          "colors": [{ "name": "fire", "type": "text", "hex": "#F95F53" }],
+          "height": 2,
+          "kind": "Single_Stat",
+          "name": "Average Zome Call Duration",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id !~ /^admin/)\n  |> mean()"
+            }
+          ],
+          "staticLegend": {},
+          "suffix": "s",
+          "width": 2,
+          "yPos": 8
+        },
+        {
+          "axes": [
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear", "suffix": "s" }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#D55E00" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#CC79A7" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#0072B2" },
+            { "name": "Color Blind Friendly", "type": "scale", "hex": "#009E73" }
+          ],
+          "geom": "bar",
+          "height": 2,
+          "kind": "Xy",
+          "name": "Zome Calls Duration Comparison",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id !~ /^admin/)\n  |> group(columns: [\"operation_id\"])\n  |> mean()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 15)"
+            }
+          ],
+          "staticLegend": { "colorizeRows": true },
+          "width": 5,
+          "xPos": 2,
+          "yPos": 8
+        },
+        {
+          "height": 2,
+          "kind": "Table",
+          "name": "Zome Calls Statistics",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r._measurement == \"wt.instruments.operation_duration\")\n  |> filter(fn: (r) => r.operation_id !~ /^admin/)\n  |> group(columns: [\"operation_id\"])\n  |> reduce(\n    fn: (r, accumulator) => ({\n      operation_id: r.operation_id,\n      count: accumulator.count + 1,\n      total: accumulator.total + r._value,\n      min: if r._value < accumulator.min then r._value else accumulator.min,\n      max: if r._value > accumulator.max then r._value else accumulator.max\n    }),\n    identity: {operation_id: \"\", count: 0, total: 0.0, min: 999999.0, max: 0.0}\n  )\n  |> map(fn: (r) => ({operation_id: r.operation_id, count: r.count, avg: r.total / float(v: r.count), min: r.min, max: r.max}))\n  |> sort(columns: [\"avg\"], desc: true)"
+            }
+          ],
+          "staticLegend": {},
+          "width": 5,
+          "xPos": 7,
+          "yPos": 8
+        },
+        {
+          "height": 1,
+          "kind": "Markdown",
+          "name": "Financial Metrics Section",
+          "note": "## Financial & Transaction Metrics",
+          "staticLegend": {},
+          "width": 12,
+          "yPos": 10
+        },
+        {
+          "axes": [
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear" }
+          ],
+          "geom": "line",
+          "height": 3,
+          "kind": "Xy",
+          "name": "Ledger Balance by Agent Over Time",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.ledger_state\")\n  |> filter(fn: (r) => r._field == \"ledger_balance\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> map(fn: (r) => ({r with _value: float(v: r._value)}))\n  |> group(columns: [\"agent\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "yPos": 11
+        },
+        {
+          "axes": [
+            { "base": "10", "name": "x", "scale": "linear" },
+            { "base": "10", "name": "y", "scale": "linear" }
+          ],
+          "geom": "bar",
+          "height": 3,
+          "kind": "Xy",
+          "name": "Transaction Summary by Agent",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.completed_transactions\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> group()"
+            }
+          ],
+          "staticLegend": {},
+          "width": 6,
+          "xPos": 6,
+          "yPos": 11
+        },
+        {
+          "height": 3,
+          "kind": "Table",
+          "name": "Comprehensive Agent Statistics",
+          "queries": [
+            {
+              "query": "ledger = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.ledger_state\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> pivot(rowKey: [\"agent\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with ledger_balance: float(v: r.ledger_balance)}))\n\ncompleted = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.completed_transactions\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> pivot(rowKey: [\"agent\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n\nactionable = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.actionable_transactions\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\", \"_field\"])\n  |> last()\n  |> pivot(rowKey: [\"agent\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n\nparked = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.parked_spends\")\n  |> filter(fn: (r) => r._field == \"parked_spends\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\"])\n  |> last()\n  |> map(fn: (r) => ({agent: r.agent, parked_spends: r._value}))\n\nexecuted = from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"wt.custom.executed_agreements\")\n  |> filter(fn: (r) => r._field == \"number\")\n  |> filter(fn: (r) => r.scenario_name == \"unyt\")\n  |> filter(fn: (r) => r.run_id == v.RunId)\n  |> group(columns: [\"agent\"])\n  |> last()\n  |> map(fn: (r) => ({agent: r.agent, executed_agreements: r._value}))\n\njoin(tables: {ledger: ledger, completed: completed}, on: [\"agent\"])\n  |> join(tables: {actionable: actionable}, on: [\"agent\"])\n  |> join(tables: {parked: parked}, on: [\"agent\"])\n  |> join(tables: {executed: executed}, on: [\"agent\"])"
+            }
+          ],
+          "staticLegend": {},
+          "width": 12,
+          "yPos": 14
+        }
+      ]
+    }
+  }
+]

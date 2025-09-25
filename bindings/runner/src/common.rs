@@ -605,7 +605,7 @@ where
         })
 }
 
-fn installed_app_id_for_agent<SV>(
+pub(crate) fn installed_app_id_for_agent<SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> String
 where
@@ -615,7 +615,10 @@ where
     format!("{}-app", agent_name).to_string()
 }
 
-fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow::Result<CellId> {
+pub(crate) fn get_cell_id_for_role_name(
+    app_info: &AppInfo,
+    role_name: &RoleName,
+) -> anyhow::Result<CellId> {
     match app_info
         .cell_info
         .get(role_name)
