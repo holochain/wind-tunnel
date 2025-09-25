@@ -1,6 +1,6 @@
-use holochain_types::prelude::AgentPubKey;
 use holochain_types::prelude::ActionHash;
 use holochain_types::prelude::AgentActivity;
+use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::time::Duration;
@@ -8,7 +8,6 @@ use std::time::Duration;
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
     write_peer: Option<AgentPubKey>,
-    entries_count: u64,
 }
 
 impl UserValuesConstraint for ScenarioValues {}
@@ -22,13 +21,12 @@ fn agent_setup(
         scenario_happ_path!("agent_activity"),
         &"agent_activity".to_string(),
     )?;
+    try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     // 'write' peers create a link to announce their behaviour so 'get_agent_activity' peers can find them
     if ctx.assigned_behaviour() == "write" {
         let _: ActionHash = call_zome(ctx, "agent_activity", "announce_write_behaviour", ())?;
     }
-
-    try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     Ok(())
 }
@@ -42,16 +40,6 @@ fn agent_behaviour_write(
         "create_sample_entry",
         "this is a test entry value",
     )?;
-
-    ctx.get_mut().scenario_values.entries_count += 1;
-
-    let reporter = ctx.runner_context().reporter();
-    let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    reporter.add_custom(
-        ReportMetric::new("create_entry_count")
-            .with_tag("agent", agent_pub_key)
-            .with_field("value", ctx.get().scenario_values.entries_count as f64),
-    );
 
     Ok(())
 }
