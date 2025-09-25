@@ -1,6 +1,8 @@
 pub mod holochain_metrics;
 pub mod host_metrics;
 
+use std::collections::BTreeMap;
+
 use crate::analyze::{counter_stats, gauge_stats, standard_timing_stats};
 use crate::model::{CounterStats, GaugeStats, StandardTimingsStats};
 use crate::partition::{partition_by_tags, Partition};
@@ -12,31 +14,16 @@ use anyhow::Context;
 use chrono::DateTime;
 use influxdb::ReadQuery;
 use polars::frame::DataFrame;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::BTreeMap;
 use wind_tunnel_summary_model::RunSummary;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct QueryResult {
-    statement_id: u32,
-    series: Vec<QuerySeries>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct QuerySeries {
-    name: String,
-    columns: Vec<String>,
-    values: Vec<Vec<Value>>,
-}
 
 pub async fn query_instrument_data(
     client: influxdb::Client,
     summary: &RunSummary,
     operation_id: &str,
 ) -> anyhow::Result<DataFrame> {
+    const TABLE: &str = "wt.instruments.operation_duration";
     let q = ReadQuery::new(format!(
-        r#"SELECT value FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND operation_id = '{}' AND is_error = 'false'"#,
+        r#"SELECT value FROM "windtunnel"."autogen"."{TABLE}" WHERE run_id = '{}' AND operation_id = '{}' AND is_error = 'false'"#,
         summary.run_id, operation_id
     ));
     log::debug!("Querying: {:?}", q);
@@ -47,7 +34,7 @@ pub async fn query_instrument_data(
     }
 
     let res = client.json_query(q.clone()).await?;
-    let frame = crate::frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(TABLE, res)?;
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -65,8 +52,9 @@ pub async fn query_zome_call_instrument_data(
     client: influxdb::Client,
     summary: &RunSummary,
 ) -> anyhow::Result<DataFrame> {
+    const TABLE: &str = "wt.instruments.operation_duration";
     let q = ReadQuery::new(format!(
-        r#"SELECT value, zome_name, fn_name, agent FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
+        r#"SELECT value, zome_name, fn_name, agent FROM "windtunnel"."autogen"."{TABLE}" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'false'"#,
         summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
@@ -77,7 +65,7 @@ pub async fn query_zome_call_instrument_data(
     }
 
     let res = client.json_query(q.clone()).await?;
-    let frame = crate::frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(TABLE, res)?;
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -95,8 +83,9 @@ pub async fn query_zome_call_instrument_data_errors(
     client: influxdb::Client,
     summary: &RunSummary,
 ) -> anyhow::Result<DataFrame> {
+    const TABLE: &str = "wt.instruments.operation_duration";
     let q = ReadQuery::new(format!(
-        r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."wt.instruments.operation_duration" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'true'"#,
+        r#"SELECT value, zome_name, fn_name FROM "windtunnel"."autogen"."{TABLE}" WHERE run_id = '{}' AND (operation_id = 'app_call_zome' OR operation_id = 'trycp_app_call_zome') AND is_error = 'true'"#,
         summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
@@ -112,6 +101,7 @@ pub async fn query_zome_call_instrument_data_errors(
                     e
                 );
                 Err(LoadError::NoSeriesInResult {
+                    table: TABLE.to_string(),
                     result: serde_json::Value::Null,
                 }
                 .into())
@@ -120,7 +110,7 @@ pub async fn query_zome_call_instrument_data_errors(
     }
 
     let res = client.json_query(q.clone()).await?;
-    let frame = crate::frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(TABLE, res)?;
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -146,8 +136,8 @@ pub async fn query_custom_data(
     }
 
     let q = ReadQuery::new(format!(
-        r#"SELECT value{} FROM "windtunnel"."autogen"."{}" WHERE run_id = '{}'"#,
-        select_tags, metric, summary.run_id
+        r#"SELECT value{select_tags} FROM "windtunnel"."autogen"."{metric}" WHERE run_id = '{run_id}'"#,
+        run_id = summary.run_id
     ));
     log::debug!("Querying: {:?}", q);
 
@@ -157,7 +147,7 @@ pub async fn query_custom_data(
     }
 
     let res = client.json_query(q.clone()).await?;
-    let frame = crate::frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(metric, res)?;
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -230,7 +220,7 @@ pub async fn query_metrics(
     }
 
     let res = client.json_query(q.clone()).await?;
-    let frame = crate::frame::load_from_response(res)?;
+    let frame = crate::frame::load_from_response(measurement, res)?;
     log::debug!("Rows found: {}", frame.height());
 
     #[cfg(feature = "test_data")]
@@ -382,7 +372,8 @@ pub async fn query_host_metrics(
     }
 
     let res = client.json_query(query.clone()).await?;
-    let frame = crate::frame::load_from_response(res).context("Empty query result")?;
+    let frame =
+        crate::frame::load_from_response(field.measurement(), res).context("Empty query result")?;
     log::trace!("Loaded frame for {field}: {frame:?}");
 
     #[cfg(feature = "test_data")]

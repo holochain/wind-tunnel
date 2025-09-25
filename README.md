@@ -493,7 +493,7 @@ Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 Next, in a new terminal window, generate the nomad jobs for each scenario with:
 
 ```bash
-nix develop --command ./nomad/generate_jobs.sh
+nix develop --command ./nomad/scripts/generate_jobs.sh
 ```
 
 The generated jobs will be in the `nomad/jobs` directory.
@@ -597,7 +597,7 @@ accessible.
 At this point you have to generate the Nomad job for the scenario you want to run. This is done with:
 
 ```bash
-./nomad/generate_jobs.sh app_install_minimal
+./nomad/scripts/generate_jobs.sh app_install_minimal
 ```
 
 Now that the bundle is publicly available you can run the scenario with the following:

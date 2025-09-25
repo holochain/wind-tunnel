@@ -33,7 +33,7 @@ The following variables are available:
 Once you have created the vars file, you can generate the Nomad job file by running the following command:
 
 ```bash
-./nomad/generate_jobs.sh
+./nomad/scripts/generate_jobs.sh
 ```
 
 This will generate the nomad job files in the `nomad/jobs` directory. The job files will be named after the scenario name, with the `.nomad.hcl` extension.
