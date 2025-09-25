@@ -12,3 +12,8 @@ pub struct SampleEntry {
 pub enum EntryTypes {
     SampleEntry(SampleEntry),
 }
+
+#[hdk_link_types]
+pub enum LinkTypes {
+    AgentBehaviour,
+}
