@@ -1,5 +1,7 @@
 use hdk::prelude::*;
 use holochain_serialized_bytes::SerializedBytes;
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use validated_must_get_agent_activity_integrity::{
     EntryTypes, LinkTypes, SampleEntry, ValidatedSampleEntry,
@@ -7,6 +9,10 @@ use validated_must_get_agent_activity_integrity::{
 
 fn chain_head_anchor() -> ExternResult<AnyLinkableHash> {
     Ok(Path::from("LATEST_ENTRY").path_entry_hash()?.into())
+}
+
+fn write_agents_anchor() -> ExternResult<EntryHash> {
+    Path::from("WRITE_AGENTS").path_entry_hash()
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug)]
@@ -78,4 +84,32 @@ fn create_validated_sample_entry(agent: AgentPubKey) -> ExternResult<usize> {
     }))?;
 
     Ok(chain_len_tag.0)
+}
+
+#[hdk_extern]
+fn announce_write_behaviour() -> ExternResult<ActionHash> {
+    create_link(
+        write_agents_anchor()?,
+        agent_info()?.agent_initial_pubkey,
+        LinkTypes::AgentBehaviour,
+        (),
+    )
+}
+
+#[hdk_extern]
+fn get_random_agent_with_write_behaviour() -> ExternResult<Option<AgentPubKey>> {
+    let mut links = get_links(
+        GetLinksInputBuilder::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?.build(),
+    )?;
+    links.shuffle(&mut thread_rng());
+    let agent: Option<AgentPubKey> = links
+        .first()
+        .map(|l| AgentPubKey::try_from(l.target.clone()))
+        .transpose()
+        .map_err(|_| {
+            wasm_error!(WasmErrorInner::Guest(
+                "Failed to cast to AgentPubKey".to_string()
+            ))
+        })?;
+    Ok(agent)
 }

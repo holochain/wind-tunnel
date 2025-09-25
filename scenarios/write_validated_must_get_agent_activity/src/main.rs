@@ -1,4 +1,4 @@
-use holochain_types::dna::AgentPubKey;
+use holochain_types::prelude::{ActionHash, AgentPubKey};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::time::Duration;
@@ -20,6 +20,16 @@ fn agent_setup(
         &"validated_must_get_agent_activity".to_string(),
     )?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
+
+    // 'write' peers create a link to announce their behaviour so 'get_agent_activity' peers can find them
+    if ctx.assigned_behaviour() == "write" {
+        let _: ActionHash = call_zome(
+            ctx,
+            "validated_must_get_agent_activity",
+            "announce_write_behaviour",
+            (),
+        )?;
+    }
 
     Ok(())
 }
@@ -46,17 +56,29 @@ fn agent_behaviour_must_get_agent_activity(
                 ctx,
                 "validated_must_get_agent_activity",
                 "create_validated_sample_entry",
-                write_peer,
+                write_peer.clone(),
             )?;
 
             let reporter = ctx.runner_context().reporter();
             reporter.add_custom(
                 ReportMetric::new("write_validated_must_get_agent_activity")
+                    .with_tag(
+                        "must_get_agent_activity_agent",
+                        ctx.get().cell_id().agent_pubkey().to_string(),
+                    )
+                    .with_tag("write_agent", write_peer.to_string())
                     .with_field("chain_len", chain_len as f64),
             );
         }
         _ => {
-            if let Some(write_peer) = get_peer_list_randomized(ctx)?.first() {
+            let maybe_write_peer: Option<AgentPubKey> = call_zome(
+                ctx,
+                "validated_must_get_agent_activity",
+                "get_random_agent_with_write_behaviour",
+                (),
+            )?;
+
+            if let Some(write_peer) = maybe_write_peer {
                 ctx.get_mut().scenario_values.write_peer = Some(write_peer.clone());
             }
         }

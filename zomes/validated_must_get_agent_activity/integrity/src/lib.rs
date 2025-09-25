@@ -24,6 +24,7 @@ pub enum EntryTypes {
 #[hdk_link_types]
 pub enum LinkTypes {
     LatestAction,
+    AgentBehaviour,
 }
 
 #[hdk_extern]
