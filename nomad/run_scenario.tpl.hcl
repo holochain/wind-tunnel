@@ -20,7 +20,7 @@ variable "holochain_bin_url" {
 
 variable "scenario_url" {
   type        = string
-  description = "The URL to the binary or bundle of the scenario under test, this will be downloaded if it is not a local path" 
+  description = "The URL to the local binary or download link to the zip file of the scenario under test"
 }
 
 variable "run_id" {
