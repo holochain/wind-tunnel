@@ -74,7 +74,9 @@ function print_failed_tasks_and_logs() {
   ' <<< "$status")
 
   # get logs for each (unique) task
-  local tasks="$(echo "$failed_tasks" | jq -r '.task' | sort -u)"
+  local tasks
+  tasks="$(echo "$failed_tasks" | jq -r '.task' | sort -u)"
+
   for task in $tasks; do
     echo "Fetching logs for task: $task"
     nomad alloc logs -stderr "$alloc_id" "$task" || echo "Failed to fetch stderr logs for task: $task"
@@ -98,7 +100,8 @@ function wait_for_job() {
             echo "Failed to fetch Nomad status for $scenario_name ($alloc_id)" >&2
             exit 1
         fi
-        local status="$(get_status "$nomad_status")"
+        local status
+        status="$(get_status "$nomad_status")"
 
         if is_running "$status"; then
             echo "Scenario $scenario_name ($alloc_id) is still running (status=$status) (elapsed: $ELAPSED_SECS seconds)."
