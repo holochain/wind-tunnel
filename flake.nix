@@ -35,6 +35,11 @@
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
 
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
+
         lp-tool = pkgs.buildGoModule {
           pname = "lp-tool";
           version = "0.1.0";
@@ -78,6 +83,7 @@
             default = pkgs.mkShell {
               buildInputs = [
                 pkgs.go
+                (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain)
                 lp-tool
               ];
 
