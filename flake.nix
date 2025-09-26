@@ -83,7 +83,7 @@
             default = pkgs.mkShell {
               buildInputs = [
                 pkgs.go
-                (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain)
+                (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
                 lp-tool
               ];
 
