@@ -171,6 +171,12 @@ async fn zome_call_single_value() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn write_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("cec5ed317ea6e6055e06d52f1aefd4821c4dc9f3fcfcb21c8305197e41099026");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     let all_matches = WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))

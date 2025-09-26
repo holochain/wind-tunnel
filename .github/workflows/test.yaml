@@ -238,7 +238,7 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - kitsune continuous flow
+      - name: Smoke test - kitsune_continuous_flow
         run: |
           set -x
 
@@ -250,6 +250,22 @@ jobs:
 
           # Stop servers
           pkill kitsune2-bootst
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - write_get_agent_activity
+        run: |
+          # Start a sandbox conductor and run it in the background
+          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
+
+          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
+
+          # Run the scenario
+          RUST_LOG=info MIN_AGENTS=2 cargo run --package write_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
+
+          pkill hc && pkill holochain && pkill lair-keystore
 
           echo "==> Available space after step"
           echo
