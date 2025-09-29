@@ -1,6 +1,6 @@
 use crate::aggregator::HostMetricsAggregator;
-use crate::analyze::standard_timing_stats;
-use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::analyze::{counter_stats, partitioned_timing_stats};
+use crate::model::{CounterStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use polars::prelude::{col, lit, IntoLazy};
@@ -9,8 +9,9 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct WriteValidatedMustGetAgentActivitySummary {
+    write_validated_must_get_agent_activity_chain_len: CounterStats,
+    create_validated_sample_entry_zome_calls: PartitionedTimingStats,
     error_count: usize,
-    create_validated_sample_entry_timing: StandardTimingsStats,
 }
 
 pub(crate) async fn summarize_write_validated_must_get_agent_activity(
@@ -22,13 +23,18 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
         "write_validated_must_get_agent_activity"
     );
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
     let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
         .await
         .context("Load zome call data")?;
+
+    let write_validated_must_get_agent_activity_chain_len = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.write_validated_must_get_agent_activity_chain_len",
+        &["write_agent", "must_get_agent_activity_agent"],
+    )
+    .await
+    .context("Load write_validated_must_get_agent_activity_chain_len data")?;
 
     let create_validated_sample_entry_zome_calls = zome_calls
         .clone()
@@ -36,16 +42,25 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
         .filter(col("fn_name").eq(lit("create_validated_sample_entry")))
         .collect()?;
 
+    let host_metrics = HostMetricsAggregator::new(&client, &summary)
+        .try_aggregate()
+        .await;
+
     SummaryOutput::new(
         summary.clone(),
         WriteValidatedMustGetAgentActivitySummary {
-            create_validated_sample_entry_timing: standard_timing_stats(
-                create_validated_sample_entry_zome_calls.clone(),
+            write_validated_must_get_agent_activity_chain_len: counter_stats(
+                write_validated_must_get_agent_activity_chain_len,
+                "value",
+            )
+            .context("Write write_validated_must_get_agent_activity_chain_len stats")?,
+            create_validated_sample_entry_zome_calls: partitioned_timing_stats(
+                create_validated_sample_entry_zome_calls,
                 "value",
                 "10s",
-                None,
+                &["agent"],
             )
-            .context("Write timing stats")?,
+            .context("Write create_validated_sample_entry_zome_calls stats")?,
             error_count: query::zome_call_error_count(client, &summary).await?,
         },
         host_metrics,

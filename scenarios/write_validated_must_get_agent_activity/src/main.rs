@@ -61,13 +61,13 @@ fn agent_behaviour_must_get_agent_activity(
 
             let reporter = ctx.runner_context().reporter();
             reporter.add_custom(
-                ReportMetric::new("write_validated_must_get_agent_activity")
+                ReportMetric::new("write_validated_must_get_agent_activity_chain_len")
                     .with_tag(
                         "must_get_agent_activity_agent",
                         ctx.get().cell_id().agent_pubkey().to_string(),
                     )
                     .with_tag("write_agent", write_peer.to_string())
-                    .with_field("chain_len", chain_len as f64),
+                    .with_field("value", chain_len as f64),
             );
         }
         _ => {
