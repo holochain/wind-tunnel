@@ -178,7 +178,7 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/upload_metrics.sh"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/scripts/upload_metrics.sh"
           }
 
           config {
