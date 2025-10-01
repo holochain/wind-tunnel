@@ -182,3 +182,10 @@ jobs:
           RUN_SUMMARY_PATH: ./run_summary.jsonl
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
+
+      - name: Upload run summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: summariser-report
+          if-no-files-found: ignore
+          path: ./summariser-report-*.json
