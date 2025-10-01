@@ -264,14 +264,14 @@ jobs:
 
           # Run the scenario
           RUST_LOG=info MIN_AGENTS=2 cargo run --package write_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
-          
+
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
 
           echo "==> Available space after step"
           echo
           df -h
-          
+
       - name: Smoke test - write_validated_must_get_agent_activity
         run: |
           # Start a sandbox conductor and run it in the background
