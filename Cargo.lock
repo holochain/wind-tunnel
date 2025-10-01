@@ -24,6 +24,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
 
 [[package]]
+name = "agent_activity"
+version = "0.1.0"
+dependencies = [
+ "agent_activity_integrity",
+ "hdk",
+ "rand 0.8.5",
+]
+
+[[package]]
+name = "agent_activity_integrity"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.2.16",
+ "hdi",
+ "holochain_serialized_bytes",
+ "serde",
+]
+
+[[package]]
 name = "ahash"
 version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7874,6 +7893,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
 dependencies = [
  "bitflags 2.9.1",
+]
+
+[[package]]
+name = "write_get_agent_activity"
+version = "0.1.0"
+dependencies = [
+ "happ_builder",
+ "holochain_types",
+ "holochain_wind_tunnel_runner",
+ "kitsune2_api",
+ "kitsune2_core",
+ "log",
 ]
 
 [[package]]
