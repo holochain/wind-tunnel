@@ -30,6 +30,7 @@ members = [
   "scenarios/write_validated",
   "scenarios/validation_receipts",
   "scenarios/kitsune_continuous_flow",
+  "scenarios/write_get_agent_activity",
   "scenarios/write_validated_must_get_agent_activity",
 
   "zomes/return_single_value/coordinator",
@@ -49,6 +50,8 @@ members = [
   "zomes/countersigning/integrity",
   "zomes/validated/coordinator",
   "zomes/validated/integrity",
+  "zomes/agent_activity/coordinator",
+  "zomes/agent_activity/integrity",
   "zomes/validated_must_get_agent_activity/coordinator",
   "zomes/validated_must_get_agent_activity/integrity",
 ]
@@ -172,6 +175,7 @@ remote_call_integrity = { path = "./zomes/remote_call/integrity" }
 remote_signal_integrity = { path = "./zomes/remote_signal/integrity" }
 countersigning_integrity = { path = "./zomes/countersigning/integrity" }
 validated_integrity = { path = "./zomes/validated/integrity" }
+agent_activity_integrity = { path = "./zomes/agent_activity/integrity" }
 validated_must_get_agent_activity_integrity = { path = "./zomes/validated_must_get_agent_activity/integrity" }
 
 [workspace.lints.rust]

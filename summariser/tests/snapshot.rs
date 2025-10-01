@@ -172,6 +172,12 @@ async fn zome_call_single_value() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn write_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("cec5ed317ea6e6055e06d52f1aefd4821c4dc9f3fcfcb21c8305197e41099026");
+    Ok(())
+}
+
+#[tokio::test]
 async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
     run_snapshot_test!("ea9633e9798bfb1b2803840d8920cb7b8493679970b6920f58bd305f28024f3d");
     Ok(())

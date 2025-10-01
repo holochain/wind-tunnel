@@ -1,0 +1,106 @@
+use holochain_types::prelude::ActionHash;
+use holochain_types::prelude::AgentActivity;
+use holochain_types::prelude::AgentPubKey;
+use holochain_wind_tunnel_runner::prelude::*;
+use holochain_wind_tunnel_runner::scenario_happ_path;
+use std::time::Duration;
+
+#[derive(Debug, Default)]
+pub struct ScenarioValues {
+    write_peer: Option<AgentPubKey>,
+}
+
+impl UserValuesConstraint for ScenarioValues {}
+
+fn agent_setup(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    start_conductor_and_configure_urls(ctx)?;
+    install_app(
+        ctx,
+        scenario_happ_path!("agent_activity"),
+        &"agent_activity".to_string(),
+    )?;
+    try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
+
+    // 'write' peers create a link to announce their behaviour so 'get_agent_activity' peers can find them
+    if ctx.assigned_behaviour() == "write" {
+        let _: ActionHash = call_zome(ctx, "agent_activity", "announce_write_behaviour", ())?;
+    }
+
+    Ok(())
+}
+
+fn agent_behaviour_write(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    let _: ActionHash = call_zome(
+        ctx,
+        "agent_activity",
+        "create_sample_entry",
+        "this is a test entry value",
+    )?;
+
+    Ok(())
+}
+
+fn agent_behaviour_get_agent_activity(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    let reporter = ctx.runner_context().reporter();
+
+    match ctx.get().scenario_values.write_peer.clone() {
+        Some(write_peer) => {
+            let activity: AgentActivity = call_zome(
+                ctx,
+                "agent_activity",
+                "get_agent_activity_full",
+                write_peer.clone(),
+            )?;
+
+            let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
+            reporter.add_custom(
+                ReportMetric::new("write_get_agent_activity_highest_observed_action_seq")
+                    .with_tag("get_agent_activity_agent", agent_pub_key)
+                    .with_tag("write_agent", write_peer.to_string())
+                    .with_field(
+                        "value",
+                        activity.highest_observed.map_or(0, |v| v.action_seq),
+                    ),
+            );
+        }
+        _ => {
+            let maybe_write_peer: Option<AgentPubKey> = call_zome(
+                ctx,
+                "agent_activity",
+                "get_random_agent_with_write_behaviour",
+                (),
+            )?;
+
+            if let Some(write_peer) = maybe_write_peer {
+                ctx.get_mut().scenario_values.write_peer = Some(write_peer.clone());
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn main() -> WindTunnelResult<()> {
+    let builder = ScenarioDefinitionBuilder::<
+        HolochainRunnerContext,
+        HolochainAgentContext<ScenarioValues>,
+    >::new_with_init(env!("CARGO_PKG_NAME"))
+    .with_default_duration_s(60)
+    .use_agent_setup(agent_setup)
+    .use_named_agent_behaviour("write", agent_behaviour_write)
+    .use_named_agent_behaviour("get_agent_activity", agent_behaviour_get_agent_activity)
+    .use_agent_teardown(|ctx| {
+        uninstall_app(ctx, None).ok();
+        Ok(())
+    });
+
+    run(builder)?;
+
+    Ok(())
+}
