@@ -155,15 +155,18 @@ impl HolochainRunner {
     /// [`Drop::drop`].
     pub async fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
         let conductor_root_path = config.conductor_config_root_path.to_path_buf();
-        if !fs::exists(&conductor_root_path)? {
-            fs::create_dir_all(&conductor_root_path).with_context(|| {
-                format!(
-                    "Failed to create conductor root directory '{}'",
-                    conductor_root_path.display()
-                )
-            })?;
-        }
+        fs::create_dir_all(&conductor_root_path).with_context(|| {
+            format!(
+                "Failed to create conductor root directory '{}'",
+                conductor_root_path.display()
+            )
+        })?;
+        let conductor_root_path = conductor_root_path.canonicalize()?;
 
+        log::trace!(
+            "Writing conductor config file to '{}'",
+            conductor_root_path.display()
+        );
         let conductor_config_path = write_config(
             config.conductor_config_root_path.clone(),
             &config.conductor_config,

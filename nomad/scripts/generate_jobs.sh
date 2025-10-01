@@ -14,7 +14,8 @@ generate_job() {
   echo "Generated job file: $job_file"
 }
 
-BASEDIR="$(dirname "$0")"
+SCRIPTS_DIR="$(dirname "$0")"
+BASEDIR="$(realpath "$SCRIPTS_DIR/..")"
 VARS_DIR="$BASEDIR/vars"
 JOBS_DIR="$BASEDIR/jobs"
 TEMPLATE="$BASEDIR/run_scenario.tpl.hcl"

@@ -674,11 +674,13 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
             .context("Failed to bind ephemeral port for admin interface")?;
         listener.local_addr()?.port()
     };
-    let conductor_root_path = PathBuf::from(format!(
-        "./{}/{}",
-        ctx.runner_context().get_run_id(),
-        ctx.agent_name()
-    ));
+    let conductor_root_path = {
+        let mut path = env::temp_dir();
+        path.push(ctx.runner_context().get_run_id());
+        path.push(ctx.agent_name());
+
+        path
+    };
     let agent_name = ctx.agent_name().to_string();
     ctx.get_mut()
         .holochain_config_mut()
