@@ -86,6 +86,7 @@ jobs:
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run_id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
           NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu' }}"
+          NOMAD_VAR_duration: 600
           RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |-
           set -euo pipefail
