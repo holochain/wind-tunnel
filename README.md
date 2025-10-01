@@ -480,23 +480,26 @@ running a Nomad agent locally as both a client and a server.
 
 First, enter the Nix `devShell` with `nix develop` to make sure you have all the packages install.
 Alternatively, [install Nomad](https://developer.hashicorp.com/nomad/install) and Holochain locally
-so that both `nomad` and `hc` are in your `PATH`.
+so that both `nomad` and `holochain` are in your `PATH`.
 
-Once Nomad is installed, run the agent in `dev` mode to spin up both a server and client, do this with:
+Once Nomad is installed, run the agent with the configuration provided [in this
+repo](nomad/dev-agent-config.hcl) to spin up both a server and client, do this
+with:
 
 ```bash
-nomad agent -dev
+sudo nomad agent -config=nomad/dev-agent-config.hcl
 ```
 
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 
-Next, in a new terminal window, generate the nomad jobs for each scenario with:
+Next, in a new terminal window, generate the nomad job for each scenario by
+passing the scenario name into the `generate_jobs` script, such as:
 
 ```bash
-nix develop --command ./nomad/generate_jobs.sh
+./nomad/generate_jobs.sh app_install_minimal
 ```
 
-The generated jobs will be in the `nomad/jobs` directory.
+The generated job will be in the `nomad/jobs` directory.
 
 Next, in a new terminal window, build the scenario you want to run with:
 
@@ -518,23 +521,22 @@ All the jobs are in the `nomad/jobs` directory, so you can replace `app_install_
 - `-var scenario_url=...` provides the path to the scenario binary that you built in the previous step.
 - `-var reporter=in-memory` sets the reporter type to print to `stdout` instead of writing an InfluxDB metrics file.
 
-> [!Warning]
-> When running locally as in this guide, the `reporter` must be set to `in-memory` and the `scenario_url` must be a
-> local path due to the way Nomad handles downloading. To get around this limitation you must disable file system
-> isolation, see <https://developer.hashicorp.com/nomad/docs/configuration/client#disable_filesystem_isolation>.
-
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
 
 ```bash
 nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
-> [!Note]
-> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
+Or to download and use a different Holochain binary to start the conductors:
 
-Then, navigate to <http://localhost:4646/ui/jobs/run_scenario@default> where you should see one allocation,
-which is the Nomad name for an instance of the job. You can view the logs of the tasks to see the results.
-The allocation should be marked as "complete" after the duration specified.
+```bash
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
+```
+
+Then, navigate to <http://localhost:4646/ui/jobs> where you should see your job listed, after clicking on
+the job you should see one allocation, which is the Nomad name for an instance of the job. You can view
+the logs of the tasks to see the results. The allocation should be marked as "complete" after the
+duration specified.
 
 Once you've finished testing you can kill the Nomad agent with `^C` in the first terminal running the agent.
 
@@ -568,25 +570,26 @@ The final environment variable that needs to be set and is **not** set by the `d
 which needs to be set to a token with the correct permissions, for now it is fine to just use the admin
 token found in the Holochain shared vault of the password manager under `Nomad Server Bootstrap Token`.
 
-Once Nomad is installed, bundle the scenario you want to run with Nix so that it can run on other machines.
+Once Nomad is installed, build the scenario you want to run with Nix so that it puts everything in the
+correct location for you.
 
 Run:
 
 ```bash
-nix bundle .#packages.x86_64-linux.app_install
+nix build .#packages.x86_64-linux.app_install
 ```
 
 Replace `app_install` with the name of the scenario that you want to run.
-This will build and bundle the scenario to run on any `x86_64-linux` machine and does not require Nix to run.
-The bundled output will be in your `/nix/store/` with a symlink to it in your local dir with an `-arx` postfix,
-to make it easier to find the bundle later it is recommended to copy it somewhere. It is also best to remove
-the `-arx` postfix now so we don't forget later.
+This will build the scenario, the output will be in your `/nix/store/` with a symlink to it in your local
+with the name `./result`, zip the files found in the results directory, keeping the directory structure.
+
+An example to do this is with:
 
 ```bash
-cp ./app_install-arx ./app_install
+mkdir app_install && cp -r result/* app_install/ && cd app_install && zip -r app_install.zip . && cd -
 ```
 
-You now need to upload the scenario bundle to somewhere public so that the Nomad client can download it.
+You now need to upload the scenario zip file to somewhere public so that the Nomad client can download it.
 This could be a GitHub release, a public file sharing services, or some other means, as long as it's publicly
 accessible.
 
@@ -597,17 +600,17 @@ accessible.
 At this point you have to generate the Nomad job for the scenario you want to run. This is done with:
 
 ```bash
-./nomad/generate_jobs.sh app_install_minimal
+./nomad/scripts/generate_jobs.sh app_install_minimal
 ```
 
-Now that the bundle is publicly available you can run the scenario with the following:
+Now that the scenario zip file is publicly available you can run the scenario with the following:
 
 ```bash
-nomad job run -var scenario_url=http://{some-url} nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
-- `-var-file` should point to the var file, in `nomad/var_files`, of the scenario you want to run.
-- `-var scenario_url=...` provides the URL to the scenario binary that you uploaded in the previous step.
+- `-var scenario_url=...` provides the URL to the scenario zip file that you uploaded in the previous step.
+- `-var holochain_bin_url=...` provides the URL to download the version of the Holochain binary to test.
 
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration
 (in seconds) or to set the reporter to print to `stdout`.
@@ -616,12 +619,10 @@ You can also override existing and omitted variables with the `-var` flag. For e
 nomad job run -var scenario_url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
-> [!Note]
-> Make sure the `var` options are after the `var-file` option otherwise the values in the file will take precedence.
-
-Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs/run_scenario@default> where you
-should see the allocation, which is the Nomad name for an instance of the job. You can view the logs
-of the tasks to see the results. The allocation should be marked as "complete" after the duration specified.
+Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs> where you should see a job with the
+same name as the scenario under test. Clicking on this job should show an allocation, which is the Nomad
+name for an instance of the job. You can view the logs of the tasks to see the results. The allocation
+should be marked as "complete" after the duration specified.
 
 You can now get the run ID from the `stdout` of the `run_scenario` task in the Nomad web UI and, if the `reporter`
 was set to `influx-file` (the default value) then you can use that ID to view the results on the corresponding
@@ -631,7 +632,7 @@ the credentials of which can be found in the Holochain shared vault of the passw
 ###### Running Scenarios with the CI
 
 There is a [dedicated GitHub workflow](https://github.com/holochain/wind-tunnel/actions/workflows/nomad.yaml)
-for bundling all the scenarios designed to run with Nomad, uploading them as GitHub artifacts, and then
+for building all the scenarios designed to run with Nomad, uploading them as GitHub artifacts, and then
 running them on available Nomad clients specifically available for testing. The metrics from the runs
 are also uploaded to the InfluxDB instance. This is the recommended way to run the Wind Tunnel scenarios
 with Nomad.
@@ -640,7 +641,9 @@ To run it, simply navigate to <https://github.com/holochain/wind-tunnel/actions/
 `Run workflow` on the right, and select the branch that you want to test. If you only want to test a
 sub-selection of the scenarios then simply comment-out or remove the scenarios that you want to exclude
 from the matrix in [the workflow file](.github/workflows/nomad.yaml), push your changes and make sure to
-select the correct branch.
+select the correct branch. You can also override the URL to download the Holochain binary from, if you would
+like to test a different version of Holochain, the default is the latest release at
+<https://github.com/holochain/holochain/releases/latest>.
 
 > [!Warning]
 > Currently, the `Wait for free nodes` step will wait indefinitely if there are never enough free nodes

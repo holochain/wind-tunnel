@@ -2,6 +2,9 @@ name: "Run performance tests on Nomad cluster"
 
 on:
   workflow_dispatch:
+    inputs:
+      holochain_bin_url:
+        description: "The URL to download the `holochain` binary from"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
 
@@ -48,20 +51,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle scenario
-        run: |
-          nix bundle .#packages.x86_64-linux.${{ matrix.scenario-name }}
-          cp ./${{ matrix.scenario-name }}-arx ./${{ matrix.scenario-name }}
-
       - name: Build Nomad Job
+        env:
+          RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |
-          nix develop --command ./nomad/generate_jobs.sh ${{ matrix.job-name || matrix.scenario-name }}
+          nix develop --command ./nomad/scripts/generate_jobs.sh ${{ matrix.job-name || matrix.scenario-name }}
 
-      - name: Upload bundle as artifact
-        id: upload-bundle
+      - name: Build scenario
+        run: nix build .#packages.x86_64-linux.${{ matrix.scenario-name }}
+
+      - name: Upload scenario as artifact
+        id: upload-scenario
         uses: actions/upload-artifact@v4
         with:
-          path: ./${{ matrix.scenario-name }}
+          path: |
+            ./result/bin/
+            ./result/happs/
           name: ${{ matrix.job-name || matrix.scenario-name }}
           if-no-files-found: error
 
@@ -91,7 +96,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-bundle.outputs.artifact-id}}/zip")
+            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-scenario.outputs.artifact-id}}/zip")
           echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
 
       - name: Run Nomad Job
@@ -103,6 +108,7 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run_id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
+          NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu' }}"
           RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |-
           set -euo pipefail
@@ -116,14 +122,17 @@ jobs:
           fi
 
           echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Save alloc_ids to file
+        env:
+          RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |
-          for alloc_id in ${{ steps.run-nomad-job.outputs.alloc_ids }}; do
-            echo "${{ matrix.job-name || matrix.scenario-name }},${alloc_id}" >> alloc_ids.csv
-          done
+          started_at=${{ steps.run-nomad-job.outputs.started_at }}
+          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ matrix.job-name || matrix.scenario-name }}" "${{ matrix.scenario-name }}" "${RUN_ID}" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload alloc_ids
+        uses: actions/upload-artifact@v4
         with:
           name: alloc_ids_${{ matrix.job-name || matrix.scenario-name }}
           path: alloc_ids.csv
@@ -135,7 +144,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: Download all alloc_ids
+        uses: actions/download-artifact@v4
         with:
           path: ./alloc_ids
 
@@ -146,9 +156,25 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
         run: |-
           cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
-          while IFS= read -r line; do
-            scenario_name=$(echo "$line" | cut -d',' -f1)
-            alloc_id=$(echo "$line" | cut -d',' -f2)
-            echo "Waiting for $scenario_name with allocation ID $alloc_id"
-            nix develop --command ./nomad/wait_for_jobs.sh $scenario_name $alloc_id
-          done < all_alloc_ids.csv
+          nix develop --command ./nomad/scripts/ci_allocs.sh wait_for_jobs all_alloc_ids.csv
+
+      - name: Prepare run summary
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          RUN_SUMMARY_PATH: ./run_summary.jsonl
+        run: |
+          cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
+          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary all_alloc_ids.csv $RUN_SUMMARY_PATH
+          cat $RUN_SUMMARY_PATH >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run summariser
+        env:
+          INFLUX_HOST: "https://ifdb.holochain.org"
+          INFLUX_BUCKET: "windtunnel"
+          INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+          RUN_SUMMARY_PATH: ./run_summary.jsonl
+          RUST_LOG: debug
+        run: nix develop --command cargo run --release --bin holochain-summariser
