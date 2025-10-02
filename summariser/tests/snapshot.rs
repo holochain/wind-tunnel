@@ -179,7 +179,7 @@ async fn write_get_agent_activity() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("cec5ed317ea6e6055e06d52f1aefd4821c4dc9f3fcfcb21c8305197e41099026");
+    run_snapshot_test!("f11ec2e0490ac1fba9137f7a3c7ec261262d8305478d22844f3a2df60573f14b");
     Ok(())
 }
 
