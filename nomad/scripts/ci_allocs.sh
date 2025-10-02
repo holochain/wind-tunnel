@@ -20,7 +20,7 @@ function make_allocs_csv() {
     local started_at=$5
     local alloc_ids=$6
 
-    touch $output_file
+    touch "$output_file"
 
     local duration
     local behaviours
@@ -38,7 +38,7 @@ function make_allocs_csv() {
     done
     for alloc_id in $alloc_ids; do
         # job_name,scenario_name,alloc_id,run_id,started_at,duration,behaviours
-        echo "${job_name},${scenario_name},${alloc_id},${run_id},${started_at},${duration},${csv_behaviours}" >> ${output_file}
+        echo "${job_name},${scenario_name},${alloc_id},${run_id},${started_at},${duration},${csv_behaviours}" >> "${output_file}"
     done
 }
 
@@ -57,7 +57,7 @@ function generate_run_summary() {
         return 1
     fi
 
-    touch $run_summary_file
+    touch "$run_summary_file"
 
     local wind_tunnel_version
     wind_tunnel_version=$(cargo metadata --no-deps --format-version 1 | jq -r ".packages[0].version")
@@ -68,8 +68,6 @@ function generate_run_summary() {
     local started_at
     local duration
     local behaviours
-    local json_behaviours
-    local peer_count
 
     while IFS=',' read -r _job_name scenario_name alloc_id run_id started_at duration behaviours; do
         echo "Processing line: $run_id / $scenario_name / $alloc_id / $started_at / $duration / $behaviours"
@@ -113,7 +111,7 @@ function wait_for_jobs() {
         job_name=$(echo "$line" | cut -d',' -f1)
         alloc_id=$(echo "$line" | cut -d',' -f3)
         echo "Waiting for $job_name with allocation ID $alloc_id"
-        $nomad_script_dir/wait_for_jobs.sh $job_name $alloc_id
+        "${nomad_script_dir}/wait_for_jobs.sh" "$job_name" "$alloc_id"
     done < "$allocs_csv_file"
 }
 

@@ -59,7 +59,7 @@ jobs:
         env:
           RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |
-          nix develop --command ./nomad/scripts/generate_jobs.sh ${{ matrix.job-name || matrix.scenario-name }}
+          nix run .#generate-nomad-jobs ${{ matrix.job-name || matrix.scenario-name }}
 
       - name: Build scenario
         run: nix build .#packages.x86_64-linux.${{ matrix.scenario-name }}

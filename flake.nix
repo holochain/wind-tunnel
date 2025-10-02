@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    git-hooks.url = "github:cachix/git-hooks.nix";
+    systems.url = "github:nix-systems/default";
 
     holonix = {
       url = "github:holochain/holonix?ref=main-0.5";
@@ -23,10 +25,15 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } ({ flake-parts-lib, ... }: {
+  outputs = inputs@{ flake-parts, git-hooks, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+    imports = [
+      git-hooks.flakeModule
+    ];
+
     systems = builtins.attrNames inputs.holonix.devShells;
     perSystem = { inputs', pkgs, system, config, ... }:
       let
+        flake-parts-lib = inputs.flake-parts.lib;
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = flake-parts-lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
@@ -34,6 +41,11 @@
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
 
         lp-tool = pkgs.buildGoModule {
           pname = "lp-tool";
@@ -54,19 +66,34 @@
           ./nix/modules/zomes.nix
         ];
 
+        pre-commit = {
+          check.enable = true;
+          settings = {
+            hooks = {
+              nixpkgs-fmt.enable = true;
+              statix.enable = true;
+              shellcheck.enable = true;
+              rustfmt.enable = true;
+              taplo.enable = true;
+              yamlfmt.enable = true;
+            };
+          };
+        };
+
         devShells =
           let
             # The packages required in most devShells
             commonPackages = [
               pkgs.cmake
               pkgs.gomplate
+              pkgs.netcat-gnu
               pkgs.perl
+              pkgs.pre-commit
               pkgs.rustPlatform.bindgenHook
               pkgs.shellcheck
               pkgs.statix
               pkgs.taplo
               pkgs.yamlfmt
-              pkgs.netcat-gnu
               config.rustHelper.rust
               customHolochain
               inputs'.holonix.packages.lair-keystore
@@ -78,6 +105,7 @@
             default = pkgs.mkShell {
               buildInputs = [
                 pkgs.go
+                (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
                 lp-tool
               ];
 
@@ -100,6 +128,7 @@
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
               shellHook = ''
+                ${config.pre-commit.installationScript}
                 source ./scripts/influx.sh
                 source ./scripts/telegraf.sh
                 source ./scripts/checks.sh
@@ -147,13 +176,254 @@
               rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
+          check-scripts = pkgs.writeShellApplication {
+            name = "check-scripts";
+            runtimeInputs = [
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+              
+              check_scripts
+            '';
+          };
+          check-nix-fmt = pkgs.writeShellApplication {
+            name = "check-nix-fmt";
+            runtimeInputs = [
+              pkgs.nixpkgs-fmt
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+              
+              check_nix_fmt
+            '';
+          };
+          check-nix-lint = pkgs.writeShellApplication {
+            name = "check-nix-lint";
+            runtimeInputs = [
+              pkgs.shellcheck
+              pkgs.statix
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+              
+              check_nix_static
+            '';
+          };
+          check-rust-fmt = pkgs.writeShellApplication {
+            name = "check-rust-fmt";
+            runtimeInputs = [
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+              
+              check_rust_fmt
+            '';
+          };
+          check-rust-lint = pkgs.writeShellApplication {
+            name = "check-rust-lint";
+            runtimeInputs = [
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+
+              check_rust_static
+            '';
+          };
+          check-go = pkgs.writeShellApplication {
+            name = "check-go";
+            runtimeInputs = [
+              pkgs.go
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+
+              check_go
+            '';
+          };
+          check-toml-fmt = pkgs.writeShellApplication {
+            name = "check-toml-fmt";
+            runtimeInputs = [
+              pkgs.shellcheck
+              pkgs.taplo
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+
+              check_toml_fmt
+            '';
+          };
+          check-yaml-fmt = pkgs.writeShellApplication {
+            name = "check-yaml-fmt";
+            runtimeInputs = [
+              pkgs.shellcheck
+              pkgs.yamlfmt
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+              
+              check_yaml_fmt
+            '';
+          };
+          check-all = pkgs.writeShellApplication {
+            name = "check-all";
+            runtimeInputs = [
+              pkgs.go
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+              pkgs.taplo
+              pkgs.yamlfmt
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/checks.sh
+
+              check_all
+            '';
+          };
+          format-rust = pkgs.writeShellApplication {
+            name = "format-rust";
+            runtimeInputs = [
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/format.sh
+
+              format_rust
+            '';
+          };
+          format-toml = pkgs.writeShellApplication {
+            name = "format-toml";
+            runtimeInputs = [
+              pkgs.shellcheck
+              pkgs.taplo
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/format.sh
+
+              format_toml
+            '';
+          };
+          format-yaml = pkgs.writeShellApplication {
+            name = "format-yaml";
+            runtimeInputs = [
+              pkgs.shellcheck
+              pkgs.yamlfmt
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/format.sh
+
+              format_yaml
+            '';
+          };
+          format-all = pkgs.writeShellApplication {
+            name = "format-all";
+            runtimeInputs = [
+              pkgs.nixpkgs-fmt
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+              pkgs.yamlfmt
+              pkgs.taplo
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/format.sh
+
+              format_all
+            '';
+          };
+          generate-nomad-jobs = pkgs.writeShellApplication {
+            name = "generate-nomad-jobs";
+            runtimeInputs = [
+              pkgs.gomplate
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              ./nomad/scripts/generate_jobs.sh "$@"
+            '';
+          };
+          rust-unit-tests = pkgs.writeShellApplication {
+            name = "rust-unit-tests";
+            runtimeInputs = [
+              pkgs.rustPlatform.bindgenHook
+              pkgs.shellcheck
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/tests.sh
+
+              unit_tests
+            '';
+          };
+          rust-smoke-test = pkgs.writeShellApplication {
+            name = "rust-smoke-test";
+            runtimeInputs = [
+              pkgs.rustPlatform.bindgenHook
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/tests.sh
+              
+              smoke_test "$@"
+            '';
+          };
         };
 
         checks = {
           inherit (config.workspace) workspace_clippy;
         };
       };
-  });
+  };
 
   nixConfig = {
     substituters = [ "https://cache.nixos.org" "https://holochain-ci.cachix.org" ];

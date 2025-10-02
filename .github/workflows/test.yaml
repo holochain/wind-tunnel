@@ -60,41 +60,9 @@ jobs:
           echo
           df -h
 
-      - name: Check scripts
+      - name: Check formatting
         run: |
-          nix develop .#ci -c bash -c "shellcheck scripts/*.sh"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Check TOML formatting
-        run: |
-          nix develop .#ci -c bash -c "./scripts/format-toml.sh --check"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Check YAML formatting
-        run: |
-          nix develop .#ci -c bash -c "./scripts/format-yaml.sh -lint"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Check Nix formatting
-        run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_fmt"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Lint Nix
-        run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_nix_static"
+          nix flake check --all-systems
 
           echo "==> Available space after step"
           echo
@@ -102,15 +70,7 @@ jobs:
 
       - name: Verify go cli tool
         run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_go"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Check Rust formatting
-        run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
+          nix run .#check-go
 
           echo "==> Available space after step"
           echo
@@ -118,7 +78,7 @@ jobs:
 
       - name: Lint Rust
         run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
+          nix run .#check-rust-lint
 
           echo "==> Available space after step"
           echo
@@ -126,7 +86,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          nix develop .#ci -c bash -c cargo test --workspace --all-targets
+          nix run .#rust-unit-tests
 
           echo "==> Available space after step"
           echo
@@ -134,7 +94,7 @@ jobs:
 
       - name: Smoke test - zome_call_single_value
         run: |
-          RUST_LOG=info cargo run --package zome_call_single_value -- --duration 5 --no-progress
+          nix run .#rust-smoke-test zome_call_single_value
 
           echo "==> Available space after step"
           echo
@@ -142,7 +102,7 @@ jobs:
 
       - name: Smoke test - single_write_many_read
         run: |
-          RUST_LOG=info cargo run --package single_write_many_read -- --duration 5 --no-progress
+          nix run .#rust-smoke-test single_write_many_read
 
           echo "==> Available space after step"
           echo
@@ -150,7 +110,7 @@ jobs:
 
       - name: Smoke test - dht_sync_lag
         run: |
-          RUST_LOG=info cargo run --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+          nix run .#rust-smoke-test dht_sync_lag
 
           echo "==> Available space after step"
           echo
@@ -158,7 +118,7 @@ jobs:
 
       - name: Smoke test - app_install
         run: |
-          RUST_LOG=info cargo run --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
+          nix run .#rust-smoke-test app_install
 
           echo "==> Available space after step"
           echo
@@ -166,7 +126,7 @@ jobs:
 
       - name: Smoke test - first_call
         run: |
-          RUST_LOG=info cargo run --package first_call -- --duration 5 --no-progress
+          nix run .#rust-smoke-test first_call
 
           echo "==> Available space after step"
           echo
@@ -174,7 +134,7 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
-          RUST_LOG=info cargo run --package write_read -- --duration 5 --no-progress
+          nix run .#rust-smoke-test write_read
 
           echo "==> Available space after step"
           echo
@@ -182,7 +142,7 @@ jobs:
 
       - name: Smoke test - write_query
         run: |
-          RUST_LOG=info cargo run --package write_query -- --duration 5 --no-progress
+          nix run .#rust-smoke-test write_query
 
           echo "==> Available space after step"
           echo
@@ -190,7 +150,7 @@ jobs:
 
       - name: Smoke test - local_signals
         run: |
-          RUST_LOG=info cargo run --package local_signals -- --duration 5 --no-progress
+          nix run .#rust-smoke-test local_signals
 
           echo "==> Available space after step"
           echo
@@ -198,7 +158,7 @@ jobs:
 
       - name: Smoke test - write_validated
         run: |
-          RUST_LOG=info cargo run --package write_validated -- --duration 5 --no-progress
+          nix run .#rust-smoke-test write_validated
 
           echo "==> Available space after step"
           echo
@@ -206,7 +166,7 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_call_rate -- --agents 2 --duration 30 --no-progress
+          nix run .#rust-smoke-test remote_call_rate
 
           echo "==> Available space after step"
           echo
@@ -214,7 +174,7 @@ jobs:
 
       - name: Smoke test - two_party_countersigning
         run: |
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package two_party_countersigning -- --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
+          nix run .#rust-smoke-test two_party_countersigning
 
           echo "==> Available space after step"
           echo
@@ -224,7 +184,7 @@ jobs:
         run: |
           set -x
 
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package validation_receipts -- --duration 45 --no-progress
+          nix run .#rust-smoke-test validation_receipts
 
           echo "==> Available space after step"
           echo
@@ -232,7 +192,7 @@ jobs:
 
       - name: Smoke test - remote_signals
         run: |
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package remote_signals -- --agents 2 --duration 30 --no-progress
+          nix run .#rust-smoke-test remote_signals
 
           echo "==> Available space after step"
           echo
@@ -242,14 +202,16 @@ jobs:
         run: |
           set -x
 
+          kitsune_host="127.0.0.1:30000"
+
           # Start local bootstrap and signal server
-          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000 &"
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen $kitsune_host &"
 
           # Run the scenario
-          RUST_LOG=warn cargo run --package kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --duration 15 --agents 2
+          nix run .#rust-smoke-test kitsune_continuous_flow $kitsune_host
 
           # Stop servers
-          pkill kitsune2-bootst
+          pkill kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
