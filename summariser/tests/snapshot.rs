@@ -173,7 +173,7 @@ async fn zome_call_single_value() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn write_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("ea9633e9798bfb1b2803840d8920cb7b8493679970b6920f58bd305f28024f3d");
+    run_snapshot_test!("80fc1af2a7172fe34aee5ff222cfd2e8a09b7190f05722fd508c3d24199ddee7");
     Ok(())
 }
 
