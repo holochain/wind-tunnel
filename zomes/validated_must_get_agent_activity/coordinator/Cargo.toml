@@ -1,0 +1,21 @@
+[package]
+name = "validated_must_get_agent_activity"
+version = "0.1.0"
+edition.workspace = true
+description = "A Holochain coordinator zome with validation that calls must_get_agent_activity"
+publish = false
+
+[lib]
+name = "validated_must_get_agent_activity_coordinator"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdk = { workspace = true }
+validated_must_get_agent_activity_integrity = { workspace = true }
+serde = { workspace = true }
+holochain_serialized_bytes = { workspace = true}
+rand = { workspace = true }
+
+[lints]
+workspace = true

@@ -128,6 +128,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "write_validated_must_get_agent_activity" => Some(
+            async move {
+                summarize_write_validated_must_get_agent_activity(client.clone(), summary.clone())
+                    .await
+                    .context("Write validated must_get_agent_activity summary")
+            }
+            .boxed(),
+        ),
         _ => {
             log::warn!("No report for scenario: {}", name);
             None

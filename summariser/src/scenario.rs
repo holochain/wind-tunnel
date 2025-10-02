@@ -10,6 +10,7 @@ mod write_get_agent_activity;
 mod write_query;
 mod write_read;
 mod write_validated;
+mod write_validated_must_get_agent_activity;
 mod zome_call_single_value;
 
 pub(crate) use app_install::summarize_app_install;
@@ -24,4 +25,5 @@ pub(crate) use write_get_agent_activity::summarize_write_get_agent_activity;
 pub(crate) use write_query::summarize_write_query;
 pub(crate) use write_read::summarize_write_read;
 pub(crate) use write_validated::summarize_write_validated;
+pub(crate) use write_validated_must_get_agent_activity::summarize_write_validated_must_get_agent_activity;
 pub(crate) use zome_call_single_value::summarize_zome_call_single_value;
