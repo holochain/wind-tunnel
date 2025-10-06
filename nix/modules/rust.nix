@@ -8,12 +8,7 @@ let
     overlays = [ (import rust-overlay) ];
   };
 
-  rustVersion = "1.87.0";
-
-  rustWithWasmTarget = rustPkgs.rust-bin.stable."${rustVersion}".minimal.override {
-    targets = [ "wasm32-unknown-unknown" ];
-    extensions = [ "clippy" "rustfmt" ];
-  };
+  rustWithWasmTarget = rustPkgs.rust-bin.fromRustupToolchainFile ../../rust-toolchain.toml;
 
   craneLib = (crane.mkLib rustPkgs).overrideToolchain rustWithWasmTarget;
 in
