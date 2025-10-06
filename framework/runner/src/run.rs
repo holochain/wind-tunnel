@@ -143,6 +143,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let runner_context = runner_context.clone();
 
         let setup_agent_fn = definition.setup_agent_fn;
+        let setup_additional_agents = definition.setup_additional_agents;
         let agent_behaviour_fn = definition.agent_behaviour.get(assigned_behaviour).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
 
@@ -171,6 +172,23 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                     if let Some(setup_agent_fn) = setup_agent_fn {
                         if let Err(e) = setup_agent_fn(&mut context) {
                             log::error!("Agent setup failed for agent {agent_name}: {:?}", e);
+
+                            if let Some(teardown_agent_fn) = teardown_agent_fn {
+                                if let Err(e) = teardown_agent_fn(&mut context) {
+                                    log::error!(
+                                        "Agent teardown failed for agent {}: {:?}",
+                                        agent_name,
+                                        e
+                                    );
+                                }
+                            }
+
+                            return;
+                        }
+                    }
+                    if let Some(setup_additional_agents_fn) = setup_additional_agents {
+                        if let Err(e) = setup_additional_agents_fn(&mut context) {
+                            log::error!("Additional agents setup failed for agent {agent_name}: {:?}", e);
 
                             if let Some(teardown_agent_fn) = teardown_agent_fn {
                                 if let Err(e) = teardown_agent_fn(&mut context) {

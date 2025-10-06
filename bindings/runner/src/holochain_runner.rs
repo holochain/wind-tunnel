@@ -18,7 +18,7 @@ use wind_tunnel_runner::prelude::WindTunnelResult;
 
 /// Used to build a [`HolochainConfig`], which is then passed into [`HolochainRunner::run`] to
 /// spawn a [`Child`] process running a Holochain conductor with the specified config.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct HolochainConfigBuilder {
     /// The path to the `holochain` binary used to start a conductor.
     ///
@@ -121,7 +121,7 @@ impl HolochainConfigBuilder {
 ///
 /// Must be created with a [`HolochainConfigBuilder`] by calling [`HolochainConfigBuilder::build`]
 /// once all fields are correctly set.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HolochainConfig {
     /// The path to the `holochain` binary used to start a conductor.
     bin_path: PathBuf,
@@ -134,7 +134,7 @@ pub struct HolochainConfig {
 
     /// The conductor configuration that is written to a file and passed, as a path, to the
     /// conductor when started.
-    conductor_config: ConductorConfig,
+    pub conductor_config: ConductorConfig,
 }
 
 /// Holds the [`Child`] process that is running the Holochain conductor, as well as the path to the

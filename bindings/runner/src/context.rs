@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::{collections::HashMap, net::SocketAddr};
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
-use crate::holochain_runner::{HolochainConfigBuilder, HolochainRunner};
+use crate::holochain_runner::{HolochainConfig, HolochainConfigBuilder, HolochainRunner};
 
 #[derive(Debug, Default)]
 pub struct DefaultScenarioValues {
@@ -72,5 +72,13 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
     /// value if not set, and setting the current internal value to [`None`].
     pub(crate) fn take_holochain_config(&mut self) -> HolochainConfigBuilder {
         self.holochain_config.take().unwrap_or_default()
+    }
+
+    /// Get a [`HolochainConfig`] if it has been built from the internal
+    /// [`HolochainConfigBuilder`].
+    pub fn holochain_config(&self) -> Option<HolochainConfig> {
+        self.holochain_config
+            .as_ref()
+            .and_then(|b| b.clone().build().ok())
     }
 }

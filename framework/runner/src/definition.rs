@@ -14,6 +14,7 @@ pub type HookResult = anyhow::Result<()>;
 pub type GlobalHookMut<RV> = fn(&mut RunnerContext<RV>) -> HookResult;
 pub type GlobalHook<RV> = fn(Arc<RunnerContext<RV>>) -> HookResult;
 pub type AgentHookMut<RV, V> = fn(&mut AgentContext<RV, V>) -> HookResult;
+pub type AdditionalAgentsHookMut<RV, V> = fn(&mut AgentContext<RV, V>) -> HookResult;
 
 /// The builder for a scenario definition.
 ///
@@ -27,6 +28,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     capture_env: HashSet<String>,
     setup_fn: Option<GlobalHookMut<RV>>,
     setup_agent_fn: Option<AgentHookMut<RV, V>>,
+    setup_additional_agents: Option<AdditionalAgentsHookMut<RV, V>>,
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
     teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     teardown_fn: Option<GlobalHook<RV>>,
@@ -48,6 +50,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) reporter: ReporterOpt,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
     pub(crate) setup_agent_fn: Option<AgentHookMut<RV, V>>,
+    pub(crate) setup_additional_agents: Option<AdditionalAgentsHookMut<RV, V>>,
     pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
     pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) teardown_fn: Option<GlobalHook<RV>>,
@@ -99,6 +102,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
+            setup_additional_agents: None,
             teardown_agent_fn: None,
             teardown_fn: None,
         }
@@ -134,6 +138,15 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
     /// Sets the setup hook for an agent. It will be run once for each agent, as it starts.
     pub fn use_agent_setup(mut self, setup_agent_fn: AgentHookMut<RV, V>) -> Self {
         self.setup_agent_fn = Some(setup_agent_fn);
+        self
+    }
+
+    /// Sets the additional agents setup hook for an agent. It will be run once for each agent, as it starts.
+    pub fn use_additional_agents_setup(
+        mut self,
+        setup_additional_agents: AdditionalAgentsHookMut<RV, V>,
+    ) -> Self {
+        self.setup_additional_agents = Some(setup_additional_agents);
         self
     }
 
@@ -221,6 +234,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             reporter: self.cli.reporter,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
+            setup_additional_agents: self.setup_additional_agents,
             agent_behaviour: self.agent_behaviour,
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
