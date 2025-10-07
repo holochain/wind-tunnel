@@ -396,10 +396,7 @@
             text = ''
               set -euo pipefail
 
-              # shellcheck disable=SC1091
-              source ./scripts/tests.sh
-
-              unit_tests
+              cargo test --workspace --all-targets
             '';
           };
           rust-smoke-test = pkgs.writeShellApplication {
@@ -410,10 +407,7 @@
             text = ''
               set -euo pipefail
 
-              # shellcheck disable=SC1091
-              source ./scripts/tests.sh
-              
-              smoke_test "$@"
+              RUST_LOG=info cargo run "$@"
             '';
           };
         };

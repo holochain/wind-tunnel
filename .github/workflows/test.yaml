@@ -94,7 +94,7 @@ jobs:
 
       - name: Smoke test - zome_call_single_value
         run: |
-          nix run .#rust-smoke-test zome_call_single_value
+          nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -102,7 +102,7 @@ jobs:
 
       - name: Smoke test - single_write_many_read
         run: |
-          nix run .#rust-smoke-test single_write_many_read
+          nix run .#rust-smoke-test -- --package single_write_many_read -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -110,7 +110,7 @@ jobs:
 
       - name: Smoke test - dht_sync_lag
         run: |
-          nix run .#rust-smoke-test dht_sync_lag
+          nix run .#rust-smoke-test -- --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -118,7 +118,7 @@ jobs:
 
       - name: Smoke test - app_install
         run: |
-          nix run .#rust-smoke-test app_install
+          nix run .#rust-smoke-test -- --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -126,7 +126,7 @@ jobs:
 
       - name: Smoke test - first_call
         run: |
-          nix run .#rust-smoke-test first_call
+          nix run .#rust-smoke-test -- --package first_call -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -134,7 +134,7 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
-          nix run .#rust-smoke-test write_read
+          nix run .#rust-smoke-test -- --package write_read -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -142,7 +142,7 @@ jobs:
 
       - name: Smoke test - write_query
         run: |
-          nix run .#rust-smoke-test write_query
+          nix run .#rust-smoke-test -- --package write_query -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -150,7 +150,7 @@ jobs:
 
       - name: Smoke test - local_signals
         run: |
-          nix run .#rust-smoke-test local_signals
+          nix run .#rust-smoke-test -- --package local_signals -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -158,7 +158,7 @@ jobs:
 
       - name: Smoke test - write_validated
         run: |
-          nix run .#rust-smoke-test write_validated
+          nix run .#rust-smoke-test -- --package write_validated -- --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -166,7 +166,7 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
-          nix run .#rust-smoke-test remote_call_rate
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_call_rate -- --agents 2 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -174,7 +174,7 @@ jobs:
 
       - name: Smoke test - two_party_countersigning
         run: |
-          nix run .#rust-smoke-test two_party_countersigning
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package two_party_countersigning -- --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
 
           echo "==> Available space after step"
           echo
@@ -184,7 +184,7 @@ jobs:
         run: |
           set -x
 
-          nix run .#rust-smoke-test validation_receipts
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package validation_receipts -- --duration 45 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -192,7 +192,7 @@ jobs:
 
       - name: Smoke test - remote_signals
         run: |
-          nix run .#rust-smoke-test remote_signals
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_signals -- --agents 2 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo
