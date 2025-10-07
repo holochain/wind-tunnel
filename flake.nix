@@ -40,7 +40,7 @@
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
 
-        pkgs = import nixpkgs {
+        _module.args.pkgs = import nixpkgs {
           inherit system;
           overlays = [ (import rust-overlay) ];
         };
@@ -71,7 +71,10 @@
               nixpkgs-fmt.enable = true;
               statix.enable = true;
               shellcheck.enable = true;
-              rustfmt.enable = true;
+              rustfmt = {
+                enable = true;
+                packageOverrides.cargo = config.rustHelper.rust;
+              };
               taplo.enable = true;
               yamlfmt.enable = true;
             };
@@ -86,7 +89,6 @@
               pkgs.gomplate
               pkgs.netcat-gnu
               pkgs.perl
-              pkgs.pre-commit
               pkgs.rustPlatform.bindgenHook
               pkgs.shellcheck
               pkgs.statix
