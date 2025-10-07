@@ -21,10 +21,7 @@ check_rust_static() {
 }
 
 check_toml_fmt() {
-  taplo format --check ./*.toml
-  taplo format --check ./bindings/**/*.toml
-  taplo format --check ./framework/**/*.toml
-  taplo format --check ./scenarios/**/*.toml
+  taplo format --check
 }
 
 check_yaml_fmt() {
