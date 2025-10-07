@@ -118,6 +118,28 @@ fn agent_behaviour(
         "Expected call count to match response"
     );
 
+    // create data on zero arc nodes
+    for i in 0..5 {
+        let app_id = format!("crud_zero_{i}");
+        let _: ActionHash = call_zome(
+            ctx,
+            &app_id,
+            "create_sample_entry",
+            format!("this is a test entry value from {app_id}"),
+        )?;
+        let response: u32 = call_zome(ctx, &app_id, "chain_query_count_len", ())?;
+        let values = &mut ctx.get_mut().scenario_values;
+        values.call_count += 1;
+
+        // Minimal check that we're querying the right content and getting the expected result from the
+        // calculation in this zome function.
+        assert_eq!(
+            values.call_count * 26,
+            response,
+            "Expected call count to match response"
+        );
+    }
+
     Ok(())
 }
 
