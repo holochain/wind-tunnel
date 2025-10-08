@@ -97,10 +97,7 @@
               pkgs.netcat-gnu
               pkgs.perl
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
-              pkgs.statix
-              pkgs.taplo
-              pkgs.yamlfmt
+              config.pre-commit.settings.enabledPackages
               config.rustHelper.rust
               customHolochain
               inputs'.holonix.packages.lair-keystore
