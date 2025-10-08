@@ -81,6 +81,7 @@
               rustfmt = {
                 enable = true;
                 packageOverrides.cargo = config.rustHelper.rust;
+                packageOverrides.rustfmt = config.rustHelper.rust;
               };
               taplo.enable = true;
               yamlfmt.enable = true;
