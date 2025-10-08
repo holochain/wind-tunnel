@@ -61,7 +61,7 @@
 
         _module.args.pkgs = import nixpkgs {
           inherit system;
-          overlays = [ (import rust-overlay) ];
+          overlays = [ rust-overlay.overlays.default ];
         };
 
         pre-commit = {
