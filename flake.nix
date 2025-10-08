@@ -49,7 +49,6 @@
       in
       {
         imports = [
-          ./nix/modules/formatter.nix
           ./nix/modules/happs.nix
           rustMod
           ./nix/modules/scenario.nix
@@ -63,6 +62,8 @@
           inherit system;
           overlays = [ rust-overlay.overlays.default ];
         };
+
+        formatter = pkgs.nixpkgs-fmt;
 
         pre-commit = {
           check.enable = true;
