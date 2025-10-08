@@ -168,7 +168,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/influx.sh
-              
+
               use_influx
               import_lp_metrics
 
@@ -185,7 +185,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/checks.sh
-              
+
               check_scripts
             '';
           };
@@ -200,7 +200,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/checks.sh
-              
+
               check_nix_fmt
             '';
           };
@@ -215,7 +215,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/checks.sh
-              
+
               check_nix_static
             '';
           };
@@ -230,7 +230,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/checks.sh
-              
+
               check_rust_fmt
             '';
           };
@@ -290,7 +290,7 @@
 
               # shellcheck disable=SC1091
               source ./scripts/checks.sh
-              
+
               check_yaml_fmt
             '';
           };
