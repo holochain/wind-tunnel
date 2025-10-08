@@ -198,7 +198,6 @@
             name = "check-nix-fmt";
             runtimeInputs = [
               pkgs.nixpkgs-fmt
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
@@ -212,7 +211,6 @@
           check-nix-lint = pkgs.writeShellApplication {
             name = "check-nix-lint";
             runtimeInputs = [
-              pkgs.shellcheck
               pkgs.statix
             ];
             text = ''
@@ -228,7 +226,6 @@
             name = "check-rust-fmt";
             runtimeInputs = [
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
@@ -243,7 +240,6 @@
             name = "check-rust-lint";
             runtimeInputs = [
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
@@ -258,7 +254,6 @@
             name = "check-go";
             runtimeInputs = [
               pkgs.go
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
@@ -272,7 +267,6 @@
           check-toml-fmt = pkgs.writeShellApplication {
             name = "check-toml-fmt";
             runtimeInputs = [
-              pkgs.shellcheck
               pkgs.taplo
             ];
             text = ''
@@ -287,7 +281,6 @@
           check-yaml-fmt = pkgs.writeShellApplication {
             name = "check-yaml-fmt";
             runtimeInputs = [
-              pkgs.shellcheck
               pkgs.yamlfmt
             ];
             text = ''
@@ -321,7 +314,6 @@
             name = "format-rust";
             runtimeInputs = [
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
@@ -335,7 +327,6 @@
           format-toml = pkgs.writeShellApplication {
             name = "format-toml";
             runtimeInputs = [
-              pkgs.shellcheck
               pkgs.taplo
             ];
             text = ''
@@ -350,7 +341,6 @@
           format-yaml = pkgs.writeShellApplication {
             name = "format-yaml";
             runtimeInputs = [
-              pkgs.shellcheck
               pkgs.yamlfmt
             ];
             text = ''
@@ -367,7 +357,6 @@
             runtimeInputs = [
               pkgs.nixpkgs-fmt
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
               pkgs.yamlfmt
               pkgs.taplo
             ];
@@ -396,7 +385,6 @@
             name = "rust-unit-tests";
             runtimeInputs = [
               pkgs.rustPlatform.bindgenHook
-              pkgs.shellcheck
             ];
             text = ''
               set -euo pipefail
