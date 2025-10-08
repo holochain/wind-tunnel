@@ -3,8 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+
     flake-parts.url = "github:hercules-ci/flake-parts";
-    git-hooks.url = "github:cachix/git-hooks.nix";
+
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     holonix = {
       url = "github:holochain/holonix?ref=main-0.5";
@@ -30,6 +35,7 @@
     ];
 
     systems = builtins.attrNames inputs.holonix.devShells;
+
     perSystem = { inputs', pkgs, system, config, ... }:
       let
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
