@@ -40,11 +40,6 @@
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
 
-        _module.args.pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ (import rust-overlay) ];
-        };
-
         lp-tool = pkgs.buildGoModule {
           pname = "lp-tool";
           version = "0.1.0";
@@ -63,6 +58,11 @@
           ./nix/modules/zome.nix
           ./nix/modules/zomes.nix
         ];
+
+        _module.args.pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
 
         pre-commit = {
           check.enable = true;
