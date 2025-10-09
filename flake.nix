@@ -133,9 +133,9 @@
 
               shellHook = ''
                 ${config.pre-commit.installationScript}
-                source ./scripts/influx.sh
-                source ./scripts/telegraf.sh
-                source ./scripts/checks.sh
+                source ${./scripts/influx.sh}
+                source ${./scripts/telegraf.sh}
+                source ${./scripts/checks.sh}
               '';
             };
 
@@ -172,7 +172,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/influx.sh
+              source ${./scripts/influx.sh}
 
               use_influx
               import_lp_metrics
@@ -189,7 +189,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_scripts
             '';
@@ -203,7 +203,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_nix_fmt
             '';
@@ -217,7 +217,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_nix_static
             '';
@@ -231,7 +231,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_rust_fmt
             '';
@@ -245,7 +245,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_rust_static
             '';
@@ -259,7 +259,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_go
             '';
@@ -273,7 +273,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_toml_fmt
             '';
@@ -287,7 +287,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_yaml_fmt
             '';
@@ -305,7 +305,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/checks.sh
+              source ${./scripts/checks.sh}
 
               check_all
             '';
@@ -319,7 +319,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/format.sh
+              source ${./scripts/format.sh}
 
               format_rust
             '';
@@ -333,7 +333,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/format.sh
+              source ${./scripts/format.sh}
 
               format_toml
             '';
@@ -347,7 +347,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/format.sh
+              source ${./scripts/format.sh}
 
               format_yaml
             '';
@@ -364,7 +364,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              source ./scripts/format.sh
+              source ${./scripts/format.sh}
 
               format_all
             '';
