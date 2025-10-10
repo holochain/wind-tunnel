@@ -197,7 +197,7 @@
           check-nix-fmt = pkgs.writeShellApplication {
             name = "check-nix-fmt";
             runtimeInputs = [
-              pkgs.nixpkgs-fmt
+              pkgs.nix
             ];
             text = ''
               set -euo pipefail
@@ -225,7 +225,7 @@
           check-rust-fmt = pkgs.writeShellApplication {
             name = "check-rust-fmt";
             runtimeInputs = [
-              pkgs.rustPlatform.bindgenHook
+              config.rustHelper.rust
             ];
             text = ''
               set -euo pipefail
@@ -239,10 +239,16 @@
           check-rust-lint = pkgs.writeShellApplication {
             name = "check-rust-lint";
             runtimeInputs = [
+              config.rustHelper.rust
+              pkgs.perl
+              pkgs.gnumake
+              pkgs.cmake
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
               set -euo pipefail
+
+              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
 
               # shellcheck disable=SC1091
               source ${./scripts/checks.sh}
@@ -297,12 +303,19 @@
             runtimeInputs = [
               pkgs.go
               pkgs.rustPlatform.bindgenHook
+              config.rustHelper.rust
+              pkgs.perl
+              pkgs.gnumake
+              pkgs.cmake
               pkgs.shellcheck
               pkgs.taplo
               pkgs.yamlfmt
+              pkgs.statix
             ];
             text = ''
               set -euo pipefail
+
+              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
 
               # shellcheck disable=SC1091
               source ${./scripts/checks.sh}
@@ -313,7 +326,7 @@
           format-rust = pkgs.writeShellApplication {
             name = "format-rust";
             runtimeInputs = [
-              pkgs.rustPlatform.bindgenHook
+              config.rustHelper.rust
             ];
             text = ''
               set -euo pipefail
@@ -355,10 +368,9 @@
           format-all = pkgs.writeShellApplication {
             name = "format-all";
             runtimeInputs = [
-              pkgs.nixpkgs-fmt
-              pkgs.rustPlatform.bindgenHook
               pkgs.yamlfmt
               pkgs.taplo
+              config.rustHelper.rust
             ];
             text = ''
               set -euo pipefail
@@ -384,10 +396,16 @@
           rust-unit-tests = pkgs.writeShellApplication {
             name = "rust-unit-tests";
             runtimeInputs = [
+              config.rustHelper.rust
+              pkgs.perl
+              pkgs.gnumake
+              pkgs.cmake
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
               set -euo pipefail
+
+              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
 
               cargo test --workspace --all-targets
             '';
@@ -395,10 +413,16 @@
           rust-smoke-test = pkgs.writeShellApplication {
             name = "rust-smoke-test";
             runtimeInputs = [
+              config.rustHelper.rust
+              pkgs.perl
+              pkgs.gnumake
+              pkgs.cmake
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
               set -euo pipefail
+
+              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
 
               RUST_LOG=info cargo run "$@"
             '';
