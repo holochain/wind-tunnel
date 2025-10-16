@@ -1,11 +1,13 @@
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
+use crate::frame::LoadError;
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
     SummaryOutput,
 };
 use crate::query;
 use anyhow::Context;
+use polars::frame::DataFrame;
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 use wind_tunnel_summary_model::RunSummary;
@@ -46,14 +48,20 @@ pub(crate) async fn summarize_countersigning_two_party(
     let accepted =
         partitioned_rate_stats(accepted, "value", "10s", &["agent"]).context("Accepted rate")?;
 
-    let accepted_success = query::query_custom_data(
+    let accepted_success = match query::query_custom_data(
         client.clone(),
         &summary,
         "wt.custom.countersigning_session_accepted_success",
         &["agent"],
     )
     .await
-    .context("Load accepted")?;
+    {
+        Err(err) if matches!(err.downcast_ref(), Some(LoadError::NoSeriesInResult { .. })) => {
+            DataFrame::empty()
+        }
+        accepted_success => accepted_success.context("Load accepted")?,
+    };
+
     let accepted_success = partitioned_rate_stats(accepted_success, "value", "10s", &["agent"])
         .context("Accepted success rate")?;
 
