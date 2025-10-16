@@ -158,6 +158,7 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          TIMEOUT: 5400
         run: |-
           cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
           nix develop --command ./nomad/scripts/ci_allocs.sh wait_for_jobs all_alloc_ids.csv
