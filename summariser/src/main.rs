@@ -79,7 +79,10 @@ async fn main() -> anyhow::Result<()> {
     if summary_outputs.is_empty() {
         log::warn!("No reports were generated");
     } else {
-        let report = File::create_new(format!("summariser-report-{:?}.json", Utc::now()))?;
+        let report = File::create_new(format!(
+            "summariser-report-{}.json",
+            Utc::now().format("%Y-%m-%dT%H.%M.%S%.fZ")
+        ))?;
         serde_json::to_writer_pretty(report, &summary_outputs)?;
     }
 

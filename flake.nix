@@ -120,6 +120,8 @@
                 pkgs.telegraf
                 pkgs.yq
                 pkgs.httpie
+                pkgs.openssl
+                pkgs.tomlq
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [

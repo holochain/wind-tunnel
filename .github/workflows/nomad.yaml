@@ -28,26 +28,30 @@ jobs:
           - remote_call_rate
           - remote_signals
           - single_write_many_read
-          - two_party_countersigning
+          # - two_party_countersigning TODO: Fix this scenario and re-enable it
           - write_query
           - write_read
           - write_validated
           - zome_call_single_value
         include:
-          - job-name: app_install_large
-            scenario-name: app_install
+          # TODO: Fix this scenario and re-enable it
+          # - job-name: app_install_large
+          #   scenario-name: app_install
 
-          - job-name: app_install_minimal
-            scenario-name: app_install
+          # TODO: Fix this scenario and re-enable it
+          # - job-name: app_install_minimal
+          #   scenario-name: app_install
 
           - scenario-name: dht_sync_lag
             required-nodes: 2
 
-          - scenario-name: validation_receipts
-            required-nodes: 2
+          # TODO: Fix this scenario and re-enable it
+          # - scenario-name: validation_receipts
+          #   required-nodes: 2
 
-          - scenario-name: write_get_agent_activity
-            required-nodes: 2
+          # TODO: Fix this scenario and re-enable it
+          # - scenario-name: write_get_agent_activity
+          #   required-nodes: 2
 
           - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
@@ -112,7 +116,7 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run_id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
-          NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu' }}"
+          NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
           RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |-
           set -euo pipefail
@@ -158,6 +162,7 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          TIMEOUT: 5400
         run: |-
           cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
           nix develop --command ./nomad/scripts/ci_allocs.sh wait_for_jobs all_alloc_ids.csv

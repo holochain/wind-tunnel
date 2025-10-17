@@ -16,7 +16,7 @@ export INFLUX_CONFIGS_PATH
 use_influx() {
     export INFLUX_HOST="http://localhost:8087"
     export INFLUX_BUCKET="windtunnel"
-    INFLUX_TOKEN="$(<"$INFLUX_CONFIGS_PATH" tq -r .default.token)"
+    INFLUX_TOKEN="$(tq --file "$INFLUX_CONFIGS_PATH" .default.token)"
     export INFLUX_TOKEN
 }
 
