@@ -20,12 +20,12 @@ A simple Example:
 The following variables are available:
 
 - `scenario_name`: The name of the scenario you want to run. (**required**)
+- `duration`: The duration of the scenario in seconds. (**required**)
 - `behaviours`: A list of behaviours to apply to the scenario. (_optional_, defaults to `[""]`)
 - `connection_string`: The connection string to the Holochain conductor. (_optional_, defaults to `ws://localhost:8888`)
 - `run_id`: The ID of the run to distinguish it from other runs. (_optional_, defaults to `null`)
 - `agents_per_node`: The number of agents per node. (_optional_, defaults to `1`)
 - `min_agents`: The minimum number of agents to run the scenario with. (_optional_, defaults to `2`)
-- `duration`: The duration of the scenario in seconds. (_optional_, defaults to `300`)
 - `reporter`: The reporter type to use. (_optional_, defaults to `influx-file`)
 
 ## Generate Nomad Jobs
