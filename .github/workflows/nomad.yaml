@@ -55,15 +55,15 @@ jobs:
 
           - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
-
+    env:
+      RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
+      JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
     steps:
       - uses: actions/checkout@v5
 
       - name: Build Nomad Job
-        env:
-          RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |
-          nix run .#generate-nomad-jobs ${{ matrix.job-name || matrix.scenario-name }}
+          nix run .#generate-nomad-jobs ${JOB_NAME}
 
       - name: Build scenario
         run: nix build .#packages.x86_64-linux.${{ matrix.scenario-name }}
@@ -75,7 +75,7 @@ jobs:
           path: |
             ./result/bin/
             ./result/happs/
-          name: ${{ matrix.job-name || matrix.scenario-name }}
+          name: ${{ env.JOB_NAME }}
           if-no-files-found: error
 
       - name: Wait for free nodes
@@ -115,14 +115,13 @@ jobs:
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
-          NOMAD_VAR_run_id: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
+          NOMAD_VAR_run_id: ${{ env.RUN_ID }}
           NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
-          RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |-
           set -euo pipefail
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${{ matrix.job-name || matrix.scenario-name }}.nomad.hcl)
+          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl)
           echo "$nomad_output"
-          echo "Ran ${{ matrix.job-name || matrix.scenario-name }} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
           alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
           if [ -z "$alloc_ids" ]; then
             echo "Failed to extract allocation IDs from Nomad job output"
@@ -131,41 +130,81 @@ jobs:
 
           echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Save alloc_ids to file
-        env:
-          RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
         run: |
           started_at=${{ steps.run-nomad-job.outputs.started_at }}
-          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ matrix.job-name || matrix.scenario-name }}" "${{ matrix.scenario-name }}" "${RUN_ID}" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${JOB_NAME}" "${{ matrix.scenario-name }}" "${RUN_ID}" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
 
       - name: Upload alloc_ids
         uses: actions/upload-artifact@v4
         with:
-          name: alloc_ids_${{ matrix.job-name || matrix.scenario-name }}
+          name: alloc_ids_${{ env.JOB_NAME }}
           path: alloc_ids.csv
 
-  wait-for-all-jobs:
-    name: Wait for all jobs to finish
-    runs-on: [self-hosted, wind-tunnel]
+      - name: Persist matrix job outputs for subsequent job use
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ env.RUN_ID }}
+          outputs: |-
+            alloc_ids: ${{ steps.run-nomad-job.outputs.alloc_ids }}
+            run_id: ${{ env.RUN_ID }}
+            job_name: ${{ steps.run-nomad-job.outputs.job_name }}
+
+  collect-github-matrix-outputs:
+    name: Collect Run Ids
+    runs-on: ubuntu-latest
     needs: run-scenarios
+    steps:
+      - uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: read
+        with:
+          matrix-step-name: run-scenarios
+
+      - name: Restructure merged output
+        id: restructure
+        run: |
+          echo '${{ steps.read.outputs.result }}' | jq -c -R 'fromjson |
+            (.alloc_ids | keys) as $keys |
+            [ $keys[] as $key |
+              {
+                job_name: .job_name[$key],
+                run_id: .run_id[$key],
+                alloc_ids: .alloc_ids[$key]
+              }
+            ]' > out.json
+
+          echo "result=$(cat out.json)" >> $GITHUB_OUTPUT
+
+    outputs:
+      result: "${{ steps.restructure.outputs.result }}"
+
+  wait-for-job:
+    name: Wait for job
+    runs-on: [self-hosted, wind-tunnel]
+    needs: collect-github-matrix-outputs
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Download all alloc_ids
         uses: actions/download-artifact@v5
         with:
-          path: ./alloc_ids
+          name: alloc_ids_${{ matrix.job_name }}
 
-      - name: Wait for all jobs
+      - name: Wait for all allocations in job
         env:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           TIMEOUT: 5400
         run: |-
-          cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
-          nix develop --command ./nomad/scripts/ci_allocs.sh wait_for_jobs all_alloc_ids.csv
+          nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
       - name: Prepare run summary
         env:
@@ -175,8 +214,7 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           RUN_SUMMARY_PATH: ./run_summary.jsonl
         run: |
-          cat ./alloc_ids/*/alloc_ids.csv > all_alloc_ids.csv
-          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary all_alloc_ids.csv $RUN_SUMMARY_PATH
+          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv $RUN_SUMMARY_PATH
           cat $RUN_SUMMARY_PATH >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run summariser
