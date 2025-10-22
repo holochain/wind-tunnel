@@ -1,8 +1,8 @@
 variable "duration" {
   type        = number
   description = "The maximum duration of the scenario run"
-  {{- /* Default: read `duration` from the JSON data source `vars`, or set to `null` if not provided.*/}}
-  default     = {{ with index (ds "vars") "duration" }}{{ . | quote }}{{ else }}null{{ end }}
+  {{- /* Default: read `duration` from the JSON data source `vars`.*/}}
+  default     = {{ index (ds "vars") "duration" }}
 }
 
 variable "reporter" {
@@ -135,7 +135,7 @@ job "{{ (ds "vars").scenario_name }}" {
           command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_TASK_DIR}/bin/{{ (ds "vars").scenario_name }}"
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
-            var.duration != null ? "--duration=${var.duration}" : null,
+            "--duration=${var.duration}",
             "--reporter=${var.reporter}",
             group.value != "" ? "--behaviour=${group.value}:1" : null,
             var.run_id != null ? "--run-id=${var.run_id}" : null,

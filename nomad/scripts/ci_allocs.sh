@@ -26,7 +26,7 @@ function make_allocs_csv() {
     local behaviours
     local csv_behaviours
 
-    duration=$(jq -r '.duration // 300' "nomad/vars/${job_name}.json")
+    duration=$(jq -e -r '.duration' "nomad/vars/${job_name}.json")
     behaviours=$(jq -r '(.behaviours // [""])[]' "nomad/vars/${job_name}.json")
     csv_behaviours=""
     for behaviour in $behaviours; do
@@ -77,7 +77,7 @@ function generate_run_summary() {
           --argjson started_at "$started_at" \
           --arg behaviours "${behaviours:-}" \
           --arg wind_tunnel_version "$wind_tunnel_version" \
-          --argjson duration "${duration:-0}" '
+          --argjson duration "$duration" '
             # Split behaviours field; default to [""]
             ($behaviours | if . == "" then [""] else split(" ") end) as $bs
             | {
