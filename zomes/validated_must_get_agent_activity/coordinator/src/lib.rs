@@ -1,7 +1,7 @@
 use hdk::prelude::*;
 use holochain_serialized_bytes::SerializedBytes;
 use rand::prelude::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
 use serde::{Deserialize, Serialize};
 use validated_must_get_agent_activity_integrity::{
     EntryTypes, LinkTypes, SampleEntry, ValidatedSampleEntry,
@@ -53,7 +53,8 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<()> {
 fn create_validated_sample_entry(agent: AgentPubKey) -> ExternResult<usize> {
     // Get last created action hash
     let mut links: Vec<Link> = get_links(
-        GetLinksInputBuilder::try_new(chain_head_anchor()?, LinkTypes::LatestAction)?.build(),
+        LinkQuery::try_new(chain_head_anchor()?, LinkTypes::LatestAction)?,
+        GetStrategy::default(),
     )?;
     links.sort_by_key(|l| l.timestamp);
     let chain_head_link: Link = links
@@ -99,9 +100,10 @@ fn announce_write_behaviour() -> ExternResult<ActionHash> {
 #[hdk_extern]
 fn get_random_agent_with_write_behaviour() -> ExternResult<Option<AgentPubKey>> {
     let mut links = get_links(
-        GetLinksInputBuilder::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?.build(),
+        LinkQuery::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?,
+        GetStrategy::default(),
     )?;
-    links.shuffle(&mut thread_rng());
+    links.shuffle(&mut rng());
     let agent: Option<AgentPubKey> = links
         .first()
         .map(|l| AgentPubKey::try_from(l.target.clone()))

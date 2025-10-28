@@ -153,7 +153,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
         let previous = self.agent_behaviour.insert(name.to_string(), behaviour);
 
         if previous.is_some() {
-            panic!("Behaviour [{}] is already defined", name);
+            panic!("Behaviour [{name}] is already defined");
         }
 
         self
@@ -204,8 +204,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             .collect::<Vec<&String>>();
         if !unknown_behaviours.is_empty() {
             return Err(anyhow::anyhow!(
-                "Unknown behaviours requested: {:?}",
-                unknown_behaviours
+                "Unknown behaviours requested: {unknown_behaviours:?}"
             ));
         }
 

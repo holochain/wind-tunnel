@@ -92,6 +92,7 @@ impl HolochainConfigBuilder {
                 admin_interfaces: Some(vec![AdminInterfaceConfig {
                     driver: InterfaceDriver::Websocket {
                         port: admin_port,
+                        danger_bind_addr: None,
                         allowed_origins: AllowedOrigins::Any,
                     },
                 }]),
@@ -200,7 +201,7 @@ impl HolochainRunner {
             .take()
             .context("Failed to get stdout for the running Holochain conductor")?;
 
-        timeout(Duration::from_secs(5), async move {
+        timeout(Duration::from_secs(10), async move {
             let mut stdout_lines = BufReader::new(holochain_stdout).lines();
             loop {
                 let line = stdout_lines

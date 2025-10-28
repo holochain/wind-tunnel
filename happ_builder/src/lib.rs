@@ -93,7 +93,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
             &dna_name,
             &zome_names,
         )
-        .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+        .context(format!("Failed to build coordinator DNA - {dna_name}"))?;
 
         built_dnas.push((dna_name, built_path));
     }
@@ -119,7 +119,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
                 &dna_name,
                 &zome_names,
             )
-            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+            .context(format!("Failed to build coordinator DNA - {dna_name}"))?;
 
             built_dnas.push((dna_name, built_path));
         }
@@ -246,15 +246,15 @@ fn build_required_dna(
             build_wasm(&integrity_dir, target_dir)?;
             let wasm_file = find_wasm(target_dir, dna_name, "integrity")?;
             integrity_manifests.push(holochain_types::dna::ZomeManifest {
-                name: format!("{}_integrity", zome_name).into(),
+                name: format!("{zome_name}_integrity").into(),
                 hash: None,
-                location: holochain_types::prelude::ZomeLocation::Bundled(
-                    wasm_file
-                        .canonicalize()
-                        .context("Failed to canonicalize wasm file path")?,
-                ),
+                path: wasm_file
+                    .canonicalize()
+                    .context("Failed to canonicalize wasm file path")?
+                    .to_str()
+                    .context("Failed to convert wasm file path to str")?
+                    .to_string(),
                 dependencies: None,
-                dylib: None,
             });
             integrity_exists = true;
         }
@@ -269,22 +269,22 @@ fn build_required_dna(
             coordinator_manifests.push(holochain_types::dna::ZomeManifest {
                 name: zome_name.to_string().into(),
                 hash: None,
-                location: holochain_types::prelude::ZomeLocation::Bundled(
-                    wasm_file
-                        .canonicalize()
-                        .context("Failed to canonicalize wasm file path")?,
-                ),
+                path: wasm_file
+                    .canonicalize()
+                    .context("Failed to canonicalize wasm file path")?
+                    .to_str()
+                    .context("Failed to convert wasm file path to str")?
+                    .to_string(),
                 dependencies: integrity_exists.then(|| {
                     vec![ZomeDependency {
-                        name: format!("{}_integrity", zome_name).into(),
+                        name: format!("{zome_name}_integrity").into(),
                     }]
                 }),
-                dylib: None,
             });
         }
     }
 
-    let manifest = holochain_types::dna::DnaManifest::V1(holochain_types::dna::DnaManifestV1 {
+    let manifest = holochain_types::dna::DnaManifest::V0(holochain_types::dna::DnaManifestV0 {
         name: dna_name.to_string(),
         integrity: holochain_types::dna::IntegrityManifest {
             network_seed: None,
@@ -335,7 +335,7 @@ fn build_required_dna(
         dna_out_dir.display()
     );
 
-    Ok(dna_out_dir.join(format!("{}.dna", dna_name)))
+    Ok(dna_out_dir.join(format!("{dna_name}.dna")))
 }
 
 fn build_wasm(coordinator_dir: &Path, target_dir: &Path) -> anyhow::Result<()> {
@@ -369,6 +369,7 @@ fn wasm_build_command(build_dir: &str, target_dir: &Path) -> std::process::Comma
         .env_remove("RUSTFLAGS")
         .env_remove("CARGO_BUILD_RUSTFLAGS")
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
+        .env("RUSTFLAGS", "--cfg getrandom_backend=\"custom\"")
         .arg("build")
         .arg("--target-dir")
         .arg(target_dir)
@@ -386,7 +387,7 @@ fn find_wasm(target_dir: &Path, name: &str, kind: &str) -> anyhow::Result<PathBu
     let wasm_path = target_dir
         .join("wasm32-unknown-unknown")
         .join("release")
-        .join(format!("{}_{}.wasm", name, kind));
+        .join(format!("{name}_{kind}.wasm"));
     if !wasm_path.exists() {
         anyhow::bail!("Wasm file not found at {}", wasm_path.display());
     }
@@ -420,23 +421,22 @@ fn build_required_happ(
             let dna = all_dnas
                 .iter()
                 .find(|(name, _)| name == dna_name)
-                .context(format!("DNA not found: {}", dna_name))?;
+                .context(format!("DNA not found: {dna_name}"))?;
 
             let role_manifest = format!(
                 r#"
-- name: {}
+- name: {dna_name}
   provisioning:
     strategy: create
     deferred: false
   dna:
-    bundled: {}
+    path: {}
     modifiers:
       network_seed: ~
       properties: ~
     installed_hash: ~
     clone_limit: 0
     "#,
-                dna_name,
                 dna.1.display()
             );
 
@@ -448,13 +448,12 @@ fn build_required_happ(
 
     let manifest = format!(
         r#"
-manifest_version: '1'
-name: {}
+manifest_version: '0'
+name: {happ_name}
 description: ~
 roles:
-{}
-"#,
-        happ_name, roles
+{roles}
+"#
     );
 
     let happ_manifest_workdir = happ_target_dir.join(scenario_package_name).join(happ_name);

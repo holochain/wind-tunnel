@@ -74,7 +74,7 @@ impl InMemoryReporter {
         let mut table = Table::new(rows);
         table.with(Style::modern());
 
-        println!("{}", table);
+        println!("{table}");
     }
 }
 

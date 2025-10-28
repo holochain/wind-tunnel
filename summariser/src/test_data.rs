@@ -85,7 +85,7 @@ pub fn insert_summary_output(
         }
     };
 
-    log::debug!("Writing summary output to {:?}", out_file);
+    log::debug!("Writing summary output to {out_file:?}");
 
     serde_json::to_writer_pretty(out_file, output).context("Failed to write summary output")?;
 
@@ -136,7 +136,7 @@ where
 
     match std::fs::OpenOptions::new().read(true).open(&path) {
         Ok(f) => Ok(f),
-        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {:?}", path)),
+        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {path:?}")),
     }
 }
 

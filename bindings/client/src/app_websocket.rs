@@ -25,10 +25,11 @@ impl AppWebsocketInstrumented {
         app_url: impl ToSocketAddr,
         token: AppAuthenticationToken,
         signer: Arc<dyn AgentSigner + Send + Sync>,
+        origin: Option<String>,
         reporter: Arc<Reporter>,
     ) -> Result<Self> {
         Ok(
-            AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone())
+            AppWebsocket::connect(app_url.to_socket_addr()?, token, signer.clone(), origin)
                 .await
                 .map(|inner| Self { inner, reporter })?,
         )

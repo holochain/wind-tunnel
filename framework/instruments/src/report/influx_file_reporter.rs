@@ -89,7 +89,7 @@ fn start_metrics_file_write_task(
                 .unwrap()
                 .as_secs()
         ));
-        log::debug!("Influx file reporter starting, using file {:?}", out_path);
+        log::debug!("Influx file reporter starting, using file {out_path:?}");
         let mut file = File::options()
             .create_new(true)
             .write(true)
@@ -123,14 +123,14 @@ fn start_metrics_file_write_task(
             drain_count += 1;
 
             if drain_count % 1000 == 0 {
-                log::debug!("Drained {} remaining metrics", drain_count);
+                log::debug!("Drained {drain_count} remaining metrics");
             }
         }
 
         // Ensure everything that's buffered has been written to disk.
         file.flush().await.unwrap();
 
-        log::debug!("Drained {} remaining metrics", drain_count);
+        log::debug!("Drained {drain_count} remaining metrics");
 
         // Signal the 'finalize' method that the write task has finished.
         flush_complete.store(true, Ordering::Relaxed);

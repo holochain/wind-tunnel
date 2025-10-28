@@ -29,7 +29,7 @@ pub(crate) fn start_monitor(mut shutdown_listener: DelegatedShutdownListener) {
 
                 let usage = (process.cpu_usage() / (cpu_count * 100) as f32) * 100.0;
                 if usage > 10.0 {
-                    log::warn!("High CPU usage detected. Wind tunnel is using {:.2}% of the CPU, with {} available cores", usage, cpu_count);
+                    log::warn!("High CPU usage detected. Wind tunnel is using {usage:.2}% of the CPU, with {cpu_count} available cores");
                 }
 
                 std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);

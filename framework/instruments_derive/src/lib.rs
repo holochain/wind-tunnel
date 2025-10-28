@@ -34,7 +34,7 @@ impl Parse for InstrumentArgs {
                 _ => {
                     return Err(syn::Error::new(
                         key.span(),
-                        format!("Unknown argument for #[wind_tunnel_instrument]: {}", key),
+                        format!("Unknown argument for #[wind_tunnel_instrument]: {key}"),
                     ));
                 }
             }
