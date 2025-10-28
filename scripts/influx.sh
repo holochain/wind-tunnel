@@ -67,7 +67,8 @@ import_lp_metrics() {
     fi
 
     if [ -z "${run_id}" ]; then
-        echo "No run_id found, using empty run_id"
+        echo "No run_id found, aborting upload attempt" >&2
+        return 1
     else
         echo "Metrics will be imported with tag: run_id=$run_id"
     fi
@@ -86,6 +87,7 @@ import_lp_metrics() {
             lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
             output_file="$tmp_output_file"
         fi
+        echo "Using output file: $output_file"
         # import metrics to influx
         influx write \
             --host "$influx_url" \

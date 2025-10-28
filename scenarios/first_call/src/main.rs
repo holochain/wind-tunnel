@@ -19,7 +19,7 @@ fn agent_setup(
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            let admin_client = AdminWebsocket::connect(admin_url, reporter).await?;
+            let admin_client = AdminWebsocket::connect(admin_url, None, reporter).await?;
             Ok(admin_client)
         })?;
 

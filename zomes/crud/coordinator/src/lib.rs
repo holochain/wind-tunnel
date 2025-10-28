@@ -6,7 +6,7 @@ fn init() -> ExternResult<InitCallbackResult> {
     create_cap_grant(CapGrantEntry {
         tag: "access".into(),
         access: CapAccess::Unrestricted,
-        functions: GrantedFunctions::Listed(BTreeSet::from([(
+        functions: GrantedFunctions::Listed(HashSet::from([(
             "crud".into(),
             "create_sample_entry".into(),
         )])),

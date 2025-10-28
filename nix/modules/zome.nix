@@ -21,6 +21,8 @@ in
         doCheck = false;
 
         cargoExtraArgs = "-p ${packageName} --lib --target wasm32-unknown-unknown";
+
+        env.RUSTFLAGS = "--cfg getrandom_backend=\"custom\"";
       });
   };
 }
