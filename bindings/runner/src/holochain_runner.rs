@@ -92,6 +92,7 @@ impl HolochainConfigBuilder {
                 admin_interfaces: Some(vec![AdminInterfaceConfig {
                     driver: InterfaceDriver::Websocket {
                         port: admin_port,
+                        danger_bind_addr: None,
                         allowed_origins: AllowedOrigins::Any,
                     },
                 }]),

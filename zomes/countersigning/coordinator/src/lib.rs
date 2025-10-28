@@ -15,7 +15,7 @@ impl From<Roles> for Role {
 
 #[hdk_extern]
 fn init() -> ExternResult<InitCallbackResult> {
-    let mut fns = BTreeSet::new();
+    let mut fns = HashSet::new();
     fns.insert((zome_info()?.name, "recv_remote_signal".into()));
     fns.insert((zome_info()?.name, "call_remote_signal".into()));
     let functions = GrantedFunctions::Listed(fns);
@@ -60,11 +60,11 @@ fn participant_hello() -> ExternResult<()> {
 #[hdk_extern]
 fn list_participants() -> ExternResult<Vec<AgentPubKey>> {
     let links = get_links(
-        GetLinksInputBuilder::try_new(
+        LinkQuery::try_new(
             hash_entry(EntryTypes::ParticipantBase(ParticipantBase))?,
             LinkTypes::Participant,
-        )?
-        .build(),
+        )?,
+        GetStrategy::default(),
     )?;
     Ok(links
         .into_iter()

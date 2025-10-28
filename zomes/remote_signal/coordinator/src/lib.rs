@@ -6,7 +6,7 @@ fn init() -> ExternResult<InitCallbackResult> {
     create_cap_grant(CapGrantEntry {
         tag: "unrestricted-access".into(),
         access: CapAccess::Unrestricted,
-        functions: GrantedFunctions::Listed(BTreeSet::from([(
+        functions: GrantedFunctions::Listed(HashSet::from([(
             zome_info()?.name,
             "recv_remote_signal".into(),
         )])),

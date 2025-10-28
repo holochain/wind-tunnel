@@ -1,7 +1,7 @@
 use hdk::prelude::*;
 use holochain_serialized_bytes::SerializedBytes;
 use rand::prelude::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
 use serde::{Deserialize, Serialize};
 use validated_must_get_agent_activity_integrity::{
     EntryTypes, LinkTypes, SampleEntry, ValidatedSampleEntry,
@@ -83,11 +83,11 @@ pub struct BatchChainTop {
 #[hdk_extern]
 fn get_chain_top_for_batch(input: GetChainTopForBatchInput) -> ExternResult<BatchChainTop> {
     let links: Vec<Link> = get_links(
-        GetLinksInputBuilder::try_new(
+        LinkQuery::try_new(
             chain_batch_anchor(input.agent.clone(), input.batch_num)?,
             LinkTypes::LatestAction,
-        )?
-        .build(),
+        )?,
+        GetStrategy::Network,
     )?;
     let batch_chain_top_link: Link = links
         .last()
@@ -148,9 +148,10 @@ fn announce_write_behaviour() -> ExternResult<ActionHash> {
 #[hdk_extern]
 fn get_random_agent_with_write_behaviour() -> ExternResult<Option<AgentPubKey>> {
     let mut links = get_links(
-        GetLinksInputBuilder::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?.build(),
+        LinkQuery::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?,
+        GetStrategy::default(),
     )?;
-    links.shuffle(&mut thread_rng());
+    links.shuffle(&mut rng());
     let agent: Option<AgentPubKey> = links
         .first()
         .map(|l| AgentPubKey::try_from(l.target.clone()))

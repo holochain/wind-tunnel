@@ -1,7 +1,7 @@
 use agent_activity_integrity::{EntryTypes, LinkTypes, SampleEntry};
 use hdk::prelude::*;
 use rand::prelude::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
 
 fn write_agents_anchor() -> ExternResult<EntryHash> {
     Path::from("WRITE_AGENTS").path_entry_hash()
@@ -30,9 +30,10 @@ fn announce_write_behaviour() -> ExternResult<ActionHash> {
 #[hdk_extern]
 fn get_random_agent_with_write_behaviour() -> ExternResult<Option<AgentPubKey>> {
     let mut links = get_links(
-        GetLinksInputBuilder::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?.build(),
+        LinkQuery::try_new(write_agents_anchor()?, LinkTypes::AgentBehaviour)?,
+        GetStrategy::default(),
     )?;
-    links.shuffle(&mut thread_rng());
+    links.shuffle(&mut rng());
     let agent: Option<AgentPubKey> = links
         .first()
         .map(|l| AgentPubKey::try_from(l.target.clone()))

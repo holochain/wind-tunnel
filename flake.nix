@@ -12,11 +12,11 @@
     };
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.5";
+      url = "github:holochain/holonix?ref=main-0.6";
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.1.8";
+      url = "github:holochain/kitsune2?ref=v0.2.17";
     };
 
     crane = {

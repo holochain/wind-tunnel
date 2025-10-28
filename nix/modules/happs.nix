@@ -32,7 +32,7 @@ in
         #
 
         mkDnaManifest = { name, zomes }: {
-          manifest_version = "1";
+          manifest_version = "0";
           inherit name;
 
           coordinator = {
@@ -42,13 +42,12 @@ in
                   name = zome_name;
                   hash = null;
                   # Relying on referencing a derivation here and having Nix convert that to the store path of that derivation when it's converted to a string
-                  bundled = "${self'.packages."${zome_name}_coordinator"}/lib/${zome_name}_coordinator.wasm";
+                  path = "${self'.packages."${zome_name}_coordinator"}/lib/${zome_name}_coordinator.wasm";
                   dependencies =
                     if builtins.hasAttr "${zome_name}_integrity" self'.packages then
                       [{ name = "${zome_name}_integrity"; }]
                     else
                       [ ];
-                  dylib = null;
                 }
               )
               zomes;
@@ -62,9 +61,8 @@ in
                 name = "${zome_name}_integrity";
                 hash = null;
                 # Relying on referencing a derivation here and having Nix convert that to the store path of that derivation when it's converted to a string
-                bundled = "${self'.packages."${zome_name}_integrity"}/lib/${zome_name}_integrity.wasm";
+                path = "${self'.packages."${zome_name}_integrity"}/lib/${zome_name}_integrity.wasm";
                 dependencies = null;
-                dylib = null;
               })
               (builtins.filter zomeHasIntegrity zomes);
           };
@@ -96,7 +94,7 @@ in
             [ ];
 
         mkHappManifest = { name, dnas }: {
-          manifest_version = "1";
+          manifest_version = "0";
           inherit name;
           description = "A Wind Tunnel sample hApp";
 
@@ -112,7 +110,7 @@ in
 
                 dna = {
                   # These are built as part of this derivation so look for them in the build directory
-                  bundled = "../${dna_name}.dna";
+                  path = "../${dna_name}.dna";
                 };
 
                 modifiers = {

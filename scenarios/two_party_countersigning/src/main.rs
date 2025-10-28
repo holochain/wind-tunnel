@@ -4,8 +4,8 @@ use holochain_types::prelude::{AgentPubKey, CellId, EntryHash, ExternIO, Preflig
 use holochain_types::signal::{Signal, SystemSignal};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_path;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::ops::Add;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
@@ -116,7 +116,7 @@ fn agent_behaviour_initiate(
                         .decode()
                         .context("Failed to decode agent list response")?;
 
-                    new_peer_list.shuffle(&mut thread_rng());
+                    new_peer_list.shuffle(&mut rng());
 
                     // Pause to let Holochain receive more agent links if none are found yet.
                     if new_peer_list.is_empty() {
