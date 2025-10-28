@@ -21,9 +21,8 @@ fn created_timed_entry(timed: TimedEntry) -> ExternResult<ActionHash> {
 fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
     // No way to control whether this goes to the network at this HDK version
     let links = get_links(
-        GetLinksInputBuilder::try_new(fixed_base(), LinkTypes::FixedToTimedEntry)
-            .unwrap()
-            .build(),
+        LinkQuery::try_new(fixed_base(), LinkTypes::FixedToTimedEntry).unwrap(),
+        GetStrategy::default(),
     )?;
 
     let mut records = Vec::new();
