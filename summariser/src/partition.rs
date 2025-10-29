@@ -23,7 +23,7 @@ pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result
     let mut unique_tags = HashSet::with_capacity(tags.len());
     for &tag in tags {
         if !unique_tags.insert(tag) {
-            return Err(anyhow::anyhow!("Duplicate tag name found: {}", tag));
+            return Err(anyhow::anyhow!("Duplicate tag name found: {tag}"));
         }
     }
     // Get unique combinations of all tag values
@@ -62,7 +62,7 @@ pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result
                 }
             };
 
-            key_parts.push(format!("{}={}", tag, tag_value));
+            key_parts.push(format!("{tag}={tag_value}"));
 
             // Build a filter expression that combines all tag conditions
             let tag_filter = col(tag).eq(lit(tag_value));
@@ -74,7 +74,7 @@ pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result
 
         // Create a key that represents this unique combination of tag values
         let combination_key = key_parts.join(",");
-        log::debug!("Partition for {}", combination_key);
+        log::debug!("Partition for {combination_key}");
 
         // Apply the filter to get rows matching this combination of tag values
         if let Some(filter) = filter_expr {
@@ -87,7 +87,7 @@ pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result
 
             partitioned.insert(combination_key, filtered);
         } else {
-            log::warn!("No rows found matching tag combination {}", combination_key);
+            log::warn!("No rows found matching tag combination {combination_key}");
         }
     }
 

@@ -25,7 +25,7 @@ impl ShutdownHandle {
         if let Err(e) = self.sender.send(()) {
             // Will fail if nobody is listening for a shutdown signal, in which case the log message
             // can be ignored.
-            log::warn!("Failed to send shutdown signal: {:?}", e);
+            log::warn!("Failed to send shutdown signal: {e:?}");
         }
     }
 

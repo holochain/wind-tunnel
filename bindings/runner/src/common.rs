@@ -7,7 +7,7 @@ use holochain_client_instrumented::prelude::{
     ClientAgentSigner,
 };
 use holochain_client_instrumented::ToSocketAddr;
-use holochain_conductor_api::{AppInfo, AppInfoStatus, CellInfo};
+use holochain_conductor_api::{AppInfo, CellInfo};
 use holochain_types::prelude::*;
 use holochain_types::prelude::{
     AppBundleSource, CellId, ExternIO, InstallAppPayload, InstalledAppId, RoleName,
@@ -15,8 +15,8 @@ use holochain_types::prelude::{
 use holochain_types::websocket::AllowedOrigins;
 use kitsune2_api::AgentInfoSigned;
 use kitsune2_core::Ed25519Verifier;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -83,8 +83,8 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
+            log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
+            let admin_client = AdminWebsocket::connect(admin_ws_url, None, reporter)
                 .await
                 .context("Unable to connect admin client")?;
 
@@ -111,7 +111,7 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
             } else {
                 let attached_app_port = admin_client
                     // Don't specify the port, let the conductor pick one
-                    .attach_app_interface(0, AllowedOrigins::Any, None)
+                    .attach_app_interface(0, None, AllowedOrigins::Any, None)
                     .await
                     .map_err(handle_api_err)?;
                 Ok(attached_app_port)
@@ -186,39 +186,38 @@ where
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
-            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+            log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
+            let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
             let key = client
                 .generate_agent_pub_key()
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Generated agent pub key: {:}", key);
+            log::debug!("Generated agent pub key: {key}");
 
             let content = std::fs::read(app_path)?;
 
             let app_info = client
                 .install_app(InstallAppPayload {
-                    source: AppBundleSource::Bytes(content),
+                    source: AppBundleSource::Bytes(bytes::Bytes::from(content)),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
                     roles_settings: None,
                     network_seed: Some(run_id),
                     ignore_genesis_failure: false,
-                    allow_throwaway_random_agent_key: false,
                 })
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Installed app: {:}", installed_app_id);
+            log::debug!("Installed app: {installed_app_id}");
 
             client
                 .enable_app(installed_app_id.clone())
                 .await
                 .map_err(handle_api_err)?;
-            log::debug!("Enabled app: {:}", installed_app_id);
+            log::debug!("Enabled app: {installed_app_id}");
 
             let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
-            log::debug!("Got cell id: {:}", cell_id);
+            log::debug!("Got cell id: {cell_id:?}");
 
             let credentials = client
                 .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
@@ -234,12 +233,11 @@ where
             let issued = client
                 .issue_app_auth_token(installed_app_id.clone().into())
                 .await
-                .map_err(|e| {
-                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
-                })?;
+                .map_err(|e| anyhow::anyhow!("Could not issue auth token for app client: {e:?}"))?;
 
             let app_client =
-                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
+                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), None, reporter)
+                    .await?;
 
             Ok((installed_app_id, cell_id, app_client))
         })
@@ -297,7 +295,7 @@ where
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+            let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
             let app_infos = client.list_apps(None).await.map_err(handle_api_err)?;
             let app_info = app_infos
@@ -305,8 +303,8 @@ where
                 .find(|app_info| app_info.installed_app_id == installed_app_id)
                 .ok_or(anyhow::anyhow!("App not found: {installed_app_id:?}"))?;
 
-            if app_info.status != AppInfoStatus::Running {
-                anyhow::bail!("App is not running: {installed_app_id:?}");
+            if app_info.status != AppStatus::Enabled {
+                anyhow::bail!("App is not enabled: {installed_app_id:?}");
             }
 
             let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
@@ -324,12 +322,11 @@ where
             let issued = client
                 .issue_app_auth_token(installed_app_id.clone().into())
                 .await
-                .map_err(|e| {
-                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
-                })?;
+                .map_err(|e| anyhow::anyhow!("Could not issue auth token for app client: {e:?}"))?;
 
             let app_client =
-                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
+                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), None, reporter)
+                    .await?;
 
             Ok((installed_app_id, cell_id, app_client))
         })?;
@@ -388,7 +385,7 @@ where
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
-            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+            let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
             let start_discovery = Instant::now();
             for _ in 0..wait_for.as_secs() {
@@ -475,7 +472,7 @@ where
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
-            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+            let admin_client = AdminWebsocket::connect(admin_ws_url, None, reporter).await?;
 
             admin_client
                 .uninstall_app(installed_app_id.unwrap())
@@ -542,7 +539,7 @@ where
 
         result
             .decode()
-            .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))
+            .map_err(|e| anyhow::anyhow!("Decoding failure: {e:?}"))
     })
 }
 
@@ -580,7 +577,7 @@ where
     ctx.runner_context()
         .executor()
         .execute_in_place(async move {
-            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter).await?;
+            let admin_client = AdminWebsocket::connect(admin_ws_url, None, reporter).await?;
             // No more agents available to signal, get a new list.
             // This is also the initial condition.
             let agent_infos_encoded = admin_client
@@ -600,7 +597,7 @@ where
                 .map(|i| AgentPubKey::from_k2_agent(&i.agent))
                 .filter(|a| a != cell_id.agent_pubkey()) // Don't include ourselves!
                 .collect::<Vec<_>>();
-            peer_list.shuffle(&mut thread_rng());
+            peer_list.shuffle(&mut rng());
             Ok(peer_list)
         })
 }
@@ -612,7 +609,7 @@ where
     SV: UserValuesConstraint,
 {
     let agent_name = ctx.agent_name().to_string();
-    format!("{}-app", agent_name).to_string()
+    format!("{agent_name}-app").to_string()
 }
 
 fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow::Result<CellId> {

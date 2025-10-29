@@ -38,12 +38,9 @@ impl InfluxReporterBase {
     fn try_send(&self, query: WriteQuery) {
         if let Err(e) = self.writer.send(query) {
             if self.flush_complete.load(Ordering::Relaxed) {
-                log::info!(
-                    "Failed to record metric because the write task has finished: {}",
-                    e
-                );
+                log::info!("Failed to record metric because the write task has finished: {e}");
             } else {
-                log::warn!("Failed to record metric: {}", e);
+                log::warn!("Failed to record metric: {e}");
             }
         }
     }
