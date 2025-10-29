@@ -28,7 +28,6 @@ jobs:
           - remote_call_rate
           - remote_signals
           # - single_write_many_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/301)
-          # - two_party_countersigning TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/302)
           - write_query
           # - write_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/303)
           - write_validated
@@ -55,6 +54,9 @@ jobs:
 
           - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
+
+          - scenario-name: two_party_countersigning
+            required-nodes: 3
     env:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
