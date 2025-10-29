@@ -66,6 +66,19 @@ pub struct GaugeStats {
     pub std: f64,
 }
 
+/// GaugeStats for a specific partition
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PartitionGaugeStats {
+    pub key: Vec<PartitionKey>,
+    pub gauge_stats: GaugeStats,
+}
+
+/// GaugeStats partitioned by tag/key
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PartitionedGaugeStats {
+    pub partitions: Vec<PartitionGaugeStats>,
+}
+
 /// Stats which increment during time
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CounterStats {

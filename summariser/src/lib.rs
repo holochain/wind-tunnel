@@ -21,7 +21,6 @@ pub fn execute_report_for_run_summary(
     summary: RunSummary,
 ) -> Option<BoxFuture<'static, anyhow::Result<SummaryOutput>>> {
     let name = &summary.scenario_name;
-
     let client = client.clone();
     match name.as_str() {
         "app_install" => Some(
@@ -133,6 +132,14 @@ pub fn execute_report_for_run_summary(
                 summarize_write_validated_must_get_agent_activity(client.clone(), summary.clone())
                     .await
                     .context("Write validated must_get_agent_activity summary")
+            }
+            .boxed(),
+        ),
+        "zero_arc_create_data" => Some(
+            async move {
+                summarize_zero_arc_create_data(client.clone(), summary.clone())
+                    .await
+                    .context("Zero arc create data summary")
             }
             .boxed(),
         ),
