@@ -29,7 +29,7 @@ impl ToSocketAddr for &str {
     fn to_socket_addr(self) -> anyhow::Result<SocketAddr> {
         let url: url::Url = self
             .try_into()
-            .map_err(|e| anyhow::anyhow!("Failed to convert to URL: {:?}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to convert to URL: {e:?}"))?;
 
         (
             url.host()
@@ -39,7 +39,7 @@ impl ToSocketAddr for &str {
                 .ok_or_else(|| anyhow::anyhow!("Missing port in URL"))?,
         )
             .to_socket_addrs()
-            .map_err(|e| anyhow::anyhow!("Failed to resolve host: {:?}", e))?
+            .map_err(|e| anyhow::anyhow!("Failed to resolve host: {e:?}"))?
             .next()
             .ok_or_else(|| anyhow::anyhow!("Failed to resolve host"))
     }

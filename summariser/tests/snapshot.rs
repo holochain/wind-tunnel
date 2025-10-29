@@ -204,8 +204,7 @@ fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntr
         Some(all_matches[0].clone())
     } else {
         panic!(
-            "Expected exactly one match, this indicates a fingerprint collision: {:?}",
-            all_matches
+            "Expected exactly one match, this indicates a fingerprint collision: {all_matches:?}"
         );
     }
 }

@@ -88,7 +88,7 @@ fn start_metrics_write_task(
                 query = receiver.recv() => {
                     if let Some(query) = query {
                         if let Err(e) = client.query(query).await {
-                            log::warn!("Failed to send metric to InfluxDB: {}", e);
+                            log::warn!("Failed to send metric to InfluxDB: {e}");
                         }
                     } else {
                         break;
@@ -103,16 +103,16 @@ fn start_metrics_write_task(
         // Drain remaining metrics before shutting down
         while let Ok(query) = receiver.try_recv() {
             if let Err(e) = client.query(query).await {
-                log::warn!("Failed to send metric to InfluxDB: {}", e);
+                log::warn!("Failed to send metric to InfluxDB: {e}");
             }
             drain_count += 1;
 
             if drain_count % 1000 == 0 {
-                log::debug!("Drained {} remaining metrics", drain_count);
+                log::debug!("Drained {drain_count} remaining metrics");
             }
         }
 
-        log::debug!("Drained {} remaining metrics", drain_count);
+        log::debug!("Drained {drain_count} remaining metrics");
 
         flush_complete.store(true, Ordering::Relaxed);
     });

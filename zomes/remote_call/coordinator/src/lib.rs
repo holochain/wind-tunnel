@@ -27,7 +27,7 @@ fn call_echo_timestamp(to: AgentPubKey) -> ExternResult<TimedResponse> {
 
     match response {
         ZomeCallResponse::Ok(extern_io) => Ok(extern_io.decode().map_err(|e| wasm_error!(e))?),
-        e => Err(wasm_error!(WasmErrorInner::Guest(format!("{:?}", e)))),
+        e => Err(wasm_error!(WasmErrorInner::Guest(format!("{e:?}")))),
     }
 }
 

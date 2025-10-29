@@ -32,7 +32,7 @@ pub(crate) fn load_from_response(
 
     let select_series = series.unwrap().first();
     if select_series.is_none() {
-        anyhow::bail!("No series in result: {:?}", result);
+        anyhow::bail!("No series in result: {result:?}");
     }
 
     let columns = select_series
@@ -41,7 +41,7 @@ pub(crate) fn load_from_response(
         .and_then(|o| o.get("columns"))
         .and_then(|c| c.as_array());
     if columns.is_none() {
-        anyhow::bail!("No columns in series: {:?}", select_series);
+        anyhow::bail!("No columns in series: {select_series:?}");
     }
     let columns = columns.unwrap();
 
@@ -51,7 +51,7 @@ pub(crate) fn load_from_response(
         .and_then(|o| o.get("values"))
         .and_then(|v| v.as_array());
     if values.is_none() {
-        anyhow::bail!("No values in series: {:?}", select_series);
+        anyhow::bail!("No values in series: {select_series:?}");
     }
     let values = values.unwrap();
 

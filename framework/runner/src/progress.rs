@@ -16,7 +16,7 @@ pub fn start_progress(planned_runtime: Duration, mut shutdown_listener: Delegate
                 let hours = planned_runtime.as_secs() / 3600;
                 let minutes = (planned_runtime.as_secs() % 3600) / 60;
                 let seconds = planned_runtime.as_secs() % 60;
-                move |_state: &ProgressState, w: &mut dyn Write| write!(w, "{:02}:{:02}:{:02}", hours, minutes, seconds).expect("Could not write planned_runtime")
+                move |_state: &ProgressState, w: &mut dyn Write| write!(w, "{hours:02}:{minutes:02}:{seconds:02}").expect("Could not write planned_runtime")
             })
             .progress_chars("#>-"));
 
