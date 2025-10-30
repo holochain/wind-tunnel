@@ -200,7 +200,7 @@ impl HolochainRunner {
             .take()
             .context("Failed to get stdout for the running Holochain conductor")?;
 
-        timeout(Duration::from_secs(5), async move {
+        timeout(Duration::from_secs(30), async move {
             let mut stdout_lines = BufReader::new(holochain_stdout).lines();
             loop {
                 let line = stdout_lines
