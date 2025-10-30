@@ -13,6 +13,6 @@ pub fn handle_api_err(err: ConductorApiError) -> anyhow::Error {
         ConductorApiError::WebsocketError(holochain_websocket::WebsocketError::Close(_)) => {
             AgentBailError::default().into()
         }
-        _ => anyhow::anyhow!("Conductor API error: {:?}", err),
+        _ => anyhow::anyhow!("Conductor API error: {err:?}"),
     }
 }

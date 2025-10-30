@@ -42,7 +42,7 @@ fn agent_setup(
             client
                 .on_signal(move |signal| {
                     if let Err(e) = signal_tx.send(signal) {
-                        log::info!("Failed to relay signal: {:?}", e);
+                        log::info!("Failed to relay signal: {e:?}");
                     };
                 })
                 .await?;
@@ -61,8 +61,7 @@ fn agent_setup(
         call_zome::<_, (), _>(ctx, "countersigning", "participant_hello", ())?;
     } else {
         return Err(anyhow::anyhow!(
-            "Unknown assigned behaviour: {}",
-            assigned_behaviour
+            "Unknown assigned behaviour: {assigned_behaviour}"
         ));
     }
 
@@ -127,10 +126,7 @@ fn agent_behaviour_initiate(
                     Ok(new_peer_list)
                 }
                 Some(agent_pub_key) => {
-                    log::debug!(
-                        "Initiating a countersigning session with agent {:?}",
-                        agent_pub_key
-                    );
+                    log::debug!("Initiating a countersigning session with agent {agent_pub_key:?}");
 
                     let start = Instant::now();
                     let initiated = initiated.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -152,8 +148,7 @@ fn agent_behaviour_initiate(
                         .await
                         .with_context(|| {
                             format!(
-                                "Failed to start a new countersigning session: {:?}",
-                                agent_pub_key
+                                "Failed to start a new countersigning session: {agent_pub_key:?}"
                             )
                         })?;
                     let my_preflight_response: PreflightResponse = response
@@ -179,8 +174,7 @@ fn agent_behaviour_initiate(
                             let elapsed = start.elapsed();
 
                             log::debug!(
-                                "Completed countersigning session with agent {:?}",
-                                agent_pub_key
+                                "Completed countersigning session with agent {agent_pub_key:?}"
                             );
 
                             let initiated_success = initiated_success
@@ -202,9 +196,7 @@ fn agent_behaviour_initiate(
                             let elapsed = start.elapsed();
 
                             log::warn!(
-                                "Failed countersigning session with agent {:?}: {:?}",
-                                agent_pub_key,
-                                e
+                                "Failed countersigning session with agent {agent_pub_key:?}: {e:?}"
                             );
 
                             let initiated_failure = initiated_failure
@@ -275,15 +267,12 @@ async fn run_initiated_session(
             Err(_) => {
                 // We shouldn't really be getting signals that don't decode but choosing to
                 // filter them out here.
-                log::debug!("Got an unexpected signal, will try again. {:?}", signal);
+                log::debug!("Got an unexpected signal, will try again. {signal:?}");
                 continue;
             }
         };
 
-        log::debug!(
-            "The other party [{:?}] has accepted the countersigning session.",
-            agent_pub_key
-        );
+        log::debug!("The other party [{agent_pub_key:?}] has accepted the countersigning session.");
 
         return complete_session(
             client.clone(),
@@ -344,7 +333,7 @@ fn agent_behaviour_participate(
                     Err(e) => {
                         // Must be resilient to unexpected signals, somebody else might try to initiate with us while we're already
                         // working with another peer.
-                        log::debug!("Got an unexpected signal, will try again. {:?}: {:?}", signal, e);
+                        log::debug!("Got an unexpected signal, will try again. {signal:?}: {e:?}");
                         continue;
                     }
                 };
@@ -387,7 +376,7 @@ fn agent_behaviour_participate(
                     Err(e) => {
                         let elapsed = start.elapsed();
 
-                        log::warn!("Failed countersigning session with the initiating party: {:?}", e);
+                        log::warn!("Failed countersigning session with the initiating party: {e:?}");
 
                         // If we got a fatal error rather than a successful session, wait for the session to expire before trying again
                         tokio::time::sleep_until(session_timeout).await;
@@ -440,7 +429,7 @@ async fn run_accepted_session(
 
     let my_accept_response: PreflightResponse = response
         .decode()
-        .map_err(|e| anyhow::anyhow!("Decoding failure: {:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("Decoding failure: {e:?}"))?;
 
     complete_session(
         client.clone(),
@@ -487,8 +476,7 @@ async fn complete_session(
                     // session time, so we should abandon the attempt. This is safe because we
                     // haven't published a signature.
                     return Err(e).context(format!(
-                        "Abandoning commit attempt because the session timed out on attempt {}",
-                        i
+                        "Abandoning commit attempt because the session timed out on attempt {i}"
                     ));
                 } else if e
                     .chain()
@@ -501,10 +489,7 @@ async fn complete_session(
                 }) {
                     return Err(e).context(format!("Failed because the session expired on attempt {} and with {:?} expected time remaining", i, session_timeout - Instant::now()));
                 } else {
-                    log::warn!(
-                        "[{i}] Failed to commit countersigned entry, will retry. {:?}",
-                        e
-                    );
+                    log::warn!("[{i}] Failed to commit countersigned entry, will retry. {e:?}");
                 }
 
                 retry_count = i;
@@ -532,10 +517,7 @@ async fn complete_session(
         }
     }
 
-    log::debug!(
-        "Completed countersigning session with retry count: {}",
-        retry_count
-    );
+    log::debug!("Completed countersigning session with retry count: {retry_count}");
 
     Ok(retry_count)
 }
@@ -572,7 +554,7 @@ async fn await_countersigning_success(
             }
             // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
             signal => {
-                log::debug!("Received a signal that is not a successful countersigning signal, listening for other signals. {:?}", signal);
+                log::debug!("Received a signal that is not a successful countersigning signal, listening for other signals. {signal:?}");
                 continue;
             }
         };

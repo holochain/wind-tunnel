@@ -67,7 +67,7 @@ fn agent_behaviour_record_lag(
         let timed_entry: TimedEntry = new_record
             .entry()
             .to_app_option()
-            .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
+            .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {e}"))?
             .unwrap();
 
         let metric = ReportMetric::new("dht_sync_lag");

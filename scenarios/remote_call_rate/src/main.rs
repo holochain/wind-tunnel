@@ -42,7 +42,7 @@ fn agent_behaviour(
                 "call_echo_timestamp",
                 agent_pub_key.clone(),
             )
-            .with_context(|| format!("Failed to make remote call to: {:?}", agent_pub_key))?;
+            .with_context(|| format!("Failed to make remote call to: {agent_pub_key:?}"))?;
             let round_trip_time_s = start.elapsed();
 
             let dispatch_time_s = response.request_value.as_micros() as f64 / 1e6;

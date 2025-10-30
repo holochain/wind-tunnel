@@ -70,11 +70,11 @@ impl ReportConfig {
             inner: [
                 self.enable_in_memory.then(|| {
                     RwLock::new(Box::new(report::InMemoryReporter::new())
-                        as Box<(dyn ReportCollector + Send + Sync)>)
+                        as Box<dyn ReportCollector + Send + Sync>)
                 }),
                 self.enable_in_memory_with_custom_metrics.then(|| {
                     RwLock::new(Box::new(report::InMemoryWithCustomMetricsReporter::new())
-                        as Box<(dyn ReportCollector + Send + Sync)>)
+                        as Box<dyn ReportCollector + Send + Sync>)
                 }),
                 if self.enable_influx_client {
                     let metrics_collector = report::InfluxClientReportCollector::new(
@@ -84,7 +84,7 @@ impl ReportConfig {
                         self.scenario_name.clone(),
                     )?;
                     Some(RwLock::new(
-                        Box::new(metrics_collector) as Box<(dyn ReportCollector + Send + Sync)>
+                        Box::new(metrics_collector) as Box<dyn ReportCollector + Send + Sync>
                     ))
                 } else {
                     None
@@ -98,7 +98,7 @@ impl ReportConfig {
                         self.scenario_name,
                     );
                     Some(RwLock::new(
-                        Box::new(influx_file_reporter) as Box<(dyn ReportCollector + Send + Sync)>
+                        Box::new(influx_file_reporter) as Box<dyn ReportCollector + Send + Sync>
                     ))
                 } else {
                     None
@@ -112,7 +112,7 @@ impl ReportConfig {
 }
 
 pub struct Reporter {
-    inner: Vec<RwLock<Box<(dyn ReportCollector + Send + Sync)>>>,
+    inner: Vec<RwLock<Box<dyn ReportCollector + Send + Sync>>>,
 }
 
 impl Reporter {

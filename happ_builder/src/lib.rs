@@ -93,7 +93,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
             &dna_name,
             &zome_names,
         )
-        .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+        .context(format!("Failed to build coordinator DNA - {dna_name}"))?;
 
         built_dnas.push((dna_name, built_path));
     }
@@ -119,7 +119,7 @@ pub fn build_happs(build_options: BuildOptions) -> anyhow::Result<()> {
                 &dna_name,
                 &zome_names,
             )
-            .context(format!("Failed to build coordinator DNA - {}", dna_name))?;
+            .context(format!("Failed to build coordinator DNA - {dna_name}"))?;
 
             built_dnas.push((dna_name, built_path));
         }
@@ -246,7 +246,7 @@ fn build_required_dna(
             build_wasm(&integrity_dir, target_dir)?;
             let wasm_file = find_wasm(target_dir, dna_name, "integrity")?;
             integrity_manifests.push(holochain_types::dna::ZomeManifest {
-                name: format!("{}_integrity", zome_name).into(),
+                name: format!("{zome_name}_integrity").into(),
                 hash: None,
                 location: holochain_types::prelude::ZomeLocation::Bundled(
                     wasm_file
@@ -276,7 +276,7 @@ fn build_required_dna(
                 ),
                 dependencies: integrity_exists.then(|| {
                     vec![ZomeDependency {
-                        name: format!("{}_integrity", zome_name).into(),
+                        name: format!("{zome_name}_integrity").into(),
                     }]
                 }),
                 dylib: None,
@@ -335,7 +335,7 @@ fn build_required_dna(
         dna_out_dir.display()
     );
 
-    Ok(dna_out_dir.join(format!("{}.dna", dna_name)))
+    Ok(dna_out_dir.join(format!("{dna_name}.dna")))
 }
 
 fn build_wasm(coordinator_dir: &Path, target_dir: &Path) -> anyhow::Result<()> {
@@ -386,7 +386,7 @@ fn find_wasm(target_dir: &Path, name: &str, kind: &str) -> anyhow::Result<PathBu
     let wasm_path = target_dir
         .join("wasm32-unknown-unknown")
         .join("release")
-        .join(format!("{}_{}.wasm", name, kind));
+        .join(format!("{name}_{kind}.wasm"));
     if !wasm_path.exists() {
         anyhow::bail!("Wasm file not found at {}", wasm_path.display());
     }
@@ -420,7 +420,7 @@ fn build_required_happ(
             let dna = all_dnas
                 .iter()
                 .find(|(name, _)| name == dna_name)
-                .context(format!("DNA not found: {}", dna_name))?;
+                .context(format!("DNA not found: {dna_name}"))?;
 
             let role_manifest = format!(
                 r#"
@@ -449,12 +449,11 @@ fn build_required_happ(
     let manifest = format!(
         r#"
 manifest_version: '1'
-name: {}
+name: {happ_name}
 description: ~
 roles:
-{}
-"#,
-        happ_name, roles
+{roles}
+"#
     );
 
     let happ_manifest_workdir = happ_target_dir.join(scenario_package_name).join(happ_name);

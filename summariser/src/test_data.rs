@@ -17,7 +17,7 @@ pub fn insert_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> an
         }
     };
 
-    log::debug!("Writing run summary to {:?}", out_file);
+    log::debug!("Writing run summary to {out_file:?}");
 
     serde_json::to_writer_pretty(out_file, summary).context("Failed to write run summary")?;
 
@@ -34,15 +34,13 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
         Some(f) => f,
         None => {
             log::info!(
-                "Not creating query result file as it already exists for query {:?}: {:?}",
-                query,
-                file_name
+                "Not creating query result file as it already exists for query {query:?}: {file_name:?}"
             );
             return Ok(());
         }
     };
 
-    log::debug!("Writing query result to {:?}", out_file);
+    log::debug!("Writing query result to {out_file:?}");
 
     polars::io::json::JsonWriter::new(out_file)
         .with_json_format(JsonFormat::Json)
@@ -85,7 +83,7 @@ pub fn insert_summary_output(
         }
     };
 
-    log::debug!("Writing summary output to {:?}", out_file);
+    log::debug!("Writing summary output to {out_file:?}");
 
     serde_json::to_writer_pretty(out_file, output).context("Failed to write summary output")?;
 
@@ -136,7 +134,7 @@ where
 
     match std::fs::OpenOptions::new().read(true).open(&path) {
         Ok(f) => Ok(f),
-        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {:?}", path)),
+        Err(e) => Err(e).with_context(|| format!("Failed to open input file: {path:?}")),
     }
 }
 

@@ -369,7 +369,7 @@ pub(crate) fn partitioned_rate_stats(
             .context("filter by partition")?;
 
         let summary_rate = standard_rate(filtered, column, window_duration)
-            .with_context(|| format!("Standard rate for {:?}", key))?;
+            .with_context(|| format!("Standard rate for {key:?}"))?;
 
         rates.push(PartitionRateStats { key, summary_rate });
     }

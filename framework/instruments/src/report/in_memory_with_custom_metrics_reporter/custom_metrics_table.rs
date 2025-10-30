@@ -119,7 +119,7 @@ impl CustomMetricsTableBuilder {
             );
             let mut table = Table::new(table_data);
             table.with(Style::modern());
-            println!("{}", table);
+            println!("{table}");
         } else {
             // Fallback to individual display if no common structure
             for (i, metric) in metrics.iter().enumerate() {
@@ -235,7 +235,7 @@ impl CustomMetricsTableBuilder {
     fn format_data_type(data_type: &influxive_core::DataType) -> String {
         match data_type {
             influxive_core::DataType::Bool(b) => b.to_string(),
-            influxive_core::DataType::F64(f) => format!("{:.3}", f),
+            influxive_core::DataType::F64(f) => format!("{f:.3}"),
             influxive_core::DataType::I64(i) => i.to_string(),
             influxive_core::DataType::U64(u) => u.to_string(),
             influxive_core::DataType::String(s) => s.clone().into_string(),

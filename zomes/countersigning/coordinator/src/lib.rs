@@ -103,8 +103,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
     )
     .map_err(|e| {
         wasm_error!(WasmErrorInner::Guest(format!(
-            "Failed to create countersigning request: {:?}",
-            e
+            "Failed to create countersigning request: {e:?}"
         )))
     })?;
 
@@ -115,8 +114,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
         PreflightRequestAcceptance::Accepted(response) => response.clone(),
         e => {
             return Err(wasm_error!(WasmErrorInner::Guest(format!(
-                "Unexpected response: {:?}",
-                e
+                "Unexpected response: {e:?}"
             ))))
         }
     };
@@ -175,8 +173,7 @@ fn accept_two_party(request: PreflightRequest) -> ExternResult<PreflightResponse
             }
         }
         e => Err(wasm_error!(WasmErrorInner::Guest(format!(
-            "Unexpected response: {:?}",
-            e
+            "Unexpected response: {e:?}"
         )))),
     }
 }

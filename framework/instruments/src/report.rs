@@ -23,7 +23,7 @@ impl ReportMetric {
     pub fn new(name: &str) -> Self {
         Self(Metric::new(
             std::time::SystemTime::now(),
-            format!("wt.custom.{}", name),
+            format!("wt.custom.{name}"),
         ))
     }
 
