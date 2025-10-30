@@ -27,30 +27,26 @@ jobs:
           - local_signals
           - remote_call_rate
           - remote_signals
-          # - single_write_many_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/301)
+          - single_write_many_read
           - write_query
-          # - write_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/303)
+          - write_read
           - write_validated
           - zome_call_single_value
         include:
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/304)
-          # - job-name: app_install_large
-          #   scenario-name: app_install
+          - job-name: app_install_large
+            scenario-name: app_install
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/304)
-          # - job-name: app_install_minimal
-          #   scenario-name: app_install
+          - job-name: app_install_minimal
+            scenario-name: app_install
 
           - scenario-name: dht_sync_lag
             required-nodes: 2
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/305)
-          # - scenario-name: validation_receipts
-          #   required-nodes: 2
+          - scenario-name: validation_receipts
+            required-nodes: 2
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/306)
-          # - scenario-name: write_get_agent_activity
-          #   required-nodes: 2
+          - scenario-name: write_get_agent_activity
+            required-nodes: 2
 
           - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
