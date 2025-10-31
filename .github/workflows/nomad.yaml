@@ -184,8 +184,8 @@ jobs:
     outputs:
       result: "${{ steps.restructure.outputs.result }}"
 
-  wait-for-job:
-    name: Wait for job
+  wait-for-jobs:
+    name: Wait for Nomad jobs to finish
     runs-on: [self-hosted, wind-tunnel]
     needs: collect-github-matrix-outputs
     strategy:
@@ -194,11 +194,6 @@ jobs:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
       - uses: actions/checkout@v5
-
-      - name: Download all alloc_ids
-        uses: actions/download-artifact@v6
-        with:
-          name: alloc_ids_${{ matrix.job_name }}
 
       - name: Wait for all allocations in job
         env:
@@ -209,28 +204,39 @@ jobs:
         run: |-
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
+  run-summary:
+    name: Generate a summary of all scenarios
+    runs-on: [self-hosted, wind-tunnel]
+    needs: wait-for-jobs
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all alloc_ids
+        uses: actions/download-artifact@v5
+        with:
+          pattern: "alloc_ids_*"
+
+      - name: Combine alloc_ids files into single
+        run: cat alloc_ids_*/alloc_ids.csv >> alloc_ids.csv
+
       - name: Prepare run summary
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          RUN_SUMMARY_PATH: ./run_summary.jsonl
-        run: |
-          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv $RUN_SUMMARY_PATH
-          cat $RUN_SUMMARY_PATH >> "$GITHUB_STEP_SUMMARY"
+        run: nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv run_summary.jsonl
 
       - name: Run summariser
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
-          RUN_SUMMARY_PATH: ./run_summary.jsonl
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
 
       - name: Upload run summary
         uses: actions/upload-artifact@v5
         with:
-          name: summariser-report-${{ matrix.job_name }}
+          name: summariser-report
           path: ./summariser-report-*.json
