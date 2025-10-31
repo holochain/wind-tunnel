@@ -77,6 +77,7 @@ jobs:
           if-no-files-found: error
 
       - name: Wait for free nodes
+        timeout-minutes: 30 # Most scenarios run for 5 minutes (300 seconds) or less, so if there's not enough free nodes in 30 minutes then give up.
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
