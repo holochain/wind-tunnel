@@ -228,6 +228,7 @@ jobs:
         run: nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv run_summary.jsonl
 
       - name: Run summariser
+        if: always()
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
