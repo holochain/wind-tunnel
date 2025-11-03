@@ -195,6 +195,12 @@ async fn zero_arc_create_data() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn zero_arc_create_and_read() -> anyhow::Result<()> {
+    run_snapshot_test!("94d299900c09e3ae81800bfce0f497a9d12f98a7a4fd6fd4083793335bc18c88");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     let all_matches = WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))
