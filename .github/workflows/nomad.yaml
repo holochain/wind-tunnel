@@ -148,9 +148,9 @@ jobs:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ env.RUN_ID }}
           outputs: |-
-            alloc_ids: ${{ steps.run-nomad-job.outputs.alloc_ids }}
-            run_id: ${{ env.RUN_ID }}
-            job_name: ${{ steps.run-nomad-job.outputs.job_name }}
+            alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+            run_id: "${{ env.RUN_ID }}"
+            job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
 
   collect-github-matrix-outputs:
     name: Collect Run Ids
