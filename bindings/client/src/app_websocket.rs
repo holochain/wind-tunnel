@@ -46,6 +46,14 @@ impl AppWebsocketInstrumented {
         self.inner.app_info().await
     }
 
+    #[wind_tunnel_instrument(prefix = "app_")]
+    pub async fn agent_info(
+        &self,
+        dna_hashes: Option<Vec<DnaHash>>,
+    ) -> ConductorApiResult<Vec<String>> {
+        self.inner.agent_info(dna_hashes).await
+    }
+
     #[wind_tunnel_instrument(prefix = "app_", pre_hook = pre_call_zome)]
     pub async fn call_zome(
         &self,

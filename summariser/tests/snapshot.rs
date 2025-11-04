@@ -183,6 +183,12 @@ async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn zero_arc_create_data() -> anyhow::Result<()> {
+    run_snapshot_test!("c90e09f59fccb19cacaff231094f9fa49d3da999d6fa7c169328c1030ed1537d");
+    Ok(())
+}
+
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     let all_matches = WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))
