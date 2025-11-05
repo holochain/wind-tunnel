@@ -28,7 +28,7 @@ for (const p of partials) {
 const { commonCSS, commonJS } = commonAssets;
 
 // A few helpers
-handlebars.registerHelper("datetime", (ts) => (new Date(ts * 1000)).toLocaleString());
+handlebars.registerHelper("datetime", (ts) => `${(new Date(ts * 1000)).toLocaleString()} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`);
 handlebars.registerHelper("json", (data) => JSON.stringify(data));
 handlebars.registerHelper("number", function(n) {
     // There's always an options object passed to helpers,
