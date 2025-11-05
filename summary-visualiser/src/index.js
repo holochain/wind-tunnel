@@ -94,4 +94,4 @@ function visualise(scenarios) {
     };
 }
 
-export { visualise, commonCSS, commonJS };
+export { visualise };
