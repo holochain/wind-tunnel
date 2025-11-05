@@ -15,7 +15,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "test": "node test/index.js",
+    "test": "npx vitest run",
     "clean": "rm -rf dist",
     "build": "npm run clean && mkdir -p dist && npx rollup src/assets/windTunnel.js --file dist/windTunnel.js --format es && cp src/assets/windTunnel.css dist/",
     "generate": "npm --silent run build && node cli.js"
@@ -27,6 +27,6 @@
   },
   "devDependencies": {
     "rollup": "^4.52.5",
-    "tape": "^5.9.0"
+    "vitest": "^4.0.7"
   }
 }
