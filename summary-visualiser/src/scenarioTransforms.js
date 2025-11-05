@@ -1,5 +1,5 @@
 function shrinkIdentifier(identifier) {
-    return `${identifier.slice(3, 6)}...${identifier.slice(-4, -1)}`;
+    return `${identifier.slice(3, 6)}...${identifier.slice(-3)}`;
 }
 
 function transformDbUtilisationMetric(metric) {

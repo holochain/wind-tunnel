@@ -1,4 +1,4 @@
-{{#if data.length}}
+{{#ifgt data.length 1}}
     <div class="trend-graph {{cssClass}}">
         <svg id="trend-svg-{{svgId}}"></svg>
     </div>
@@ -6,4 +6,4 @@
     <script>createTrendGraph("trend-svg-{{svgId}}", {{{json data}}}, {{{json mean}}}, {{{json windowDuration}}}, {{{json unit}}});</script>
 {{else}}
     <div class="no-trend-graph {{cssClass}}">No trend data available.</div>
-{{/if}}
+{{/ifgt}}
