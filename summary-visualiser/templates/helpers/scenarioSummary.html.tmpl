@@ -1,0 +1,38 @@
+<div class="scenario-summary">
+    <h1>{{ .title }}</h1>
+
+    <div class="scenario-summary-description">{{ .description }}</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">{{ (time.Unix .data.started_at).Format time.RFC1123 }}</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Duration</div>
+            <div class="scenario-summary-details-value">{{ .data.run_duration }}s</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-assigned-behaviours">
+                    {{ range $behaviour, $count := .data.assigned_behaviours }}
+                        <li><code>{{ $behaviour }}</code>: {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}</li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">{{ .data.wind_tunnel_version }}</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">{{ .data.run_id }}</span></div>
+        </div>
+    </div>
+</div>

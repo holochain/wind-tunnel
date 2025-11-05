@@ -1,5 +1,3 @@
-import { formatNumber } from "../util.js";
-
 window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
     const margin = { top: 25, right: 20, bottom: 20, left: 60 };
     const pointWidth = 40; // Width per data point

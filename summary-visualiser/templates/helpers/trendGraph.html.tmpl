@@ -1,0 +1,10 @@
+{{ if .data }}
+    {{ $svgId := random.AlphaNum 16 }}
+    <div class="trend-graph">
+        <svg id="trend-svg-{{ $svgId }}"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-{{ $svgId }}", [{{ conv.Join .data ", " }}], {{ .mean }}, "{{ .window_duration }}", "{{ or (index . "unit") nil }}");</script>
+{{ else }}
+    <div class="no-trend-graph">No trend data available.</div>
+{{ end }}

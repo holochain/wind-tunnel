@@ -1,0 +1,30 @@
+<span class="delta">
+    <span class="delta-start-end">
+        <span class="delta-start">
+            {{- template "scalar" (dict "value" .start "unit" (or (index . "unit") nil)) -}}
+        </span>
+        {{ if (lt .start .end) }}
+            <span class="delta-dir delta-dir-up">&#x2B06;</span>
+        {{ else if (gt .start .end) }}
+            <span class="delta-dir delta-dir-down">&#x2B07;</span>
+        {{ end }}
+        {{ if (ne .start .end) }}
+            <span class="delta-end">
+                {{- template "scalar" (dict "value" .end "unit" (or (index . "unit") nil)) -}}
+            </span>
+        {{ end }}
+    </span>
+
+    {{ if (and .start .end (ne .start .end)) }}
+        {{/* Start and end must be non-zero and not equal to each other for a percent change to make sense */}}
+        <span class="delta-change">
+            <span class="delta-percent-change">change:
+                {{- template "scalar" (dict
+                    "value" (math.Mul (math.Div (math.Sub .end .start) .start) 100)
+                    "unit" "%"
+                ) -}}
+            </span>
+            <span class="delta-measurement-duration">over {{ .measurement_duration }}s ({{- template "scalar" (dict "value" .ratePerSecond "unit" (or (index . "unit") nil)) -}}/s)</span>
+        </span>
+    {{ end }}
+</span>

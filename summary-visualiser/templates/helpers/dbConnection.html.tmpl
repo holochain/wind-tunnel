@@ -1,0 +1,9 @@
+{{ template "scenarioMetricContentItem" (dict
+    "name" "Utilisation"
+    "content" (tmpl.Exec "meanMax" (dict
+        "mean" .utilization.mean
+        "max" .utilization.max
+        "unit" "%"
+    ))
+) }}
+{{ template "dbConnectionUseTime" .use_time }}
