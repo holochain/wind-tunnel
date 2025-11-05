@@ -13,19 +13,11 @@ const partialsFolderPath = path.join(templatesFolderPath, "partials");
 
 // Load all the partials and make them available to the template.
 const partials = fs.readdirSync(partialsFolderPath);
-let commonAssets = {};
 for (const p of partials) {
     const partialName = p.replace(".hbs", "");
     const partialContent = fs.readFileSync(path.join(partialsFolderPath, p), { encoding: "utf8" });
     handlebars.registerPartial(partialName, partialContent);
-
-    // Make these special partials available to all consumers of this library.
-    // Optional sensible default CSS styling.
-    if (["commonCSS", "commonJS"].includes(partialName)) {
-        commonAssets[partialName] = partialContent;
-    }
 }
-const { commonCSS, commonJS } = commonAssets;
 
 // A few helpers
 handlebars.registerHelper("datetime", (ts) => `${(new Date(ts * 1000)).toLocaleString()} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`);
