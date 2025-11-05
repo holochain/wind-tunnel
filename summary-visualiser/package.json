@@ -1,0 +1,29 @@
+{
+  "name": "@holochain/wind-tunnel-summary-visualiser",
+  "version": "0.0.1",
+  "description": "A tool to generate a pretty HTML report from Wind Tunnel scenario run summary JSON.",
+  "homepage": "https://github.com/holochain/wind-tunnel/tree/main/summary-visualiser/README.md",
+  "bugs": {
+    "url": "https://github.com/holochain/wind-tunnel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holochain/wind-tunnel.git"
+  },
+  "license": "MIT",
+  "author": "Holochain Team",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "npm test",
+    "build": "npx rollup src/assets/windTunnel.js --file dist/windTunnel.js --format es && cp src/assets/windTunnel.css dist/",
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "handlebars": "^4.7.8",
+    "handlebars-utils": "^1.0.6"
+  },
+  "devDependencies": {
+    "rollup": "^4.52.5"
+  }
+}

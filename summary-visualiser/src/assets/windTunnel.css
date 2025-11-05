@@ -1,0 +1,174 @@
+/*** General structure ***/
+:root {
+    --subtle: rgba(0, 0, 0, 0.5);
+    --more-subtle: rgba(0, 0, 0, 0.35);
+    --smoke: rgba(0, 0, 0, 0.2);
+    --good: rgb(0, 173, 12);
+    --bad: rgb(195, 25, 25);
+    --highlight: rgb(52, 152, 219);
+    --highlight-subtle: rgba(52, 152, 219, 0.5);
+    --grid: 0.5fr 1fr;
+    --grid-gap: 2rem;
+}
+
+.scenario-summary {
+    margin-bottom: 4em;
+}
+
+.scenario-summary-details-line {
+    display: grid;
+    grid-template-columns: var(--grid);
+    gap: var(--grid-gap);
+}
+
+.scenario-summary-details-label {
+    text-align: right;
+    color: var(--subtle);
+}
+
+.scenario-summary-details-value {
+    font-weight: bold;
+}
+
+.scenario-summary-assigned-behaviours {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 15px;
+}
+
+.scenario-summary-description {
+    font-size: 1.25em;
+    color: var(--subtle);
+}
+
+.scenario-summary-run-id {
+    font-size: 0.75em;
+    color: var(--subtle);
+}
+
+/* A single metric */
+.scenario-metric, .scenario-metric-datum {
+    margin: 1em 0;
+    width: 100%;
+}
+
+.scenario-metric, .scenario-metric-datum:not(:first-child) {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-metric-datum:first-child {
+    margin-top: 0;
+}
+
+.scenario-metric {
+    border-width: 2px;
+}
+
+.scenario-metric-datum {
+    border-width: 1px;
+}
+
+.scenario-metric {
+    display: grid;
+    grid-template-columns: var(--grid);
+    align-items: center;
+    gap: var(--grid-gap);
+}
+
+/* The label for a metric */
+.scenario-metric-name, .scenario-metric-datum-name {
+    font-size: 1.25em;
+    color: var(--subtle);
+}
+
+.scenario-metric-name {
+    text-align: right;
+}
+
+/* The data for a metric */
+.scenario-metric:not(.stacked) .scenario-metric-data, .scenario-metric-datum-data {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+}
+
+/*** Graph SVG ***/
+
+/* Axis labels for a graph */
+.axis-label {
+    font-size: 11px;
+    fill: var(--subtle);
+}
+
+/* The line in a trend graph */
+.trend-line {
+    fill: none;
+    stroke: var(--highlight);
+    stroke-width: 2;
+}
+
+/* The area under the trend line */
+.trend-area {
+    fill: var(--smoke);
+    opacity: 0.2;
+}
+
+/* The mean line in a trend graph */
+.mean-line {
+    stroke: var(--highlight-subtle);
+    stroke-width: 2;
+    stroke-dasharray: 3, 3;
+}
+
+/* Colouring for the up/down arrows for delta widgets */
+.delta-dir {
+    color: var(--more-subtle);
+}
+
+.delta-good-up .delta-dir-up, .delta-good-down .delta-dir-down {
+    color: var(--bad);
+}
+
+.delta-good-up .delta-dir-down, .delta-good-down .delta-dir-up {
+    color: var(--bad);
+}
+
+.delta-dir {
+    font-size: 2em;
+}
+
+/* Pasted from inspector */
+
+.scalar-value {
+  font-size: 2rem;
+  font-weight: 600;
+}
+.mean-std-std .scalar-value, .mean-max-max .scalar-value, .delta-change .scalar-value {
+  font-size: inherit;
+}
+.scenario-metric-data > .scalar:first-child,
+.scenario-metric-data > .mean-std:first-child,
+.scenario-metric-data > .mean-max:first-child,
+.scenario-metric-datum-data > .scalar:first-child,
+.scenario-metric-datum-data > .mean-std:first-child,
+.scenario-metric-datum-data > .mean-max:first-child {
+  width: 10em;
+}
+.mean-std > *, .mean-max > * {
+  display: block;
+}
+.delta-numbers, .delta-change {
+    display: block;
+}
+.delta-numbers {
+  display: flex;
+  align-items: center;
+}
+.delta-no-change::before, .delta-percent-change::before {
+  flex-basis: 100%;
+  height: 0;
+}
