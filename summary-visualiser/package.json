@@ -15,8 +15,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "test": "npm test",
-    "build": "npx rollup src/assets/windTunnel.js --file dist/windTunnel.js --format es && cp src/assets/windTunnel.css dist/",
+    "test": "node test/index.js",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && mkdir -p dist && npx rollup src/assets/windTunnel.js --file dist/windTunnel.js --format es && cp src/assets/windTunnel.css dist/",
     "generate": "npm --silent run build && node cli.js"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "handlebars-utils": "^1.0.6"
   },
   "devDependencies": {
-    "rollup": "^4.52.5"
+    "rollup": "^4.52.5",
+    "tape": "^5.9.0"
   }
 }
