@@ -92,6 +92,17 @@ jobs:
           echo
           df -h
 
+      - name: Validate Nomad jobs
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1 # Required to run nomad
+          NOMAD_VAR_scenario_url: "https://example.com" # Dummy URL for validation
+        run: |
+          nix run .#validate-nomad-jobs --impure
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - zome_call_single_value
         run: |
           nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress

@@ -7,17 +7,9 @@ on:
         description: "The URL to download the `holochain` binary from"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
-  # Trigger on changes to Nomad-related files when pushing to main
-  push:
-    branches:
-      - main
-    paths:
-      - "nomad/**"
-      - ".github/workflows/nomad.yaml"
-  # Trigger on changes to Nomad-related files in PRs
+  # Trigger on changes to Nomad workflow file
   pull_request:
     paths:
-      - "nomad/**"
       - ".github/workflows/nomad.yaml"
 
 concurrency:
