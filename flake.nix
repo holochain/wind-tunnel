@@ -451,6 +451,7 @@
   };
 
   nixConfig = {
+    allowUnfree = true;
     substituters = [ "https://cache.nixos.org" "https://holochain-ci.cachix.org" ];
     trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" "holochain-ci.cachix.org-1:5IUSkZc0aoRS53rfkvH9Kid40NpyjwCMCzwRTXy+QN8=" ];
   };
