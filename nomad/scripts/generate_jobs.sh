@@ -29,14 +29,12 @@ TEMPLATE="$BASEDIR/run_scenario.tpl.hcl"
 mkdir -p "$JOBS_DIR"
 rm -rf "$JOBS_DIR"/*.nomad.hcl || true
 
-GOMPLATE=$(command -v gomplate || echo "gomplate")
-if [ -z "$GOMPLATE" ]; then
+if ! command -v gomplate &> /dev/null; then
   echo "gomplate is not installed. Please install it to generate Nomad jobs."
   echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
   exit 1
 fi
-NOMAD=$(command -v nomad || echo "nomad")
-if [ -z "$NOMAD" ]; then
+if ! command -v nomad &> /dev/null; then
   echo "nomad is not installed. Please install it to validate Nomad jobs."
   echo "You can install nomad from the official website: <https://www.nomadproject.io/downloads>"
   exit 1
