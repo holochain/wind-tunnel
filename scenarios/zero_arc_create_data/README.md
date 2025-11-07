@@ -19,7 +19,7 @@ A zero-arc/full-arc mixed scenario where zero arc nodes create data and full arc
 > [!IMPORTANT]
 > This scenario requires at least 2 full arc nodes. Otherwise they won't ever set their own storage arc to "full" and won't be considered as a valid publish target by zero arc nodes.
 
-You can run the scenario locally with e.g. the following command:
+You can run the scenario locally with the following command:
 
 ```bash
 RUST_LOG=info cargo run --package zero_arc_create_data -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 300
