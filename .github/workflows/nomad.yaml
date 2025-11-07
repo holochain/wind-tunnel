@@ -7,6 +7,10 @@ on:
         description: "The URL to download the `holochain` binary from"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
+  # Trigger on changes to Nomad workflow file
+  pull_request:
+    paths:
+      - ".github/workflows/nomad.yaml"
 
 concurrency:
   group: ${{ github.workflow }}

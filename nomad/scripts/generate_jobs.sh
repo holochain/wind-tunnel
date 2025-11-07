@@ -4,14 +4,20 @@ set -euo pipefail
 set -x
 
 generate_job() {
-  local var_file="$1"
-  local job_file="$2"
-  gomplate \
-    -f "$TEMPLATE" \
-    -o "$job_file" \
-    -d vars="$var_file"
+    local var_file="$1"
+    local job_file="$2"
+    gomplate \
+        -f "$TEMPLATE" \
+        -o "$job_file" \
+        -d vars="$var_file"
 
-  echo "Generated job file: $job_file"
+    echo "Generated job file: $job_file"
+}
+
+validate_job() {
+    local job_file="$1"
+    nomad job validate "$job_file"
+    echo "Validated job file: $job_file"
 }
 
 SCRIPTS_DIR="$(dirname "$0")"
@@ -23,14 +29,28 @@ TEMPLATE="$BASEDIR/run_scenario.tpl.hcl"
 mkdir -p "$JOBS_DIR"
 rm -rf "$JOBS_DIR"/*.nomad.hcl || true
 
-GOMPLATE=$(command -v gomplate || echo "gomplate")
-if [ -z "$GOMPLATE" ]; then
-  echo "gomplate is not installed. Please install it to generate Nomad jobs."
-  echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
-  exit 1
+if ! command -v gomplate &> /dev/null; then
+    echo "gomplate is not installed. Please install it to generate Nomad jobs."
+    echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
+    exit 1
 fi
 
-JOB_NAME="${1:-}"
+
+ARG1="${1:-}"
+validate_jobs=false
+if [ "$ARG1" == "--validate" ]; then
+    validate_jobs=true
+    shift
+    JOB_NAME="${1:-}"
+else
+    JOB_NAME="$ARG1"
+fi
+
+if [ "$validate_jobs" = true ] && ! command -v nomad &> /dev/null; then
+    echo "nomad is not installed. Please install it to validate Nomad jobs."
+    echo "You can install nomad from the official website: <https://www.nomadproject.io/downloads>"
+    exit 1
+fi
 
 # generate all
 if [ -z "$JOB_NAME" ]; then
@@ -39,6 +59,9 @@ if [ -z "$JOB_NAME" ]; then
         BASENAME=$(basename "$VAR_FILE" .json)
         JOB_FILE="$JOBS_DIR/$BASENAME.nomad.hcl"
         generate_job "$VAR_FILE" "$JOB_FILE"
+        if [ "$validate_jobs" = true ]; then
+            validate_job "$JOB_FILE"
+        fi
     done
 else
     # generate specific job
@@ -49,4 +72,7 @@ else
     fi
     JOB_FILE="$JOBS_DIR/$JOB_NAME.nomad.hcl"
     generate_job "$VAR_FILE" "$JOB_FILE"
+    if [ "$validate_jobs" = true ]; then
+        validate_job "$JOB_FILE"
+    fi
 fi

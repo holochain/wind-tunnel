@@ -395,6 +395,19 @@
               ./nomad/scripts/generate_jobs.sh "$@"
             '';
           };
+          validate-nomad-jobs = pkgs.writeShellApplication {
+            name = "validate-nomad-jobs";
+            runtimeInputs = [
+              pkgs.gomplate
+              unfreePkgs.nomad
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              ./nomad/scripts/generate_jobs.sh --validate "$@"
+            '';
+          };
           rust-unit-tests = pkgs.writeShellApplication {
             name = "rust-unit-tests";
             runtimeInputs = [
