@@ -168,20 +168,17 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         runner_context,
                         delegated_shutdown_listener,
                     );
-                    if let Some(setup_agent_fn) = setup_agent_fn {
-                        if let Err(e) = setup_agent_fn(&mut context) {
-                            log::error!("Agent setup failed for agent {agent_name}: {e:?}");
+                    if let Some(Err(e)) = setup_agent_fn.map(|f| f(&mut context)) {
+                        log::error!("Agent setup failed for agent {agent_name}: {e:?}");
 
-                            if let Some(teardown_agent_fn) = teardown_agent_fn {
-                                if let Err(e) = teardown_agent_fn(&mut context) {
-                                    log::error!(
-                                        "Agent teardown failed for agent {agent_name}: {e:?}"
-                                    );
-                                }
-                            }
-
-                            return;
+                        if let Some(Err(e)) = teardown_agent_fn.map(|f| f(&mut context)) {
+                            log::error!("Agent teardown failed for agent {agent_name}: {e:?}");
                         }
+
+                        // force stopping the agent if setup failed
+                        context.runner_context().force_stop_scenario();
+
+                        return;
                     }
 
                     // TODO implement warmup
@@ -215,10 +212,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         }
                     }
 
-                    if let Some(teardown_agent_fn) = teardown_agent_fn {
-                        if let Err(e) = teardown_agent_fn(&mut context) {
-                            log::error!("Agent teardown failed for agent {agent_name}: {e:?}");
-                        }
+                    if let Some(Err(e)) = teardown_agent_fn.map(|f| f(&mut context)) {
+                        log::error!("Agent teardown failed for agent {agent_name}: {e:?}");
                     }
 
                     if behaviour_ran_to_complete {
