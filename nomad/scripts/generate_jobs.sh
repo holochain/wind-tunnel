@@ -4,20 +4,20 @@ set -euo pipefail
 set -x
 
 generate_job() {
-  local var_file="$1"
-  local job_file="$2"
-  gomplate \
-    -f "$TEMPLATE" \
-    -o "$job_file" \
-    -d vars="$var_file"
+    local var_file="$1"
+    local job_file="$2"
+    gomplate \
+        -f "$TEMPLATE" \
+        -o "$job_file" \
+        -d vars="$var_file"
 
-  echo "Generated job file: $job_file"
+    echo "Generated job file: $job_file"
 }
 
 validate_job() {
-  local job_file="$1"
-  nomad job validate "$job_file"
-  echo "Validated job file: $job_file"
+    local job_file="$1"
+    nomad job validate "$job_file"
+    echo "Validated job file: $job_file"
 }
 
 SCRIPTS_DIR="$(dirname "$0")"
@@ -30,15 +30,11 @@ mkdir -p "$JOBS_DIR"
 rm -rf "$JOBS_DIR"/*.nomad.hcl || true
 
 if ! command -v gomplate &> /dev/null; then
-  echo "gomplate is not installed. Please install it to generate Nomad jobs."
-  echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
-  exit 1
+    echo "gomplate is not installed. Please install it to generate Nomad jobs."
+    echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
+    exit 1
 fi
-if ! command -v nomad &> /dev/null; then
-  echo "nomad is not installed. Please install it to validate Nomad jobs."
-  echo "You can install nomad from the official website: <https://www.nomadproject.io/downloads>"
-  exit 1
-fi
+
 
 ARG1="${1:-}"
 validate_jobs=false
@@ -48,6 +44,12 @@ if [ "$ARG1" == "--validate" ]; then
     JOB_NAME="${1:-}"
 else
     JOB_NAME="$ARG1"
+fi
+
+if [ "$validate_jobs" = true ] && ! command -v nomad &> /dev/null; then
+    echo "nomad is not installed. Please install it to validate Nomad jobs."
+    echo "You can install nomad from the official website: <https://www.nomadproject.io/downloads>"
+    exit 1
 fi
 
 # generate all
