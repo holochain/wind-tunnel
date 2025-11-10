@@ -743,7 +743,12 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 pub fn start_conductor_and_configure_urls<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
-    run_holochain_conductor(ctx)?;
+    if let Err(err) = run_holochain_conductor(ctx) {
+        // force stop conductor if we failed to start it and return error
+        ctx.runner_context().force_stop_scenario();
+
+        return Err(err);
+    }
     configure_admin_ws_url(ctx)?;
     configure_app_ws_url(ctx)
 }

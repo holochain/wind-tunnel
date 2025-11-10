@@ -175,9 +175,6 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                             log::error!("Agent teardown failed for agent {agent_name}: {e:?}");
                         }
 
-                        // force stopping the agent if setup failed
-                        context.runner_context().force_stop_scenario();
-
                         return;
                     }
 
