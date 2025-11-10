@@ -16,6 +16,9 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+env:
+  HOLOCHAIN_BIN_URL: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
+
 jobs:
   run-scenarios:
     name: Run ${{ matrix.job-name || matrix.scenario-name }}
@@ -122,7 +125,7 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run_id: ${{ env.RUN_ID }}
-          NOMAD_VAR_holochain_bin_url: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
+          NOMAD_VAR_holochain_bin_url: "${{ env.HOLOCHAIN_BIN_URL }}"
         run: |-
           set -euo pipefail
           nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl)
@@ -228,7 +231,10 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-        run: nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv run_summary.jsonl
+          RUN_SUMMARY_PATH: ./run_summary.jsonl
+        run: |
+          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
+          cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run summariser
         if: always()

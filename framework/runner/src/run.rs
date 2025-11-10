@@ -16,7 +16,7 @@ use anyhow::Context;
 use log::debug;
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
-use wind_tunnel_summary_model::append_run_summary;
+use wind_tunnel_summary_model::{append_run_summary, RunSummaryInitArgs};
 
 /// Environment variable name to set a custom run summary file path
 const RUN_SUMMARY_PATH_ENV: &str = "RUN_SUMMARY_PATH";
@@ -32,25 +32,28 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     // Create the summary for the run. This is used to link the run with the report and build a
     // summary from the metrics after the run has completed.
-    let mut summary = wind_tunnel_summary_model::RunSummary::new(
-        definition.run_id.clone(),
-        definition.name.clone(),
-        chrono::Utc::now().timestamp(),
-        definition.duration_s,
-        definition
+    let mut summary = wind_tunnel_summary_model::RunSummary::new(RunSummaryInitArgs {
+        run_id: definition.run_id.clone(),
+        scenario_name: definition.name.clone(),
+        started_at: chrono::Utc::now().timestamp(),
+        peer_count: definition
             .assigned_behaviours
             .iter()
             .map(|b| b.agent_count)
             .sum(),
+        wind_tunnel_version: option_env!("CARGO_PKG_VERSION")
+            .unwrap_or("unknown")
+            .to_string(),
+    })
+    .with_run_duration(definition.duration_s)
+    .with_assigned_behaviours(
         definition
             .assigned_behaviours
             .iter()
             .map(|b| (b.behaviour_name.clone(), b.agent_count))
             .collect(),
-        option_env!("CARGO_PKG_VERSION")
-            .unwrap_or("unknown")
-            .to_string(),
     );
+
     for capture in &definition.capture_env {
         if let Ok(value) = std::env::var(capture) {
             summary.add_env(capture.clone(), value);
@@ -128,6 +131,19 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     let runner_context = Arc::new(runner_context);
     let runner_context_for_teardown = runner_context.clone();
+
+    // set holochain build info in summary if no connection string is provided
+    if runner_context.get_connection_string().is_none() {
+        match crate::holochain_binary::holochain_build_info() {
+            Ok(build_info) => {
+                log::debug!("Detected Holochain build info: {build_info:?}");
+                summary.set_holochain_build_info(build_info);
+            }
+            Err(e) => {
+                log::warn!("Could not get Holochain version: {e}");
+            }
+        }
+    }
 
     // Ready to start spawning agents so start the resource monitor to report high usage by agents
     // which might lead to a misleading outcome.
