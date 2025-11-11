@@ -1,5 +1,5 @@
 use crate::context::HolochainAgentContext;
-use crate::holochain_runner::HolochainRunner;
+use crate::holochain_runner::{HolochainConfig, HolochainRunner};
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::{bail, Context};
 use holochain_client_instrumented::prelude::{
@@ -17,7 +17,7 @@ use kitsune2_api::AgentInfoSigned;
 use kitsune2_core::Ed25519Verifier;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{env, fs, io};
@@ -686,38 +686,19 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
     let config = ctx.get_mut().take_holochain_config().build()?;
 
-    ctx.get_mut().holochain_runner =
-        ctx.runner_context()
-            .executor()
-            .execute_in_place(async move {
-                HolochainRunner::run(&config)
-                    .await
-                    .map(Some)
-                    .map_err(|mut err| {
-                        log::trace!("Error whilst starting conductor so cleaning up directory");
-                        if let Err(err) = fs::remove_dir_all(&conductor_root_path) {
-                            log::error!("Failed to cleanup the conductor files: {err}");
-                        } else {
-                            log::info!("Successfully cleaned up the conductor files after error");
-                        }
-                        if let Some(parent) = conductor_root_path.parent() {
-                            if fs::remove_dir(parent).is_ok() {
-                                log::info!("Successfully cleaned up all conductor directories after error");
-                            }
-                        }
-
-                        if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
-                            if io_error.kind() == io::ErrorKind::NotFound {
-                                if let Err(_) | Ok("holochain") = env::var("WT_HOLOCHAIN_PATH").as_deref() {
-                                    err = err.context("'holochain' binary not found in your PATH");
-                                } else {
-                                    err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
-                                }
-                            }
-                        }
-                        err
-                    })
-            })?;
+    ctx.get_mut().holochain_runner = match ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(start_holochain_conductor(config, &conductor_root_path))
+    {
+        Ok(runner) => Some(runner),
+        Err(err) => {
+            log::error!("Failed to start Holochain conductor: {err}");
+            // force stop conductor if we failed to start it and return error
+            ctx.runner_context().force_stop_scenario();
+            return Err(err);
+        }
+    };
 
     ctx.get_mut().admin_ws_url = Some(
         format!("ws://127.0.0.1:{admin_port}")
@@ -728,6 +709,45 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     );
 
     Ok(())
+}
+
+/// Starts a Holochain conductor with the provided configuration.
+///
+/// If starting the conductor fails, attempts to clean up the conductor root directory.
+/// Returns [`HolochainRunner`] on success.
+async fn start_holochain_conductor(
+    config: HolochainConfig,
+    conductor_root_path: &Path,
+) -> anyhow::Result<HolochainRunner> {
+    let mut err = match HolochainRunner::run(&config).await {
+        Ok(runner) => return Ok(runner),
+        Err(err) => err,
+    };
+
+    // in case of error, clean up the conductor directory
+    log::trace!("Error whilst starting conductor so cleaning up directory");
+    if let Err(err) = fs::remove_dir_all(conductor_root_path) {
+        log::error!("Failed to cleanup the conductor files: {err}");
+    } else {
+        log::info!("Successfully cleaned up the conductor files after error");
+    }
+    if let Some(parent) = conductor_root_path.parent() {
+        if fs::remove_dir(parent).is_ok() {
+            log::info!("Successfully cleaned up all conductor directories after error");
+        }
+    }
+
+    if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
+        if io_error.kind() == io::ErrorKind::NotFound {
+            if let Err(_) | Ok("holochain") = env::var("WT_HOLOCHAIN_PATH").as_deref() {
+                err = err.context("'holochain' binary not found in your PATH");
+            } else {
+                err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
+            }
+        }
+    }
+
+    Err(err)
 }
 
 /// Helper function to be called from `agent_setup` to config and start a conductor with admin and
