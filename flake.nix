@@ -429,6 +429,7 @@
             name = "rust-smoke-test";
             runtimeInputs = [
               config.rustHelper.rust
+              customHolochain
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
