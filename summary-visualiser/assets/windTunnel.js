@@ -1,6 +1,6 @@
 window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
     const margin = { top: 25, right: 20, bottom: 20, left: 60 };
-    const pointWidth = 40; // Width per data point
+    const pointWidth = 10; // Width per data point
     const width = (trendData.length * pointWidth) - margin.left - margin.right;
     const height = 120 - margin.top - margin.bottom;
 

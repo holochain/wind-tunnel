@@ -9,10 +9,12 @@
             <div class="scenario-summary-details-value">{{ (time.Unix .data.started_at).Format time.RFC1123 }}</div>
         </div>
 
-        <div class="scenario-summary-details-line">
-            <div class="scenario-summary-details-label">Duration</div>
-            <div class="scenario-summary-details-value">{{ .data.run_duration }}s</div>
-        </div>
+        {{ if .data.run_duration }}
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Duration</div>
+                <div class="scenario-summary-details-value">{{ .data.run_duration }}s</div>
+            </div>
+        {{ end }}
 
         <div class="scenario-summary-details-line">
             <div class="scenario-summary-details-label">Behaviours</div>

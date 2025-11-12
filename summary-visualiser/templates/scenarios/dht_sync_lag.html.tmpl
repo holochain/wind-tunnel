@@ -31,6 +31,20 @@ but using this with `tmpl.Exec` gives us syntax highlighting. */}}
     {{ end }}
 {{ end }}
 
+{{/* Same situation here, for the authored DB utilisation. */}}
+{{ define "authored_db_utilization" }}
+    {{ range $name, $value := . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (print "Utilisation for " $name)
+            "content" (tmpl.Exec "meanMax" (dict
+                "mean" $value.mean
+                "max" $value.max
+                "unit" "%"
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
 <section class="scenario scenario-dht-sync-lag">
     {{ template "scenarioSummary" (dict
         "title" "DHT Sync Lag"
@@ -124,22 +138,24 @@ but using this with `tmpl.Exec` gives us syntax highlighting. */}}
                 ) }}
             {{ end }}
 
-            {{ template "scenarioMetric" (dict
-                "name" "WASM usage"
-                "description" "TODO"
-                "content" (print
-                    (tmpl.Exec "scenarioMetricContentItem" (dict
-                        "name" "Total"
-                        "content" (tmpl.Exec "delta" (dict
-                            "start" .wasm_usage_total.start
-                            "end" .wasm_usage_total.end
-                            "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
-                            "ratePerSecond" .wasm_usage_total.rate_per_second
-                        ))
-                    ))
-                    (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)
-                )
-            ) }}
+            {{ if (or .wasm_usage_total .wasm_usage_by_fn) }}
+                {{ template "scenarioMetric" (dict
+                    "name" "WASM usage"
+                    "description" "TODO"
+                    "content" (print
+                        (and .wasm_usage_total (tmpl.Exec "scenarioMetricContentItem" (dict
+                            "name" "Total"
+                            "content" (tmpl.Exec "delta" (dict
+                                "start" .wasm_usage_total.start
+                                "end" .wasm_usage_total.end
+                                "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
+                                "ratePerSecond" .wasm_usage_total.rate_per_second
+                            ))
+                        )))
+                        (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn))
+                    )
+                ) }}
+            {{ end }}
 
             {{ with .post_commit_duration }}
                 {{ template "scenarioMetric" (dict
@@ -268,43 +284,38 @@ but using this with `tmpl.Exec` gives us syntax highlighting. */}}
                 ) }}
             {{ end }}
 
-            {{ template "scenarioMetric" (dict
-                "name" "Authored DB"
-                "description" "TODO"
-                "content" (print
-                    (tmpl.Inline `
-                        {{ range $name, $value := . }}
-                            {{ template "scenarioMetricContentItem" (dict
-                                "name" (print "Utilisation for " $name)
-                                "content" (tmpl.Exec "meanMax" (dict
-                                    "mean" $value.mean
-                                    "max" $value.max
-                                    "unit" "%"
-                                ))
-                            ) }}
-                        {{ end }}
-                    ` .authored_db_utilization)
-                    (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time)
-                )
-            ) }}
+            {{ if (or .authored_db_utilization .authored_db_connection_use_time )}}
+                {{ template "scenarioMetric" (dict
+                    "name" "Authored DB"
+                    "description" "TODO"
+                    "content" (print
+                        (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization))
+                        (and .authored_db_connection_use_time (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time))
+                    )
+                ) }}
+            {{ end }}
 
-            {{ template "scenarioMetric" (dict
-                "name" "Conductor DB"
-                "description" "TODO"
-                "content" (tmpl.Exec "dbConnection" (dict
-                    "utilization" .conductor_db_utilization
-                    "use_time" .conductor_db_connection_use_time
-                ))
-            ) }}
+            {{ if (or .conductor_db_utilization .conductor_db_connection_use_time) }}
+                {{ template "scenarioMetric" (dict
+                    "name" "Conductor DB"
+                    "description" "TODO"
+                    "content" (tmpl.Exec "dbConnection" (dict
+                        "utilization" .conductor_db_utilization
+                        "use_time" .conductor_db_connection_use_time
+                    ))
+                ) }}
+            {{ end }}
 
-            {{ template "scenarioMetric" (dict
-                "name" "DHT DB"
-                "description" "TODO"
-                "content" (tmpl.Exec "dbConnection" (dict
-                    "utilization" .dht_db_utilization
-                    "use_time" .dht_db_connection_use_time
-                ))
-            ) }}
+            {{ if (or .dht_db_utilization .dht_db_connection_use_time) }}
+                {{ template "scenarioMetric" (dict
+                    "name" "DHT DB"
+                    "description" "TODO"
+                    "content" (tmpl.Exec "dbConnection" (dict
+                        "utilization" .dht_db_utilization
+                        "use_time" .dht_db_connection_use_time
+                    ))
+                ) }}
+            {{ end }}
         {{ end }}
     </div>
 </section>
