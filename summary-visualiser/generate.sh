@@ -14,10 +14,14 @@ for template_dir in "helpers" "scenarios" ; do
     done
 done
 
-# Accept either a filename or stdin, and add the JS file as a helper template
-# so that it can be inlined into the page.
-gomplate \
+# This command does three things worth noting:
+# * Accept either a filename or stdin
+# * Add the JS file as a helper template so that it can be inlined into the page
+# * Set up a helper plugin to test whether a template exists for a given scenario
+#   (note: this requires `SCENARIO_TEMPLATES_DIR` to be set)
+SCENARIO_TEMPLATES_DIR="$script_dir/templates/scenarios" gomplate \
     -c .="${1:-stdin:///in.json}" \
     -t js="$script_dir/assets/windTunnel.js" \
     "${template_args[@]}" \
+    --plugin scenario_template_exists="$script_dir/scenario_template_exists.sh" \
     -f "$script_dir/templates/page.html.tmpl"
