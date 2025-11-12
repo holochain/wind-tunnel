@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euxo pipefail
-
 SCRIPT_DIR=$(dirname "$0")
 
 # Get all the helper templates and make them available to gomplate
