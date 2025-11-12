@@ -62,7 +62,7 @@ window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration,
         .attr("y", 0)
         .attr("text-anchor", "end")
         .attr("alignment-baseline", "middle")
-        .text(`${formatNumber(maxVal, 3)}${yUnit || ""}`);
+        .text(`${maxVal}${yUnit || ""}`);
 
     svg.append("text")
         .attr("class", "axis-label")
@@ -91,5 +91,5 @@ window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration,
         .attr("x", width)
         .attr("y", height + 15)
         .attr("text-anchor", "end")
-        .text(`${formatNumber(totalDuration, 3)}${durationUnit}`);
+        .text(`${totalDuration}${durationUnit}`);
 };
