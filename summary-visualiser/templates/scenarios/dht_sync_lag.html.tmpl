@@ -1,6 +1,3 @@
-{{/* We define the title in a var because it gets used in both the <title> and <h1> tags. */}}
-{{- $title := "DHT Sync Lag" -}}
-
 {{/* The description is a 'partial' that gets passed to the `scenarioSummary` template.
 We could pass it as a string literal instead, but this is nicer
 because your code editor's syntax highlighter can make it look more legible. */}}
@@ -15,17 +12,34 @@ because your code editor's syntax highlighter can make it look more legible. */}
 <p>After each behaviour loop the metric <code>ws.custom.dht_sync_recv_count</code> is incremented.</p>
 {{ end -}}
 
-{{/* Ditto the scenario markup itself -- it gets passed to the `page` template. */}}
-{{- define "body" }}
+{{/* This helper template gets used further down, in the "WASM usage" metric line.
+It's a separate template because it needs to be concatenated with other templates
+into a content block that gets passed to the scenarioMetric template call.
+We could do it by passing a string literal to `tmpl.Inline` instead,
+but using this with `tmpl.Exec` gives us syntax highlighting. */}}
+{{ define "wasm_usage_by_fn" }}
+    {{ range $key, $data := . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" $key
+            "content" (tmpl.Exec "delta" (dict
+                "start" $data.start
+                "end" $data.end
+                "measurement_duration" (math.Add $data.measurement_duration.secs (math.Div $data.measurement_duration.nanos 1000000000))
+                "ratePerSecond" $data.rate_per_second
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
 <section class="scenario scenario-dht-sync-lag">
     {{ template "scenarioSummary" (dict
-        "title" .title
+        "title" "DHT Sync Lag"
         "description" (tmpl.Exec "description")
-        "data" .scenario.run_summary
+        "data" .run_summary
     ) }}
 
     <div class="scenario-metrics">
-        {{ with .scenario.scenario_metrics }}
+        {{ with .scenario_metrics }}
             {{ with (index .create_rate.rates 0).summary_rate }}
                 {{ template "scenarioMetric" (dict
                     "name" "Create rate"
@@ -123,19 +137,7 @@ because your code editor's syntax highlighter can make it look more legible. */}
                             "ratePerSecond" .wasm_usage_total.rate_per_second
                         ))
                     ))
-                    (tmpl.Inline `
-                        {{ range $key, $data := . }}
-                            {{ template "scenarioMetricContentItem" (dict
-                                "name" $key
-                                "content" (tmpl.Exec "delta" (dict
-                                    "start" $data.start
-                                    "end" $data.end
-                                    "measurement_duration" (math.Add $data.measurement_duration.secs (math.Div $data.measurement_duration.nanos 1000000000))
-                                    "ratePerSecond" $data.rate_per_second
-                                ))
-                            ) }}
-                        {{ end }}
-                    ` .wasm_usage_by_fn)
+                    (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)
                 )
             ) }}
 
@@ -306,10 +308,3 @@ because your code editor's syntax highlighter can make it look more legible. */}
         {{ end }}
     </div>
 </section>
-{{ end -}}
-
-{{/* Here's where we put all the parts into the page template. */}}
-{{- template "page" (dict
-    "title" $title
-    "body" (tmpl.Exec "body" (dict "scenario" . "title" $title))
-) }}

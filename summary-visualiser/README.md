@@ -11,7 +11,13 @@ Either install `jq` and `gomplate`, or run `nix develop` in the repo root to get
 The command takes input JSON (either as a filename or from stdin) and outputs to stdout.
 
 ```bash
-summary-visualiser/generate.sh summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json > out.html
+summary-visualiser/generate.sh foo.json > out.html
 ```
 
-That's all you need to know!
+### With sample data
+
+This tool (or rather, its template) expects the input JSON to be an array of objects. But the sample data in `summariser/test_data/3_summary_outputs/*.json` is just bare objects. Wrap the JSON in an array and pass it via stdin like so:
+
+```bash
+echo "[$(cat summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json)]" | summary-visualiser/generate.sh  > out.html
+```

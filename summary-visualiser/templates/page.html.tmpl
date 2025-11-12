@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Wind Tunnel Report | {{ .title }}</title>
+        <title>{{ template "scenariosTitle" . }} | Wind Tunnel Report</title>
         <style>
         :root {
             --subtle: rgba(0, 0, 0, 0.5);
@@ -196,5 +196,7 @@
         </script>
     </head>
 
-    <body><main>{{ .body }}</main></body>
+    <body><main>
+        {{ template "scenariosLoop" . }}
+    </main></body>
 </html>
