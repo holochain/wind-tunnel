@@ -2,7 +2,7 @@
 macro_rules! scenario_happ_path {
     ($name:literal) => {{
         let local_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../happs")
+            .join("happs")
             .join(env!("CARGO_PKG_NAME"))
             .join(format!("{}.happ", $name));
 
