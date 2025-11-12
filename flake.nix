@@ -430,6 +430,7 @@
             runtimeInputs = [
               config.rustHelper.rust
               customHolochain
+              inputs'.holonix.packages.hc
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
