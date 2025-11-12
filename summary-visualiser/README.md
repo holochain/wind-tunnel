@@ -16,8 +16,9 @@ summary-visualiser/generate.sh foo.json > out.html
 
 ### With sample data
 
-This tool (or rather, its template) expects the input JSON to be an array of objects. But the sample data in `summariser/test_data/3_summary_outputs/*.json` is just bare objects. Wrap the JSON in an array and pass it via stdin like so:
+This tool (or rather, its template) expects the input JSON to be an array of objects. Use the sample files in `summary-visualiser/test_data/` (rather than the ones in `summariser/test_data/3_summary_outputs/`, which are just bare objects):
 
 ```bash
-echo "[$(cat summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json)]" | summary-visualiser/generate.sh  > out.html
+cd summary-visualiser
+./generate.sh test_data/dht_sync_lag.json > dht_sync_lag.html
 ```
