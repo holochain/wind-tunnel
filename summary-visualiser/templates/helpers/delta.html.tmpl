@@ -19,7 +19,7 @@
         {{/* Start and end must be non-zero and not equal to each other for a percent change to make sense */}}
         <span class="delta-change">
             <span class="delta-percent-change">change:
-                {{- template "scalar" (dict
+                {{ template "scalar" (dict
                     "value" (math.Mul (math.Div (math.Sub .end .start) .start) 100)
                     "unit" "%"
                 ) -}}

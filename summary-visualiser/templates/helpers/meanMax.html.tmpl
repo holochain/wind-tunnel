@@ -4,7 +4,7 @@
     </span>
     {{ if (ne .mean .max) }}
         <span class="mean-max-max">(max
-            {{- template "scalar" (dict "value" .max "unit" (or (index . "unit") nil)) -}})
+            {{ template "scalar" (dict "value" .max "unit" (or (index . "unit") nil)) -}})
         </span>
     {{ end }}
 </div>
