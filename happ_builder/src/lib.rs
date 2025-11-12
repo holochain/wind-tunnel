@@ -505,11 +505,13 @@ roles:
 
 /// Checks whether the required tools for this builder are available.
 pub fn required_tools_available() -> bool {
-    if which::which("hc").is_err() {
+    if let Err(err) = which::which("hc") {
+        println!("cargo:warning=Could not find 'hc' in PATH: {}", err);
         return false;
     }
 
-    if which::which("cargo").is_err() {
+    if let Err(err) = which::which("cargo") {
+        println!("cargo:warning=Could not find 'cargo' in PATH: {}", err);
         return false;
     }
 
