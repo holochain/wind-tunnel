@@ -1,7 +1,7 @@
 use crate::model::{
-    CounterStats, GaugeStats, PartitionKey, PartitionRateStats, PartitionTimingStats,
-    PartitionedRateStats, PartitionedTimingStats, StandardRateStats, StandardTimingsStats,
-    TimingTrend,
+    CounterStats, GaugeStats, PartitionGaugeStats, PartitionKey, PartitionRateStats,
+    PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
+    StandardRateStats, StandardTimingsStats, TimingTrend,
 };
 use anyhow::Context;
 use itertools::Itertools;
@@ -267,6 +267,59 @@ pub(crate) fn gauge_stats(frame: DataFrame, column: &str) -> anyhow::Result<Gaug
         min,
         std: round_to_n_dp(std, 2),
     })
+}
+
+/// Get the [`GaugeStats`] for a frame and the given column, partitioned
+/// by tags.
+pub(crate) fn partitioned_gauge_stats(
+    frame: DataFrame,
+    column: &str,
+    partition_by: &[&str],
+) -> anyhow::Result<PartitionedGaugeStats> {
+    let mut select_cols = vec![col("time"), col(column)];
+    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+
+    let unique = frame
+        .clone()
+        .lazy()
+        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
+        .unique_stable(None, UniqueKeepStrategy::First)
+        .collect()?;
+
+    let mut partitions = Vec::new();
+    for i in 0..unique.height() {
+        let mut filter_expr = col("time").is_not_null();
+        let mut key = Vec::new();
+        for c in partition_by {
+            let value = unique
+                .column(c)?
+                .get(i)?
+                .get_str()
+                .context("Get string")?
+                .to_string();
+            key.push(PartitionKey {
+                key: c.to_string(),
+                value: value.to_string(),
+            });
+            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
+        }
+        key.sort();
+
+        let filtered = frame
+            .clone()
+            .lazy()
+            .select(select_cols.clone())
+            .filter(filter_expr)
+            .collect()
+            .context("filter by partition")?;
+
+        let gauge_stats = gauge_stats(filtered, column)?;
+
+        partitions.push(PartitionGaugeStats { key, gauge_stats });
+    }
+    partitions.sort_by_key(|v| v.key.clone());
+
+    Ok(PartitionedGaugeStats { partitions })
 }
 
 /// Get the [`CounterStats`] for a frame and the given column calculating:
