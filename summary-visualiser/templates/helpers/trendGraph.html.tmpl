@@ -1,4 +1,4 @@
-{{ if .data }}
+{{ if (and .data (gt (len .data) 1)) }}
     {{ $svgId := random.AlphaNum 16 }}
     <div class="trend-graph">
         <svg id="trend-svg-{{ $svgId }}"></svg>
