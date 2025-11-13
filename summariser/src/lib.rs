@@ -152,6 +152,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "zero_arc_create_data_validated" => Some(
+            async move {
+                summarize_zero_arc_create_data_validated(client.clone(), summary.clone())
+                    .await
+                    .context("Zero arc create data validated summary")
+            }
+            .boxed(),
+        ),
         "zero_arc_create_and_read" => Some(
             async move {
                 summarize_zero_arc_create_and_read(client.clone(), summary.clone())
