@@ -46,6 +46,28 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
     {{ end }}
 {{ end }}
 
+{{/* And for countersigning agents. */}}
+{{ define "countersigning_workflow_duration" }}
+    {{ range $agent, $value := .}}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" $agent
+            "content" (print
+                (tmpl.Exec "meanStd" (dict
+                    "mean" $value.mean
+                    "std" $value.std
+                    "unit" "s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "mean" $value.mean
+                    "data" $value.trend.trend
+                    "unit" "s"
+                    "window_duration" $value.trend.window_duration
+                ))
+            )
+        )}}
+    {{ end }}
+{{ end }}
+
 <section class="scenario scenario-dht-sync-lag">
     {{ template "scenarioSummary" (dict
         "title" "DHT Sync Lag"
@@ -221,7 +243,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .countersigning_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "Countersigning workflow duration"
-                    "content" "TODO"
+                    "content" (tmpl.Exec "countersigning_workflow_duration" .)
                 ) }}
             {{ end }}
 
