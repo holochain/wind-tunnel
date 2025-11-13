@@ -9,6 +9,6 @@
 
 * `dht_sync_lag`
     * `sync_lag_rate` -- what is the unit?
-    * `cascade_duration` -- amount of time spent doing cacade queries?
+    * `cascade_duration` -- amount of time spent doing cascade queries?
     * `wasm_usage_total` and sisters -- CPU cycles? RAM?
     * `authored_db_utilization` and sisters -- what do these numbers mean?

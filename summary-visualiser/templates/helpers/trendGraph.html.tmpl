@@ -4,7 +4,7 @@
         <svg id="trend-svg-{{ $svgId }}"></svg>
     </div>
 
-    <script>createTrendGraph("trend-svg-{{ $svgId }}", [{{ conv.Join .data ", " }}], {{ .mean }}, "{{ .window_duration }}", "{{ or (index . "unit") nil }}");</script>
+    <script>createTrendGraph("trend-svg-{{ $svgId }}", [{{ conv.Join .data ", " }}], {{ .mean }}, "{{ .window_duration }}", "{{ or (index . "unit") "" }}");</script>
 {{ else }}
     <div class="no-trend-graph">No trend data available.</div>
 {{ end }}

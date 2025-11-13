@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
+if [ -z "$1" ]; then
+    echo "Error: scenario name argument required" >&2
+    exit 1
+fi
+
 if [ -f "$SCENARIO_TEMPLATES_DIR/$1.html.tmpl" ]; then
-    echo "yes $SCENARIO_TEMPLATES_DIR/$1.html.tmpl"
-else
-    echo "no $SCENARIO_TEMPLATES_DIR/$1.html.tmpl"
+    echo "1"
 fi
