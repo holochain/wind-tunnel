@@ -15,8 +15,9 @@ because your code editor's syntax highlighter can make it look more legible. */}
 {{/* This helper template gets used further down, in the "WASM usage" metric line.
 It's a separate template because it needs to be concatenated with other templates
 into a content block that gets passed to the scenarioMetric template call.
-We could do it by passing a string literal to `tmpl.Inline` instead,
-but using this with `tmpl.Exec` gives us syntax highlighting. */}}
+In most cases we just call `tmpl.Exec` with a metric,
+but in this case we need to loop over an array of function calls,
+and there's no function equivalent to `range` like there is for `template`/`tmpl.Exec`. */}}
 {{ define "wasm_usage_by_fn" }}
     {{ range $key, $data := . }}
         {{ template "scenarioMetricContentItem" (dict
