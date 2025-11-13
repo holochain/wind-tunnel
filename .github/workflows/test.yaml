@@ -251,6 +251,10 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - scenario summary HTML visualiser
+        run: |
+          nix run .#summary-visualiser-smoke-test
+
   archive_bundles:
     runs-on: ubuntu-latest
     needs: test
