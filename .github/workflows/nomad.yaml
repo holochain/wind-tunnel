@@ -7,6 +7,10 @@ on:
         description: "The URL to download the `holochain` binary from"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
+  # Trigger on changes to Nomad workflow file
+  pull_request:
+    paths:
+      - ".github/workflows/nomad.yaml"
 
 concurrency:
   group: ${{ github.workflow }}
@@ -27,34 +31,35 @@ jobs:
           - local_signals
           - remote_call_rate
           - remote_signals
-          # - single_write_many_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/301)
-          # - two_party_countersigning TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/302)
+          - single_write_many_read
           - write_query
-          # - write_read TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/303)
+          - write_read
           - write_validated
           - zome_call_single_value
         include:
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/304)
-          # - job-name: app_install_large
-          #   scenario-name: app_install
+          - job-name: app_install_large
+            scenario-name: app_install
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/304)
-          # - job-name: app_install_minimal
-          #   scenario-name: app_install
+          - job-name: app_install_minimal
+            scenario-name: app_install
 
           - scenario-name: dht_sync_lag
             required-nodes: 2
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/305)
-          # - scenario-name: validation_receipts
-          #   required-nodes: 2
+          - scenario-name: validation_receipts
+            required-nodes: 2
 
-          # TODO: Fix this scenario and re-enable it (see https://github.com/holochain/wind-tunnel/issues/306)
-          # - scenario-name: write_get_agent_activity
-          #   required-nodes: 2
+          - scenario-name: write_get_agent_activity
+            required-nodes: 2
 
           - scenario-name: write_validated_must_get_agent_activity
             required-nodes: 2
+
+          - scenario-name: two_party_countersigning
+            required-nodes: 3
+
+          - scenario-name: zero_arc_create_data
+            required-nodes: 10
     env:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
@@ -79,6 +84,7 @@ jobs:
           if-no-files-found: error
 
       - name: Wait for free nodes
+        timeout-minutes: 30 # Most scenarios run for 5 minutes (300 seconds) or less, so if there's not enough free nodes in 30 minutes then give up.
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
@@ -149,9 +155,9 @@ jobs:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ env.RUN_ID }}
           outputs: |-
-            alloc_ids: ${{ steps.run-nomad-job.outputs.alloc_ids }}
-            run_id: ${{ env.RUN_ID }}
-            job_name: ${{ steps.run-nomad-job.outputs.job_name }}
+            alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+            run_id: "${{ env.RUN_ID }}"
+            job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
 
   collect-github-matrix-outputs:
     name: Collect Run Ids
@@ -181,8 +187,8 @@ jobs:
     outputs:
       result: "${{ steps.restructure.outputs.result }}"
 
-  wait-for-job:
-    name: Wait for job
+  wait-for-jobs:
+    name: Wait for Nomad jobs to finish
     runs-on: [self-hosted, wind-tunnel]
     needs: collect-github-matrix-outputs
     strategy:
@@ -191,11 +197,6 @@ jobs:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
       - uses: actions/checkout@v5
-
-      - name: Download all alloc_ids
-        uses: actions/download-artifact@v6
-        with:
-          name: alloc_ids_${{ matrix.job_name }}
 
       - name: Wait for all allocations in job
         env:
@@ -206,23 +207,35 @@ jobs:
         run: |-
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
+  run-summary:
+    name: Generate a summary of all scenarios
+    runs-on: [self-hosted, wind-tunnel]
+    needs: wait-for-jobs
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all alloc_ids
+        uses: actions/download-artifact@v5
+        with:
+          pattern: "alloc_ids_*"
+
+      - name: Combine alloc_ids files into single
+        run: cat alloc_ids_*/alloc_ids.csv >> alloc_ids.csv
+
       - name: Prepare run summary
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          RUN_SUMMARY_PATH: ./run_summary.jsonl
-        run: |
-          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv $RUN_SUMMARY_PATH
-          cat $RUN_SUMMARY_PATH >> "$GITHUB_STEP_SUMMARY"
+        run: nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv run_summary.jsonl
 
       - name: Run summariser
+        if: always()
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
-          RUN_SUMMARY_PATH: ./run_summary.jsonl
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
 

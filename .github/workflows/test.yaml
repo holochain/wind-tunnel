@@ -92,6 +92,17 @@ jobs:
           echo
           df -h
 
+      - name: Validate Nomad jobs
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1 # Required to run nomad
+          NOMAD_VAR_scenario_url: "https://example.com" # Dummy URL for validation
+        run: |
+          nix run .#validate-nomad-jobs
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - zome_call_single_value
         run: |
           nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress
@@ -246,6 +257,14 @@ jobs:
 
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - zero_arc_create_data
+        run: |
+          nix run .#rust-smoke-test -- --package zero_arc_create_data -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo

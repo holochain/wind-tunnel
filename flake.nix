@@ -395,6 +395,19 @@
               ./nomad/scripts/generate_jobs.sh "$@"
             '';
           };
+          validate-nomad-jobs = pkgs.writeShellApplication {
+            name = "validate-nomad-jobs";
+            runtimeInputs = [
+              pkgs.gomplate
+              unfreePkgs.nomad
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              ./nomad/scripts/generate_jobs.sh --validate "$@"
+            '';
+          };
           rust-unit-tests = pkgs.writeShellApplication {
             name = "rust-unit-tests";
             runtimeInputs = [
@@ -416,6 +429,8 @@
             name = "rust-smoke-test";
             runtimeInputs = [
               config.rustHelper.rust
+              customHolochain
+              inputs'.holonix.packages.hc
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake

@@ -136,6 +136,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "zero_arc_create_data" => Some(
+            async move {
+                summarize_zero_arc_create_data(client.clone(), summary.clone())
+                    .await
+                    .context("Zero arc create data summary")
+            }
+            .boxed(),
+        ),
         _ => {
             log::warn!("No report for scenario: {name}");
             None
