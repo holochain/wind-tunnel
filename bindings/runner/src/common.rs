@@ -1,7 +1,7 @@
 use crate::context::HolochainAgentContext;
 use crate::holochain_runner::{HolochainConfig, HolochainRunner};
 use crate::runner_context::HolochainRunnerContext;
-use anyhow::{bail, Context};
+use anyhow::Context;
 use holochain_client_instrumented::prelude::{
     handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
     ClientAgentSigner,
@@ -22,7 +22,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{env, fs, io};
 use wind_tunnel_runner::prelude::{
-    AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
+    holochain_path, AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
+    WT_HOLOCHAIN_PATH_ENV,
 };
 
 /// Sets the [`HolochainAgentContext::admin_ws_url`], if not already set, getting the value from
@@ -708,7 +709,7 @@ fn get_cell_id_for_role_name(app_info: &AppInfo, role_name: &RoleName) -> anyhow
 /// This function also creates an admin interface bound to a random, available port and sets
 /// [`HolochainAgentContext::admin_ws_url`] to a 127.0.0.1 address with that port.
 ///
-/// Override the binary used to start the conductor with the `WT_HOLOCHAIN_PATH` environment
+/// Override the binary used to start the conductor with the [`WT_HOLOCHAIN_PATH_ENV`] environment
 /// variable.
 pub fn run_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
@@ -720,25 +721,14 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         return Ok(());
     }
 
-    if let Ok(holochain_path) = env::var("WT_HOLOCHAIN_PATH") {
-        if holochain_path.is_empty() {
-            bail!("'WT_HOLOCHAIN_PATH' set to empty string");
-        }
-        if holochain_path == "holochain" {
-            log::warn!("'WT_HOLOCHAIN_PATH' set to 'holochain' so looking in user's 'PATH'");
-        } else {
-            let holochain_path = PathBuf::from(holochain_path);
-            if !holochain_path.exists() {
-                bail!(
-                "Path to Holochain binary overwritten with 'WT_HOLOCHAIN_PATH={}' but that path doesn't exist",
-                holochain_path.display()
-            );
-            }
-            ctx.get_mut()
-                .holochain_config_mut()
-                .with_bin_path(holochain_path);
-        }
-    };
+    let holochain_path = holochain_path()?;
+    log::debug!(
+        "Using holochain binary at path: {}",
+        holochain_path.display()
+    );
+    ctx.get_mut()
+        .holochain_config_mut()
+        .with_bin_path(holochain_path);
 
     let admin_port = {
         // Bind to an ephemeral port to reserve it, then release before starting the conductor.
@@ -815,10 +805,10 @@ async fn start_holochain_conductor(
 
     if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
         if io_error.kind() == io::ErrorKind::NotFound {
-            if let Err(_) | Ok("holochain") = env::var("WT_HOLOCHAIN_PATH").as_deref() {
+            if let Err(_) | Ok("holochain") = env::var(WT_HOLOCHAIN_PATH_ENV).as_deref() {
                 err = err.context("'holochain' binary not found in your PATH");
             } else {
-                err = err.context("Cannot run 'holochain' binary found at the path provided with 'WT_HOLOCHAIN_PATH'");
+                err = err.context(format!("Cannot run 'holochain' binary found at the path provided with '{WT_HOLOCHAIN_PATH_ENV}'"));
             }
         }
     }
@@ -834,7 +824,7 @@ async fn start_holochain_conductor(
 /// [`wind_tunnel_runner::prelude::RunnerContext::connection_string`] is not set, then sets
 /// [`HolochainAgentContext::admin_ws_url`] and [`HolochainAgentContext::app_ws_url`]
 ///
-/// Override the binary used to start the conductor with the `WT_HOLOCHAIN_PATH` environment
+/// Override the binary used to start the conductor with the [`WT_HOLOCHAIN_PATH_ENV`] environment
 /// variable.
 pub fn start_conductor_and_configure_urls<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,

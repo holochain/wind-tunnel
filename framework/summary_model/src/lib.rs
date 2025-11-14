@@ -1,9 +1,50 @@
+use chrono::{offset::Utc, DateTime};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
+
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
+
+/// Arguments for initializing a [`RunSummary`]
+#[derive(Debug, Clone)]
+pub struct RunSummaryInitArgs {
+    /// The unique run id for the run
+    pub run_id: String,
+    /// The name of the scenario that was run
+    pub scenario_name: String,
+    /// The time the run started as a Unix timestamp in seconds
+    pub started_at: i64,
+    /// The number of peers configured
+    pub peer_count: usize,
+    /// The version of Wind Tunnel that was used for this run
+    pub wind_tunnel_version: String,
+}
+
+/// Information about the Holochain build used in the run
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HolochainBuildInfo {
+    pub cargo_pkg_version: String,
+    pub hdk_version_req: String,
+    pub hdi_version_req: String,
+    pub lair_keystore_version_req: String,
+    pub timestamp: DateTime<Utc>,
+    pub hostname: String,
+    pub host: String,
+    pub target: String,
+    pub rustc_version: String,
+    pub rustflags: String,
+    pub profile: String,
+    pub git_info: Option<HolochainBuildGitInfo>,
+}
+
+/// Information about the [`HolochainBuildInfo`] git info
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HolochainBuildGitInfo {
+    pub rev: String,
+    pub dirty: bool,
+}
 
 /// Summary of a run
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -61,35 +102,47 @@ pub struct RunSummary {
     ///
     /// This is the version of the Wind Tunnel runner that was used to run the scenario.
     pub wind_tunnel_version: String,
+    /// The Holochain build info that was used for this run
+    pub holochain_build_info: Option<HolochainBuildInfo>,
 }
 
 impl RunSummary {
-    /// Create a new run summary
-    pub fn new(
-        run_id: String,
-        scenario_name: String,
-        started_at: i64,
-        run_duration: Option<u64>,
-        peer_count: usize,
-        assigned_behaviours: HashMap<String, usize>,
-        wind_tunnel_version: String,
-    ) -> Self {
+    /// Construct a new [`RunSummary`] from the specified args
+    pub fn new(args: RunSummaryInitArgs) -> Self {
         Self {
-            run_id,
-            scenario_name,
-            started_at,
-            run_duration,
-            peer_count,
+            run_id: args.run_id,
+            scenario_name: args.scenario_name,
+            started_at: args.started_at,
+            run_duration: None,
+            peer_count: args.peer_count,
             peer_end_count: 0,
-            assigned_behaviours,
-            env: HashMap::with_capacity(0),
-            wind_tunnel_version,
+            assigned_behaviours: HashMap::new(),
+            env: HashMap::new(),
+            wind_tunnel_version: args.wind_tunnel_version,
+            holochain_build_info: None,
         }
+    }
+
+    /// Construct [`RunSummary`] with the specified run duration
+    pub fn with_run_duration(mut self, run_duration: Option<u64>) -> Self {
+        self.run_duration = run_duration;
+        self
+    }
+
+    /// Construct [`RunSummary`] with the specified assigned behaviours
+    pub fn with_assigned_behaviours(mut self, assigned_behaviours: HashMap<String, usize>) -> Self {
+        self.assigned_behaviours = assigned_behaviours;
+        self
     }
 
     /// Set the peer end count
     pub fn set_peer_end_count(&mut self, peer_end_count: usize) {
         self.peer_end_count = peer_end_count;
+    }
+
+    /// Set the holochain build info
+    pub fn set_holochain_build_info(&mut self, holochain_build_info: HolochainBuildInfo) {
+        self.holochain_build_info = Some(holochain_build_info);
     }
 
     /// Add an environment variable
@@ -175,4 +228,98 @@ pub fn load_summary_runs(path: PathBuf) -> anyhow::Result<Vec<RunSummary>> {
         runs.push(run);
     }
     Ok(runs)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_should_construct_run_summary() {
+        let run_summary = RunSummary::new(RunSummaryInitArgs {
+            run_id: "test".to_string(),
+            scenario_name: "scenario".to_string(),
+            started_at: 100,
+            peer_count: 2,
+            wind_tunnel_version: "1.0.0".to_string(),
+        });
+        assert_eq!(run_summary.run_id, "test");
+        assert_eq!(run_summary.scenario_name, "scenario");
+        assert_eq!(run_summary.started_at, 100);
+        assert_eq!(run_summary.run_duration, None);
+        assert_eq!(run_summary.peer_count, 2);
+        assert_eq!(run_summary.peer_end_count, 0);
+        assert!(run_summary.assigned_behaviours.is_empty());
+        assert!(run_summary.env.is_empty());
+        assert_eq!(run_summary.wind_tunnel_version, "1.0.0");
+        assert_eq!(run_summary.holochain_build_info, None);
+
+        let mut assigned_behaviours = HashMap::new();
+        assigned_behaviours.insert("behaviour-1".to_string(), 3);
+        assigned_behaviours.insert("behaviour-2".to_string(), 5);
+        let mut run_summary = RunSummary::new(RunSummaryInitArgs {
+            run_id: "test-run-1".to_string(),
+            scenario_name: "test-scenario".to_string(),
+            started_at: 1625078400,
+            peer_count: 2,
+            wind_tunnel_version: "1.0.0".to_string(),
+        })
+        .with_run_duration(Some(3600))
+        .with_assigned_behaviours(assigned_behaviours);
+
+        run_summary.set_peer_end_count(4);
+        let build_info = build_info();
+        run_summary.set_holochain_build_info(build_info.clone());
+
+        assert_eq!(run_summary.run_id, "test-run-1");
+        assert_eq!(run_summary.scenario_name, "test-scenario");
+        assert_eq!(run_summary.started_at, 1625078400);
+        assert_eq!(run_summary.run_duration, Some(3600));
+        assert_eq!(run_summary.peer_count, 2);
+        assert_eq!(run_summary.peer_end_count, 4);
+        assert_eq!(run_summary.wind_tunnel_version, "1.0.0");
+        assert_eq!(run_summary.holochain_build_info, Some(build_info));
+
+        assert_eq!(run_summary.assigned_behaviours.get("behaviour-1"), Some(&3));
+        assert_eq!(run_summary.assigned_behaviours.get("behaviour-2"), Some(&5));
+    }
+
+    #[test]
+    fn test_should_set_holochain_build_info() {
+        let mut run_summary = RunSummary::new(RunSummaryInitArgs {
+            run_id: "test".to_string(),
+            scenario_name: "scenario".to_string(),
+            started_at: 100,
+            peer_count: 2,
+            wind_tunnel_version: "1.0.0".to_string(),
+        });
+        assert_eq!(run_summary.holochain_build_info, None);
+
+        let build_info = build_info();
+
+        run_summary.set_holochain_build_info(build_info.clone());
+        assert_eq!(run_summary.holochain_build_info, Some(build_info));
+    }
+
+    #[inline(always)]
+    fn build_info() -> HolochainBuildInfo {
+        HolochainBuildInfo {
+            cargo_pkg_version: "0.0.100".to_string(),
+            hdk_version_req: "0.0.100".to_string(),
+            hdi_version_req: "0.0.100".to_string(),
+            lair_keystore_version_req: "0.0.100".to_string(),
+            timestamp: Utc::now(),
+            hostname: "test-host".to_string(),
+            host: "x86_64-unknown-linux-gnu".to_string(),
+            target: "x86_64-unknown-linux-gnu".to_string(),
+            rustc_version: "1.70.0".to_string(),
+            rustflags: "-C target-cpu=native".to_string(),
+            profile: "release".to_string(),
+            git_info: Some(HolochainBuildGitInfo {
+                rev: "abcdef1234567890".to_string(),
+                dirty: false,
+            }),
+        }
+    }
 }
