@@ -64,6 +64,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "remote_signals" => Some(
+            async move {
+                summarize_remote_signals(client.clone(), summary.clone())
+                    .await
+                    .context("Remote signals rate summary")
+            }
+            .boxed(),
+        ),
         "single_write_many_read" => Some(
             async move {
                 summarize_single_write_many_read(client.clone(), summary.clone())
