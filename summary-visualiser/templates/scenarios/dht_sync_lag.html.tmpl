@@ -80,7 +80,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with (index .create_rate.rates 0).summary_rate }}
                 {{ template "scenarioMetric" (dict
                     "name" "Create rate"
-                    "description" "TODO"
+                    "description" (print `The average number of created records per agent per ` .window_duration ` window.`)
                     "content" (print
                         (tmpl.Exec "scalar" (dict
                             "value" .mean
@@ -99,7 +99,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with (index .sync_lag_timing.timings 0).summary_timing }}
                 {{ template "scenarioMetric" (dict
                     "name" "Sync lag timing"
-                    "description" "TODO"
+                    "description" (print `The average time between when a record was created and when it is first seen by an agent per ` .trend.window_duration ` window.`)
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -119,7 +119,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with (index .sync_lag_rate.rates 0).summary_rate }}
                 {{ template "scenarioMetric" (dict
                     "name" "Sync lag rate"
-                    "description" "TODO"
+                    "description" (print `The average number of created records discovered per agent per ` .window_duration ` window.`)
                     "content" (print
                         (tmpl.Exec "scalar" (dict
                             "value" .mean
@@ -137,14 +137,14 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 
             {{ template "scenarioMetric" (dict
                 "name" "Error count"
-                "description" "TODO"
+                "description" "The number of errors encountered during the scenario."
                 "content" (tmpl.Exec "scalar" (dict "value" .error_count))
             ) }}
 
             {{ with .cascade_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "Cascade duration"
-                    "description" "TODO"
+                    "description" "The time taken to execute a cascade query."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -164,7 +164,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ if (or .wasm_usage_total .wasm_usage_by_fn) }}
                 {{ template "scenarioMetric" (dict
                     "name" "WASM usage"
-                    "description" "TODO"
+                    "description" "The metered usage of a wasm ribosome."
                     "content" (print
                         (and .wasm_usage_total (tmpl.Exec "scenarioMetricContentItem" (dict
                             "name" "Total"
@@ -183,7 +183,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .post_commit_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "<code>post_commit</code> duration"
-                    "description" "TODO"
+                    "description" "The time spent executing a post commit."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -203,7 +203,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .publish_dht_ops_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "Publish DHT ops workflow duration"
-                    "description" "TODO"
+                    "description" "The time spent running the publish workflow."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -223,7 +223,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .integrate_dht_ops_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "Integrate DHT ops workflow duration"
-                    "description" "TODO"
+                    "description" "The time spent running the integration workflow."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -250,7 +250,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .app_validation_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "App validation workflow duration"
-                    "description" "TODO"
+                    "description" "The time spent running the app validation workflow."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -270,7 +270,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .system_validation_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "System validation workflow duration"
-                    "description" "TODO"
+                    "description" "The time spent running the sys validation workflow."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -290,7 +290,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ with .validation_receipt_workflow_duration }}
                 {{ template "scenarioMetric" (dict
                     "name" "Validation receipt workflow duration"
-                    "description" "TODO"
+                    "description" "The time spent running the validation receipt workflow."
                     "content" (print
                         (tmpl.Exec "meanStd" (dict
                             "mean" .mean
@@ -310,7 +310,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ if (or .authored_db_utilization .authored_db_connection_use_time )}}
                 {{ template "scenarioMetric" (dict
                     "name" "Authored DB"
-                    "description" "TODO"
+                    "description" "The utilization of connections in the authored database connection pool."
                     "content" (print
                         (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization))
                         (and .authored_db_connection_use_time (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time))
@@ -321,7 +321,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ if (or .conductor_db_utilization .conductor_db_connection_use_time) }}
                 {{ template "scenarioMetric" (dict
                     "name" "Conductor DB"
-                    "description" "TODO"
+                    "description" "The utilization of connections in the conductor database connection pool."
                     "content" (tmpl.Exec "dbConnection" (dict
                         "utilization" .conductor_db_utilization
                         "use_time" .conductor_db_connection_use_time
@@ -332,7 +332,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ if (or .dht_db_utilization .dht_db_connection_use_time) }}
                 {{ template "scenarioMetric" (dict
                     "name" "DHT DB"
-                    "description" "TODO"
+                    "description" "The utilization of connections in the DHT database connection pool."
                     "content" (tmpl.Exec "dbConnection" (dict
                         "utilization" .dht_db_utilization
                         "use_time" .dht_db_connection_use_time
