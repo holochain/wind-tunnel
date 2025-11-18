@@ -130,6 +130,12 @@ async fn remote_call_rate() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn remote_signals() -> anyhow::Result<()> {
+    run_snapshot_test!("0de4481dc8dc20a39d5ec3b1eb02bd819ec5cb455fbabcf45f4be7784de4471a");
+    Ok(())
+}
+
+#[tokio::test]
 async fn single_write_many_read() -> anyhow::Result<()> {
     run_snapshot_test!("53072be05686ee83ae234f248d2791e0576cdc05065954975b89549571613a97");
     Ok(())
