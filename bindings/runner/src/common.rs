@@ -416,17 +416,17 @@ where
 /// ```rust
 /// use std::path::Path;
 /// use std::time::Duration;
-/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, install_app, try_wait_for_full_arc};
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, install_app, try_wait_until_full_arc_peer_discovered};
 ///
 /// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
 ///     if ctx.assigned_behaviour() == "zero" {
-///        try_wait_for_full_arc(ctx)?;
+///        try_wait_until_full_arc_peer_discovered(ctx)?;
 ///     }
 ///     Ok(())
 /// }
 /// ```
-pub fn try_wait_for_full_arc<SV>(
+pub fn try_wait_until_full_arc_peer_discovered<SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> HookResult
 where

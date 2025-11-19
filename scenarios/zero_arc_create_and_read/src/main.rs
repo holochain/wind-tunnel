@@ -9,7 +9,7 @@ use timed_integrity::TimedEntry;
 
 #[derive(Debug, Default)]
 struct ScenarioValues {
-    sent_actions_count: u32,
+    sent_actions: u32,
     seen_actions: HashSet<ActionHash>,
 }
 
@@ -18,36 +18,23 @@ impl UserValuesConstraint for ScenarioValues {}
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    if ctx.assigned_behaviour() == "zero" {
+    if ctx.assigned_behaviour() == "zero_read" || ctx.assigned_behaviour() == "zero_write" {
         ctx.get_mut()
             .holochain_config_mut()
             .with_target_arc_factor(0);
     }
     start_conductor_and_configure_urls(ctx)?;
     install_app(ctx, scenario_happ_path!("timed"), &"timed".to_string())?;
-
-    if ctx.assigned_behaviour() == "zero" {
+    if ctx.assigned_behaviour() == "zero_read" || ctx.assigned_behaviour() == "zero_write" {
         try_wait_until_full_arc_peer_discovered(ctx)?;
     }
     Ok(())
 }
 
-fn agent_behaviour_zero(
+/// Writes timed entries
+fn agent_behaviour_zero_write(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    // Report the number of open connections
-    let app_client = ctx.get().app_client();
-
-    let network_stats = ctx
-        .runner_context()
-        .executor()
-        .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
-
-    let metric = ReportMetric::new("zero_arc_create_data_open_connections")
-        .with_tag("arc", "zero")
-        .with_field("value", network_stats.connections.len() as u32);
-    ctx.runner_context().reporter().clone().add_custom(metric);
-
     let _: ActionHash = call_zome(
         ctx,
         "timed",
@@ -57,23 +44,36 @@ fn agent_behaviour_zero(
         },
     )?;
 
-    ctx.get_mut().scenario_values.sent_actions_count += 1;
+    ctx.get_mut().scenario_values.sent_actions += 1;
 
     // Report number of timed entries created
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("zero_arc_create_data_entry_created_count")
+    let metric = ReportMetric::new("zero_arc_create_and_read_entry_created_count")
         .with_tag("agent", agent_pub_key)
         .with_tag("arc", "zero")
-        .with_field("value", ctx.get().scenario_values.sent_actions_count);
+        .with_field("value", ctx.get().scenario_values.sent_actions);
+    ctx.runner_context().reporter().clone().add_custom(metric);
+
+    // Report the number of open connections
+    let app_client = ctx.get().app_client();
+    let network_stats = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
+
+    let metric = ReportMetric::new("zero_arc_create_and_read_open_connections")
+        .with_tag("arc", "zero")
+        .with_field("value", network_stats.connections.len() as u32);
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
 }
 
-fn agent_behaviour_full(
+/// Reads the timed entries written by other zero arc nodes.
+fn agent_behaviour_zero_read(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let found: Vec<Record> = call_zome(ctx, "timed", "get_timed_entries_local", ())?;
+    let found: Vec<Record> = call_zome(ctx, "timed", "get_timed_entries_network", ())?;
 
     let found = found
         .into_iter()
@@ -94,7 +94,7 @@ fn agent_behaviour_full(
             .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
             .unwrap();
 
-        let metric = ReportMetric::new("zero_arc_create_data_sync_lag");
+        let metric = ReportMetric::new("zero_arc_create_and_read_sync_lag");
         let lag_s = (metric
             .timestamp
             .clone()
@@ -115,7 +115,7 @@ fn agent_behaviour_full(
             .insert(new_record.action_address().clone());
     }
 
-    let metric = ReportMetric::new("zero_arc_create_data_recv_count")
+    let metric = ReportMetric::new("zero_arc_create_and_read_recv_count")
         .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
     reporter_handle.add_custom(metric);
@@ -127,7 +127,28 @@ fn agent_behaviour_full(
         .executor()
         .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
 
-    let metric = ReportMetric::new("zero_arc_create_data_open_connections")
+    let metric = ReportMetric::new("zero_arc_create_and_read_open_connections")
+        .with_tag("arc", "zero")
+        .with_field("value", network_stats.connections.len() as u32);
+    ctx.runner_context().reporter().clone().add_custom(metric);
+
+    Ok(())
+}
+
+/// Just records the number of open connections.
+/// TODO: Count the number of get requests made by zero arc nodes, once holochain
+/// exposes the associated metrics.
+fn agent_behaviour_full(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    // Report the number of open connections
+    let app_client = ctx.get().app_client();
+    let network_stats = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
+
+    let metric = ReportMetric::new("zero_arc_create_and_read_open_connections")
         .with_tag("arc", "full")
         .with_field("value", network_stats.connections.len() as u32);
     ctx.runner_context().reporter().clone().add_custom(metric);
@@ -142,7 +163,8 @@ fn main() -> WindTunnelResult<()> {
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(60)
     .use_agent_setup(agent_setup)
-    .use_named_agent_behaviour("zero", agent_behaviour_zero)
+    .use_named_agent_behaviour("zero_write", agent_behaviour_zero_write)
+    .use_named_agent_behaviour("zero_read", agent_behaviour_zero_read)
     .use_named_agent_behaviour("full", agent_behaviour_full)
     .use_agent_teardown(|ctx| {
         uninstall_app(ctx, None).ok();
