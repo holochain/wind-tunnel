@@ -444,6 +444,16 @@
               RUST_LOG=info cargo run "$@"
             '';
           };
+          summary-visualiser-smoke-test = pkgs.writeShellApplication {
+            name = "summary-visualiser-smoke-test";
+            runtimeInputs = [
+              pkgs.gomplate
+            ];
+            text = ''
+              set -euo pipefail
+              ./summary-visualiser/test.sh
+            '';
+          };
         };
 
         checks = {

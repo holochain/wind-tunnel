@@ -1,0 +1,16 @@
+{{ template "scenarioMetricContentItem" (dict
+    "name" "Use time"
+    "content" (print
+        (tmpl.Exec "meanStd" (dict
+            "mean" .mean
+            "std" .std
+            "unit" "s"
+        ))
+        (tmpl.Exec "trendGraph" (dict
+            "data" .trend.trend
+            "mean" .mean
+            "window_duration" .trend.window_duration
+            "unit" "s"
+        ))
+    )
+) }}
