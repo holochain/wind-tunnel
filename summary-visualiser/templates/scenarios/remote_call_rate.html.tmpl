@@ -1,0 +1,75 @@
+{{- define "description" }}
+<p>Test the throughput of <code>remote_call</code> operations. This scenario reads the environment variable <code>MIN_PEERS</code> and waits for at least that many agents to be available before starting the agent behaviour. It will wait up to two minutes, then proceed regardless. Note that the number of agents seen by each conductor includes itself, so having two conductors means that each will immediately see one agent after app installation.</p>
+{{ end -}}
+
+{{/* The two metrics in this scenario have identical structure and units;
+they only vary by name and description.
+Set up a helper template that does the whole thing. */}}
+
+{{/* The loop to display mean, std, and trend graph for each agent.
+This is stripped out into its own helper so we can enjoy nice syntax highlighting. */}}
+{{- define "per_agent" }}
+    {{ range .data }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (print "Agent " (index .key 0).value)
+            "content" (print
+                (tmpl.Exec "meanStd" (dict
+                    "mean" .summary_timing.mean
+                    "std" .summary_timing.std
+                    "unit" "s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "data" .summary_timing.trend.trend
+                    "mean" .summary_timing.mean
+                    "std" .summary_timing.std
+                    "window_duration" .summary_timing.trend.window_duration
+                    "unit" $.unit
+                ))
+            )
+        ) }}
+    {{ end }}
+{{ end -}}
+
+{{/* And now the body of the metric helper. */}}
+{{ define "metric" }}
+    {{ template "scenarioMetric" (dict
+        "name" .name
+        "description" .description
+        "content" (print
+            (tmpl.Exec "scenarioMetricContentItem" (dict
+                "name" "Overall"
+                "content" (tmpl.Exec "meanStd" (dict
+                    "mean" .data.mean
+                    "std" .data.mean_std_dev
+                    "unit" "s"
+                ))
+            ))
+            (tmpl.Exec "per_agent" (dict
+                "data" .data.timings
+                "unit" "s"
+            ))
+        )
+    ) }}
+{{ end }}
+
+<section class="scenario scenario-remote-call-rate">
+    {{ template "scenarioSummary" (dict
+        "title" "Remote Call Rate"
+        "description" (tmpl.Exec "description")
+        "data" .run_summary
+    ) }}
+
+    <div class="scenario-metrics">
+        {{ template "metric" (dict
+            "name" "Dispatch timing"
+            "description" "The time between sending a remote call and the remote handler being invoked."
+            "data" .scenario_metrics.dispatch_timing
+        ) }}
+
+        {{ template "metric" (dict
+            "name" "Round-trip timing"
+            "description" "The total elapsed time to get a response to the client."
+            "data" .scenario_metrics.round_trip_timing
+        ) }}
+    </div>
+</section>
