@@ -35,7 +35,16 @@
             <div class="scenario-summary-details-value">
                 <ul class="scenario-summary-kv scenario-summary-assigned-behaviours">
                     {{ range $behaviour, $count := .data.assigned_behaviours }}
-                        <li><span class="scenario-summary-kv-key"><code>{{ default "Default" $behaviour }}</code>:</span> {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}</li>
+                        <li>
+                            <span class="scenario-summary-kv-key">
+                                {{- if $behaviour -}}
+                                    <code>{{ $behaviour }}</code>
+                                {{- else -}}
+                                    Default
+                                {{- end -}}
+                            :</span>
+                            {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}
+                        </li>
                     {{ end }}
                 </ul>
             </div>
@@ -47,7 +56,10 @@
                 <div class="scenario-summary-details-value">
                     <ul class="scenario-summary-kv scenario-summary-env-vars">
                         {{ range $var, $value := .data.env }}
-                            <li><span class="scenario-summary-kv-key"><code>{{ $var }}</code>:</span> <code>{{ $value }}</code></li>
+                            {{/* hide superfluous env var */}}
+                            {{ if (ne "CONDUCTOR_CONFIG" $var) }}
+                                <li><span class="scenario-summary-kv-key"><code>{{ $var }}</code>:</span> <code>{{ $value }}</code></li>
+                            {{ end }}
                         {{ end }}
                     </ul>
                 </div>
