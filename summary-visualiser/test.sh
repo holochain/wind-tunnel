@@ -16,9 +16,9 @@ test_output() {
     expected_html_tag="<section class=\"scenario scenario-${3//_/-}\">"
     expected_element_in_output=$(echo "$html_output" | grep "$expected_html_tag")
     if [ -n "$expected_element_in_output" ]; then
-        echo "Found expected .scenario-$3 element in output for $2"
+        echo "Found expected .scenario-${3//_/-} element in output for $2"
     else
-        echo "Couldn't find expected .scenario-$3 element in output for $2"
+        echo "Couldn't find expected .scenario-${3//_/-} element in output for $2"
         exit 1
     fi
 }
