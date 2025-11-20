@@ -19,9 +19,9 @@
         <div class="scenario-summary-details-line">
             <div class="scenario-summary-details-label">Behaviours</div>
             <div class="scenario-summary-details-value">
-                <ul class="scenario-summary-assigned-behaviours">
+                <ul class="scenario-summary-kv scenario-summary-assigned-behaviours">
                     {{ range $behaviour, $count := .data.assigned_behaviours }}
-                        <li><code>{{ $behaviour }}</code>: {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}</li>
+                        <li><span class="scenario-summary-kv-key"><code>{{ $behaviour }}</code>:</span> {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}</li>
                     {{ end }}
                 </ul>
             </div>
