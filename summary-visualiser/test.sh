@@ -30,7 +30,7 @@ test_output() {
 #   $2: the unique identifier for the scenario name's JSON file in summariser/test_data/3_summary_outputs/
 test_output_sample_real() {
     test_output "[$(cat "$script_dir/../summariser/test_data/3_summary_outputs/$1-$2.json")]" "well-populated sample JSON - $1" "$1"
-    test_output "$(cat "$script_dir/test_data/$1.json")" "real JSON snapshot with some null metrics - $1" "$1"
+    test_output "$(cat "$script_dir/test_data/$1.json")" "real JSON snapshot - $1" "$1"
 }
 
 test_output_sample_real "dht_sync_lag" "3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51"
