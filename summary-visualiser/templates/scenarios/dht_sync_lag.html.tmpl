@@ -68,277 +68,275 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
     {{ end }}
 {{ end }}
 
-<section class="scenario scenario-dht-sync-lag">
-    {{ template "scenarioSummary" (dict
-        "title" "DHT Sync Lag"
-        "description" (tmpl.Exec "description")
-        "data" .run_summary
-    ) }}
+{{ template "scenarioSummary" (dict
+    "title" "DHT Sync Lag"
+    "description" (tmpl.Exec "description")
+    "data" .run_summary
+) }}
 
-    <div class="scenario-metrics">
-        {{ with .scenario_metrics }}
-            {{ with (index .create_rate.rates 0).summary_rate }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Create rate"
-                    "description" (print `The average number of created records per agent per ` .window_duration ` window.`)
-                    "content" (print
-                        (tmpl.Exec "scalar" (dict
-                            "value" .mean
-                            "unit" " ops/s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend
-                            "mean" .mean
-                            "window_duration" .window_duration
-                            "unit" " ops/s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with (index .sync_lag_timing.timings 0).summary_timing }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Sync lag timing"
-                    "description" (print `The average time between when a record was created and when it is first seen by an agent per ` .trend.window_duration ` window.`)
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with (index .sync_lag_rate.rates 0).summary_rate }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Sync lag rate"
-                    "description" (print `The average number of created records discovered per agent per ` .window_duration ` window.`)
-                    "content" (print
-                        (tmpl.Exec "scalar" (dict
-                            "value" .mean
-                            "unit" " count/s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend
-                            "mean" .mean
-                            "window_duration" .window_duration
-                            "unit" " count/s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ with (index .create_rate.rates 0).summary_rate }}
             {{ template "scenarioMetric" (dict
-                "name" "Error count"
-                "description" "The number of errors encountered during the scenario."
-                "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+                "name" "Create rate"
+                "description" (print `The average number of created records per agent per ` .window_duration ` window.`)
+                "content" (print
+                    (tmpl.Exec "scalar" (dict
+                        "value" .mean
+                        "unit" " ops/s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend
+                        "mean" .mean
+                        "window_duration" .window_duration
+                        "unit" " ops/s"
+                    ))
+                )
             ) }}
-
-            {{ with .cascade_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Cascade duration"
-                    "description" "The time taken to execute a cascade query."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ if (or .wasm_usage_total .wasm_usage_by_fn) }}
-                {{ template "scenarioMetric" (dict
-                    "name" "WASM usage"
-                    "description" "The metered usage of a wasm ribosome."
-                    "content" (print
-                        (default "" (and .wasm_usage_total (tmpl.Exec "scenarioMetricContentItem" (dict
-                            "name" "Total"
-                            "content" (tmpl.Exec "delta" (dict
-                                "start" .wasm_usage_total.start
-                                "end" .wasm_usage_total.end
-                                "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
-                                "ratePerSecond" .wasm_usage_total.rate_per_second
-                            ))
-                        ))))
-                        (default "" (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .post_commit_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "<code>post_commit</code> duration"
-                    "description" "The time spent executing a post commit."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .publish_dht_ops_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Publish DHT ops workflow duration"
-                    "description" "The time spent running the publish workflow."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .integrate_dht_ops_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Integrate DHT ops workflow duration"
-                    "description" "The time spent running the integration workflow."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .countersigning_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Countersigning workflow duration"
-                    "content" (tmpl.Exec "countersigning_workflow_duration" .)
-                ) }}
-            {{ end }}
-
-            {{ with .app_validation_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "App validation workflow duration"
-                    "description" "The time spent running the app validation workflow."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .system_validation_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "System validation workflow duration"
-                    "description" "The time spent running the sys validation workflow."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ with .validation_receipt_workflow_duration }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Validation receipt workflow duration"
-                    "description" "The time spent running the validation receipt workflow."
-                    "content" (print
-                        (tmpl.Exec "meanStd" (dict
-                            "mean" .mean
-                            "std" .std
-                            "unit" "s"
-                        ))
-                        (tmpl.Exec "trendGraph" (dict
-                            "data" .trend.trend
-                            "mean" .mean
-                            "window_duration" .trend.window_duration
-                            "unit" "s"
-                        ))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ if (or .authored_db_utilization .authored_db_connection_use_time )}}
-                {{ template "scenarioMetric" (dict
-                    "name" "Authored DB"
-                    "description" "The utilization of connections in the authored database connection pool."
-                    "content" (print
-                        (default "" (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization)))
-                        (default "" (and .authored_db_connection_use_time (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time)))
-                    )
-                ) }}
-            {{ end }}
-
-            {{ if (or .conductor_db_utilization .conductor_db_connection_use_time) }}
-                {{ template "scenarioMetric" (dict
-                    "name" "Conductor DB"
-                    "description" "The utilization of connections in the conductor database connection pool."
-                    "content" (tmpl.Exec "dbConnection" (dict
-                        "utilization" .conductor_db_utilization
-                        "use_time" .conductor_db_connection_use_time
-                    ))
-                ) }}
-            {{ end }}
-
-            {{ if (or .dht_db_utilization .dht_db_connection_use_time) }}
-                {{ template "scenarioMetric" (dict
-                    "name" "DHT DB"
-                    "description" "The utilization of connections in the DHT database connection pool."
-                    "content" (tmpl.Exec "dbConnection" (dict
-                        "utilization" .dht_db_utilization
-                        "use_time" .dht_db_connection_use_time
-                    ))
-                ) }}
-            {{ end }}
         {{ end }}
-    </div>
-</section>
+
+        {{ with (index .sync_lag_timing.timings 0).summary_timing }}
+            {{ template "scenarioMetric" (dict
+                "name" "Sync lag timing"
+                "description" (print `The average time between when a record was created and when it is first seen by an agent per ` .trend.window_duration ` window.`)
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with (index .sync_lag_rate.rates 0).summary_rate }}
+            {{ template "scenarioMetric" (dict
+                "name" "Sync lag rate"
+                "description" (print `The average number of created records discovered per agent per ` .window_duration ` window.`)
+                "content" (print
+                    (tmpl.Exec "scalar" (dict
+                        "value" .mean
+                        "unit" " count/s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend
+                        "mean" .mean
+                        "window_duration" .window_duration
+                        "unit" " count/s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ template "scenarioMetric" (dict
+            "name" "Error count"
+            "description" "The number of errors encountered during the scenario."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
+        {{ with .cascade_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "Cascade duration"
+                "description" "The time taken to execute a cascade query."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ if (or .wasm_usage_total .wasm_usage_by_fn) }}
+            {{ template "scenarioMetric" (dict
+                "name" "WASM usage"
+                "description" "The metered usage of a wasm ribosome."
+                "content" (print
+                    (default "" (and .wasm_usage_total (tmpl.Exec "scenarioMetricContentItem" (dict
+                        "name" "Total"
+                        "content" (tmpl.Exec "delta" (dict
+                            "start" .wasm_usage_total.start
+                            "end" .wasm_usage_total.end
+                            "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
+                            "ratePerSecond" .wasm_usage_total.rate_per_second
+                        ))
+                    ))))
+                    (default "" (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .post_commit_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "<code>post_commit</code> duration"
+                "description" "The time spent executing a post commit."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .publish_dht_ops_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "Publish DHT ops workflow duration"
+                "description" "The time spent running the publish workflow."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .integrate_dht_ops_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "Integrate DHT ops workflow duration"
+                "description" "The time spent running the integration workflow."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .countersigning_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "Countersigning workflow duration"
+                "content" (tmpl.Exec "countersigning_workflow_duration" .)
+            ) }}
+        {{ end }}
+
+        {{ with .app_validation_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "App validation workflow duration"
+                "description" "The time spent running the app validation workflow."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .system_validation_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "System validation workflow duration"
+                "description" "The time spent running the sys validation workflow."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .validation_receipt_workflow_duration }}
+            {{ template "scenarioMetric" (dict
+                "name" "Validation receipt workflow duration"
+                "description" "The time spent running the validation receipt workflow."
+                "content" (print
+                    (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .std
+                        "unit" "s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "data" .trend.trend
+                        "mean" .mean
+                        "window_duration" .trend.window_duration
+                        "unit" "s"
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ if (or .authored_db_utilization .authored_db_connection_use_time )}}
+            {{ template "scenarioMetric" (dict
+                "name" "Authored DB"
+                "description" "The utilization of connections in the authored database connection pool."
+                "content" (print
+                    (default "" (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization)))
+                    (default "" (and .authored_db_connection_use_time (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time)))
+                )
+            ) }}
+        {{ end }}
+
+        {{ if (or .conductor_db_utilization .conductor_db_connection_use_time) }}
+            {{ template "scenarioMetric" (dict
+                "name" "Conductor DB"
+                "description" "The utilization of connections in the conductor database connection pool."
+                "content" (tmpl.Exec "dbConnection" (dict
+                    "utilization" .conductor_db_utilization
+                    "use_time" .conductor_db_connection_use_time
+                ))
+            ) }}
+        {{ end }}
+
+        {{ if (or .dht_db_utilization .dht_db_connection_use_time) }}
+            {{ template "scenarioMetric" (dict
+                "name" "DHT DB"
+                "description" "The utilization of connections in the DHT database connection pool."
+                "content" (tmpl.Exec "dbConnection" (dict
+                    "utilization" .dht_db_utilization
+                    "use_time" .dht_db_connection_use_time
+                ))
+            ) }}
+        {{ end }}
+    {{ end }}
+</div>

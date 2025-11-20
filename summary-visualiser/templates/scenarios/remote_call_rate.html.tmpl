@@ -53,24 +53,22 @@ This is stripped out into its own helper so we can enjoy nice syntax highlightin
     ) }}
 {{ end }}
 
-<section class="scenario scenario-remote-call-rate">
-    {{ template "scenarioSummary" (dict
-        "title" "Remote Call Rate"
-        "description" (tmpl.Exec "description")
-        "data" .run_summary
+{{ template "scenarioSummary" (dict
+    "title" "Remote Call Rate"
+    "description" (tmpl.Exec "description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ template "metric" (dict
+        "name" "Dispatch timing"
+        "description" "The time between sending a remote call and the remote handler being invoked."
+        "data" .scenario_metrics.dispatch_timing
     ) }}
 
-    <div class="scenario-metrics">
-        {{ template "metric" (dict
-            "name" "Dispatch timing"
-            "description" "The time between sending a remote call and the remote handler being invoked."
-            "data" .scenario_metrics.dispatch_timing
-        ) }}
-
-        {{ template "metric" (dict
-            "name" "Round-trip timing"
-            "description" "The total elapsed time to get a response to the client."
-            "data" .scenario_metrics.round_trip_timing
-        ) }}
-    </div>
-</section>
+    {{ template "metric" (dict
+        "name" "Round-trip timing"
+        "description" "The total elapsed time to get a response to the client."
+        "data" .scenario_metrics.round_trip_timing
+    ) }}
+</div>
