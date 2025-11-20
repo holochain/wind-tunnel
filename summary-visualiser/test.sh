@@ -13,7 +13,8 @@ script_dir=$(dirname "$0")
 test_output() {
     html_output=$(echo "$1" | "$script_dir/generate.sh")
     # Test for an expected HTML element that shows it found a template for this scenario.
-    expected_element_in_output=$(echo "$html_output" | grep "<section class=\"scenario scenario-$3\">")
+    expected_html_tag="<section class=\"scenario scenario-${3//_/-}\">"
+    expected_element_in_output=$(echo "$html_output" | grep "$expected_html_tag")
     if [ -n "$expected_element_in_output" ]; then
         echo "Found expected .scenario-$3 element in output for $2"
     else
