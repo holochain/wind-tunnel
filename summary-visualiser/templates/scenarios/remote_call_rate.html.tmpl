@@ -11,7 +11,7 @@ This is stripped out into its own helper so we can enjoy nice syntax highlightin
 {{- define "per_agent" }}
     {{ range .data }}
         {{ template "scenarioMetricContentItem" (dict
-            "name" (print "Agent " (index .key 0).value)
+            "name" (tmpl.Exec "compositeKey" .key)
             "content" (print
                 (tmpl.Exec "meanStd" (dict
                     "mean" .summary_timing.mean
