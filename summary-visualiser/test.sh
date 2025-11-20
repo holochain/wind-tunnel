@@ -19,5 +19,5 @@ test_output() {
 test_output "[$(cat "$script_dir/../summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json")]" "well-populated sample JSON - dht_sync_lag"
 test_output "$(cat "$script_dir/test_data/dht_sync_lag.json")" "real JSON snapshot with some null metrics - dht_sync_lag"
 
-test_output "[$(cat "$script_dir/..summariser/test_data/3_summary_outputs/remote_call_rate-f92e98962b23bfe104373a735dd9af8eb363e347a0c528902d4a2aaa8351cd74.json")]" "well-populated sample JSON - remote_call_rate"
+test_output "[$(cat "$script_dir/../summariser/test_data/3_summary_outputs/remote_call_rate-f92e98962b23bfe104373a735dd9af8eb363e347a0c528902d4a2aaa8351cd74.json")]" "well-populated sample JSON - remote_call_rate"
 test_output "$(cat "$script_dir/test_data/remote_call_rate.json")" "real JSON snapshot with some null metrics - remote_call_rate"
