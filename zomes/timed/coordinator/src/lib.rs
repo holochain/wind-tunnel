@@ -22,7 +22,7 @@ fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
     // No way to control whether this goes to the network at this HDK version
     let links = get_links(
         LinkQuery::try_new(fixed_base(), LinkTypes::FixedToTimedEntry).unwrap(),
-        GetStrategy::default(),
+        GetStrategy::Local,
     )?;
 
     let mut records = Vec::new();
@@ -45,9 +45,8 @@ fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
 fn get_timed_entries_network() -> ExternResult<Vec<Record>> {
     // No way to control whether this goes to the network at this HDK version
     let links = get_links(
-        GetLinksInputBuilder::try_new(fixed_base(), LinkTypes::FixedToTimedEntry)
-            .unwrap()
-            .build(),
+        LinkQuery::try_new(fixed_base(), LinkTypes::FixedToTimedEntry).unwrap(),
+        GetStrategy::Network,
     )?;
 
     let mut records = Vec::new();

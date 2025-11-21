@@ -19,7 +19,6 @@ use kitsune2_api::{AgentInfoSigned, DhtArc};
 use kitsune2_core::Ed25519Verifier;
 use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
