@@ -14,6 +14,7 @@ mod write_validated;
 mod write_validated_must_get_agent_activity;
 mod zero_arc_create_and_read;
 mod zero_arc_create_data;
+mod zero_arc_create_data_validated;
 mod zome_call_single_value;
 
 pub(crate) use app_install::summarize_app_install;
@@ -32,4 +33,5 @@ pub(crate) use write_validated::summarize_write_validated;
 pub(crate) use write_validated_must_get_agent_activity::summarize_write_validated_must_get_agent_activity;
 pub(crate) use zero_arc_create_and_read::summarize_zero_arc_create_and_read;
 pub(crate) use zero_arc_create_data::summarize_zero_arc_create_data;
+pub(crate) use zero_arc_create_data_validated::summarize_zero_arc_create_data_validated;
 pub(crate) use zome_call_single_value::summarize_zome_call_single_value;

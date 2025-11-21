@@ -134,6 +134,30 @@ pub async fn query_workflow_duration_by_agent(
     }
 }
 
+/// Query `hc.conductor.workflow.duration` metric for a specific workflow,
+/// partition the results by `arc` and compute stats per partition.
+pub async fn query_workflow_duration_by_arc(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    workflow: HolochainWorkflowKind,
+) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+    match query_and_partition_duration(
+        client,
+        summary,
+        "hc.conductor.workflow.duration.s",
+        &["arc"],
+        Some(("workflow", workflow.to_string().as_str())),
+    )
+    .await
+    {
+        Ok(res) => Ok(Some(res)),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
+            None => Err(e).context("query workflow duration by arc"),
+        },
+    }
+}
+
 /// Query `hc.db.pool.utilization` metric for a specific database kind and compute its stats.
 pub async fn query_database_utilization(
     client: &influxdb::Client,
