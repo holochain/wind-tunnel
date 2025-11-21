@@ -16,16 +16,55 @@
             </div>
         {{ end }}
 
+        {{ if (index .data "peer_count") }}
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">{{ .data.peer_count }}</div>
+            </div>
+        {{ end }}
+
+        {{ if (index .data "peer_end_count") }}
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">{{ .data.peer_end_count }}</div>
+            </div>
+        {{ end }}
+
         <div class="scenario-summary-details-line">
             <div class="scenario-summary-details-label">Behaviours</div>
             <div class="scenario-summary-details-value">
-                <ul class="scenario-summary-assigned-behaviours">
+                <ul class="scenario-summary-kv scenario-summary-assigned-behaviours">
                     {{ range $behaviour, $count := .data.assigned_behaviours }}
-                        <li><code>{{ $behaviour }}</code>: {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}</li>
+                        <li>
+                            <span class="scenario-summary-kv-key">
+                                {{- if $behaviour -}}
+                                    <code>{{ $behaviour }}</code>
+                                {{- else -}}
+                                    Default
+                                {{- end -}}
+                            :</span>
+                            {{ $count }} agent{{ if (ne $count 1) }}s{{ end }}
+                        </li>
                     {{ end }}
                 </ul>
             </div>
         </div>
+
+        {{ if (index .data "env") }}
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Environment variables</div>
+                <div class="scenario-summary-details-value">
+                    <ul class="scenario-summary-kv scenario-summary-env-vars">
+                        {{ range $var, $value := .data.env }}
+                            {{/* hide superfluous env var */}}
+                            {{ if (ne "CONDUCTOR_CONFIG" $var) }}
+                                <li><span class="scenario-summary-kv-key"><code>{{ $var }}</code>:</span> <code>{{ $value }}</code></li>
+                            {{ end }}
+                        {{ end }}
+                    </ul>
+                </div>
+            </div>
+        {{ end }}
 
         <div class="scenario-summary-details-line">
             <div class="scenario-summary-details-label">Wind Tunnel version</div>
