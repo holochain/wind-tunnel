@@ -1,5 +1,5 @@
 {{- define "description" }}
-<p>Test the throughput of <code>remote_call</code> operations. This scenario reads the environment variable <code>MIN_PEERS</code> and waits for at least that many agents to be available before starting the agent behaviour. It will wait up to two minutes, then proceed regardless. Note that the number of agents seen by each conductor includes itself, so having two conductors means that each will immediately see one agent after app installation.</p>
+<p>Test the throughput of <code>remote_call</code> operations. Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
 {{ end -}}
 
 {{/* The two metrics in this scenario have identical structure and units;
