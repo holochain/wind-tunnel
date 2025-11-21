@@ -153,6 +153,27 @@
             display: block;
         }
 
+        /* Min ≤ mean/std ≤ max widget */
+        .min .scalar-value, .max .scalar-value, .divider-lt, .divider-le {
+            font-size: inherit;
+            line-height: 3;
+        }
+
+        .min-max-mean-std {
+            display: flex;
+            flex-direction: row;
+            align-items: start;
+        }
+
+        .min-max-mean-std .mean-std {
+            text-align: center;
+        }
+
+        .divider-lt, .divider-le {
+            padding: 0 0.5em;
+            color: var(--subtle);
+        }
+
         .delta-start-end {
             display: flex;
             align-items: center;
@@ -170,12 +191,12 @@
         /* Many metrics contain both a scalar and a trend graph.
         In those cases, make sure all the scalars are the same width
         so the following graph lines up. */
-        .scenario-metric-content .scalar:first-child,
-        .scenario-metric-content .mean-std:first-child,
-        .scenario-metric-content .mean-max:first-child,
-        .scenario-metric-content-item-content .scalar:first-child,
-        .scenario-metric-content-item-content .mean-std:first-child,
-        .scenario-metric-content-item-content .mean-max:first-child {
+        .scenario-metric-content > .scalar:first-child,
+        .scenario-metric-content > .mean-std:first-child,
+        .scenario-metric-content > .mean-max:first-child,
+        .scenario-metric-content-item-content > .scalar:first-child,
+        .scenario-metric-content-item-content > .mean-std:first-child,
+        .scenario-metric-content-item-content > .mean-max:first-child {
             width: 10em;
         }
 
