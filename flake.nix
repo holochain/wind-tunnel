@@ -12,11 +12,11 @@
     };
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.5";
+      url = "github:holochain/holonix?ref=main";
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.1.8";
+      url = "github:holochain/kitsune2?ref=v0.2.17";
     };
 
     crane = {
@@ -179,7 +179,7 @@
               use_influx
               import_lp_metrics
 
-              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
+              #rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
           check-scripts = pkgs.writeShellApplication {
