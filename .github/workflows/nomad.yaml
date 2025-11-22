@@ -239,6 +239,17 @@ jobs:
           nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
           cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Cache summariser
+        uses: actions/cache@v4
+        with:
+          path: |
+            target/
+            .cargo/registry
+            .cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Run summariser
         if: always()
         env:
