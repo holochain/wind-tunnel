@@ -1,7 +1,7 @@
 {{- define "description" }}
 <p>Creates an entry, wait for required validation receipts, then repeat. Records the amount of time it took to accumulate the required number of receipts for all DHT operations. This is measured to the nearest 20ms so that we don't keep the agent too busy checking for receipts.</p>
 
-<p>This scenario reads the environment variable <code>MIN_AGENTS</code> and waits for at least that many agents to be available before starting the agent behaviour. It will wait up to two minutes then proceed regardless. Note that the number of agents seen by each node includes itself. So setting `MIN_AGENTS` to 2 means that each agent will immediately see one agent after app installation.</p>
+<p>Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
 
 <p>By default, this scenario will wait for a complete set of validation receipts before committing the next record. If the <code>NO_VALIDATION_COMPLETE</code> environment variable is set, it will instead publish new records on every round, building up an ever-growing list of action hashes to check on.</p>
 {{ end -}}
