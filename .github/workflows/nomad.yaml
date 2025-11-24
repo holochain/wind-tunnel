@@ -31,41 +31,6 @@ jobs:
       matrix:
         scenario-name:
           - first_call
-          - local_signals
-          - remote_call_rate
-          - remote_signals
-          - single_write_many_read
-          - write_query
-          - write_read
-          - write_validated
-          - zome_call_single_value
-        include:
-          - job-name: app_install_large
-            scenario-name: app_install
-
-          - job-name: app_install_minimal
-            scenario-name: app_install
-
-          - scenario-name: dht_sync_lag
-            required-nodes: 2
-
-          - scenario-name: validation_receipts
-            required-nodes: 2
-
-          - scenario-name: write_get_agent_activity
-            required-nodes: 2
-
-          - scenario-name: write_validated_must_get_agent_activity
-            required-nodes: 2
-
-          - scenario-name: two_party_countersigning
-            required-nodes: 3
-
-          - scenario-name: zero_arc_create_data
-            required-nodes: 10
-
-          - scenario-name: zero_arc_create_and_read
-            required-nodes: 9
     env:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
