@@ -30,3 +30,4 @@ smoke_test_scenario() {
 
 smoke_test_scenario "dht_sync_lag"
 smoke_test_scenario "remote_call_rate"
+smoke_test_scenario "validation_receipts"
