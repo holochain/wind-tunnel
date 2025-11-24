@@ -8,7 +8,7 @@ script_dir=$(dirname "$0")
 # Summaries from a recent run of all scenarios can be found in test_data/all.json.
 # If any template has an error in it, this command will fail.
 # Note: unsupported scenarios (ones without templates) won't cause a failure;
-# instead, it'll output a `<section class="scenario-not-found scenario-not-found-<foo>` element
+# instead, it'll output a `<section class="scenario-not-found scenario-not-found-<foo>">` element
 # with some notice text about the missing template.
 html_output="$("$script_dir/generate.sh" "$script_dir/test_data/all.json")"
 
