@@ -1,0 +1,93 @@
+{{- define "description" }}
+<p>Creates an entry, wait for required validation receipts, then repeat. Records the amount of time it took to accumulate the required number of receipts for all DHT operations. This is measured to the nearest 20ms so that we don't keep the agent too busy checking for receipts.</p>
+
+<p>Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
+
+<p>By default, this scenario will wait for a complete set of validation receipts before committing the next record. If the <code>NO_VALIDATION_COMPLETE</code> environment variable is set, it will instead publish new records on every round, building up an ever-growing list of action hashes to check on.</p>
+{{ end -}}
+
+{{- define "timing_per_agent_and_op" }}
+    {{ range . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (tmpl.Exec "compositeKey" .key)
+            "content" (print
+                (tmpl.Exec "meanStd" (dict
+                    "mean" .summary_timing.mean
+                    "std" .summary_timing.std
+                    "unit" "s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "mean" .summary_timing.mean
+                    "data" .summary_timing.trend.trend
+                    "unit" "s"
+                    "window_duration" .summary_timing.trend.window_duration
+                ))
+            )
+        ) }}
+    {{ end }}
+{{ end -}}
+
+{{- define "rate_per_agent_and_op" }}
+    {{ range . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (tmpl.Exec "compositeKey" .key)
+            "content" (print
+                (tmpl.Exec "scalar" (dict
+                    "value" .summary_rate.mean
+                    "unit" "/s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "mean" .summary_rate.mean
+                    "data" .summary_rate.trend
+                    "unit" "/s"
+                    "window_duration" .summary_rate.window_duration
+                ))
+            )
+        ) }}
+    {{ end }}
+{{ end -}}
+
+{{ template "scenarioSummary" (dict
+    "title" "Validation Receipts"
+    "description" (tmpl.Exec "description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics.receipts_complete_timing }}
+        {{ template "scenarioMetric" (dict
+            "name" "Receipts complete timing"
+            "description" "The amount of time between publishing a record and receiving the required number of validation receipts."
+            "class" "large"
+            "content" (print
+                (tmpl.Exec "scenarioMetricContentItem" (dict
+                    "name" "Overall"
+                    "content" (tmpl.Exec "meanStd" (dict
+                        "mean" .mean
+                        "std" .mean_std_dev
+                        "unit" "s"
+                    ))
+                ))
+                (tmpl.Exec "timing_per_agent_and_op" .timings)
+            )
+        ) }}
+    {{ end }}
+
+    {{ with .scenario_metrics.receipts_complete_rate }}
+        {{ template "scenarioMetric" (dict
+            "name" "Receipts complete rate"
+            "description" "The number of complete validation receipt sets collected per second."
+            "class" "large"
+            "content" (print
+                (tmpl.Exec "scenarioMetricContentItem" (dict
+                    "name" "Overall"
+                    "content" (tmpl.Exec "scalar" (dict
+                        "value" .mean
+                        "unit" "/s"
+                    ))
+                ))
+                (tmpl.Exec "rate_per_agent_and_op" .rates)
+            )
+        ) }}
+    {{ end }}
+</div>
