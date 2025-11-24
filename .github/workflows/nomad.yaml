@@ -31,6 +31,9 @@ jobs:
       matrix:
         scenario-name:
           - first_call
+        include:
+          - job-name: app_install_large
+            scenario-name: app_install
     env:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
