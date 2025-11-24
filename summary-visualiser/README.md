@@ -4,21 +4,24 @@ A tool to take a summary report from a Wind Tunnel scenario run, in JSON format,
 
 ## Prerequisites
 
-Either install `jq` and `gomplate`, or run `nix develop` in the repo root to get those tools.
+Either install the `gomplate` templating tool, or run `nix develop` in the repo root to get this tool.
 
 ## Usage
 
 The command takes input JSON (either as a filename or from stdin) and outputs to stdout.
 
+You can use this tool on a recent artifact containing all scenarios by running:
+
 ```bash
-summary-visualiser/generate.sh foo.json > out.html
+summary-visualiser/generate.sh summary-visualiser/test_data/all.json > out.html
 ```
 
-### With sample data
+and opening `out.html` in your browser. It'll contain a `<section class="scenario scenario-foo">` element for every scenario in your JSON. If your JSON contains scenarios for which there are no templates yet, it'll display a warning for each of them.
 
-This tool (or rather, its template) expects the input JSON to be an array of objects. Use the sample files in `summary-visualiser/test_data/` (rather than the ones in `summariser/test_data/3_summary_outputs/`, which are just bare objects):
+### With ideal sample data
+
+There are some individual scenario sample files in `summary-visualiser/test_data/` that you can use for testing too. They're likely to have more complete sets of data than that what you'll find in `all.json`, although their metrics may not be as realistic. However, they're just bare objects, and this tool expects the input JSON to be an array of objects. You can wrap the individual objects in an array like this (make sure you have `jq` installed, or run `nix develop` to get it).
 
 ```bash
-cd summary-visualiser
-./generate.sh test_data/dht_sync_lag.json > dht_sync_lag.html
+cat summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json | jq '[.]' | summary-visualiser/generate.sh > dht_sync_lag.html
 ```
