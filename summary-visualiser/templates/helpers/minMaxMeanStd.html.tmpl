@@ -1,0 +1,22 @@
+{{- $unit := default (index . "unit") nil -}}
+<span class="min-max-mean-std">
+    {{ template "scalar" (dict
+        "class" "min"
+        "value" .min
+        "unit" $unit
+    ) }}
+    {{ $minMeanSymbol := test.Ternary "lt" "le" (lt .min .mean) }}
+    <span class="divider divider-{{ $minMeanSymbol }}">&{{ $minMeanSymbol }};</span>
+    {{ template "meanStd" (dict
+        "mean" .mean
+        "std" .std
+        "unit" $unit
+    )}}
+    {{ $meanMaxSymbol := test.Ternary "lt" "le" (lt .mean .max) }}
+    <span class="divider divider-{{ $meanMaxSymbol }}">&{{ $meanMaxSymbol }};</span>
+    {{ template "scalar" (dict
+        "class" "max"
+        "value" .max
+        "unit" $unit
+    ) }}
+</span>
