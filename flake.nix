@@ -16,7 +16,7 @@
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.2.17";
+      url = "github:holochain/kitsune2?ref=release-0.3";
     };
 
     crane = {
