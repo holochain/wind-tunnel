@@ -1,0 +1,23 @@
+[package]
+name = "timed_and_validated_integrity"
+version = "0.1.0"
+edition.workspace = true
+description = "A Holochain integrity zome for timing data visibility, with validation"
+publish = false
+
+[lib]
+name = "timed_and_validated_integrity"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdi = { workspace = true }
+holochain_serialized_bytes = { workspace = true }
+serde = { workspace = true }
+
+# TODO watiing for a fix in 0.2.7-rc.1+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+getrandom = { version = "0.2", features = ["custom"] }
+
+[lints]
+workspace = true

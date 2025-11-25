@@ -33,7 +33,7 @@ Running the scenario distributed is suggested to be done by partitioning your no
 RUST_LOG=info cargo run --package zero_arc_create_data -- --behaviour zero --duration 300
 ```
 
-Then the second group run command:
+Then the second group (at least 2 nodes) run the command:
 
 ```bash
 RUST_LOG=info cargo run --package zero_arc_create_data -- --behaviour full --duration 900
