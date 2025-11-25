@@ -143,9 +143,12 @@ jobs:
             exit 1
           fi
 
+          duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json")"
+
           echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
+          echo "duration=$duration" >> "$GITHUB_OUTPUT"
 
       - name: Save alloc_ids to file
         run: |
@@ -167,6 +170,8 @@ jobs:
             alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
             run_id: "${{ env.RUN_ID }}"
             job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
+            started_at: "${{ steps.run-nomad-job.outputs.started_at }}"
+            duration: "${{ steps.run-nomad-job.outputs.duration }}"
 
   collect-github-matrix-outputs:
     name: Collect Run Ids
@@ -187,6 +192,8 @@ jobs:
               {
                 job_name: .job_name[$key],
                 run_id: .run_id[$key],
+                started_at: .started_at[$key],
+                duration: .duration[$key],
                 alloc_ids: .alloc_ids[$key]
               }
             ]' > out.json
@@ -212,8 +219,16 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          TIMEOUT: 5400
         run: |-
+          # get started at
+          started_at=${{ matrix.started_at }}
+          duration=${{ matrix.duration }}
+          current_time=$(date +%s)
+          # set timeout to duration + 60 (seconds buffer) - (current_time - started_at)
+          remaining=$(( duration - (current_time - started_at) ))
+          export TIMEOUT=$(( $remaining + 60 ))
+          export TIMEOUT=$(( TIMEOUT < 0 ? 600 : TIMEOUT )) # minimum timeout of 10 minutes
+          echo "Timeout for ${{ matrix.job_name }}: $TIMEOUT seconds (started_at: ${started_at}; duration: ${duration})"
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
   run-summary:
