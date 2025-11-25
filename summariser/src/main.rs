@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use chrono::Utc;
 use log::debug;
 use std::fs::File;
@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
             .context("Cannot read metrics without environment variable `INFLUX_TOKEN`")?,
     );
 
-    let mut summary_outputs =
+    let summary_results =
         futures::future::join_all(latest_by_config_summaries.into_iter().filter_map(
             |(_, _, summary)| {
                 // When the test data feature is enabled, dump the run summary to a file
@@ -62,8 +62,22 @@ async fn main() -> anyhow::Result<()> {
         ))
         .await
         .into_iter()
-        .collect::<anyhow::Result<Vec<_>>>()?;
+        .collect::<Vec<_>>();
 
+    let total_summaries = summary_results.len();
+    let mut errors = vec![];
+    let mut summary_outputs = vec![];
+
+    for result in summary_results {
+        match result {
+            Ok(output) => {
+                summary_outputs.push(output);
+            }
+            Err(e) => {
+                errors.push(e);
+            }
+        }
+    }
     summary_outputs.sort_by_key(|r| r.run_summary.scenario_name.clone());
 
     #[cfg(feature = "test_data")]
@@ -71,14 +85,21 @@ async fn main() -> anyhow::Result<()> {
         holochain_summariser::test_data::insert_summary_output(output, false)?;
     }
 
-    if summary_outputs.is_empty() {
-        log::warn!("No reports were generated");
-    } else {
-        let report = File::create_new(format!(
-            "summariser-report-{}.json",
-            Utc::now().format("%Y-%m-%dT%H.%M.%S%.fZ")
-        ))?;
-        serde_json::to_writer_pretty(report, &summary_outputs)?;
+    let report = File::create_new(format!(
+        "summariser-report-{}.json",
+        Utc::now().format("%Y-%m-%dT%H.%M.%S%.fZ")
+    ))?;
+
+    serde_json::to_writer_pretty(report, &summary_outputs)?;
+
+    // If any of the summaries failed, return an error
+    if !errors.is_empty() {
+        return Err(anyhow!(format!(
+            "{} out of {} summaries failed:\n{:#?}",
+            errors.len(),
+            total_summaries,
+            errors
+        )));
     }
 
     Ok(())
