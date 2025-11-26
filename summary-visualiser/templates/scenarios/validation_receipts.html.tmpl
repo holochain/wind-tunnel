@@ -8,15 +8,15 @@
 
 {{- define "timing_per_agent_and_op" }}
     {{ range . }}
-        {{ template "scenarioMetricContentItem" (dict
-            "name" (tmpl.Exec "compositeKey" .key)
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
             "content" (print
-                (tmpl.Exec "meanStd" (dict
+                (tmpl.Exec "mean_std" (dict
                     "mean" .summary_timing.mean
                     "std" .summary_timing.std
                     "unit" "s"
                 ))
-                (tmpl.Exec "trendGraph" (dict
+                (tmpl.Exec "trend_graph" (dict
                     "mean" .summary_timing.mean
                     "data" .summary_timing.trend.trend
                     "unit" "s"
@@ -29,14 +29,14 @@
 
 {{- define "rate_per_agent_and_op" }}
     {{ range . }}
-        {{ template "scenarioMetricContentItem" (dict
-            "name" (tmpl.Exec "compositeKey" .key)
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
             "content" (print
                 (tmpl.Exec "scalar" (dict
                     "value" .summary_rate.mean
                     "unit" "/s"
                 ))
-                (tmpl.Exec "trendGraph" (dict
+                (tmpl.Exec "trend_graph" (dict
                     "mean" .summary_rate.mean
                     "data" .summary_rate.trend
                     "unit" "/s"
@@ -47,7 +47,7 @@
     {{ end }}
 {{ end -}}
 
-{{ template "scenarioSummary" (dict
+{{ template "scenario_summary" (dict
     "title" "Validation Receipts"
     "description" (tmpl.Exec "description")
     "data" .run_summary
@@ -55,14 +55,14 @@
 
 <div class="scenario-metrics">
     {{ with .scenario_metrics.receipts_complete_timing }}
-        {{ template "scenarioMetric" (dict
+        {{ template "scenario_metric" (dict
             "name" "Receipts complete timing"
             "description" "The amount of time between publishing a record and receiving the required number of validation receipts."
             "class" "large"
             "content" (print
-                (tmpl.Exec "scenarioMetricContentItem" (dict
+                (tmpl.Exec "scenario_metric_content_item" (dict
                     "name" "Overall"
-                    "content" (tmpl.Exec "meanStd" (dict
+                    "content" (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .mean_std_dev
                         "unit" "s"
@@ -74,12 +74,12 @@
     {{ end }}
 
     {{ with .scenario_metrics.receipts_complete_rate }}
-        {{ template "scenarioMetric" (dict
+        {{ template "scenario_metric" (dict
             "name" "Receipts complete rate"
             "description" "The number of complete validation receipt sets collected per second."
             "class" "large"
             "content" (print
-                (tmpl.Exec "scenarioMetricContentItem" (dict
+                (tmpl.Exec "scenario_metric_content_item" (dict
                     "name" "Overall"
                     "content" (tmpl.Exec "scalar" (dict
                         "value" .mean
