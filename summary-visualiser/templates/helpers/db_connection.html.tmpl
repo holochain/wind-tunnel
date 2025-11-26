@@ -1,7 +1,7 @@
 {{ if .utilization }}
-    {{ template "scenarioMetricContentItem" (dict
+    {{ template "scenario_metric_content_item" (dict
         "name" "Utilisation"
-        "content" (tmpl.Exec "meanMax" (dict
+        "content" (tmpl.Exec "mean_max" (dict
             "mean" .utilization.mean
             "max" .utilization.max
             "unit" "%"
@@ -9,5 +9,5 @@
     ) }}
 {{ end }}
 {{ if .use_time }}
-    {{ template "dbConnectionUseTime" .use_time }}
+    {{ template "db_connection_use_time" .use_time }}
 {{ end }}
