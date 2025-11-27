@@ -5,11 +5,11 @@
 Performance testing for Holochain, modelled as load tests. The name is a reference to aerodynamics testing and is a good
 way to refer to this project but the language does not extend to the code.
 
-### Navigating the Project
+## Navigating the Project
 
-#### The Wind Tunnel Framework
+### The Wind Tunnel Framework
 
-The `wind-tunnel` framework, which is found in `./framework`, is a collection of crates that implement the core logic for 
+The `wind-tunnel` framework, which is found in `./framework`, is a collection of crates that implement the core logic for
 running load tests and collecting results. This code is not specific to Holochain and should stay that way. It provides extension
 points for hooking in Holochain specific behaviour.
 
@@ -18,7 +18,7 @@ It is divided into the following crates:
 - `wind_tunnel_instruments_derive`: Procedural macros to generate code that helps integrate the `wind_tunnel_instruments` crate.
 - `wind_tunnel_runner`: The main logic for running load tests. This is a library that is designed to be embedded inside a test binary.
 
-#### Holochain Bindings for Wind Tunnel
+### Holochain Bindings for Wind Tunnel
 
 The `bindings`, found in `./bindings`, customise the `wind-tunnel` framework to Holochain. They are what you would be
 consuming when using `wind-tunnel` to test Holochain.
@@ -30,7 +30,7 @@ The bindings contain the following crates:
 - `holochain_wind_tunnel_runner`: This is a wrapper around the `wind_tunnel_runner` crate that provides Holochain specific code to be used with the `wind_tunnel_runner`.
   The `wind_tunnel_runner` is re-exported, so you should just use this crate as your runner when creating tests for Holochain.
 
-#### Kitsune Bindings for Wind Tunnel
+### Kitsune Bindings for Wind Tunnel
 
 [Kitsune](https://github.com/holochain/kitsune2) is a framework for writing distributed hash table based network applications. Bindings for Wind Tunnel enable developers
 to write scenarios to test Kitsune.
@@ -41,19 +41,19 @@ are sent to all participating peers. The API is minimal, as the focus lies on ob
 - `kitsune_wind_tunnel_runner`: A wrapper around the `wind_tunnel_runner` crate that provides Kitsune specific code to be used with the `wind_tunnel_runner`. It provides
 CLI options to configure scenarios.
 
-#### Scenarios
+### Scenarios
 
 The `scenarios`, found in `./scenarios`, are what describe the performance testing scenarios to be run against Holochain. Each scenario
 is a binary that uses the `holochain_wind_tunnel_runner` as a library. When it is run it will have all the capabilities that `wind-tunnel` provides.
 
 There is more information about how to create scenarios in a [separate section](#writing-scenarios-for-holochain).
 
-#### Creating hApps for use in scenarios
+### Creating hApps for use in scenarios
 
 > [!NOTE]
 > This section is optional, you can skip it if you are working outside this repository or choose your own hApp packaging strategy.
 
-When a scenario is run, it may install a hApp from any place or using any method that Holochain supports. While working in this 
+When a scenario is run, it may install a hApp from any place or using any method that Holochain supports. While working in this
 repository, there are some helpers to make this easier.
 
 The `zomes` directory contains Rust projects that are intended to be built into zomes. Please check the directory structure and
@@ -72,7 +72,7 @@ your scenario needs to do three things:
 
 Adding a hApp to your scenario using the `Cargo.toml`:
 ```toml
-[package.metadata.required-dna] # This can either be a single DNA or you can specify this multiple times as a list using [[package.metadata.required-dna]] 
+[package.metadata.required-dna] # This can either be a single DNA or you can specify this multiple times as a list using [[package.metadata.required-dna]]
 name = "return_single_value" # The name to give the DNA that gets built
 zomes = ["return_single_value"] # The name(s) of the zomes to include in the DNA, which must match the directory name in `./zomes`
 
@@ -81,19 +81,19 @@ name = "return_single_value" # The name to give the hApp that gets built
 dnas = ["return_single_value"] # The name(s) of the DNA to include in the hApp, which must match the name(s) given above.
 ```
 
-If you need to debug this step, you can run `cargo build -p <your-scenario-crate>` and check the `dnas` and `happs` directories. 
+If you need to debug this step, you can run `cargo build -p <your-scenario-crate>` and check the `dnas` and `happs` directories.
 
-### The Wind Tunnel Methodology
+## The Wind Tunnel Methodology
 
 The Wind Tunnel framework is designed as a load testing tool. This means that the framework is designed to apply user-defined
 load to a system and measure the system's response to that load. At a high-level there are two modes of operation. Either you run
 the scenario and the system on the same machine and write the scenario to apply as much load as possible. Or you run the system in
-a production-like environment and write the scenario to be distributed across many machines. The Wind Tunnel framework does not 
+a production-like environment and write the scenario to be distributed across many machines. The Wind Tunnel framework does not
 distinguish between these two modes of operation and will always behave the same way. It is up to you to write scenarios that are
 appropriate for each mode of operation.
 
 Load is applied to the system by agents. An agent is a single thread of execution that repeatedly applies the same behaviour to
-the system. This is in the form of a function which is run repeatedly by Wind Tunnel. There are either many agents running in a 
+the system. This is in the form of a function which is run repeatedly by Wind Tunnel. There are either many agents running in a
 single scenario to maximise load from a single machine, or many scenarios running in parallel that each have a single agent.
 There is nothing stopping you from distributing the scenario and also running multiple agents but these are the suggested layouts
 to design scenarios around.
@@ -102,15 +102,15 @@ In general a scenario consists of setup and teardown hooks, and an agent behavio
 global setup and teardown hooks that run once per scenario run. There are also agent setup and teardown hooks that run once
 per agent during a scenario run. There are then one or more agent behaviours. For simple tests you just define a single behaviour
 and all agents will behave the same way. For more complex tests you can define multiple behaviours and assign each agent to one
-of them. This allows more complex test scenarios to be described where different agents take different actions and may interact 
+of them. This allows more complex test scenarios to be described where different agents take different actions and may interact
 with each other. For example, you might have some agents creating data and other agents just reading the data.
 
-Wind Tunnel is not responsible for capturing information about your system. It can store the information that you collect and 
-do some basic analysis on it. Alternatively, it can push metrics to InfluxDB. But it is up to you to collect the information that you need 
-and to analyse it in detail. For example, the Wind Tunnel bindings for Holochain capture API response times on the app and admin 
+Wind Tunnel is not responsible for capturing information about your system. It can store the information that you collect and
+do some basic analysis on it. Alternatively, it can push metrics to InfluxDB. But it is up to you to collect the information that you need
+and to analyse it in detail. For example, the Wind Tunnel bindings for Holochain capture API response times on the app and admin
 interfaces and automatically reports this to Wind Tunnel but if you need to measure other things then you will need to write your own code to do that.
 
-#### Stress Testing a Single Instance of Your Test System
+### Stress Testing a Single Instance of Your Test System
 
 In this first mode of operation you want to run the scenario and the system on the same machine. You should write the scenario to
 apply as much load as possible to the system. That means keeping your agent behaviour hook as fast as possible. Preferably by
@@ -123,7 +123,7 @@ It may be useful to distribute this type of test. However, if it is written to m
 it if the target system is also distributed in some way. With Holochain, for example, this wouldn't make sense because although Holochain
 is distributed, it is not distributed in the sense of scaling performance for a single app.
 
-#### Distributed Load Testing of Your System
+### Distributed Load Testing of Your System
 
 In this second mode of operation you can still design and run the scenario on a single machine but that is just for development and
 the value comes from running it in a distributed way. The intended configuration is to have many copies of the scenario binary distributed
@@ -132,10 +132,66 @@ test system. When testing Holochain, for example, Holochain is distributed first
 and points at the local interface for Holochain.
 
 Rather than looking to stress test the system in this mode, you are looking to measure the system's response to a realistic load. This is not
-understood by Wind Tunnel but you are permitted to block the agent behaviour hook to slow down the load the Wind Tunnel runner will apply. 
-This allows you to be quite creative when designing your load pattern. For example, you could define a common agent behaviour function then 
-create multiple agent behaviour hooks within your scenario that are use the common function at different rates. This would simulate varied 
+understood by Wind Tunnel but you are permitted to block the agent behaviour hook to slow down the load the Wind Tunnel runner will apply.
+This allows you to be quite creative when designing your load pattern. For example, you could define a common agent behaviour function then
+create multiple agent behaviour hooks within your scenario that are use the common function at different rates. This would simulate varied
 behaviour by different agents.
+
+
+## Development
+
+### Quick-Start Guide
+
+The following is a quick-start guide to run a scenario in the wind-tunnel repo locally with holochain metrics enabled and then upload the recorded metrics to a locally running instance of InfluxDB.
+
+1. Enter nix shell by running in a terminal:
+```
+nix develop
+```
+
+2. Start a local instance of InfluxDB by running
+```
+influxd
+```
+which will keep this terminal occupied.
+
+3. Open a second terminal to configure InfluxDB and populate it with template variables and dashboards defined in `./influx/templates`. To do so, enter the nix shell again
+```
+nix develop
+```
+
+and then run:
+```
+configure_influx
+```
+
+4. Before running the scenario we want to set the `HOLOCHAIN_INFLUXIVE_FILE` variable in order to have holochain process record metrics and write them to a `.influx` file:
+```bash
+export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
+```
+5. Now you can run a scenario. Available scenario commands are documented in the scenario's README, for example in `scenarios/app_install/README.md`:
+
+```
+   RUST_LOG=info cargo run --package app_install -- --behaviour minimal --duration 300
+```
+
+However, since we want to record metrics and upload them to InfluxDB, we additionally add the  option `--reporter=influx-file`:
+
+```
+   RUST_LOG=info cargo run --package app_install -- --behaviour minimal --duration 300 --reporter=influx-file
+```
+which will write the metrics to a file in the folder `./telegraf/metrics`.
+
+6. Once the scenario run has completed, we can upload the metrics to InfluxDB by running the following command:
+```bash
+nix run .#local-upload-metrics
+```
+7. With the metrics uploaded to InfluxDB we can now finally also run the summariser to generate a summary report:
+```
+cargo run summariser
+```
+
+
 
 ### Writing Scenarios for Holochain
 
@@ -147,7 +203,7 @@ once the scenario is running. To begin, you need a Rust project with a single bi
 
 `cargo new --bin --edition 2021 my_scenario`
 
-You will probably need more dependencies at some point, but the minimum to get started are the `holochain_wind_tunnel_runner` and 
+You will probably need more dependencies at some point, but the minimum to get started are the `holochain_wind_tunnel_runner` and
 `holochain_types` crates.
 
 ```bash
@@ -183,7 +239,7 @@ fn main() -> WindTunnelResult<()> {
 
 This is the basic structure of a Wind Tunnel scenario. The `ScenarioDefinitionBuilder` is used to define the scenario. It includes
 a CLI which will allow you to override some of the defaults that are set in your code. Using the builder you can configure your hooks
-which are just Rust functions that take a context and return a `WindTunnelResult`. 
+which are just Rust functions that take a context and return a `WindTunnelResult`.
 
 The `run` function is then called with the builder. At that point the Wind Tunnel runner takes over and configures, then runs your scenario.
 
@@ -256,7 +312,7 @@ fn main() -> WindTunnelResult<()> {
 
 This is the basic structure of a Kitsune Wind Tunnel scenario. The `ScenarioDefinitionBuilder` is used to define the scenario. It includes
 a CLI which will allow you to override some of the defaults that are set in your code. Using the builder you can configure your hooks
-which are just Rust functions that take a context and return a `WindTunnelResult`. 
+which are just Rust functions that take a context and return a `WindTunnelResult`.
 
 The `run` function is then called with the builder. At that point the Wind Tunnel runner takes over and configures, then runs your scenario.
 
@@ -310,7 +366,7 @@ fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgent
     let metric = ReportMetric::new("my_custom_metric")
         .with_field("value", 1);
     ctx.runner_context().reporter().clone().add_custom(metric);
-    
+
     Ok(())
 }
 ```
