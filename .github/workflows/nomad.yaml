@@ -228,7 +228,7 @@ jobs:
           # set timeout to duration + $buffer (seconds buffer) - (current_time - started_at)
           remaining=$(( duration - (current_time - started_at) ))
           export TIMEOUT=$(( $remaining + $buffer ))
-          export TIMEOUT=$(( TIMEOUT < 0 ? 600 : TIMEOUT )) # minimum timeout of 10 minutes
+          export TIMEOUT=$(( TIMEOUT < 0 ? $duration + $buffer : TIMEOUT )) # if timeout is negative; set to `duration + buffer`
           echo "Timeout for ${{ matrix.job_name }}: $TIMEOUT seconds (started_at: ${started_at}; duration: ${duration})"
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
