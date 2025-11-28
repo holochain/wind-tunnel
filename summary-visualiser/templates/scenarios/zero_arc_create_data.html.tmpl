@@ -1,0 +1,146 @@
+{{- define "description" }}
+A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc nodes read the data. The scenario has two roles:
+
+<ul>
+    <li><code>zero</code>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that full-arc nodes can retrieve them.</li>
+    <li><code>full</code>: A full-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+</ul>
+{{ end -}}
+
+{{ define "sync_lag_timing_per_agent" }}
+    {{ range . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (tmpl.Exec "compositeKey" .key)
+            "content" (print
+                (tmpl.Exec "meanStd" (dict
+                    "mean" .summary_timing.mean
+                    "std" .summary_timing.std
+                    "unit" "s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "mean" .summary_timing.mean
+                    "data" .summary_timing.trend.trend
+                    "window_duration" .summary_timing.trend.window_duration
+                    "unit" "s"
+                ))
+            )
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ define "sync_lag_rate_per_agent" }}
+    {{ range . }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (tmpl.Exec "compositeKey" .key)
+            "content" (print
+                (tmpl.Exec "scalar" (dict
+                    "value" .summary_rate.mean
+                    "unit" "/s"
+                ))
+                (tmpl.Exec "trendGraph" (dict
+                    "mean" .summary_rate.mean
+                    "data" .summary_rate.trend
+                    "window_duration" .summary_rate.window_duration
+                    "unit" "/s"
+                ))
+            )
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ define "open_connections" }}
+    {{ range . }}
+        {{ $key := (index .key 0) }}
+        {{ template "scenarioMetricContentItem" (dict
+            "name" (print $key.value "-" $key.key)
+            "content" (tmpl.Exec "minMaxMeanStd" (dict
+                "min" .gauge_stats.min
+                "max" .gauge_stats.max
+                "mean" .gauge_stats.mean
+                "std" .gauge_stats.std
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ template "scenarioSummary" (dict
+    "title" "Zero-Arc Create Data"
+    "description" (tmpl.Exec "description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ with (index .create_rate.rates 0) }}
+            {{ template "scenarioMetric" (dict
+                "name" "Create rate"
+                "description" "The number of timed entries created by the zero-arc node(s) per second."
+                "content" (print
+                    (tmpl.Exec "scalar" (dict
+                        "value" .summary_rate.mean
+                        "unit" "/s"
+                    ))
+                    (tmpl.Exec "trendGraph" (dict
+                        "mean" .summary_rate.mean
+                        "data" .summary_rate.trend
+                        "unit" "/s"
+                        "window_duration" .summary_rate.window_duration
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .sync_lag_timing }}
+            {{ template "scenarioMetric" (dict
+                "class" "large"
+                "name" "Sync lag timing"
+                "description" "For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function."
+                "content" (print
+                    (tmpl.Exec "scenarioMetricContentItem" (dict
+                        "name" "Overall"
+                        "content" (tmpl.Exec "meanStd" (dict
+                            "mean" .mean
+                            "std" .mean_std_dev
+                            "unit" "s"
+                        ))
+                    ))
+                    (tmpl.Exec "sync_lag_timing_per_agent" .timings)
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .sync_lag_rate }}
+            {{ template "scenarioMetric" (dict
+                "class" "large"
+                "name" "Sync lag rate"
+                "description" "The number of entries per second received by full nodes."
+                "content" (print
+                    (tmpl.Exec "scenarioMetricContentItem" (dict
+                        "name" "Overall"
+                        "content" (tmpl.Exec "scalar" (dict
+                            "value" .mean
+                            "unit" "/s"
+                        ))
+                    ))
+                    (tmpl.Exec "sync_lag_rate_per_agent" .rates)
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .open_connections.partitions }}
+            {{ template "scenarioMetric" (dict
+                "name" "Open connections"
+                "description" "The number of currently open connections to other conductors."
+                "content" (tmpl.Exec "open_connections" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenarioMetric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated across all nodes."
+            "content" (tmpl.Exec "scalar" (dict
+                "value" .error_count
+            ))
+        ) }}
+    {{ end }}
+</div>
