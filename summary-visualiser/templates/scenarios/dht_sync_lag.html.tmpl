@@ -26,7 +26,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                 "start" $data.start
                 "end" $data.end
                 "measurement_duration" (math.Add $data.measurement_duration.secs (math.Div $data.measurement_duration.nanos 1000000000))
-                "ratePerSecond" $data.rate_per_second
+                "rate_per_second" $data.rate_per_second
             ))
         ) }}
     {{ end }}
@@ -171,7 +171,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                             "start" .wasm_usage_total.start
                             "end" .wasm_usage_total.end
                             "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
-                            "ratePerSecond" .wasm_usage_total.rate_per_second
+                            "rate_per_second" .wasm_usage_total.rate_per_second
                         ))
                     ))))
                     (default "" (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)))
