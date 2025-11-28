@@ -1,0 +1,17 @@
+{{- define "description" }}
+<p>A zero-arc/full-arc mixed scenario with two types of zero-arc nodes -- ones that create data and ones that read data -- as well as full arc nodes to "relay" the data. The scenario has three roles:<p>
+
+<ul>
+    <li><code>zero_write</code>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that <code>zero_read</code> nodes can retrieve them.</li>
+    <li><code>zero_read</code>: A zero-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+    <li><code>full</code>: A full-arc conductor that is just here to serve entries to zero arc nodes.</li>
+</ul>
+{{ end -}}
+
+{{ template "scenario_summary" (dict
+    "title" "Zero-Arc Create and Read"
+    "description" (tmpl.Exec "description")
+    "data" .run_summary
+) }}
+
+{{ template "zero_arc_shared" . }}
