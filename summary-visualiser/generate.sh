@@ -21,7 +21,7 @@ done
 #   (note: this requires `SCENARIO_TEMPLATES_DIR` to be set)
 SCENARIO_TEMPLATES_DIR="$script_dir/templates/scenarios" gomplate \
     -c .="${1:-stdin:///in.json}" \
-    -t js="$script_dir/assets/windTunnel.js" \
+    -t js="$script_dir/assets/wind_tunnel.js" \
     "${template_args[@]}" \
     --plugin scenario_template_exists="$script_dir/scenario_template_exists.sh" \
     -f "$script_dir/templates/page.html.tmpl"
