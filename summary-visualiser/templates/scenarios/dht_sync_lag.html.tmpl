@@ -1,4 +1,4 @@
-{{/* The description is a 'partial' that gets passed to the `scenarioSummary` template.
+{{/* The description is a 'partial' that gets passed to the `scenario_summary` template.
 We could pass it as a string literal instead, but this is nicer
 because your code editor's syntax highlighter can make it look more legible. */}}
 {{- define "description" }}
@@ -14,19 +14,19 @@ because your code editor's syntax highlighter can make it look more legible. */}
 
 {{/* This helper template gets used further down, in the "WASM usage" metric line.
 It's a separate template because it needs to be concatenated with other templates
-into a content block that gets passed to the scenarioMetric template call.
+into a content block that gets passed to the scenario_metric template call.
 In most cases we just call `tmpl.Exec` with a metric,
 but in this case we need to loop over an array of function calls,
 and there's no function equivalent to `range` like there is for `template`/`tmpl.Exec`. */}}
 {{ define "wasm_usage_by_fn" }}
     {{ range $key, $data := . }}
-        {{ template "scenarioMetricContentItem" (dict
+        {{ template "scenario_metric_content_item" (dict
             "name" $key
             "content" (tmpl.Exec "delta" (dict
                 "start" $data.start
                 "end" $data.end
                 "measurement_duration" (math.Add $data.measurement_duration.secs (math.Div $data.measurement_duration.nanos 1000000000))
-                "ratePerSecond" $data.rate_per_second
+                "rate_per_second" $data.rate_per_second
             ))
         ) }}
     {{ end }}
@@ -35,9 +35,9 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 {{/* Same situation here, for the authored DB utilisation. */}}
 {{ define "authored_db_utilization" }}
     {{ range $name, $value := . }}
-        {{ template "scenarioMetricContentItem" (dict
+        {{ template "scenario_metric_content_item" (dict
             "name" (print "Utilisation for " $name)
-            "content" (tmpl.Exec "meanMax" (dict
+            "content" (tmpl.Exec "mean_max" (dict
                 "mean" $value.mean
                 "max" $value.max
                 "unit" "%"
@@ -49,15 +49,15 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 {{/* And for countersigning agents. */}}
 {{ define "countersigning_workflow_duration" }}
     {{ range $agent, $value := .}}
-        {{ template "scenarioMetricContentItem" (dict
+        {{ template "scenario_metric_content_item" (dict
             "name" $agent
             "content" (print
-                (tmpl.Exec "meanStd" (dict
+                (tmpl.Exec "mean_std" (dict
                     "mean" $value.mean
                     "std" $value.std
                     "unit" "s"
                 ))
-                (tmpl.Exec "trendGraph" (dict
+                (tmpl.Exec "trend_graph" (dict
                     "mean" $value.mean
                     "data" $value.trend.trend
                     "unit" "s"
@@ -68,7 +68,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
     {{ end }}
 {{ end }}
 
-{{ template "scenarioSummary" (dict
+{{ template "scenario_summary" (dict
     "title" "DHT Sync Lag"
     "description" (tmpl.Exec "description")
     "data" .run_summary
@@ -77,7 +77,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 <div class="scenario-metrics">
     {{ with .scenario_metrics }}
         {{ with (index .create_rate.rates 0).summary_rate }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Create rate"
                 "description" (print `The average number of created records per agent per ` .window_duration ` window.`)
                 "content" (print
@@ -85,7 +85,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                         "value" .mean
                         "unit" " ops/s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend
                         "mean" .mean
                         "window_duration" .window_duration
@@ -96,16 +96,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with (index .sync_lag_timing.timings 0).summary_timing }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Sync lag timing"
                 "description" (print `The average time between when a record was created and when it is first seen by an agent per ` .trend.window_duration ` window.`)
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -116,7 +116,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with (index .sync_lag_rate.rates 0).summary_rate }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Sync lag rate"
                 "description" (print `The average number of created records discovered per agent per ` .window_duration ` window.`)
                 "content" (print
@@ -124,7 +124,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                         "value" .mean
                         "unit" " count/s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend
                         "mean" .mean
                         "window_duration" .window_duration
@@ -134,23 +134,23 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             ) }}
         {{ end }}
 
-        {{ template "scenarioMetric" (dict
+        {{ template "scenario_metric" (dict
             "name" "Error count"
             "description" "The number of errors encountered during the scenario."
             "content" (tmpl.Exec "scalar" (dict "value" .error_count))
         ) }}
 
         {{ with .cascade_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Cascade duration"
                 "description" "The time taken to execute a cascade query."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -161,17 +161,17 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ if (or .wasm_usage_total .wasm_usage_by_fn) }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "WASM usage"
                 "description" "The metered usage of a wasm ribosome."
                 "content" (print
-                    (default "" (and .wasm_usage_total (tmpl.Exec "scenarioMetricContentItem" (dict
+                    (default "" (and .wasm_usage_total (tmpl.Exec "scenario_metric_content_item" (dict
                         "name" "Total"
                         "content" (tmpl.Exec "delta" (dict
                             "start" .wasm_usage_total.start
                             "end" .wasm_usage_total.end
                             "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
-                            "ratePerSecond" .wasm_usage_total.rate_per_second
+                            "rate_per_second" .wasm_usage_total.rate_per_second
                         ))
                     ))))
                     (default "" (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)))
@@ -180,16 +180,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .post_commit_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "<code>post_commit</code> duration"
                 "description" "The time spent executing a post commit."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -200,16 +200,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .publish_dht_ops_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Publish DHT ops workflow duration"
                 "description" "The time spent running the publish workflow."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -220,16 +220,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .integrate_dht_ops_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Integrate DHT ops workflow duration"
                 "description" "The time spent running the integration workflow."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -240,23 +240,23 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .countersigning_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Countersigning workflow duration"
                 "content" (tmpl.Exec "countersigning_workflow_duration" .)
             ) }}
         {{ end }}
 
         {{ with .app_validation_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "App validation workflow duration"
                 "description" "The time spent running the app validation workflow."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -267,16 +267,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .system_validation_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "System validation workflow duration"
                 "description" "The time spent running the sys validation workflow."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -287,16 +287,16 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ with .validation_receipt_workflow_duration }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Validation receipt workflow duration"
                 "description" "The time spent running the validation receipt workflow."
                 "content" (print
-                    (tmpl.Exec "meanStd" (dict
+                    (tmpl.Exec "mean_std" (dict
                         "mean" .mean
                         "std" .std
                         "unit" "s"
                     ))
-                    (tmpl.Exec "trendGraph" (dict
+                    (tmpl.Exec "trend_graph" (dict
                         "data" .trend.trend
                         "mean" .mean
                         "window_duration" .trend.window_duration
@@ -307,21 +307,21 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ if (or .authored_db_utilization .authored_db_connection_use_time )}}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Authored DB"
                 "description" "The utilization of connections in the authored database connection pool."
                 "content" (print
                     (default "" (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization)))
-                    (default "" (and .authored_db_connection_use_time (tmpl.Exec "dbConnectionUseTime" .authored_db_connection_use_time)))
+                    (default "" (and .authored_db_connection_use_time (tmpl.Exec "db_connection_use_time" .authored_db_connection_use_time)))
                 )
             ) }}
         {{ end }}
 
         {{ if (or .conductor_db_utilization .conductor_db_connection_use_time) }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "Conductor DB"
                 "description" "The utilization of connections in the conductor database connection pool."
-                "content" (tmpl.Exec "dbConnection" (dict
+                "content" (tmpl.Exec "db_connection" (dict
                     "utilization" .conductor_db_utilization
                     "use_time" .conductor_db_connection_use_time
                 ))
@@ -329,10 +329,10 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ end }}
 
         {{ if (or .dht_db_utilization .dht_db_connection_use_time) }}
-            {{ template "scenarioMetric" (dict
+            {{ template "scenario_metric" (dict
                 "name" "DHT DB"
                 "description" "The utilization of connections in the DHT database connection pool."
-                "content" (tmpl.Exec "dbConnection" (dict
+                "content" (tmpl.Exec "db_connection" (dict
                     "utilization" .dht_db_utilization
                     "use_time" .dht_db_connection_use_time
                 ))

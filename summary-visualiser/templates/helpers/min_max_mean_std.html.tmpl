@@ -5,15 +5,15 @@
         "value" .min
         "unit" $unit
     ) }}
-    {{ $minMeanSymbol := test.Ternary "lt" "le" (lt .min .mean) }}
-    <span class="divider divider-{{ $minMeanSymbol }}">&{{ $minMeanSymbol }};</span>
-    {{ template "meanStd" (dict
+    {{ $min_mean_symbol := test.Ternary "lt" "le" (lt .min .mean) }}
+    <span class="divider divider-{{ $min_mean_symbol }}">&{{ $min_mean_symbol }};</span>
+    {{ template "mean_std" (dict
         "mean" .mean
         "std" .std
         "unit" $unit
     )}}
-    {{ $meanMaxSymbol := test.Ternary "lt" "le" (lt .mean .max) }}
-    <span class="divider divider-{{ $meanMaxSymbol }}">&{{ $meanMaxSymbol }};</span>
+    {{ $mean_max_symbol := test.Ternary "lt" "le" (lt .mean .max) }}
+    <span class="divider divider-{{ $mean_max_symbol }}">&{{ $mean_max_symbol }};</span>
     {{ template "scalar" (dict
         "class" "max"
         "value" .max
