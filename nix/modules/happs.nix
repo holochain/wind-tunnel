@@ -32,7 +32,7 @@ in
         #
 
         mkDnaManifest = { name, zomes }: {
-          manifest_version = "1";
+          manifest_version = "0";
           inherit name;
 
           coordinator = {
@@ -96,7 +96,7 @@ in
             [ ];
 
         mkHappManifest = { name, dnas }: {
-          manifest_version = "1";
+          manifest_version = "0";
           inherit name;
           description = "A Wind Tunnel sample hApp";
 
