@@ -1,13 +1,13 @@
-window.create_trend_graph = function (svg_id, trend_data, mean_value, window_duration, y_unit) {
+window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
     // Note: if you change the left margin value,
     // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
     // gets updated accordingly.
     const margin = { top: 10, right: 20, bottom: 20, left: 60 };
-    const point_width = 10; // Width per data point
-    const width = (trend_data.length * point_width);
+    const pointWidth = 10; // Width per data point
+    const width = (trendData.length * pointWidth);
     const height = 120;
 
-    const svg = d3.select(`#${svg_id}`)
+    const svg = d3.select(`#${svgId}`)
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         // The guts of the graph go into this `<g>` wrapper,
@@ -17,16 +17,16 @@ window.create_trend_graph = function (svg_id, trend_data, mean_value, window_dur
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const max_val = d3.max(trend_data);
+    const maxVal = d3.max(trendData);
 
     // Map time window values to the x range of the graph.
     const x = d3.scaleLinear()
-        .domain([0, trend_data.length - 1])
+        .domain([0, trendData.length - 1])
         .range([0, width]);
 
     // Map data point values to the y range of the graph.
     const y = d3.scaleLinear()
-        .domain([0, max_val])
+        .domain([0, maxVal])
         .range([height, 0]);
 
     // The trend line.
@@ -34,7 +34,7 @@ window.create_trend_graph = function (svg_id, trend_data, mean_value, window_dur
         .x((d, i) => x(i))
         .y(d => y(d));
     svg.append("path")
-        .datum(trend_data)
+        .datum(trendData)
         .attr("class", "trend-line")
         .attr("d", line);
 
@@ -44,18 +44,18 @@ window.create_trend_graph = function (svg_id, trend_data, mean_value, window_dur
         .y0(height)
         .y1(d => y(d));
     svg.append("path")
-        .datum(trend_data)
+        .datum(trendData)
         .attr("class", "trend-area")
         .attr("d", area);
 
     // Draw the mean line if provided.
-    if (mean_value !== null) {
+    if (meanValue !== null) {
         svg.append("line")
             .attr("class", "mean-line")
             .attr("x1", 0)
             .attr("x2", width)
-            .attr("y1", y(mean_value))
-            .attr("y2", y(mean_value));
+            .attr("y1", y(meanValue))
+            .attr("y2", y(meanValue));
     }
 
     // Y-axis labels -- always zero on the bottom and the max data point value on the top.
@@ -65,7 +65,7 @@ window.create_trend_graph = function (svg_id, trend_data, mean_value, window_dur
         .attr("y", 0)
         .attr("text-anchor", "end")
         .attr("alignment-baseline", "middle")
-        .text(`${max_val}${y_unit || ""}`);
+        .text(`${maxVal}${yUnit || ""}`);
 
     svg.append("text")
         .attr("class", "axis-label")
@@ -73,28 +73,28 @@ window.create_trend_graph = function (svg_id, trend_data, mean_value, window_dur
         .attr("y", height)
         .attr("text-anchor", "end")
         .attr("alignment-baseline", "middle")
-        .text(`0${y_unit || ""}`);
+        .text(`0${yUnit || ""}`);
 
     // X-axis labels -- 0 seconds at the start,
     // and the number of data points × the time window duration at the end.
 
-    // Extract numeric and non-numeric parts of window_duration.
-    const match = window_duration.match(/^(\d+)(.*)$/);
-    const duration_value = parseInt(match[1]);
-    const duration_unit = match[2];
-    const total_duration = duration_value * trend_data.length;
+    // Extract numeric and non-numeric parts of windowDuration.
+    const match = windowDuration.match(/^(\d+)(.*)$/);
+    const durationValue = parseInt(match[1]);
+    const durationUnit = match[2];
+    const totalDuration = durationValue * trendData.length;
 
     svg.append("text")
         .attr("class", "axis-label")
         .attr("x", 0)
         .attr("y", height + 15)
         .attr("text-anchor", "middle")
-        .text(`0${duration_unit}`);
+        .text(`0${durationUnit}`);
 
     svg.append("text")
         .attr("class", "axis-label")
         .attr("x", width)
         .attr("y", height + 15)
         .attr("text-anchor", "middle")
-        .text(`${total_duration}${duration_unit}`);
+        .text(`${totalDuration}${durationUnit}`);
 };
