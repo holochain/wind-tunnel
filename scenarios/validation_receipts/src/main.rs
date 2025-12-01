@@ -59,7 +59,7 @@ fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     // check if pending action is empty, if so create a new entry
-    if ctx.get().scenario_values.pending_actions.is_empty() {
+    let action_hash = if ctx.get().scenario_values.pending_actions.is_empty() {
         let action_hash: ActionHash = call_zome(
             ctx,
             "crud",
@@ -70,24 +70,35 @@ fn agent_behaviour(
         ctx.get_mut()
             .scenario_values
             .pending_actions
-            .insert(action_hash, HashMap::new());
-    }
+            .insert(action_hash.clone(), HashMap::new());
 
-    // get the first pending action
-    let action_hash = ctx
-        .get()
-        .scenario_values
-        .pending_actions
-        .keys()
-        .next()
-        .cloned()
-        .expect("Cannot be empty here");
+        action_hash
+    } else {
+        // get the first pending action
+        ctx.get()
+            .scenario_values
+            .pending_actions
+            .keys()
+            .next()
+            .cloned()
+            .expect("Cannot be empty here")
+    };
 
     // collect validation receipts until complete
     let start = Instant::now();
     let wait_for_all = std::env::var_os("NO_VALIDATION_COMPLETE").is_none();
 
-    wait_for_receipts_for_action(ctx, &action_hash, start, wait_for_all)
+    wait_for_receipts_for_action(ctx, &action_hash, start, wait_for_all)?;
+
+    // remove the action from pending if complete
+    if ctx.get().scenario_values.is_action_complete(&action_hash) {
+        ctx.get_mut()
+            .scenario_values
+            .pending_actions
+            .remove(&action_hash);
+    }
+
+    Ok(())
 }
 
 /// Wait for validation receipts for a specific action.
