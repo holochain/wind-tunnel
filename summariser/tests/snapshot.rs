@@ -118,6 +118,12 @@ async fn first_call() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn full_arc_create_validated_zero_arc_read() -> anyhow::Result<()> {
+    run_snapshot_test!("a119f2ce61e8b256db290c0cbaec04f0c33e739a84a427aecfcef00043e5ec83");
+    Ok(())
+}
+
+#[tokio::test]
 async fn local_signals() -> anyhow::Result<()> {
     run_snapshot_test!("1fd6a6042bf4d93742d9fe912adac0c896d133f8cccb90758db60fefd09a7060");
     Ok(())

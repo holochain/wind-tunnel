@@ -286,6 +286,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - full_arc_create_validated_zero_arc_read
+        run: |
+          nix run .#rust-smoke-test -- --package full_arc_create_validated_zero_arc_read -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test
