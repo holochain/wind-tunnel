@@ -20,12 +20,15 @@ pub struct ScenarioValues {
 
 impl ScenarioValues {
     /// Get a mutable reference to the receipts_complete for the given action and op type.
-    fn mut_op_complete(&mut self, action_hash: &ActionHash, op_type: String) -> &mut bool {
-        self.pending_actions
-            .get_mut(action_hash)
-            .unwrap()
-            .entry(op_type)
-            .or_default()
+    ///
+    /// If it returns [`None`] the action hash has completed or does not exist.
+    fn mut_op_complete(&mut self, action_hash: &ActionHash, op_type: String) -> Option<&mut bool> {
+        Some(
+            self.pending_actions
+                .get_mut(action_hash)?
+                .entry(op_type)
+                .or_default(),
+        )
     }
 
     /// Returns whether all the actions for the given action hash are complete.
@@ -39,7 +42,7 @@ impl ScenarioValues {
                     i.iter().all(|(_, v)| *v)
                 }
             })
-            .unwrap_or_default()
+            .unwrap_or(true) // if not found, consider it complete
     }
 }
 
@@ -59,7 +62,7 @@ fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     // check if pending action is empty, if so create a new entry
-    let action_hash = if ctx.get().scenario_values.pending_actions.is_empty() {
+    let action_hash = {
         let action_hash: ActionHash = call_zome(
             ctx,
             "crud",
@@ -73,15 +76,6 @@ fn agent_behaviour(
             .insert(action_hash.clone(), HashMap::new());
 
         action_hash
-    } else {
-        // get the first pending action
-        ctx.get()
-            .scenario_values
-            .pending_actions
-            .keys()
-            .next()
-            .cloned()
-            .expect("Cannot be empty here")
     };
 
     // collect validation receipts until complete
@@ -108,6 +102,8 @@ fn wait_for_receipts_for_action(
     start: Instant,
     wait_for_all: bool,
 ) -> WindTunnelResult<()> {
+    let reporter = ctx.runner_context().reporter();
+    let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
     // for each action, get the validation receipts
     while !ctx.get().scenario_values.is_action_complete(action_hash) {
         let response: Vec<ValidationReceiptSet> = call_zome(
@@ -116,14 +112,16 @@ fn wait_for_receipts_for_action(
             "get_sample_entry_validation_receipts",
             action_hash.clone(),
         )?;
-        let reporter = ctx.runner_context().reporter();
-        let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
 
         for set in response.iter() {
-            let cur = ctx
+            let Some(cur) = ctx
                 .get_mut()
                 .scenario_values
-                .mut_op_complete(action_hash, set.op_type.clone());
+                .mut_op_complete(action_hash, set.op_type.clone())
+            else {
+                // already complete
+                return Ok(());
+            };
 
             if set.receipts_complete && !*cur {
                 // if the action wasn't already complete report the time
