@@ -1,67 +1,6 @@
 {{/* `zero_arc_create_data` and `zero_arc_create_and_read` have identical sets of scenario metrics.
 This helper serves them both. */}}
 
-{{ define "zero_arc_shared_create_rate_per_agent" }}
-    {{ range . }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (tmpl.Exec "composite_key" .key)
-            "content" (print
-                (tmpl.Exec "scalar" (dict
-                    "value" .summary_rate.mean
-                    "unit" "/s"
-                ))
-                (tmpl.Exec "trend_graph" (dict
-                    "mean" .summary_rate.mean
-                    "data" .summary_rate.trend
-                    "unit" "/s"
-                    "window_duration" .summary_rate.window_duration
-                ))
-            )
-        ) }}
-    {{ end }}
-{{ end }}
-
-{{ define "zero_arc_shared_sync_lag_timing_per_agent" }}
-    {{ range . }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (tmpl.Exec "composite_key" .key)
-            "content" (print
-                (tmpl.Exec "mean_std" (dict
-                    "mean" .summary_timing.mean
-                    "std" .summary_timing.std
-                    "unit" "s"
-                ))
-                (tmpl.Exec "trend_graph" (dict
-                    "mean" .summary_timing.mean
-                    "data" .summary_timing.trend.trend
-                    "window_duration" .summary_timing.trend.window_duration
-                    "unit" "s"
-                ))
-            )
-        ) }}
-    {{ end }}
-{{ end }}
-
-{{ define "zero_arc_shared_sync_lag_rate_per_agent" }}
-    {{ range . }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (tmpl.Exec "composite_key" .key)
-            "content" (print
-                (tmpl.Exec "scalar" (dict
-                    "value" .summary_rate.mean
-                    "unit" "/s"
-                ))
-                (tmpl.Exec "trend_graph" (dict
-                    "mean" .summary_rate.mean
-                    "data" .summary_rate.trend
-                    "window_duration" .summary_rate.window_duration
-                    "unit" "/s"
-                ))
-            )
-        ) }}
-    {{ end }}
-{{ end }}
-
 {{ define "zero_arc_shared_open_connections" }}
     {{ range . }}
         {{ $key := (index .key 0) }}
@@ -79,59 +18,25 @@ This helper serves them both. */}}
 
 <div class="scenario-metrics">
     {{ with .scenario_metrics }}
-        {{ with .create_rate }}
-            {{ template "scenario_metric" (dict
-                "name" "Create rate"
-                "description" "The number of timed entries created by the zero-arc node(s) per second."
-                "content" (print
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "Overall"
-                        "content" (tmpl.Exec "scalar" (dict
-                            "value" .mean
-                            "unit" "/s"
-                        ))
-                    ))
-                    (tmpl.Exec "zero_arc_shared_create_rate_per_agent" .rates)
-                )
-            ) }}
-        {{ end }}
+        {{ template "scenario_metric" (dict
+            "name" "Create rate"
+            "description" "The number of timed entries created by the zero-arc node(s) per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .create_rate)
+        ) }}
 
-        {{ with .sync_lag_timing }}
-            {{ template "scenario_metric" (dict
-                "class" "large"
-                "name" "Sync lag timing"
-                "description" "For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function."
-                "content" (print
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "Overall"
-                        "content" (tmpl.Exec "mean_std" (dict
-                            "mean" .mean
-                            "std" .mean_std_dev
-                            "unit" "s"
-                        ))
-                    ))
-                    (tmpl.Exec "zero_arc_shared_sync_lag_timing_per_agent" .timings)
-                )
-            ) }}
-        {{ end }}
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Sync lag timing"
+            "description" "For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .sync_lag_timing)
+        ) }}
 
-        {{ with .sync_lag_rate }}
-            {{ template "scenario_metric" (dict
-                "class" "large"
-                "name" "Sync lag rate"
-                "description" "The number of entries per second received by full nodes."
-                "content" (print
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "Overall"
-                        "content" (tmpl.Exec "scalar" (dict
-                            "value" .mean
-                            "unit" "/s"
-                        ))
-                    ))
-                    (tmpl.Exec "zero_arc_shared_sync_lag_rate_per_agent" .rates)
-                )
-            ) }}
-        {{ end }}
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Sync lag rate"
+            "description" "The number of entries per second received by full nodes."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .sync_lag_rate)
+        ) }}
 
         {{ with .open_connections.partitions }}
             {{ template "scenario_metric" (dict

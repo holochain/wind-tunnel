@@ -1,16 +1,4 @@
 {{ template "scenario_metric_content_item" (dict
     "name" "Use time"
-    "content" (print
-        (tmpl.Exec "mean_std" (dict
-            "mean" .mean
-            "std" .std
-            "unit" "s"
-        ))
-        (tmpl.Exec "trend_graph" (dict
-            "data" .trend.trend
-            "mean" .mean
-            "window_duration" .trend.window_duration
-            "unit" "s"
-        ))
-    )
+    "content" (tmpl.Exec "timing" .)
 ) }}

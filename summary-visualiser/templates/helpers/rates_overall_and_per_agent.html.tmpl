@@ -1,0 +1,10 @@
+{{ define "rates_overall_template" }}
+    {{ template "scalar" (dict "value" . "unit" "/s") }}
+{{ end }}
+{{ template "overall_and_per_agent" (dict
+    "overall_data" .mean
+    "overall_template" "rates_overall_template"
+    "per_agent_data" .rates
+    "per_agent_data_key" "summary_rate"
+    "per_agent_template" "rate"
+) }}
