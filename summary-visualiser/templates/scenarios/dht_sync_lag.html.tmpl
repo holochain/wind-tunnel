@@ -1,7 +1,7 @@
 {{/* The description is a 'partial' that gets passed to the `scenario_summary` template.
 We could pass it as a string literal instead, but this is nicer
 because your code editor's syntax highlighter can make it look more legible. */}}
-{{- define "description" }}
+{{- define "dht_sync_lag_description" }}
 <p>Measure lag time between an agent publishing data and other peers being able to see it. This scenario has two roles:</p>
 
 <ul>
@@ -18,7 +18,7 @@ into a content block that gets passed to the scenario_metric template call.
 In most cases we just call `tmpl.Exec` with a metric,
 but in this case we need to loop over an array of function calls,
 and there's no function equivalent to `range` like there is for `template`/`tmpl.Exec`. */}}
-{{ define "wasm_usage_by_fn" }}
+{{ define "dht_sync_lag_wasm_usage_by_fn" }}
     {{ range $key, $data := . }}
         {{ template "scenario_metric_content_item" (dict
             "name" $key
@@ -33,7 +33,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 {{ end }}
 
 {{/* Same situation here, for the authored DB utilisation. */}}
-{{ define "authored_db_utilization" }}
+{{ define "dht_sync_lag_authored_db_utilization" }}
     {{ range $name, $value := . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (print "Utilisation for " $name)
@@ -47,7 +47,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 {{ end }}
 
 {{/* And for countersigning agents. */}}
-{{ define "countersigning_workflow_duration" }}
+{{ define "dht_sync_lag_countersigning_workflow_duration" }}
     {{ range $agent, $value := .}}
         {{ template "scenario_metric_content_item" (dict
             "name" $agent
@@ -70,7 +70,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
 
 {{ template "scenario_summary" (dict
     "title" "DHT Sync Lag"
-    "description" (tmpl.Exec "description")
+    "description" (tmpl.Exec "dht_sync_lag_description")
     "data" .run_summary
 ) }}
 
@@ -174,7 +174,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                             "rate_per_second" .wasm_usage_total.rate_per_second
                         ))
                     ))))
-                    (default "" (and .wasm_usage_by_fn (tmpl.Exec "wasm_usage_by_fn" .wasm_usage_by_fn)))
+                    (default "" (and .wasm_usage_by_fn (tmpl.Exec "dht_sync_lag_wasm_usage_by_fn" .wasm_usage_by_fn)))
                 )
             ) }}
         {{ end }}
@@ -242,7 +242,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         {{ with .countersigning_workflow_duration }}
             {{ template "scenario_metric" (dict
                 "name" "Countersigning workflow duration"
-                "content" (tmpl.Exec "countersigning_workflow_duration" .)
+                "content" (tmpl.Exec "dht_sync_lag_countersigning_workflow_duration" .)
             ) }}
         {{ end }}
 
@@ -311,7 +311,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                 "name" "Authored DB"
                 "description" "The utilization of connections in the authored database connection pool."
                 "content" (print
-                    (default "" (and .authored_db_utilization (tmpl.Exec "authored_db_utilization" .authored_db_utilization)))
+                    (default "" (and .authored_db_utilization (tmpl.Exec "dht_sync_lag_authored_db_utilization" .authored_db_utilization)))
                     (default "" (and .authored_db_connection_use_time (tmpl.Exec "db_connection_use_time" .authored_db_connection_use_time)))
                 )
             ) }}

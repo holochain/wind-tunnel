@@ -1,4 +1,4 @@
-{{- define "description" }}
+{{- define "validation_receipts_description" }}
 <p>Creates an entry, wait for required validation receipts, then repeat. Records the amount of time it took to accumulate the required number of receipts for all DHT operations. This is measured to the nearest 20ms so that we don't keep the agent too busy checking for receipts.</p>
 
 <p>Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
@@ -6,7 +6,7 @@
 <p>By default, this scenario will wait for a complete set of validation receipts before committing the next record. If the <code>NO_VALIDATION_COMPLETE</code> environment variable is set, it will instead publish new records on every round, building up an ever-growing list of action hashes to check on.</p>
 {{ end -}}
 
-{{- define "timing_per_agent_and_op" }}
+{{- define "validation_receipts_timing_per_agent_and_op" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -27,7 +27,7 @@
     {{ end }}
 {{ end -}}
 
-{{- define "rate_per_agent_and_op" }}
+{{- define "validation_receipts_rate_per_agent_and_op" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -49,7 +49,7 @@
 
 {{ template "scenario_summary" (dict
     "title" "Validation Receipts"
-    "description" (tmpl.Exec "description")
+    "description" (tmpl.Exec "validation_receipts_description")
     "data" .run_summary
 ) }}
 
@@ -68,7 +68,7 @@
                         "unit" "s"
                     ))
                 ))
-                (tmpl.Exec "timing_per_agent_and_op" .timings)
+                (tmpl.Exec "validation_receipts_timing_per_agent_and_op" .timings)
             )
         ) }}
     {{ end }}
@@ -86,7 +86,7 @@
                         "unit" "/s"
                     ))
                 ))
-                (tmpl.Exec "rate_per_agent_and_op" .rates)
+                (tmpl.Exec "validation_receipts_rate_per_agent_and_op" .rates)
             )
         ) }}
     {{ end }}
