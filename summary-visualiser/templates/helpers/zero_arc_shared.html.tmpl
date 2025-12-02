@@ -1,7 +1,7 @@
 {{/* `zero_arc_create_data` and `zero_arc_create_and_read` have identical sets of scenario metrics.
 This helper serves them both. */}}
 
-{{ define "create_rate_per_agent" }}
+{{ define "zero_arc_shared_create_rate_per_agent" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -21,7 +21,7 @@ This helper serves them both. */}}
     {{ end }}
 {{ end }}
 
-{{ define "sync_lag_timing_per_agent" }}
+{{ define "zero_arc_shared_sync_lag_timing_per_agent" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -42,7 +42,7 @@ This helper serves them both. */}}
     {{ end }}
 {{ end }}
 
-{{ define "sync_lag_rate_per_agent" }}
+{{ define "zero_arc_shared_sync_lag_rate_per_agent" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -62,7 +62,7 @@ This helper serves them both. */}}
     {{ end }}
 {{ end }}
 
-{{ define "open_connections" }}
+{{ define "zero_arc_shared_open_connections" }}
     {{ range . }}
         {{ $key := (index .key 0) }}
         {{ template "scenario_metric_content_item" (dict
@@ -91,7 +91,7 @@ This helper serves them both. */}}
                             "unit" "/s"
                         ))
                     ))
-                    (tmpl.Exec "create_rate_per_agent" .rates)
+                    (tmpl.Exec "zero_arc_shared_create_rate_per_agent" .rates)
                 )
             ) }}
         {{ end }}
@@ -110,7 +110,7 @@ This helper serves them both. */}}
                             "unit" "s"
                         ))
                     ))
-                    (tmpl.Exec "sync_lag_timing_per_agent" .timings)
+                    (tmpl.Exec "zero_arc_shared_sync_lag_timing_per_agent" .timings)
                 )
             ) }}
         {{ end }}
@@ -128,7 +128,7 @@ This helper serves them both. */}}
                             "unit" "/s"
                         ))
                     ))
-                    (tmpl.Exec "sync_lag_rate_per_agent" .rates)
+                    (tmpl.Exec "zero_arc_shared_sync_lag_rate_per_agent" .rates)
                 )
             ) }}
         {{ end }}
@@ -137,7 +137,7 @@ This helper serves them both. */}}
             {{ template "scenario_metric" (dict
                 "name" "Open connections"
                 "description" "The number of currently open connections to other conductors."
-                "content" (tmpl.Exec "open_connections" .)
+                "content" (tmpl.Exec "zero_arc_shared_open_connections" .)
             ) }}
         {{ end }}
 
