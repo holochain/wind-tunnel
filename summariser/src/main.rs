@@ -16,6 +16,8 @@ const DEFAULT_RUN_SUMMARY_PATH: &str = "run_summary.jsonl";
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
+    let ignore_errors = std::env::var("IGNORE_SUMMARY_ERRORS").is_ok();
+
     #[cfg(feature = "test_data")]
     log::info!("Test data generation enabled");
 
@@ -92,14 +94,20 @@ async fn main() -> anyhow::Result<()> {
 
     serde_json::to_writer_pretty(report, &summary_outputs)?;
 
-    // If any of the summaries failed, return an error
+    // If any of the summaries failed and errors should not explicitly be ignored, return an error
     if !errors.is_empty() {
-        return Err(anyhow!(format!(
+        let error_message = format!(
             "{} out of {} summaries failed:\n{:#?}",
             errors.len(),
             total_summaries,
             errors
-        )));
+        );
+
+        if ignore_errors {
+            log::warn!("{}", error_message);
+        } else {
+            return Err(anyhow!(error_message));
+        }
     }
 
     Ok(())
