@@ -1,4 +1,4 @@
-{{- define "description" }}
+{{- define "zero_arc_create_data_description" }}
 A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc nodes read the data. The scenario has two roles:
 
 <ul>
@@ -7,7 +7,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
 </ul>
 {{ end -}}
 
-{{ define "sync_lag_timing_per_agent" }}
+{{ define "zero_arc_create_data_sync_lag_timing_per_agent" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -28,7 +28,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
     {{ end }}
 {{ end }}
 
-{{ define "sync_lag_rate_per_agent" }}
+{{ define "zero_arc_create_data_sync_lag_rate_per_agent" }}
     {{ range . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -48,7 +48,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
     {{ end }}
 {{ end }}
 
-{{ define "open_connections" }}
+{{ define "zero_arc_create_data_open_connections" }}
     {{ range . }}
         {{ $key := (index .key 0) }}
         {{ template "scenario_metric_content_item" (dict
@@ -65,7 +65,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
 
 {{ template "scenario_summary" (dict
     "title" "Zero-Arc Create Data"
-    "description" (tmpl.Exec "description")
+    "description" (tmpl.Exec "zero_arc_create_data_description")
     "data" .run_summary
 ) }}
 
@@ -104,7 +104,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
                             "unit" "s"
                         ))
                     ))
-                    (tmpl.Exec "sync_lag_timing_per_agent" .timings)
+                    (tmpl.Exec "zero_arc_create_data_sync_lag_timing_per_agent" .timings)
                 )
             ) }}
         {{ end }}
@@ -122,7 +122,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
                             "unit" "/s"
                         ))
                     ))
-                    (tmpl.Exec "sync_lag_rate_per_agent" .rates)
+                    (tmpl.Exec "zero_arc_create_data_sync_lag_rate_per_agent" .rates)
                 )
             ) }}
         {{ end }}
@@ -131,7 +131,7 @@ A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc
             {{ template "scenario_metric" (dict
                 "name" "Open connections"
                 "description" "The number of currently open connections to other conductors."
-                "content" (tmpl.Exec "open_connections" .)
+                "content" (tmpl.Exec "zero_arc_create_data_open_connections" .)
             ) }}
         {{ end }}
 

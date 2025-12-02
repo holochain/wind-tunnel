@@ -1,4 +1,4 @@
-{{- define "description" }}
+{{- define "remote_call_rate_description" }}
 <p>Test the throughput of <code>remote_call</code> operations. Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
 {{ end -}}
 
@@ -8,7 +8,7 @@ Set up a helper template that does the whole thing. */}}
 
 {{/* The loop to display mean, std, and trend graph for each agent.
 This is stripped out into its own helper so we can enjoy nice syntax highlighting. */}}
-{{- define "per_agent" }}
+{{- define "remote_call_rate_timing_per_agent" }}
     {{ range .data }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -31,7 +31,7 @@ This is stripped out into its own helper so we can enjoy nice syntax highlightin
 {{ end -}}
 
 {{/* And now the body of the metric helper. */}}
-{{ define "metric" }}
+{{ define "remote_call_rate_timing_metric" }}
     {{ template "scenario_metric" (dict
         "name" .name
         "description" .description
@@ -45,7 +45,7 @@ This is stripped out into its own helper so we can enjoy nice syntax highlightin
                     "unit" "s"
                 ))
             ))
-            (tmpl.Exec "per_agent" (dict
+            (tmpl.Exec "remote_call_rate_timing_per_agent" (dict
                 "data" .data.timings
                 "unit" "s"
             ))
@@ -55,18 +55,18 @@ This is stripped out into its own helper so we can enjoy nice syntax highlightin
 
 {{ template "scenario_summary" (dict
     "title" "Remote Call Rate"
-    "description" (tmpl.Exec "description")
+    "description" (tmpl.Exec "remote_call_rate_description")
     "data" .run_summary
 ) }}
 
 <div class="scenario-metrics">
-    {{ template "metric" (dict
+    {{ template "remote_call_rate_timing_metric" (dict
         "name" "Dispatch timing"
         "description" "The time between sending a remote call and the remote handler being invoked."
         "data" .scenario_metrics.dispatch_timing
     ) }}
 
-    {{ template "metric" (dict
+    {{ template "remote_call_rate_timing_metric" (dict
         "name" "Round-trip timing"
         "description" "The total elapsed time to get a response to the client."
         "data" .scenario_metrics.round_trip_timing
