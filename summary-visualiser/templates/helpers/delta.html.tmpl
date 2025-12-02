@@ -1,7 +1,7 @@
 <span class="delta">
     <span class="delta-start-end">
         <span class="delta-start">
-            {{- template "scalar" (dict "value" .start "unit" (or (index . "unit") nil)) -}}
+            {{- template "scalar" (dict "value" .start "unit" (index . "unit")) -}}
         </span>
         {{ if (lt .start .end) }}
             <span class="delta-dir delta-dir-up">&#x2B06;</span>
@@ -10,7 +10,7 @@
         {{ end }}
         {{ if (ne .start .end) }}
             <span class="delta-end">
-                {{- template "scalar" (dict "value" .end "unit" (or (index . "unit") nil)) -}}
+                {{- template "scalar" (dict "value" .end "unit" (index . "unit")) -}}
             </span>
         {{ end }}
     </span>
@@ -24,7 +24,7 @@
                     "unit" "%"
                 ) -}}
             </span>
-            <span class="delta-measurement-duration">over {{ .measurement_duration }}s ({{- template "scalar" (dict "value" .rate_per_second "unit" (or (index . "unit") nil)) -}}/s)</span>
+            <span class="delta-measurement-duration">over {{ .measurement_duration }}s ({{- template "scalar" (dict "value" .rate_per_second "unit" (index . "unit")) -}}/s)</span>
         </span>
     {{ end }}
 </span>
