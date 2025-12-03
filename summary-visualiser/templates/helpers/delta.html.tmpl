@@ -4,9 +4,9 @@
             {{- template "scalar" (dict "value" .start "unit" (index . "unit")) -}}
         </span>
         {{ if (lt .start .end) }}
-            <span class="delta-dir delta-dir-up">&#x2B06;</span>
+            <span class="divider delta-dir delta-dir-up">&#x2B06;</span>
         {{ else if (gt .start .end) }}
-            <span class="delta-dir delta-dir-down">&#x2B07;</span>
+            <span class="divider delta-dir delta-dir-down">&#x2B07;</span>
         {{ end }}
         {{ if (ne .start .end) }}
             <span class="delta-end">
