@@ -19,30 +19,30 @@ pub struct ScenarioValues {
 }
 
 impl ScenarioValues {
-    fn mut_op_complete(&mut self, action_hash: &ActionHash, op_type: String) -> &mut bool {
-        self.pending_actions
-            .get_mut(action_hash)
-            .unwrap()
-            .entry(op_type)
-            .or_default()
+    /// Get a mutable reference to the receipts_complete for the given action and op type.
+    ///
+    /// If it returns [`None`] the action hash has completed or does not exist.
+    fn mut_op_complete(&mut self, action_hash: &ActionHash, op_type: String) -> Option<&mut bool> {
+        Some(
+            self.pending_actions
+                .get_mut(action_hash)?
+                .entry(op_type)
+                .or_default(),
+        )
     }
 
-    fn mut_any_pending(&mut self) -> bool {
-        self.pending_actions.retain(|_, m| {
-            if m.is_empty() {
-                return true;
-            }
-            let mut all_complete = true;
-            for c in m.values() {
-                if !c {
-                    all_complete = false;
-                    break;
+    /// Returns whether all the actions for the given action hash are complete.
+    fn is_action_complete(&self, action_hash: &ActionHash) -> bool {
+        self.pending_actions
+            .get(action_hash)
+            .map(|i| {
+                if i.is_empty() {
+                    false
+                } else {
+                    i.iter().all(|(_, v)| *v)
                 }
-            }
-            !all_complete
-        });
-
-        !self.pending_actions.is_empty()
+            })
+            .unwrap_or(true) // if not found, consider it complete
     }
 }
 
@@ -61,82 +61,87 @@ fn agent_setup(
 fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let reporter = ctx.runner_context().reporter();
-    let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
+    // check if pending action is empty, if so create a new entry
+    let action_hash = {
+        let action_hash: ActionHash = call_zome(
+            ctx,
+            "crud",
+            "create_sample_entry",
+            "this is a test entry value",
+        )?;
 
-    let action_hash: ActionHash = call_zome(
-        ctx,
-        "crud",
-        "create_sample_entry",
-        "this is a test entry value",
-    )?;
-
-    ctx.get_mut()
-        .scenario_values
-        .pending_actions
-        .insert(action_hash, HashMap::new());
-
-    let start = Instant::now();
-
-    'outer: loop {
-        // sleep a bit, we don't want to busy loop
-        ctx.runner_context()
-            .executor()
-            .execute_in_place(async move {
-                tokio::time::sleep(Duration::from_millis(20)).await;
-                Ok(())
-            })?;
-
-        // get our list of pending actions
-        let action_hash_list = ctx
-            .get()
+        ctx.get_mut()
             .scenario_values
             .pending_actions
-            .keys()
-            .cloned()
-            .collect::<Vec<_>>();
+            .insert(action_hash.clone(), HashMap::new());
 
-        for action_hash in action_hash_list {
-            // for each action, get the validation receipts
-            let response: Vec<ValidationReceiptSet> = call_zome(
-                ctx,
-                "crud",
-                "get_sample_entry_validation_receipts",
-                action_hash.clone(),
-            )?;
+        action_hash
+    };
 
-            for set in response.iter() {
-                let cur = *ctx
-                    .get_mut()
-                    .scenario_values
-                    .mut_op_complete(&action_hash, set.op_type.clone());
+    // collect validation receipts until complete
+    let start = Instant::now();
+    let wait_for_all = std::env::var_os("NO_VALIDATION_COMPLETE").is_none();
 
-                if set.receipts_complete && !cur {
-                    // if the action wasn't already complete report the time
-                    // and mark it complete
-                    reporter.add_custom(
-                        ReportMetric::new("validation_receipts_complete_time")
-                            .with_tag("op_type", set.op_type.clone())
-                            .with_tag("agent", agent.clone())
-                            .with_field("value", start.elapsed().as_secs_f64()),
-                    );
-                    *ctx.get_mut()
-                        .scenario_values
-                        .mut_op_complete(&action_hash, set.op_type.clone()) = true;
-                }
+    wait_for_receipts_for_action(ctx, &action_hash, start, wait_for_all)?;
+
+    // remove the action from pending if complete
+    if ctx.get().scenario_values.is_action_complete(&action_hash) {
+        ctx.get_mut()
+            .scenario_values
+            .pending_actions
+            .remove(&action_hash);
+    }
+
+    Ok(())
+}
+
+/// Wait for validation receipts for a specific action.
+fn wait_for_receipts_for_action(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+    action_hash: &ActionHash,
+    start: Instant,
+    wait_for_all: bool,
+) -> WindTunnelResult<()> {
+    let reporter = ctx.runner_context().reporter();
+    let agent = ctx.get().cell_id().agent_pubkey().clone().to_string();
+    // for each action, get the validation receipts
+    while !ctx.get().scenario_values.is_action_complete(action_hash) {
+        let response: Vec<ValidationReceiptSet> = call_zome(
+            ctx,
+            "crud",
+            "get_sample_entry_validation_receipts",
+            action_hash.clone(),
+        )?;
+
+        for set in response.iter() {
+            let Some(cur) = ctx
+                .get_mut()
+                .scenario_values
+                .mut_op_complete(action_hash, set.op_type.clone())
+            else {
+                // already complete
+                return Ok(());
+            };
+
+            if set.receipts_complete && !*cur {
+                // if the action wasn't already complete report the time
+                // and mark it complete
+                reporter.add_custom(
+                    ReportMetric::new("validation_receipts_complete_time")
+                        .with_tag("op_type", set.op_type.clone())
+                        .with_tag("agent", agent.clone())
+                        .with_field("value", start.elapsed().as_secs_f64()),
+                );
+                *cur = true;
             }
         }
 
-        // if there are no remaining pending actions, break out of the loop
-        if !ctx.get_mut().scenario_values.mut_any_pending() {
-            break 'outer;
+        if !wait_for_all {
+            break;
         }
 
-        // if we were instructed to not wait for validation complete,
-        // don't wait for validation complete
-        if std::env::var_os("NO_VALIDATION_COMPLETE").is_some() {
-            break 'outer;
-        }
+        // sleep a bit before checking again
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
     Ok(())
