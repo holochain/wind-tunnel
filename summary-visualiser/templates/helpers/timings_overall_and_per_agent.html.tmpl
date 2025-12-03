@@ -2,25 +2,10 @@
     {{ template "mean_std" (dict "mean" .mean "std" .mean_std_dev "unit" "s") }}
 {{ end }}
 
-{{ define "timings_per_agent_template" }}
-    {{ template "mean_std" (dict
-        "mean" .mean
-        "std" .std
-        "unit" "s"
-    ) }}
-    {{ template "trend_graph" (dict
-        "data" .trend.trend
-        "mean" .mean
-        "std" .std
-        "window_duration" .trend.window_duration
-        "unit" "s"
-    ) }}
-{{ end }}
-
 {{ template "overall_and_per_agent" (dict
     "overall_data" .
     "overall_template" "timings_overall_template"
     "per_agent_data" .timings
     "per_agent_data_key" "summary_timing"
-    "per_agent_template" "timings_per_agent_template"
+    "per_agent_template" "timing_and_trend"
 ) }}
