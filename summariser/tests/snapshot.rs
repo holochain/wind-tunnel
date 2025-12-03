@@ -196,6 +196,12 @@ async fn zero_arc_create_data() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn zero_arc_create_data_validated() -> anyhow::Result<()> {
+    run_snapshot_test!("52a0ce7a16521345d301ed0750d079b8513ad48d3f49524ceb725ae0770cd9bc");
+    Ok(())
+}
+
+#[tokio::test]
 async fn zero_arc_create_and_read() -> anyhow::Result<()> {
     run_snapshot_test!("94d299900c09e3ae81800bfce0f497a9d12f98a7a4fd6fd4083793335bc18c88");
     Ok(())

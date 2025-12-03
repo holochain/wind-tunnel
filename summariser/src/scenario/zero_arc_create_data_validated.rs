@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_gauge_stats, partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
@@ -7,7 +5,7 @@ use crate::model::{
     StandardTimingsStats, SummaryOutput,
 };
 use crate::query;
-use crate::query::holochain_metrics::query_workflow_duration_by_arc;
+use crate::query::holochain_metrics::query_workflow_duration;
 use anyhow::Context;
 use polars::prelude::{col, lit, IntoLazy};
 use serde::{Deserialize, Serialize};
@@ -20,8 +18,8 @@ struct ZeroArcCreateValidatedSummary {
     sync_lag_timing: PartitionedTimingStats,
     sync_lag_rate: PartitionedRateStats,
     open_connections: PartitionedGaugeStats,
-    app_validation_workflow_duration: Option<BTreeMap<String, StandardTimingsStats>>,
-    system_validation_workflow_duration: Option<BTreeMap<String, StandardTimingsStats>>,
+    app_validation_workflow_duration: Option<StandardTimingsStats>,
+    system_validation_workflow_duration: Option<StandardTimingsStats>,
     error_count: usize,
 }
 
@@ -72,13 +70,13 @@ pub(crate) async fn summarize_zero_arc_create_data_validated(
                 .context("Rate stats for sync lag")?,
             open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
                 .context("Open connections")?,
-            app_validation_workflow_duration: query_workflow_duration_by_arc(
+            app_validation_workflow_duration: query_workflow_duration(
                 &client,
                 &summary,
                 HolochainWorkflowKind::AppValidation,
             )
             .await?,
-            system_validation_workflow_duration: query_workflow_duration_by_arc(
+            system_validation_workflow_duration: query_workflow_duration(
                 &client,
                 &summary,
                 HolochainWorkflowKind::SysValidation,
