@@ -1,0 +1,57 @@
+{{/* `zero_arc_create_data` and `zero_arc_create_and_read` have identical sets of scenario metrics.
+This helper serves them both. */}}
+
+{{ define "zero_arc_shared_open_connections" }}
+    {{ range . }}
+        {{ $key := (index .key 0) }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (print $key.value "-" $key.key)
+            "content" (tmpl.Exec "min_max_mean_std" (dict
+                "min" .gauge_stats.min
+                "max" .gauge_stats.max
+                "mean" .gauge_stats.mean
+                "std" .gauge_stats.std
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Create rate"
+            "description" "The number of timed entries created by the zero-arc node(s) per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .create_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Sync lag timing"
+            "description" "For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .sync_lag_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Sync lag rate"
+            "description" "The number of entries per second received by full nodes."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .sync_lag_rate)
+        ) }}
+
+        {{ with .open_connections.partitions }}
+            {{ template "scenario_metric" (dict
+                "name" "Open connections"
+                "description" "The number of currently open connections to other conductors."
+                "content" (tmpl.Exec "zero_arc_shared_open_connections" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated across all nodes."
+            "content" (tmpl.Exec "scalar" (dict
+                "value" .error_count
+            ))
+        ) }}
+    {{ end }}
+</div>

@@ -1,0 +1,22 @@
+{{/* This helper expects a dictionary in the following form:
+    .overall_data: The value to pass to the "overall" template.
+    .overall_template: The name of the template to apply the overall data to.
+    .per_agent_data: The array of per-agent data to iterate over.
+                     Each item should be a dict with a .key and a dict containing the data.
+                     The data dict is named by .per_agent_data_key .
+    .per_agent_data_key: The key for getting the data element from an agent data item.
+    .per_agent_template: The name of the template to apply the agent data item to.
+*/}}
+{{/* If there's only one agent, skip the 'overall'. */}}
+{{ if (gt (len .per_agent_data) 1) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "All agents"
+        "content" (tmpl.Exec .overall_template .overall_data)
+    ) }}
+{{ end }}
+{{ range .per_agent_data }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" (tmpl.Exec "composite_key" .key)
+        "content" (tmpl.Exec $.per_agent_template (index . $.per_agent_data_key))
+    ) }}
+{{ end }}

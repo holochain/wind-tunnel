@@ -103,8 +103,12 @@ but for some larger metrics, it's hard to see the label without scrolling. */
     margin-top: 0;
 }
 
-.scenario-metric-label, .scenario-metric-content-item-label {
+.scenario-metric-label, .scenario-metric-content-item-label, .scalar-label {
     color: var(--subtle);
+}
+
+.scenario-metric-content-item-label {
+    margin-bottom: 1em;
 }
 
 .scenario-metric-name {
@@ -126,6 +130,11 @@ but for some larger metrics, it's hard to see the label without scrolling. */
     gap: 1em;
 }
 
+.composite-key {
+    list-style: none;
+    padding: 0;
+}
+
 /*** Widgets ***/
 
 .scalar-value {
@@ -134,27 +143,56 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 }
 
 /* Supplementary numbers shouldn't be so big. */
-.mean-std-std .scalar-value,
+.std .scalar-value,
 .mean-max-max .scalar-value,
+.min-max-mean-std-min .scalar-value,
+.min-max-mean-std-max .scalar-value,
 .delta-change .scalar-value {
     font-size: inherit;
 }
 
-/* These are spans in the markup, but we want them to be block elements. */
-.mean-std > *, .mean-max > * {
+.min-max-mean-std .min-max-mean-std-min .scalar-label,
+.min-max-mean-std .mean .scalar-label,
+.min-max-mean-std .min-max-mean-std-max .scalar-label {
     display: block;
 }
 
+/* These are spans in the markup, but we want them to be block elements. */
+.mean-std > *,
+.mean-max > * {
+    display: block;
+}
+
+.min-max-mean-std .mean-std {
+    display: inline-block;
+    text-align: center;
+}
+
+.min-max-mean-std,
 .delta-start-end {
     display: flex;
-    align-items: center;
+    gap: 0.5em;
+}
+
+.min-max-mean-std {
+    align-items: flex-start;
+}
+
+.min-max-mean-std-min,
+.min-max-mean-std-max,
+.min-max-mean-std .divider {
+    padding-top: 1rem;
+}
+
+.delta-start-end {
+    align-items: baseline;
 }
 
 .delta-change {
     display: block;
 }
 
-.delta-dir {
+.divider {
     color: var(--more-subtle);
     font-size: 2em;
 }
@@ -162,13 +200,11 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 /* Many metrics contain both a scalar and a trend graph.
 In those cases, make sure all the scalars are the same width
 so the following graph lines up. */
-.scenario-metric-content .scalar:first-child,
-.scenario-metric-content .mean-std:first-child,
-.scenario-metric-content .mean-max:first-child,
-.scenario-metric-content-item-content .scalar:first-child,
-.scenario-metric-content-item-content .mean-std:first-child,
-.scenario-metric-content-item-content .mean-max:first-child {
-    width: var(--numeric-size);
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    display: grid;
+    grid-template-columns: var(--numeric-size) auto;
+    grid-gap: var(--grid-gap);
 }
 
 /*** Graph SVG ***/
