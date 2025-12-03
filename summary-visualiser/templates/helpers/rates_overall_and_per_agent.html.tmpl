@@ -1,10 +1,24 @@
 {{ define "rates_overall_template" }}
-    {{ template "scalar" (dict "value" . "unit" "/s") }}
+    {{ template "mean" (dict "mean" . "unit" "/s") }}
 {{ end }}
+
+{{ define "rates_per_agent_template" }}
+    {{ template "mean" (dict
+        "mean" .mean
+        "unit" "/s"
+    ) }}
+    {{ template "trend_graph" (dict
+        "mean" .mean
+        "data" .trend
+        "unit" "/s"
+        "window_duration" .window_duration
+    ) }}
+{{ end }}
+
 {{ template "overall_and_per_agent" (dict
     "overall_data" .mean
     "overall_template" "rates_overall_template"
     "per_agent_data" .rates
     "per_agent_data_key" "summary_rate"
-    "per_agent_template" "rate"
+    "per_agent_template" "rates_per_agent_template"
 ) }}

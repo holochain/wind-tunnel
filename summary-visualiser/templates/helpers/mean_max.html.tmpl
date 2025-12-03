@@ -1,10 +1,15 @@
-<div class="mean-max">
-    <span class="mean-max-mean">
-        {{- template "scalar" (dict "value" .mean "unit" (index . "unit")) -}}
-    </span>
+<span class="mean-max">
+    {{ template "mean" . }}
     {{ if (ne .mean .max) }}
-        <span class="mean-max-max">(max
-            {{ template "scalar" (dict "value" .max "unit" (index . "unit")) -}})
+        <span class="mean-max-max">
+            {{/* These parentheses get wrapped in label spans so they're more subtle. */}}
+            <span class="scalar-label">(</span>
+            {{- template "scalar" (dict
+                "label" "max "
+                "value" .max
+                "unit" (index . "unit"))
+            -}}
+            <span class="scalar-label">)</span>
         </span>
     {{ end }}
-</div>
+</span>

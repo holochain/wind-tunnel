@@ -1,8 +1,4 @@
-<div class="mean-std">
-    <span class="mean-std-mean">
-        {{- template "scalar" (dict "value" .mean "unit" (index . "unit")) -}}
-    </span>
-    <span class="mean-std-std">(SD =
-        {{ template "scalar" (dict "value" .std "unit" (index . "unit")) -}})
-    </span>
-</div>
+<span class="mean-std">
+    {{ template "mean" . }}
+    {{ template "std" . }}
+</span>

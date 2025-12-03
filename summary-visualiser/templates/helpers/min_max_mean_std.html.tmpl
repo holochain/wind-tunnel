@@ -1,21 +1,21 @@
 <span class="min-max-mean-std">
-    {{ template "scalar" (dict
-        "class" "min"
-        "value" .min
-        "unit" (index . "unit")
-    ) }}
+    <span class="min-max-mean-std-min">
+        {{ template "scalar" (dict
+            "label" "min "
+            "value" .min
+            "unit" (index . "unit")
+        ) }}
+    </span>
     {{ $min_mean_symbol := test.Ternary "lt" "le" (lt .min .mean) }}
     <span class="divider divider-{{ $min_mean_symbol }}">&{{ $min_mean_symbol }};</span>
-    {{ template "mean_std" (dict
-        "mean" .mean
-        "std" .std
-        "unit" (index . "unit")
-    )}}
+    {{ template "mean_std" . }}
     {{ $mean_max_symbol := test.Ternary "lt" "le" (lt .mean .max) }}
     <span class="divider divider-{{ $mean_max_symbol }}">&{{ $mean_max_symbol }};</span>
-    {{ template "scalar" (dict
-        "class" "max"
-        "value" .max
-        "unit" (index . "unit")
-    ) }}
+    <span class="min-max-mean-std-max">
+        {{ template "scalar" (dict
+            "label" " max"
+            "value" .max
+            "unit" (index . "unit")
+        ) }}
+    </span>
 </span>
