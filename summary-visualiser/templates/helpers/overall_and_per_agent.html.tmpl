@@ -10,7 +10,7 @@
 {{/* If there's only one agent, skip the 'overall'. */}}
 {{ if (gt (len .per_agent_data) 1) }}
     {{ template "scenario_metric_content_item" (dict
-        "name" "Overall"
+        "name" "All agents"
         "content" (tmpl.Exec .overall_template .overall_data)
     ) }}
 {{ end }}
