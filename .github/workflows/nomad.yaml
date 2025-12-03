@@ -12,9 +12,9 @@ on:
     paths:
       - ".github/workflows/nomad.yaml"
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
+# concurrency:
+#   group: ${{ github.workflow }}
+#   cancel-in-progress: false
 
 env:
   HOLOCHAIN_BIN_URL: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/latest/download/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
