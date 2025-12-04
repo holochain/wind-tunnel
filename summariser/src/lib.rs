@@ -48,6 +48,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "full_arc_create_validated_zero_arc_read" => Some(
+            async move {
+                summarize_full_arc_create_validated_zero_arc_read(client.clone(), summary.clone())
+                    .await
+                    .context("Full arc create validated zero arc read summary")
+            }
+            .boxed(),
+        ),
         "local_signals" => Some(
             async move {
                 summarize_local_signals(client.clone(), summary.clone())

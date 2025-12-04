@@ -1,6 +1,7 @@
 mod app_install;
 mod dht_sync_lag;
 mod first_call;
+mod full_arc_create_validated_zero_arc_read;
 mod local_signals;
 mod remote_call_rate;
 mod remote_signals;
@@ -20,6 +21,7 @@ mod zome_call_single_value;
 pub(crate) use app_install::summarize_app_install;
 pub(crate) use dht_sync_lag::summarize_dht_sync_lag;
 pub(crate) use first_call::summarize_first_call;
+pub(crate) use full_arc_create_validated_zero_arc_read::summarize_full_arc_create_validated_zero_arc_read;
 pub(crate) use local_signals::summarize_local_signals;
 pub(crate) use remote_call_rate::summarize_remote_call_rate;
 pub(crate) use remote_signals::summarize_remote_signals;
