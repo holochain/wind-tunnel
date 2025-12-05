@@ -20,11 +20,11 @@
         <span class="delta-change">
             <span class="delta-percent-change">change:
                 {{ template "scalar" (dict
-                    "value" (math.Mul (math.Div (math.Sub .end .start) .start) 100)
+                    "value" (math.Mul (math.Div .delta .start) 100)
                     "unit" "%"
                 ) -}}
             </span>
-            <span class="delta-measurement-duration">over {{ .measurement_duration }}s ({{- template "scalar" (dict "value" .rate_per_second "unit" (index . "unit")) -}}/s)</span>
+            <span class="delta-measurement-duration">over {{ math.Add .measurement_duration.secs (math.Div .measurement_duration.nanos 1000000000) }}s ({{- template "scalar" (dict "value" .rate_per_second "unit" (index . "unit")) -}}/s)</span>
         </span>
     {{ end }}
 </span>
