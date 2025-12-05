@@ -1,0 +1,39 @@
+{{ template "scenario_summary" (dict
+    "title" "Write validated"
+    "description" "Creates an entry, updates it and links the create to the update, then repeats. Each of the three actions is validated by the included hApp.</p>"
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Write timing"
+            "description" "The time it takes to complete the zome function call that writes the entry, updates it, and links to the update."
+            "content" (tmpl.Exec "timing_and_trend" .write_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Write rate"
+            "description" "The number of write zome function calls that complete per second."
+            "content" (tmpl.Exec "rate_and_trend" .write_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Read timing"
+            "description" "The time it takes to complete the zome function call that reads the data."
+            "content" (tmpl.Exec "timing_and_trend" .read_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Read rate"
+            "description" "The number of read zome function calls that complete per second."
+            "content" (tmpl.Exec "rate_and_trend" .read_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated over the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .errors))
+        ) }}
+    {{ end }}
+</div>
