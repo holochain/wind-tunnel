@@ -2,7 +2,7 @@
 
 ### Description
 
-Creates an entry, updates it and links the create to the update, then repeat. Each of the three actions is validated
+Creates an entry, updates it and links the create to the update, then repeats. Each of the three actions is validated
 by the included hApp.
 
 ### Suggested command
