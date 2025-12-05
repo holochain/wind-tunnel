@@ -1,5 +1,6 @@
-{{/* `zero_arc_create_data` and `zero_arc_create_and_read` have identical sets of scenario metrics.
-This helper serves them both. */}}
+{{/* `zero_arc_create_data`, `zero_arc_create_data_validated`, and `zero_arc_create_and_read`
+all have identical sets of scenario metrics.
+This helper serves them all. */}}
 
 {{ define "zero_arc_shared_open_connections" }}
     {{ range . }}
@@ -19,6 +20,7 @@ This helper serves them both. */}}
 <div class="scenario-metrics">
     {{ with .scenario_metrics }}
         {{ template "scenario_metric" (dict
+            "class" "large"
             "name" "Create rate"
             "description" "The number of timed entries created by the zero-arc node(s) per second."
             "content" (tmpl.Exec "rates_overall_and_per_agent" .create_rate)
@@ -44,6 +46,12 @@ This helper serves them both. */}}
                 "description" "The number of currently open connections to other conductors."
                 "content" (tmpl.Exec "zero_arc_shared_open_connections" .)
             ) }}
+        {{ end }}
+
+        {{/* Allow scenarios to inject extra metrics before error count.
+        Currently this is only used by zero_arc_create_data_validated. */}}
+        {{ if (index $ "extra_metrics") }}
+            {{ $.extra_metrics }}
         {{ end }}
 
         {{ template "scenario_metric" (dict
