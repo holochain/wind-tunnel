@@ -1,0 +1,51 @@
+name: Index gh-pages reports
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *" # Daily at 03:00 UTC
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v5
+        with:
+          ref: gh-pages
+
+      - name: Regenerate index
+        run: |
+          set -euo pipefail
+
+          # Find reports
+          reports=$(ls run.*.html 2>/dev/null || true)
+
+          if [ -z "$reports" ]; then
+            echo "No reports found, nothing to do."
+            exit 0
+          fi
+
+          # Sort reports by filename (newest first)
+          sorted_reports=$(echo "$reports" | sort -r)
+
+          # Regenerate index.md
+          echo "Generating index.md"
+          {
+            echo "---"
+            echo "---"
+            echo "# Nomad Summary Reports"
+            for f in $sorted_reports; do
+              echo "- [${f}](${f})"
+            done
+          } > index.md
+
+      - name: Push index.md to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          keep_files: true
+          enable_jekyll: true
