@@ -3,7 +3,11 @@ window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration,
     // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
     // gets updated accordingly.
     const margin = { top: 10, right: 20, bottom: 20, left: 60 };
-    const pointWidth = 10; // Width per data point
+    // The width of each data point on the graph.
+    // If the graph is large enough, it'll cut the width by 50% or even 80%.
+    const pointWidth = trendData.length <= 40 ? 10
+                     : trendData.length <= 80 ? 5
+                     : 2;
     const width = (trendData.length * pointWidth);
     const height = 120;
 
