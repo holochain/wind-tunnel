@@ -1,0 +1,36 @@
+{{ define "zero_arc_create_data_validated_description" }}
+<p>A zero-arc/full-arc mixed scenario where zero-arc nodes create data that gets validated and full-arc nodes read the data. The scenario has two roles:</p>
+
+<ul>
+    <li><b><code>zero</code></b>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that full-arc nodes can retrieve them.</li>
+    <li><b><code>full</code></b>: A full-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+</ul>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Zero-arc Create Data (Validated)"
+    "description" (tmpl.Exec "zero_arc_create_data_validated_description")
+    "data" .run_summary
+) }}
+
+{{ define "zero_arc_create_data_validated_extra_metrics" }}
+    {{ with .scenario_metrics }}
+        {{ with .app_validation_workflow_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "App validation workflow duration"
+                "description" "The time taken to apply app validation to the data."
+                "content" (tmpl.Exec "timing_and_trend" .)
+            ) }}
+        {{ end }}
+
+        {{ with .system_validation_workflow_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "System validation workflow duration"
+                "description" "The time taken to apply system validation to the data."
+                "content" (tmpl.Exec "rate_and_trend" .)
+            ) }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{ template "zero_arc_shared" (coll.Set "extra_metrics" (tmpl.Exec "zero_arc_create_data_validated_extra_metrics" .) .) }}
