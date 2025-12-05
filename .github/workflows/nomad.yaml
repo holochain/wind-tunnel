@@ -5,6 +5,8 @@ on:
     inputs:
       holochain_bin_url:
         description: "The URL to download the `holochain` binary from"
+      commit_hash:
+        description: "The commit hash to checkout before running the tests"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
   # Trigger on changes to Nomad workflow file
@@ -42,7 +44,6 @@ jobs:
         include:
           - job-name: app_install_large
             scenario-name: app_install
-
           - job-name: app_install_minimal
             scenario-name: app_install
 
@@ -75,6 +76,8 @@ jobs:
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: "${{ inputs.commit_hash || github.sha }}"
 
       - name: Build Nomad Job
         run: |
@@ -278,6 +281,18 @@ jobs:
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
+
+      - name: Generate summary visualiser
+        run: |
+          mkdir -p ./nomad-summary-visualiser
+          nix run .#generate-summary-visualiser ./summariser-report-*.json ./nomad-summary-visualiser/index.html
+
+      - name: Push index.html to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./nomad-summary-visualiser # The directory containing index.html
+          publish_branch: gh-pages
 
       - name: Upload run summary
         uses: actions/upload-artifact@v5

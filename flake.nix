@@ -408,6 +408,18 @@
               ./nomad/scripts/generate_jobs.sh --validate "$@"
             '';
           };
+          generate-summary-visualiser = pkgs.writeShellApplication {
+            name = "generate-summary-visualiser";
+            runtimeInputs = [
+              pkgs.gomplate
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              ./summary-visualiser/generate.sh "$1" > "$2"
+            '';
+          };
           rust-unit-tests = pkgs.writeShellApplication {
             name = "rust-unit-tests";
             runtimeInputs = [
