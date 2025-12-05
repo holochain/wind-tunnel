@@ -1,0 +1,27 @@
+{{ template "scenario_summary" (dict
+    "title" "Zome Call, Single Value"
+    "description" "<p>Calls a zome function that returns a fixed value. This tests the maximum performance of zome calls when the zome function is not calling into Holochain other otherwise doing any work.</p>"
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Call timing"
+            "description" "The time taken for the call to complete."
+            "content" (tmpl.Exec "timing_and_trend" .call_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Call rate"
+            "description" "The number of zome calls completed per second."
+            "content" (tmpl.Exec "rate_and_trend" .call_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated during the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .errors))
+        ) }}
+    {{ end }}
+</div>
