@@ -2,7 +2,7 @@
 
 ### Description
 
-A scenario where 'write' peers creates entries, while 'get_agent_activity' peers each query a single 'write' agent's activity with `get_agent_activity`.
+A scenario where 'write' peers create entries, while 'get_agent_activity' peers each query a single 'write' agent's activity with `get_agent_activity`.
 
 Before a target 'write' peer and the requesting 'get_agent_activity' peer are in sync, this will measure the `get_agent_activity` call performance over a network. Once a 'write' peer reaches sync with a 'get_agent_activity' peer, the 'write' peer will publish their actions and entries, and so the `get_agent_activity` calls will likely have most of the data they need locally. At that point this measures the database query performance and code paths through host functions.
 
