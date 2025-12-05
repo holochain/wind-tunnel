@@ -1,0 +1,31 @@
+{{ define "single_write_many_read_description" }}
+<p>Creates an entry in the agent setup, then read one's own record back. This tests the maximum read performance for reading back local data when the chain is short.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Single-write, many-read"
+    "description" (tmpl.Exec "single_write_many_read_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "<code>read</code> call timing"
+            "description" "The time it takes to complete the zome call that retrieves the record."
+            "content" (tmpl.Exec "timing_and_trend" .read_call)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "<code>read</code> call rate (10s)"
+            "description" "The number of zome calls made in a 10-second window."
+            "content" (tmpl.Exec "rate_and_trend" (set "unit" "/10s" .rate_10s))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors collected."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+    {{ end }}
+</div>
