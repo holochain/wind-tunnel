@@ -1,10 +1,11 @@
+{{ $unit := default "/s" (index . "unit") }}
 {{ template "mean" (dict
     "mean" .mean
-    "unit" "/s"
+    "unit" $unit
 ) }}
 {{ template "trend_graph" (dict
     "mean" .mean
     "data" .trend
-    "unit" "/s"
+    "unit" $unit
     "window_duration" .window_duration
 ) }}
