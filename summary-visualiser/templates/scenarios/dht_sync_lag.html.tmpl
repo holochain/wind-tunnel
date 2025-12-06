@@ -22,12 +22,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
     {{ range $key, $data := . }}
         {{ template "scenario_metric_content_item" (dict
             "name" $key
-            "content" (tmpl.Exec "delta" (dict
-                "start" $data.start
-                "end" $data.end
-                "measurement_duration" (math.Add $data.measurement_duration.secs (math.Div $data.measurement_duration.nanos 1000000000))
-                "rate_per_second" $data.rate_per_second
-            ))
+            "content" (tmpl.Exec "delta" $data)
         ) }}
     {{ end }}
 {{ end }}
@@ -103,12 +98,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                 "content" (print
                     (default "" (and .wasm_usage_total (tmpl.Exec "scenario_metric_content_item" (dict
                         "name" "Total"
-                        "content" (tmpl.Exec "delta" (dict
-                            "start" .wasm_usage_total.start
-                            "end" .wasm_usage_total.end
-                            "measurement_duration" (math.Add .wasm_usage_total.measurement_duration.secs (math.Div .wasm_usage_total.measurement_duration.nanos 1000000000))
-                            "rate_per_second" .wasm_usage_total.rate_per_second
-                        ))
+                        "content" (tmpl.Exec "delta" .wasm_usage)
                     ))))
                     (default "" (and .wasm_usage_by_fn (tmpl.Exec "dht_sync_lag_wasm_usage_by_fn" .wasm_usage_by_fn)))
                 )
