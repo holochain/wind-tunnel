@@ -1,11 +1,11 @@
-use holo_hash::DnaHash;
+use holo_hash::{ActionHash, DnaHash};
 use holochain_client::{
     AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload,
     ConductorApiResult, EnableAppResponse, InstallAppPayload, SigningCredentials,
 };
 use holochain_types::prelude::{CellId, DeleteCloneCellPayload, Record};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
-use kitsune2_api::TransportStats;
+use kitsune2_api::ApiTransportStats;
 use std::sync::Arc;
 
 use crate::ToSocketAddr;
@@ -24,9 +24,13 @@ pub struct AdminWebsocketInstrumented {
 }
 
 impl AdminWebsocketInstrumented {
-    pub async fn connect(admin_url: impl ToSocketAddr, reporter: Arc<Reporter>) -> Result<Self> {
+    pub async fn connect(
+        admin_url: impl ToSocketAddr,
+        origin: Option<String>,
+        reporter: Arc<Reporter>,
+    ) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        Ok(AdminWebsocket::connect(addr)
+        Ok(AdminWebsocket::connect(addr, origin)
             .await
             .map(|inner| Self { inner, reporter })?)
     }
@@ -45,11 +49,12 @@ impl AdminWebsocketInstrumented {
     pub async fn attach_app_interface(
         &self,
         port: u16,
+        danger_bind_addr: Option<String>,
         allowed_origins: AllowedOrigins,
         installed_app_id: Option<InstalledAppId>,
     ) -> ConductorApiResult<u16> {
         self.inner
-            .attach_app_interface(port, allowed_origins, installed_app_id)
+            .attach_app_interface(port, danger_bind_addr, allowed_origins, installed_app_id)
             .await
     }
 
@@ -85,15 +90,15 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")] // post = post_process_response
-    pub async fn get_dna_definition(&self, dna_hash: DnaHash) -> ConductorApiResult<DnaDef> {
-        self.inner.get_dna_definition(dna_hash).await
+    pub async fn get_dna_definition(&self, cell_id: CellId) -> ConductorApiResult<DnaDef> {
+        self.inner.get_dna_definition(cell_id).await
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
     pub async fn grant_zome_call_capability(
         &self,
         capability: GrantZomeCallCapabilityPayload,
-    ) -> ConductorApiResult<()> {
+    ) -> ConductorApiResult<ActionHash> {
         self.inner.grant_zome_call_capability(capability).await
     }
 
@@ -111,7 +116,7 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn dump_network_stats(&self) -> ConductorApiResult<TransportStats> {
+    pub async fn dump_network_stats(&self) -> ConductorApiResult<ApiTransportStats> {
         self.inner.dump_network_stats().await
     }
 
@@ -126,8 +131,11 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn agent_info(&self, cell_id: Option<CellId>) -> ConductorApiResult<Vec<String>> {
-        self.inner.agent_info(cell_id).await
+    pub async fn agent_info(
+        &self,
+        dna_hashes: Option<Vec<DnaHash>>,
+    ) -> ConductorApiResult<Vec<String>> {
+        self.inner.agent_info(dna_hashes).await
     }
 
     // This is really a wrapper function, because it will call `grant_zome_call_capability` but it will call
