@@ -1,12 +1,13 @@
+{{ $unit := default "s" (index . "unit") }}
 {{ template "mean_std" (dict
     "mean" .mean
     "std" .std
-    "unit" "s"
+    "unit" $unit
 ) }}
 {{ template "trend_graph" (dict
     "data" .trend.trend
     "mean" .mean
     "std" .std
     "window_duration" .trend.window_duration
-    "unit" "s"
+    "unit" $unit
 ) }}
