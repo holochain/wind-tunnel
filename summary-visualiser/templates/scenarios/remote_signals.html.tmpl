@@ -1,0 +1,27 @@
+{{ define "remote_signals_description" }}
+<p>This scenario tests the throughput of <code>remote_signals</code> operations.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Remote Signals"
+    "description" (tmpl.Exec "remote_signals_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Round trip time"
+            "description" "The time from origin signal dispatch to origin receive of the remote side's response signal."
+            "content" (tmpl.Exec "timing_and_trend" .remote_signal_round_trip)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Timeouts"
+            "description" "The number of timeouts waiting for the remote side's response signal (default timeout is 20 seconds)."
+            "content" (tmpl.Exec "scalar" (dict
+                "value" (default 0 .remote_signal_timeout)
+            ))
+        ) }}
+    {{ end }}
+</div>
