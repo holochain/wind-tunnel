@@ -28,6 +28,7 @@ smoke_test_scenario() {
     fi
 }
 
+smoke_test_scenario "app_install"
 smoke_test_scenario "dht_sync_lag"
 smoke_test_scenario "local_signals"
 smoke_test_scenario "remote_call_rate"
