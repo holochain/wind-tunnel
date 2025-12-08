@@ -597,7 +597,7 @@ nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_in
 Or to download and use a different Holochain binary to start the conductors:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.6.0/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 Then, navigate to <http://localhost:4646/ui/jobs> where you should see your job listed, after clicking on
@@ -666,7 +666,7 @@ nix run .#generate-nomad-jobs -- --job-name app_install_minimal --job-variant-pa
 Now that the scenario zip file is publicly available you can run the scenario with the following:
 
 ```bash
-nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.6.0/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 - `-var scenario_url=...` provides the URL to the scenario zip file that you uploaded in the previous step.
@@ -702,8 +702,8 @@ To run it, simply navigate to <https://github.com/holochain/wind-tunnel/actions/
 sub-selection of the scenarios then simply comment-out or remove the scenarios that you want to exclude
 from the matrix in [the workflow file](.github/workflows/nomad.yaml), push your changes and make sure to
 select the correct branch. You can also override the URL to download the Holochain binary from, if you would
-like to test a different version of Holochain, the default is the latest release at
-<https://github.com/holochain/holochain/releases/latest>.
+like to test a different version of Holochain, the default is the latest 0.6.x release, at the time of writing
+<https://github.com/holochain/holochain/releases/download/holochain-0.6.0>.
 
 > [!Warning]
 > Currently, the `Wait for free nodes` step will wait indefinitely if there are never enough free nodes
