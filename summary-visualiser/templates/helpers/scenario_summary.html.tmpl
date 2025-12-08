@@ -66,6 +66,13 @@
             </div>
         {{ end }}
 
+        {{ if (and (index .data "build_info") (eq .data.build_info.info_type "holochain")) }}
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Holochain version</div>
+                <div class="scenario-summary-details-value">{{ .data.build_info.info.cargo_pkg_version }}</div>
+            </div>
+        {{ end }}
+
         <div class="scenario-summary-details-line">
             <div class="scenario-summary-details-label">Wind Tunnel version</div>
             <div class="scenario-summary-details-value">{{ .data.wind_tunnel_version }}</div>
