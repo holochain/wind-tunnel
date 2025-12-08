@@ -586,7 +586,7 @@ nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_in
 Or to download and use a different Holochain binary to start the conductors:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 Then, navigate to <http://localhost:4646/ui/jobs> where you should see your job listed, after clicking on
@@ -662,7 +662,7 @@ At this point you have to generate the Nomad job for the scenario you want to ru
 Now that the scenario zip file is publicly available you can run the scenario with the following:
 
 ```bash
-nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/latest/download/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
 ```
 
 - `-var scenario_url=...` provides the URL to the scenario zip file that you uploaded in the previous step.
