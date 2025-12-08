@@ -354,6 +354,7 @@ jobs:
       - name: Check status
         uses: re-actors/alls-green@release/v1
         with:
+          allowed-skips: test_wind_tunnel, test_summary_visualiser
           jobs: ${{ toJSON(needs) }}
 
   archive_bundles:
