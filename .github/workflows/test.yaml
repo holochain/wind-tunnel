@@ -17,6 +17,7 @@ jobs:
     outputs:
       wind_tunnel_changed: ${{ steps.filter.outputs.wind_tunnel }}
       summary_visualiser_changed: ${{ steps.filter.outputs.summary_visualiser }}
+      test_workflow_changed: ${{ steps.filter.outputs.test_workflow }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
@@ -27,9 +28,12 @@ jobs:
               - '!summary-visualiser/**'
             summary_visualiser:
               - 'summary-visualiser/**'
+            # See if this file has changed -- if so, it should trigger both CI jobs.
+            test_workflow:
+              - '.github/workflows/test.yaml'
 
   test_wind_tunnel:
-    if: needs.check_paths.outputs.wind_tunnel_changed == 'true' || github.event_name == 'merge_group'
+    if: needs.check_paths.outputs.wind_tunnel_changed == 'true' || needs.check_paths.outputs.test_workflow_changed == 'true' || github.event_name == 'merge_group'
     needs: check_paths
     strategy:
       fail-fast: false
@@ -313,7 +317,7 @@ jobs:
           df -h
 
   test_summary_visualiser:
-    if: needs.check_paths.outputs.summary_visualiser_changed == 'true' || github.event_name == 'merge_group'
+    if: needs.check_paths.outputs.summary_visualiser_changed == 'true' || needs.check_paths.outputs.test_workflow_changed == 'true' || github.event_name == 'merge_group'
     needs: check_paths
     runs-on: ubuntu-latest
     steps:
