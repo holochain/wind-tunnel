@@ -26,11 +26,13 @@ jobs:
           filters: |
             wind_tunnel:
               - '!summary-visualiser/**'
+              - '!.github/workflows/test.yaml'
             summary_visualiser:
               - 'summary-visualiser/**'
             # See if this file has changed -- if so, it should trigger both CI jobs.
             test_workflow:
               - '.github/workflows/test.yaml'
+          predicate-quantifier: 'every'
 
   test_wind_tunnel:
     if: needs.check_paths.outputs.wind_tunnel_changed == 'true' || needs.check_paths.outputs.test_workflow_changed == 'true' || github.event_name == 'merge_group'
