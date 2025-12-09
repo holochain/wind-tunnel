@@ -155,6 +155,7 @@ fn main() -> WindTunnelResult<()> {
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
+    .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(|ctx| {

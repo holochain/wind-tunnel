@@ -147,6 +147,7 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(60)
+    .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("zero", agent_behaviour_zero)
     .use_named_agent_behaviour("full", agent_behaviour_full)
