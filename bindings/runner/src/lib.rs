@@ -1,5 +1,7 @@
 mod common;
 
+mod bin_path;
+mod build_info;
 mod context;
 mod holochain_runner;
 mod macros;
@@ -11,6 +13,7 @@ pub mod prelude {
     /// This is a good place to start if you are getting started writing scenarios.
     pub use crate::common::*;
 
+    pub use crate::bin_path::WT_HOLOCHAIN_PATH_ENV;
     pub use crate::context::HolochainAgentContext;
     pub use crate::holochain_runner::HolochainRunner;
     pub use crate::runner_context::HolochainRunnerContext;

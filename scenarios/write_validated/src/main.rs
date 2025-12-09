@@ -45,6 +45,7 @@ fn main() -> WindTunnelResult<()> {
             env!("CARGO_PKG_NAME"),
         )
         .with_default_duration_s(60)
+        .use_build_info(conductor_build_info)
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(agent_behaviour)
         .use_agent_teardown(|ctx| {

@@ -111,6 +111,22 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         setup_fn(&mut runner_context)?;
     }
 
+    let runner_context = Arc::new(runner_context);
+    let runner_context_for_teardown = runner_context.clone();
+
+    // Get build info and add to summary
+    if let Some(build_info_fn) = definition.build_info_fn {
+        match build_info_fn(runner_context.clone()) {
+            Ok(Some(build_info)) => {
+                summary.set_build_info(build_info);
+            }
+            Err(e) => {
+                log::warn!("build_info_fn failed: {e}");
+            }
+            _ => {}
+        }
+    }
+
     // After the setup has run, and if this is a time bounded scenario, then we need to take additional actions
     if let Some(duration) = definition.duration_s {
         if !definition.no_progress {
@@ -127,22 +143,6 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             tokio::time::sleep(tokio::time::Duration::from_secs(duration)).await;
             shutdown_handle.shutdown();
         });
-    }
-
-    let runner_context = Arc::new(runner_context);
-    let runner_context_for_teardown = runner_context.clone();
-
-    // set holochain build info in summary if no connection string is provided
-    if runner_context.get_connection_string().is_none() {
-        match crate::holochain_binary::holochain_build_info() {
-            Ok(build_info) => {
-                log::debug!("Detected Holochain build info: {build_info:?}");
-                summary.set_holochain_build_info(build_info);
-            }
-            Err(e) => {
-                log::warn!("Could not get Holochain version: {e}");
-            }
-        }
     }
 
     // Ready to start spawning agents so start the resource monitor to report high usage by agents

@@ -155,6 +155,7 @@ fn main() -> WindTunnelResult<()> {
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(300)
     .add_capture_env("NO_VALIDATION_COMPLETE")
+    .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)
     .use_agent_teardown(agent_teardown);

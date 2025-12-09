@@ -1,11 +1,8 @@
-use std::env;
-use std::path::PathBuf;
-
 use anyhow::bail;
 use anyhow::Context;
-use wind_tunnel_summary_model::HolochainBuildInfo;
-
-use crate::types::WindTunnelResult;
+use std::env;
+use std::path::PathBuf;
+use wind_tunnel_runner::prelude::WindTunnelResult;
 
 /// Environment variable to override the path to the Holochain binary used to run conductors.
 pub const WT_HOLOCHAIN_PATH_ENV: &str = "WT_HOLOCHAIN_PATH";
@@ -15,7 +12,7 @@ pub const WT_HOLOCHAIN_PATH_ENV: &str = "WT_HOLOCHAIN_PATH";
 /// If the [`WT_HOLOCHAIN_PATH_ENV`] environment variable is set, its value is used as the path to
 /// the Holochain binary. If it is not set, the default value "holochain" is used, which assumes that
 /// the binary is available in the system's PATH.
-pub fn holochain_path() -> WindTunnelResult<PathBuf> {
+pub(crate) fn holochain_path() -> WindTunnelResult<PathBuf> {
     match env::var(WT_HOLOCHAIN_PATH_ENV).ok().as_deref() {
         Some("") => {
             bail!("'{WT_HOLOCHAIN_PATH_ENV}' set to empty string");
@@ -40,33 +37,6 @@ pub fn holochain_path() -> WindTunnelResult<PathBuf> {
             Ok(holochain_path)
         }
     }
-}
-
-/// Get the build info of the Holochain binary by running `holochain --build-info`.
-///
-/// If the [`WT_HOLOCHAIN_PATH_ENV`] environment variable is set, its value is used as the path to
-/// the Holochain binary.
-/// Otherwise, the default "holochain" binary in the system's PATH is used.
-pub fn holochain_build_info() -> WindTunnelResult<HolochainBuildInfo> {
-    let holochain_path = holochain_path()?;
-    let output = std::process::Command::new(holochain_path)
-        .arg("--build-info")
-        .output()
-        .context("Failed to execute 'holochain --build-info' command")?;
-    if !output.status.success() {
-        bail!(
-            "'holochain --build-info' command failed with exit code: {status}",
-            status = output.status
-        );
-    }
-
-    let output = String::from_utf8(output.stdout)
-        .context("Failed to parse output of 'holochain --build-info' command as UTF-8")?
-        .trim()
-        .to_string();
-
-    serde_json::from_str(&output)
-        .context("Failed to parse JSON output of 'holochain --build-info' command")
 }
 
 #[cfg(test)]

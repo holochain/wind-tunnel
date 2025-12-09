@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
+use wind_tunnel_summary_model::BuildInfo;
 
 use crate::cli::ReporterOpt;
 use crate::init::init;
@@ -15,6 +16,9 @@ pub type GlobalHookMut<RV> = fn(&mut RunnerContext<RV>) -> HookResult;
 pub type GlobalHook<RV> = fn(Arc<RunnerContext<RV>>) -> HookResult;
 pub type AgentHookMut<RV, V> = fn(&mut AgentContext<RV, V>) -> HookResult;
 
+/// The function to gather build info specific to the scenario binding
+pub type BuildInfoFn<RV> = fn(Arc<RunnerContext<RV>>) -> anyhow::Result<Option<BuildInfo>>;
+
 /// The builder for a scenario definition.
 ///
 /// This must be used at the start of a test to define the scenario that you want to run.
@@ -25,6 +29,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     default_agent_count: Option<usize>,
     default_duration_s: Option<u64>,
     capture_env: HashSet<String>,
+    build_info_fn: Option<BuildInfoFn<RV>>,
     setup_fn: Option<GlobalHookMut<RV>>,
     setup_agent_fn: Option<AgentHookMut<RV, V>>,
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -46,6 +51,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) capture_env: HashSet<String>,
     pub(crate) no_progress: bool,
     pub(crate) reporter: ReporterOpt,
+    pub(crate) build_info_fn: Option<BuildInfoFn<RV>>,
     pub(crate) setup_fn: Option<GlobalHookMut<RV>>,
     pub(crate) setup_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
@@ -96,6 +102,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             default_agent_count: None,
             default_duration_s: None,
             capture_env: HashSet::with_capacity(0),
+            build_info_fn: None,
             setup_fn: None,
             setup_agent_fn: None,
             agent_behaviour: HashMap::new(),
@@ -122,6 +129,12 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
 
     pub fn add_capture_env(mut self, key: &str) -> Self {
         self.capture_env.insert(key.to_string());
+        self
+    }
+
+    /// Sets the function to get build info for this scenario. It will be run after global setup hook.
+    pub fn use_build_info(mut self, build_info_fn: BuildInfoFn<RV>) -> Self {
+        self.build_info_fn = Some(build_info_fn);
         self
     }
 
@@ -218,6 +231,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             capture_env: self.capture_env,
             no_progress: self.cli.no_progress,
             reporter: self.cli.reporter,
+            build_info_fn: self.build_info_fn,
             setup_fn: self.setup_fn,
             setup_agent_fn: self.setup_agent_fn,
             agent_behaviour: self.agent_behaviour,
