@@ -1,3 +1,6 @@
+---
+---
+
 # Nomad Summary Reports
 
 - [index.20251209120428.a57fc3e74cbe19b6f633fc017cdaaa9821062cfe.html](index.20251209120428.a57fc3e74cbe19b6f633fc017cdaaa9821062cfe.html)
