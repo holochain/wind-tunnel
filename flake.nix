@@ -85,6 +85,13 @@
               };
               taplo.enable = true;
               yamlfmt.enable = true;
+              check-summary-visualiser-html = {
+                enable = true;
+                name = "check-summary-visualiser-html";
+                entry = "${config.packages.check-summary-visualiser-html}/bin/check-summary-visualiser-html";
+                files = "summary-visualiser/";
+                pass_filenames = false;
+              };
             };
           };
         };
@@ -94,7 +101,9 @@
             # The packages required in most devShells
             commonPackages = [
               pkgs.cmake
+              pkgs.gnugrep
               pkgs.gomplate
+              pkgs.html-tidy
               pkgs.netcat-gnu
               pkgs.perl
               pkgs.rustPlatform.bindgenHook
@@ -277,6 +286,47 @@
               check_yaml_fmt
             '';
           };
+          check-summary-visualiser-html = pkgs.writeShellScriptBin "check-summary-visualiser-html" ''
+            set -euo pipefail
+            
+            # The following abomination is apparently necessary for a few
+            # reasons:
+            # 1. This command is sometimes run in the sandboxed pre-commit check environment
+            #    where `/usr/bin/env bash` can't be used as a shebang.
+            # 2. That wouldn't be a problem -- just use `bash <script>` here
+            #    and in `summary-visualiser/test.sh` where it calls `generate.sh` --
+            #    except that gomplate also uses a plugin -- another script `scenario_template_exists.sh` --
+            #    that also has a shebang line, of course.
+            # 3. And that wouldn't be a problem if I could just pass
+            #    `"bash '$script_dir/scenario_template_exists.sh'"` as an argument to gomplate's `--plugin` option,
+            #    but gomplate chokes on that -- it can't find 'bash',
+            #    presumably because it's looking for `bash` in the working directory?
+            # Anyhow, the chain of tools from nix down to gomplate is surprisingly brittle.
+            # So our solution is to copy the whole summary-visualiser directory to a temp location,
+            # patch all the shebangs to use the correct absolute paths to bash,
+            # and then run the tests from there.
+
+            export PATH="${pkgs.lib.makeBinPath [
+              pkgs.coreutils
+              pkgs.findutils
+              pkgs.gnugrep
+              pkgs.gnused
+              pkgs.gomplate
+              pkgs.html-tidy
+              pkgs.bash
+            ]}"
+
+            WORK_DIR=$(mktemp -d)
+            trap 'rm -rf "$WORK_DIR"' EXIT
+
+            cp -r ${./summary-visualiser} "$WORK_DIR/summary-visualiser"
+            chmod -R +w "$WORK_DIR/summary-visualiser"
+
+            find "$WORK_DIR/summary-visualiser" -type f -executable -exec sed -i \
+              -e 's|^#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' {} \;
+
+            "$WORK_DIR/summary-visualiser/test.sh" --quiet
+          '';
           check-all = pkgs.writeShellApplication {
             name = "check-all";
             runtimeInputs = [
@@ -289,6 +339,8 @@
               pkgs.shellcheck
               pkgs.taplo
               pkgs.yamlfmt
+              pkgs.gomplate
+              pkgs.html-tidy
               pkgs.statix
             ];
             text = ''
@@ -435,6 +487,7 @@
             name = "summary-visualiser-smoke-test";
             runtimeInputs = [
               pkgs.gomplate
+              pkgs.html-tidy
             ];
             text = ''
               set -euo pipefail
