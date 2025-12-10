@@ -52,11 +52,15 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<()> {
 #[hdk_extern]
 fn create_validated_sample_entry(agent: AgentPubKey) -> ExternResult<usize> {
     // Get last created action hash
-    let mut links: Vec<Link> = get_links(
+    let links: Vec<Link> = get_links(
         GetLinksInputBuilder::try_new(chain_head_anchor()?, LinkTypes::LatestAction)?.build(),
     )?;
-    links.sort_by_key(|l| l.timestamp);
-    let chain_head_link: Link = links
+    let mut links_from_write_agent = links
+        .into_iter()
+        .filter(|l| l.author == agent)
+        .collect::<Vec<Link>>();
+    links_from_write_agent.sort_by_key(|l| l.timestamp);
+    let chain_head_link: Link = links_from_write_agent
         .last()
         .ok_or_else(|| {
             wasm_error!(WasmErrorInner::Guest(String::from(
