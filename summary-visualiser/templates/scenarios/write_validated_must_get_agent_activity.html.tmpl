@@ -1,5 +1,5 @@
 {{ define "write_validated_must_get_agent_activity_description" }}
-<p>A scenario where <b><code>write</code></b> agents create entries, while <b><code>get_agent_activity</code></b> agents create entries which are validated with a <code>must_get_agent_activty</code> call for a single <code>write</code> agent's activity.</p>
+<p>A scenario where <b><code>write</code></b> agents create entries, while <b><code>get_agent_activity</code></b> agents create entries which are validated with a <code>must_get_agent_activity</code> call for a single <code>write</code> agent's activity.</p>
 
 <p>Before a target <code>write</code> peer and the requesting peer are in sync, the <code>must_get_agent_activity</code> request will go over the network. Once a <code>write</code> peer reaches sync with the requesting <code>must_get_agent_activity</code> peer, the <code>write</code> peer will publish their actions and entries, and so the <code>must_get_agent_activity</code> calls will likely have the data it needs locally. At that point this measures the database query performance and code paths through host functions.</p>
 {{ end }}
