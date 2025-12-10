@@ -1,0 +1,39 @@
+{{ template "scenario_summary" (dict
+    "title" "Write/Read"
+    "description" "<p>Creates an entry and reads it back, then repeats.</p>"
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Write timing"
+            "description" "The time taken to write the entry."
+            "content" (tmpl.Exec "timing_and_trend" .write_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Write rate"
+            "description" "The number of writes completed per second."
+            "content" (tmpl.Exec "rate_and_trend" .write_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Read timing"
+            "description" "The time taken to read the entry."
+            "content" (tmpl.Exec "timing_and_trend" .read_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Read rate"
+            "description" "The number of reads completed per second."
+            "content" (tmpl.Exec "rate_and_trend" .read_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated over the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .errors))
+        ) }}
+    {{ end }}
+</div>

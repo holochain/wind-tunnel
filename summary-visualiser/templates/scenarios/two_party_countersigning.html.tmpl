@@ -1,0 +1,49 @@
+{{ define "two_party_countersigning_description" }}
+<p>This scenario tests the performance of countersigning operations. There are two roles: <b><code>initiate</code></b> and <b><code>participate</code></b>. The participants commit an entry to advertise that they are willing to participate in sessions. They listen for sessions and participate in one at a time.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Two-party countersigning"
+    "description" (tmpl.Exec "two_party_countersigning_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Session accepted -- timing"
+            "description" "The duration of the session from acceptance to completion."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .accepted_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Session accepted -- success rate"
+            "description" "The number of accepted sessions that completed per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .accepted_success_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Session accepted -- failure rate"
+            "description" "The number of accepted sessions that failed per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .accepted_failure_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Session initiated -- timing"
+            "description" "The duration of the session from initiation to completion."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .initiated_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Session initiated -- success rate"
+            "description" "The number of initiated sessions that completed per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .initiated_success_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Session initiated -- failure rate"
+            "description" "The number of initiated sessions that failed per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .initiated_failure_rate)
+        ) }}
+    {{ end }}
+</div>

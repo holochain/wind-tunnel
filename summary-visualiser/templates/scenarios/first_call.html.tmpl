@@ -1,0 +1,19 @@
+{{ define "first_call_description" }}
+<p>This scenario installs a simple app which implements the <code>init</code> callback, and measures the time elapsed between start of install and calling <code>init</code>. It will uninstall the app it installed so that it can re-install it on the next iteration. This is required to re-run the initialisation callback.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "First Call"
+    "description" (tmpl.Exec "first_call_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics.zome_call_timing }}
+        {{ template "scenario_metric" (dict
+            "name" "Zome call timing"
+            "description" "The time elapsed between start of install and calling <code>init</code>."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+</div>
