@@ -241,10 +241,12 @@
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
-              pkgs.clang
               inputs'.holonix.packages.hc
               pkgs.rustPlatform.bindgenHook
-            ];
+            ] ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.clang
+              pkgs.iconv
+            ]);
             text = ''
               set -euo pipefail
 
