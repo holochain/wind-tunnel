@@ -241,6 +241,8 @@
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
+              pkgs.clang
+              inputs'.holonix.packages.hc
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
