@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct WriteGetAgentActivitySummary {
+struct MixedArcGetAgentActivitySummary {
     highest_observed_action_seq: CounterStats,
     chain_head_delay_timing: PartitionedTimingStats,
     chain_head_delay_rate: PartitionedRateStats,
@@ -97,7 +97,7 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
 
     SummaryOutput::new(
         summary.clone(),
-        WriteGetAgentActivitySummary {
+        MixedArcGetAgentActivitySummary {
             highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value")
                 .context("Highest observed action seq stats")?,
             chain_head_delay_timing: partitioned_timing_stats(

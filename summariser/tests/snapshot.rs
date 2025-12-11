@@ -136,6 +136,12 @@ async fn mixed_arc_get_agent_activity() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn mixed_arc_must_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("c965934f5262aa6a6442a7d3a23306c8497ee785d416d8269650be33db67911c");
+    Ok(())
+}
+
+#[tokio::test]
 async fn remote_call_rate() -> anyhow::Result<()> {
     run_snapshot_test!("f92e98962b23bfe104373a735dd9af8eb363e347a0c528902d4a2aaa8351cd74");
     Ok(())
@@ -197,7 +203,7 @@ async fn write_get_agent_activity() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("f11ec2e0490ac1fba9137f7a3c7ec261262d8305478d22844f3a2df60573f14b");
+    run_snapshot_test!("990319bade877974d16c6f7cfd0a1ec734062cab66677dc6b2695ef2ae98792c");
     Ok(())
 }
 

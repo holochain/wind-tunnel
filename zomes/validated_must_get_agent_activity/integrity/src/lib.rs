@@ -8,7 +8,7 @@ pub struct SampleEntry {
 #[hdk_entry_helper]
 pub struct ValidatedSampleEntry {
     pub agent: AgentPubKey,
-    pub chain_head: ActionHash,
+    pub chain_top: ActionHash,
     pub chain_len: usize,
 }
 
@@ -34,7 +34,7 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             app_entry: EntryTypes::ValidatedSampleEntry(entry),
             ..
         }) => {
-            let _ = must_get_agent_activity(entry.agent, ChainFilter::new(entry.chain_head))?;
+            let _ = must_get_agent_activity(entry.agent, ChainFilter::new(entry.chain_top))?;
 
             Ok(ValidateCallbackResult::Valid)
         }
