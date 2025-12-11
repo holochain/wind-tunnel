@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 
@@ -82,7 +82,7 @@ pub struct RunSummary {
     /// Note: This is only meaningful for single-conductor tests with the standard Wind Tunnel runner
     /// or with the TryCP runner. In general, each node only sees the roles it was assigned and not
     /// the roles that were assigned across the network.
-    pub assigned_behaviours: HashMap<String, usize>,
+    pub assigned_behaviours: BTreeMap<String, usize>,
     /// Environment variables set for the run
     ///
     /// This won't capture all environment variables. Just the ones that the runner is aware of or
@@ -106,7 +106,7 @@ impl RunSummary {
             run_duration: None,
             peer_count: args.peer_count,
             peer_end_count: 0,
-            assigned_behaviours: HashMap::new(),
+            assigned_behaviours: BTreeMap::new(),
             env: HashMap::new(),
             wind_tunnel_version: args.wind_tunnel_version,
             build_info: None,
@@ -120,7 +120,10 @@ impl RunSummary {
     }
 
     /// Construct [`RunSummary`] with the specified assigned behaviours
-    pub fn with_assigned_behaviours(mut self, assigned_behaviours: HashMap<String, usize>) -> Self {
+    pub fn with_assigned_behaviours(
+        mut self,
+        assigned_behaviours: BTreeMap<String, usize>,
+    ) -> Self {
         self.assigned_behaviours = assigned_behaviours;
         self
     }
@@ -251,7 +254,7 @@ mod tests {
         assert_eq!(run_summary.wind_tunnel_version, "1.0.0");
         assert_eq!(run_summary.build_info, None);
 
-        let mut assigned_behaviours = HashMap::new();
+        let mut assigned_behaviours = BTreeMap::new();
         assigned_behaviours.insert("behaviour-1".to_string(), 3);
         assigned_behaviours.insert("behaviour-2".to_string(), 5);
         let mut run_summary = RunSummary::new(RunSummaryInitArgs {

@@ -7,8 +7,16 @@ use validated_must_get_agent_activity_integrity::{
     EntryTypes, LinkTypes, SampleEntry, ValidatedSampleEntry,
 };
 
-fn chain_head_anchor() -> ExternResult<AnyLinkableHash> {
-    Ok(Path::from("LATEST_ENTRY").path_entry_hash()?.into())
+fn chain_batch_anchor(agent: AgentPubKey, batch_num: u32) -> ExternResult<AnyLinkableHash> {
+    Ok(Path::from(
+        format!(
+            "CHAIN_BATCH_ANCHOR.{}.{batch_num}",
+            AgentPubKeyB64::from(agent)
+        )
+        .as_str(),
+    )
+    .path_entry_hash()?
+    .into())
 }
 
 fn write_agents_anchor() -> ExternResult<EntryHash> {
@@ -18,11 +26,17 @@ fn write_agents_anchor() -> ExternResult<EntryHash> {
 #[derive(Serialize, Deserialize, SerializedBytes, Debug)]
 struct ChainLenTag(pub usize);
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CreateEntriesBatchInput {
+    pub num_entries: u32,
+    pub batch_num: u32,
+}
+
 #[hdk_extern]
-fn create_sample_entries_batch(count: u64) -> ExternResult<()> {
+fn create_sample_entries_batch(input: CreateEntriesBatchInput) -> ExternResult<()> {
     // Create batch entries
     let mut action_hashes: Vec<ActionHash> = vec![];
-    for _ in 0..count {
+    for _ in 0..input.num_entries {
         action_hashes.push(create_entry(EntryTypes::SampleEntry(SampleEntry {
             value: "This is a sample entry".to_string(),
         }))?);
@@ -30,64 +44,95 @@ fn create_sample_entries_batch(count: u64) -> ExternResult<()> {
 
     // Query my chain and count length
     let chain_len = query(ChainQueryFilter::new().include_entries(false))?.len();
-    let serialized_bytes: SerializedBytes = ChainLenTag(chain_len).try_into().map_err(|_| {
-        wasm_error!(WasmErrorInner::Guest(
-            "Failed to convert chain len to serialized bytes".into()
-        ))
-    })?;
+    let serialized_chain_len: SerializedBytes =
+        ChainLenTag(chain_len).try_into().map_err(|_| {
+            wasm_error!(WasmErrorInner::Guest(
+                "Failed to convert chain len to serialized bytes".into()
+            ))
+        })?;
 
     // Link to last created action hash
     if let Some(last_ah) = action_hashes.last() {
         let _ = create_link(
-            chain_head_anchor()?,
+            chain_batch_anchor(agent_info()?.agent_initial_pubkey, input.batch_num)?,
             last_ah.clone(),
             LinkTypes::LatestAction,
-            serialized_bytes.bytes().clone(),
+            serialized_chain_len.bytes().clone(),
         )?;
     }
 
     Ok(())
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GetChainTopForBatchInput {
+    pub agent: AgentPubKey,
+    pub batch_num: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BatchChainTop {
+    pub chain_top: ActionHash,
+    pub batch_num: u32,
+    pub chain_len: usize,
+    /// The timestamp of when the writing peer created the link for this
+    /// chain top to the chain batch anchor.
+    pub timestamp: Timestamp,
+}
+
 #[hdk_extern]
-fn create_validated_sample_entry(agent: AgentPubKey) -> ExternResult<usize> {
-    // Get last created action hash
+fn get_chain_top_for_batch(input: GetChainTopForBatchInput) -> ExternResult<BatchChainTop> {
     let links: Vec<Link> = get_links(
-        GetLinksInputBuilder::try_new(chain_head_anchor()?, LinkTypes::LatestAction)?.build(),
+        GetLinksInputBuilder::try_new(
+            chain_batch_anchor(input.agent.clone(), input.batch_num)?,
+            LinkTypes::LatestAction,
+        )?
+        .build(),
     )?;
-    let mut links_from_write_agent = links
-        .into_iter()
-        .filter(|l| l.author == agent)
-        .collect::<Vec<Link>>();
-    links_from_write_agent.sort_by_key(|l| l.timestamp);
-    let chain_head_link: Link = links_from_write_agent
+    let batch_chain_top_link: Link = links
         .last()
         .ok_or_else(|| {
             wasm_error!(WasmErrorInner::Guest(String::from(
-                "No chain head link found"
+                "No batch chain top link found"
             )))
         })?
         .clone();
-    let chain_head = chain_head_link.target.try_into().map_err(|_| {
+    let chain_top: ActionHash = batch_chain_top_link.target.try_into().map_err(|_| {
         wasm_error!(WasmErrorInner::Guest(String::from(
             "Invalid link target type"
         )))
     })?;
-    let serialized_bytes = SerializedBytes::from(UnsafeBytes::from(chain_head_link.tag.0));
+    let serialized_bytes = SerializedBytes::from(UnsafeBytes::from(batch_chain_top_link.tag.0));
     let chain_len_tag: ChainLenTag = serialized_bytes.try_into().map_err(|_| {
         wasm_error!(WasmErrorInner::Guest(
             "Failed to deserialize tag to chain len".to_string()
         ))
     })?;
+    Ok(BatchChainTop {
+        chain_top,
+        batch_num: input.batch_num,
+        chain_len: chain_len_tag.0,
+        timestamp: batch_chain_top_link.timestamp,
+    })
+}
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SampleEntryInput {
+    pub agent: AgentPubKey,
+    pub chain_top: ActionHash,
+    pub chain_len: usize,
+}
+
+#[hdk_extern]
+fn create_validated_sample_entry(input: SampleEntryInput) -> ExternResult<()> {
     // Create entry that validates with must_get_agent_activity
     let _ = create_entry(EntryTypes::ValidatedSampleEntry(ValidatedSampleEntry {
-        agent,
-        chain_head,
-        chain_len: chain_len_tag.0,
+        agent: input.agent,
+        chain_top: input.chain_top,
+        chain_len: input.chain_len,
     }))?;
 
-    Ok(chain_len_tag.0)
+    Ok(())
 }
 
 #[hdk_extern]

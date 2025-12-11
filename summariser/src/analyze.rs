@@ -1,3 +1,4 @@
+use crate::frame::LoadError;
 use crate::model::{
     CounterStats, GaugeStats, PartitionGaugeStats, PartitionKey, PartitionRateStats,
     PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
@@ -170,10 +171,44 @@ pub(crate) fn partitioned_timing_stats(
     );
 
     Ok(PartitionedTimingStats {
-        mean,
+        mean: round_to_n_dp(mean, 6),
         mean_std_dev,
         timings,
     })
+}
+
+/// Calculates [`crate::model::PartitionTimingStats`] for the given DataFrame and
+/// if no series were found in influx, defaults to:
+///
+/// PartitionedTimingStats {
+///     mean: 0.0,
+///     mean_std_dev: 0.0,
+///     timings: vec![],
+/// }
+///
+/// This is useful in cases where no series found is an expected case, for example
+/// for metrics that track errors of which none may occur during a scenario run.
+pub(crate) fn partitioned_timing_stats_allow_empty(
+    frame: anyhow::Result<DataFrame>,
+    column: &str,
+    window_duration: &str,
+    partition_by: &[&str],
+) -> anyhow::Result<PartitionedTimingStats> {
+    match frame {
+        Ok(df) => partitioned_timing_stats(df, column, window_duration, partition_by),
+        Err(e) => {
+            if let Some(LoadError::NoSeriesInResult { .. }) = e.downcast_ref::<LoadError>() {
+                // It is expected that there often is no error at all so if we find no series, return an empty count
+                Ok(PartitionedTimingStats {
+                    mean: 0.0,
+                    mean_std_dev: 0.0,
+                    timings: vec![],
+                })
+            } else {
+                Err(e)
+            }
+        }
+    }
 }
 
 pub(crate) fn standard_rate(
