@@ -74,11 +74,13 @@ mod tests {
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt as _;
 
+    use serial_test::serial;
     use tempfile::{NamedTempFile, TempDir};
 
     use super::*;
 
     #[test]
+    #[serial]
     fn test_should_not_get_holochain_path_if_not_exist() {
         env::set_var(WT_HOLOCHAIN_PATH_ENV, "/non/existent/path/to/holochain");
         let result = holochain_path();
@@ -86,6 +88,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_should_get_holochain_path_from_env() {
         let temp = NamedTempFile::new().expect("failed to create temp file");
         let test_path = temp.path().to_str().expect("failed to get temp file path");
@@ -96,6 +99,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    #[serial]
     fn test_should_get_default_holochain_path() {
         let temp = TempDir::new().expect("failed to create temp file");
         // create holochain file in temp dir
@@ -119,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_should_not_get_default_holochain_path() {
         // unset PATH
         env::remove_var("PATH");
