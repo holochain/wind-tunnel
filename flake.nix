@@ -245,7 +245,7 @@
               pkgs.rustPlatform.bindgenHook
             ] ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
               pkgs.clang
-              pkgs.iconv
+              pkgs.libiconv
             ]);
             text = ''
               set -euo pipefail
