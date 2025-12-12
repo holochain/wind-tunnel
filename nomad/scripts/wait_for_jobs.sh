@@ -114,16 +114,16 @@ function wait_for_job() {
             continue
         fi
 
-        # Job has completed
+        # Job has completed (either successfully or failed)
         if is_run_success "$status"; then
-            break
+            echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
+        else
+            echo "Scenario $scenario_name ($alloc_id) finished with status=$status after $ELAPSED_SECS seconds."
+            print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
+            echo "Note: Failed allocations are treated as completed. The summariser will catch any issues."
         fi
-
-        echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $ELAPSED_SECS seconds."
-        print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
-        exit 1
+        break
     done
-    echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
 
     return 0
 }
