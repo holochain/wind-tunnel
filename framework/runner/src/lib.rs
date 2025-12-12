@@ -2,7 +2,6 @@ mod cli;
 mod context;
 mod definition;
 mod executor;
-mod holochain_binary;
 mod init;
 mod monitor;
 mod progress;
@@ -18,9 +17,6 @@ pub mod prelude {
     pub use crate::context::{AgentContext, RunnerContext};
     pub use crate::definition::{HookResult, ScenarioDefinitionBuilder};
     pub use crate::executor::Executor;
-    pub use crate::holochain_binary::{
-        holochain_build_info, holochain_path, WT_HOLOCHAIN_PATH_ENV,
-    };
     pub use crate::init::init;
     pub use crate::run::run;
     pub use crate::types::WindTunnelResult;

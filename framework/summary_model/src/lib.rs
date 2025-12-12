@@ -1,4 +1,3 @@
-use chrono::{offset::Utc, DateTime};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
@@ -22,28 +21,19 @@ pub struct RunSummaryInitArgs {
     pub wind_tunnel_version: String,
 }
 
-/// Information about the Holochain build used in the run
+/// Build information of any software used in the run.
+/// This is expected to be specific to the binding used by a scenario.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct HolochainBuildInfo {
-    pub cargo_pkg_version: String,
-    pub hdk_version_req: String,
-    pub hdi_version_req: String,
-    pub lair_keystore_version_req: String,
-    pub timestamp: DateTime<Utc>,
-    pub hostname: String,
-    pub host: String,
-    pub target: String,
-    pub rustc_version: String,
-    pub rustflags: String,
-    pub profile: String,
-    pub git_info: Option<HolochainBuildGitInfo>,
-}
+pub struct BuildInfo {
+    /// A label of the type of build info included.
+    /// This should be consistent for any scenarios providing
+    /// the same type of build info.
+    ///
+    /// This is to facilitate duck-typing the info field.
+    pub info_type: String,
 
-/// Information about the [`HolochainBuildInfo`] git info
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct HolochainBuildGitInfo {
-    pub rev: String,
-    pub dirty: bool,
+    /// The actual build info
+    pub info: serde_json::Value,
 }
 
 /// Summary of a run
@@ -102,8 +92,8 @@ pub struct RunSummary {
     ///
     /// This is the version of the Wind Tunnel runner that was used to run the scenario.
     pub wind_tunnel_version: String,
-    /// The Holochain build info that was used for this run
-    pub holochain_build_info: Option<HolochainBuildInfo>,
+    /// The build info that was used for this run
+    pub build_info: Option<BuildInfo>,
 }
 
 impl RunSummary {
@@ -119,7 +109,7 @@ impl RunSummary {
             assigned_behaviours: HashMap::new(),
             env: HashMap::new(),
             wind_tunnel_version: args.wind_tunnel_version,
-            holochain_build_info: None,
+            build_info: None,
         }
     }
 
@@ -140,9 +130,9 @@ impl RunSummary {
         self.peer_end_count = peer_end_count;
     }
 
-    /// Set the holochain build info
-    pub fn set_holochain_build_info(&mut self, holochain_build_info: HolochainBuildInfo) {
-        self.holochain_build_info = Some(holochain_build_info);
+    /// Set the build info
+    pub fn set_build_info(&mut self, build_info: BuildInfo) {
+        self.build_info = Some(build_info);
     }
 
     /// Add an environment variable
@@ -235,6 +225,12 @@ mod tests {
 
     use super::*;
 
+    #[derive(Serialize, Deserialize)]
+    struct MyBuildInfo {
+        version: String,
+        library_version: String,
+    }
+
     #[test]
     fn test_should_construct_run_summary() {
         let run_summary = RunSummary::new(RunSummaryInitArgs {
@@ -253,7 +249,7 @@ mod tests {
         assert!(run_summary.assigned_behaviours.is_empty());
         assert!(run_summary.env.is_empty());
         assert_eq!(run_summary.wind_tunnel_version, "1.0.0");
-        assert_eq!(run_summary.holochain_build_info, None);
+        assert_eq!(run_summary.build_info, None);
 
         let mut assigned_behaviours = HashMap::new();
         assigned_behaviours.insert("behaviour-1".to_string(), 3);
@@ -270,7 +266,7 @@ mod tests {
 
         run_summary.set_peer_end_count(4);
         let build_info = build_info();
-        run_summary.set_holochain_build_info(build_info.clone());
+        run_summary.set_build_info(build_info.clone());
 
         assert_eq!(run_summary.run_id, "test-run-1");
         assert_eq!(run_summary.scenario_name, "test-scenario");
@@ -279,14 +275,14 @@ mod tests {
         assert_eq!(run_summary.peer_count, 2);
         assert_eq!(run_summary.peer_end_count, 4);
         assert_eq!(run_summary.wind_tunnel_version, "1.0.0");
-        assert_eq!(run_summary.holochain_build_info, Some(build_info));
+        assert_eq!(run_summary.build_info, Some(build_info));
 
         assert_eq!(run_summary.assigned_behaviours.get("behaviour-1"), Some(&3));
         assert_eq!(run_summary.assigned_behaviours.get("behaviour-2"), Some(&5));
     }
 
     #[test]
-    fn test_should_set_holochain_build_info() {
+    fn test_should_set_build_info() {
         let mut run_summary = RunSummary::new(RunSummaryInitArgs {
             run_id: "test".to_string(),
             scenario_name: "scenario".to_string(),
@@ -294,32 +290,23 @@ mod tests {
             peer_count: 2,
             wind_tunnel_version: "1.0.0".to_string(),
         });
-        assert_eq!(run_summary.holochain_build_info, None);
+        assert_eq!(run_summary.build_info, None);
 
         let build_info = build_info();
 
-        run_summary.set_holochain_build_info(build_info.clone());
-        assert_eq!(run_summary.holochain_build_info, Some(build_info));
+        run_summary.set_build_info(build_info.clone());
+        assert_eq!(run_summary.build_info, Some(build_info));
     }
 
     #[inline(always)]
-    fn build_info() -> HolochainBuildInfo {
-        HolochainBuildInfo {
-            cargo_pkg_version: "0.0.100".to_string(),
-            hdk_version_req: "0.0.100".to_string(),
-            hdi_version_req: "0.0.100".to_string(),
-            lair_keystore_version_req: "0.0.100".to_string(),
-            timestamp: Utc::now(),
-            hostname: "test-host".to_string(),
-            host: "x86_64-unknown-linux-gnu".to_string(),
-            target: "x86_64-unknown-linux-gnu".to_string(),
-            rustc_version: "1.70.0".to_string(),
-            rustflags: "-C target-cpu=native".to_string(),
-            profile: "release".to_string(),
-            git_info: Some(HolochainBuildGitInfo {
-                rev: "abcdef1234567890".to_string(),
-                dirty: false,
-            }),
+    fn build_info() -> BuildInfo {
+        BuildInfo {
+            info_type: "my_build_info".to_string(),
+            info: serde_json::to_value(MyBuildInfo {
+                version: "0.0.100".to_string(),
+                library_version: "0.0.100".to_string(),
+            })
+            .unwrap(),
         }
     }
 }
