@@ -76,7 +76,7 @@ jobs:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: "${{ inputs.commit_hash || github.sha }}"
 
@@ -217,7 +217,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Wait for all allocations in job
         env:
@@ -242,7 +242,7 @@ jobs:
     runs-on: [self-hosted, wind-tunnel]
     needs: wait-for-jobs
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download all alloc_ids
         uses: actions/download-artifact@v5
