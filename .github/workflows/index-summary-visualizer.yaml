@@ -30,14 +30,40 @@ jobs:
           # Sort reports by filename (newest first)
           sorted_reports=$(echo "$reports" | sort -r)
 
+          # Cross-platform date parsing function
+          # Timestamp format: YYYYMMDDHHMMSS
+          parse_date() {
+            if date -d "19700101" >/dev/null 2>&1; then
+              date -d "${1:0:8} ${1:8:2}:${1:10:2}:${1:12:2}" +"%Y-%m-%d %H:%M:%S"
+            else
+              date -j -f "%Y%m%d%H%M%S" "$1" "+%Y-%m-%d %H:%M:%S"
+            fi
+          }
+
+          # filename is run.<timestamp>.<hash>.html; extract timestamp and hash and format them
+          format_filename() {
+            local filename
+            local base
+            local raw_ts
+            filename="$1"
+            base="${filename%.html}"
+            raw_ts="${base#run.}"
+            raw_ts="${raw_ts%%.*}"
+            local hash="${base#run.$raw_ts.}"
+            # raw_ts format: YYYYMMDDHHMMSS
+            local timestamp
+            timestamp="$(parse_date "$raw_ts")"
+            echo "${timestamp} (${hash})"
+          }
+
           # Regenerate index.md
           echo "Generating index.md"
           {
             echo "---"
             echo "---"
-            echo "# Nomad Summary Reports"
+            echo "# Summary Reports"
             for f in $sorted_reports; do
-              echo "- [${f}](${f})"
+              echo "- [$(format_filename "$f")](${f})"
             done
           } > index.md
 
