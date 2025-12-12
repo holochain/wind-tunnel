@@ -64,6 +64,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "mixed_arc_get_agent_activity" => Some(
+            async move {
+                summarize_mixed_arc_get_agent_activity(client.clone(), summary.clone())
+                    .await
+                    .context("Mixed arc get agent activity summary")
+            }
+            .boxed(),
+        ),
         "remote_call_rate" => Some(
             async move {
                 summarize_remote_call_rate(client.clone(), summary.clone())
