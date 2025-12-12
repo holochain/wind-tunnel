@@ -5,6 +5,8 @@ on:
     inputs:
       holochain_bin_url:
         description: "The URL to download the `holochain` binary from"
+      commit_hash:
+        description: "The commit hash to checkout before running the tests"
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
   # Trigger on changes to Nomad workflow file
@@ -74,7 +76,9 @@ jobs:
       RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
       JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          ref: "${{ inputs.commit_hash || github.sha }}"
 
       - name: Build Nomad Job
         run: |
@@ -213,7 +217,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Wait for all allocations in job
         env:
@@ -238,7 +242,7 @@ jobs:
     runs-on: [self-hosted, wind-tunnel]
     needs: wait-for-jobs
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download all alloc_ids
         uses: actions/download-artifact@v5
@@ -278,6 +282,26 @@ jobs:
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
+
+      - name: Generate summary visualiser
+        env:
+          HASH: "${{ inputs.commit_hash || github.sha }}"
+        run: |
+          # The summary visualiser can only take one file at a time,
+          # but only one summariser report JSON file is fed to it in a run.
+          # The wildcard here is because we don't know the name of the file.
+          mkdir -p ./nomad-summary-visualiser
+          output_file="./nomad-summary-visualiser/run.$(date +%Y%m%d%H%M%S).${{ env.HASH }}.html"
+          nix run .#generate-summary-visualiser ./summariser-report-*.json "$output_file"
+
+      - name: Push run.html to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./nomad-summary-visualiser # The directory containing the generated HTML file
+          publish_branch: gh-pages
+          keep_files: true
+          enable_jekyll: true
 
       - name: Upload run summary
         uses: actions/upload-artifact@v5

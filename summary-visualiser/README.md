@@ -25,3 +25,25 @@ There are some individual scenario sample files in `summary-visualiser/test_data
 ```bash
 cat summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json | jq '[.]' | summary-visualiser/generate.sh > dht_sync_lag.html
 ```
+
+## Nomad Workflow Integration
+
+The output HTML is published as part of the GitHub Pages for this repository at [https://holochain.github.io/wind-tunnel/](https://holochain.github.io/wind-tunnel/) after each run of the `Run performance tests on Nomad cluster` workflow.
+
+In the `.github/workflows/nomad.yaml` file, the workflow step that does this is:
+
+```yaml
+- name: Generate summary visualiser
+  run: |
+    mkdir -p ./nomad-summary-visualiser
+    nix run .#generate-summary-visualiser ./summariser-report-*.json ./nomad-summary-visualiser/index.html
+
+- name: Push index.html to GitHub Pages
+  uses: peaceiris/actions-gh-pages@v3
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_dir: ./nomad-summary-visualiser # The directory containing index.html
+    publish_branch: gh-pages
+```
+
+If you want you can specify the commit hash to checkout before running the tests by providing the `commit_hash` input to the workflow.

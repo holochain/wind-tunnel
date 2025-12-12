@@ -14,6 +14,7 @@ running load tests and collecting results. This code is not specific to Holochai
 points for hooking in Holochain specific behaviour.
 
 It is divided into the following crates:
+
 - `wind_tunnel_instruments`: Tools for collecting and reporting metrics.
 - `wind_tunnel_instruments_derive`: Procedural macros to generate code that helps integrate the `wind_tunnel_instruments` crate.
 - `wind_tunnel_runner`: The main logic for running load tests. This is a library that is designed to be embedded inside a test binary.
@@ -721,6 +722,10 @@ RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url htt
 ```
 
 If your bootstrap and signal servers run under a different port, adapt the command accordingly. The scenario creates 2 peer and runs for 20 seconds.
+
+## Summary Visualizer
+
+At each run of the `Run performance tests on Nomad cluster` workflow the run summary is published within the [GitHub Pages](https://holochain.github.io/wind-tunnel/) of this repository.
 
 ### Published crates
 
