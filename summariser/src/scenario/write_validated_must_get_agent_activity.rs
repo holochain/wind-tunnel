@@ -1,6 +1,6 @@
 use crate::aggregator::HostMetricsAggregator;
-use crate::analyze::{counter_stats, partitioned_timing_stats};
-use crate::model::{CounterStats, PartitionedTimingStats, SummaryOutput};
+use crate::analyze::{counter_stats, partitioned_rate_stats, partitioned_timing_stats};
+use crate::model::{CounterStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
 use anyhow::Context;
 use polars::prelude::{col, lit, IntoLazy};
@@ -10,6 +10,8 @@ use wind_tunnel_summary_model::RunSummary;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct WriteValidatedMustGetAgentActivitySummary {
     write_validated_must_get_agent_activity_chain_len: CounterStats,
+    chain_batch_delay_timing: PartitionedTimingStats,
+    chain_batch_delay_rate: PartitionedRateStats,
     create_validated_sample_entry_zome_calls: PartitionedTimingStats,
     error_count: usize,
 }
@@ -36,6 +38,15 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
     .await
     .context("Load write_validated_must_get_agent_activity_chain_len data")?;
 
+    let chain_batch_delay = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.write_validated_must_get_agent_activity_chain_batch_delay",
+        &["write_agent", "must_get_agent_activity_agent"],
+    )
+    .await
+    .context("Load chain batch delay data")?;
+
     let create_validated_sample_entry_zome_calls = zome_calls
         .clone()
         .lazy()
@@ -54,6 +65,20 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
                 "value",
             )
             .context("Write write_validated_must_get_agent_activity_chain_len stats")?,
+            chain_batch_delay_timing: partitioned_timing_stats(
+                chain_batch_delay.clone(),
+                "value",
+                "10s",
+                &["must_get_agent_activity_agent"],
+            )
+            .context("Timing stats for chain batch delay")?,
+            chain_batch_delay_rate: partitioned_rate_stats(
+                chain_batch_delay,
+                "value",
+                "10s",
+                &["must_get_agent_activity_agent"],
+            )
+            .context("Rate stats for chain head delay")?,
             create_validated_sample_entry_zome_calls: partitioned_timing_stats(
                 create_validated_sample_entry_zome_calls,
                 "value",
