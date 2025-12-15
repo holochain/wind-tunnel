@@ -33,6 +33,7 @@ variable "run_id" {
 job "{{ (ds "vars").scenario_name }}" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
+  node_pool = "all" // Run on all node pools
 
   constraint {
     distinct_hosts = true // Don't run multiple instances on the same client at once
