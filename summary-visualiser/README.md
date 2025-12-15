@@ -46,4 +46,4 @@ In the `.github/workflows/nomad.yaml` file, the workflow step that does this is:
     publish_branch: gh-pages
 ```
 
-If you want you can specify the commit hash to checkout before running the tests by providing the `commit_hash` input to the workflow.
+If you want you can specify the commit hash to checkout before running the tests by providing the `commit-hash` input to the workflow.

@@ -1,37 +1,53 @@
-name: "Run performance tests on Nomad cluster"
+name: "Run Nomad Scenario"
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      holochain_bin_url:
+      holochain-bin-url:
         description: "The URL to download the `holochain` binary from"
-      commit_hash:
-        description: "The commit hash to checkout before running the tests"
-  schedule:
-    - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
-  # Trigger on changes to Nomad workflow file
-  pull_request:
-    paths:
-      - ".github/workflows/nomad.yaml"
-
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
-
-env:
-  HOLOCHAIN_BIN_URL: "${{ inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}"
+        type: string
+        required: true
+      commit-hash:
+        description: "The git commit hash to checkout before running the tests"
+        type: string
+        required: false
+      nomad-job-variant-directory:
+        description: "The path to the directory containing the nomad job variant"
+        type: string
+        required: true
+      enable-summary-visualiser-html-upload:
+        description: "Enable upload of summary visualiser html to GitHub Pages"
+        type: boolean
+        required: true
+      enable-summary-json-upload:
+        description: "Enable upload of summary json"
+        type: boolean
+        required: true
+      ignore-summary-errors:
+        description: "Ignore errors from summarizer"
+        type: boolean
+        required: true
+    secrets:
+      NOMAD_ACCESS_TOKEN:
+        required: true
+      INFLUX_TOKEN:
+        required: true
+      GITHUB_TOKEN:
+        required: false
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS:
+        required: false
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET:
+        required: false
 
 jobs:
   run-scenarios:
-    name: Run ${{ matrix.job-name || matrix.scenario-name }}
+    name: Run ${{ matrix.job-name }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       fail-fast: false
-      # `job-name` defaults to `scenario-name` if not provided.
-      # `required-nodes` defaults to `1` if not provided.
       matrix:
-        scenario-name:
+        job-name:
           - first_call
           - local_signals
           - remote_call_rate
@@ -41,47 +57,39 @@ jobs:
           - write_read
           - write_validated
           - zome_call_single_value
-        include:
-          - job-name: app_install_large
-            scenario-name: app_install
-
-          - job-name: app_install_minimal
-            scenario-name: app_install
-
-          - scenario-name: dht_sync_lag
-            required-nodes: 10
-
-          - scenario-name: write_get_agent_activity
-            required-nodes: 2
-
-          - scenario-name: write_validated_must_get_agent_activity
-            required-nodes: 2
-
-          - scenario-name: zero_arc_create_data
-            required-nodes: 10
-
-          - scenario-name: zero_arc_create_data_validated
-            required-nodes: 10
-
-          - scenario-name: zero_arc_create_and_read
-            required-nodes: 9
-
-          - scenario-name: full_arc_create_validated_zero_arc_read
-            required-nodes: 10
-
-          - scenario-name: mixed_arc_get_agent_activity
-            required-nodes: 10
-
-          - scenario-name: mixed_arc_must_get_agent_activity
-            required-nodes: 10
+          - app_install_large
+          - app_install_minimal
+          - dht_sync_lag
+          - write_get_agent_activity
+          - write_validated_must_get_agent_activity
+          - two_party_countersigning
+          - zero_arc_create_data
+          - zero_arc_create_data_validated
+          - zero_arc_create_and_read
+          - full_arc_create_validated_zero_arc_read
+          - mixed_arc_get_agent_activity
+          - mixed_arc_must_get_agent_activity
 
     env:
-      RUN_ID: "${{ matrix.job-name || matrix.scenario-name }}_${{ github.run_id }}"
-      JOB_NAME: "${{ matrix.job-name || matrix.scenario-name }}"
+      RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}
+
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: "${{ inputs.commit_hash || github.sha }}"
+          ref: ${{ inputs.commit-hash || github.sha }}
+
+      - name: Read Nomad Job Variables
+        id: read-nomad-vars
+        run: |
+          JOB_VARS_FILE="${{ inputs.nomad-job-variant-directory }}/vars/${{ matrix.job-name }}.json"
+          NOMAD_VAR_DURATION="$(jq -e -r '.duration' "$JOB_VARS_FILE")"
+          NOMAD_VAR_SCENARIO_NAME="$(jq -e -r '.scenario_name' "$JOB_VARS_FILE")"
+          # Parse required nodes count from length of 'behaviours' list, or else default to 1.
+          REQUIRED_NODES="$(jq -e -r '.behaviours // 1 | length' "$JOB_VARS_FILE")"
+
+          echo "duration=$NOMAD_VAR_DURATION" >> "$GITHUB_OUTPUT"
+          echo "scenario_name=$NOMAD_VAR_SCENARIO_NAME" >> "$GITHUB_OUTPUT"
+          echo "required_nodes=$REQUIRED_NODES" >> "$GITHUB_OUTPUT"
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -94,10 +102,10 @@ jobs:
 
       - name: Build Nomad Job
         run: |
-          nix run .#generate-nomad-jobs ${JOB_NAME}
+          nix run .#generate-nomad-jobs ${{ matrix.job-name }} ${{ inputs.nomad-job-variant-directory }}
 
       - name: Build scenario
-        run: nix build .#packages.x86_64-linux.${{ matrix.scenario-name }}
+        run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
 
       - name: Upload scenario as artifact
         id: upload-scenario
@@ -106,21 +114,22 @@ jobs:
           path: |
             ./result/bin/
             ./result/happs/
-          name: ${{ env.JOB_NAME }}
+          name: ${{ matrix.job-name }}
           if-no-files-found: error
 
-      - name: Wait for free nodes
-        timeout-minutes: 30 # Most scenarios run for 5 minutes (300 seconds) or less, so if there's not enough free nodes in 30 minutes then give up.
+      - name: Wait For Minimum Free Nodes
+        timeout-minutes: 30
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
         run: |
-          echo "Waiting for ${{ matrix.required-nodes || 1 }} node(s) to be free"
+          echo "Waiting for $REQUIRED_NODES node(s) to be free"
           while true; do
               count=$(nix run --impure --inputs-from . nixpkgs#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
-              if (( ${count:-0} >= ${{ matrix.required-nodes || 1 }} )); then
+              if (( ${count:-0} >= $REQUIRED_NODES )); then
                   break
               else
                   echo -n "."
@@ -148,10 +157,11 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
           NOMAD_VAR_run_id: ${{ env.RUN_ID }}
-          NOMAD_VAR_holochain_bin_url: "${{ env.HOLOCHAIN_BIN_URL }}"
+          NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         run: |-
           set -euo pipefail
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl)
+          JOB_NAME="${{ matrix.job-name }}"
+          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl)
           echo "$nomad_output"
           echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
           alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
@@ -160,22 +170,19 @@ jobs:
             exit 1
           fi
 
-          duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json")"
-
           echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
-          echo "duration=$duration" >> "$GITHUB_OUTPUT"
 
       - name: Save alloc_ids to file
         run: |
           started_at=${{ steps.run-nomad-job.outputs.started_at }}
-          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${JOB_NAME}" "${{ matrix.scenario-name }}" "${RUN_ID}" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ inputs.nomad-job-variant-directory }}/vars" "${{ matrix.job-name }}" "${{ steps.read-nomad-vars.outputs.scenario_name }}" "$RUN_ID" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
 
       - name: Upload alloc_ids
         uses: actions/upload-artifact@v6
         with:
-          name: alloc_ids_${{ env.JOB_NAME }}
+          name: alloc_ids_${{ matrix.job-name }}
           path: alloc_ids.csv
 
       - name: Persist matrix job outputs for subsequent job use
@@ -188,7 +195,7 @@ jobs:
             run_id: "${{ env.RUN_ID }}"
             job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
             started_at: "${{ steps.run-nomad-job.outputs.started_at }}"
-            duration: "${{ steps.run-nomad-job.outputs.duration }}"
+            duration: "${{ steps.read-nomad-vars.outputs.duration }}"
 
   collect-github-matrix-outputs:
     name: Collect Run Ids
@@ -262,7 +269,7 @@ jobs:
     name: Generate a summary of all scenarios
     runs-on: ubuntu-latest
     needs: wait-for-jobs
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
       - uses: actions/checkout@v6
 
@@ -306,39 +313,65 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Run summariser
-        if: always()
+        if: ${{ !cancelled() }}
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
           RUST_LOG: debug
+          IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
         run: nix develop --command cargo run --release --bin holochain-summariser
 
       - name: Generate summary id for artifacts
         id: generate-summary-id
         run: |
-          SUMMARY_ID="$(date +%Y%m%d%H%M%S).${{ inputs.commit_hash || github.sha }}"
+          SUMMARY_TIMESTAMP=$(date +%s)
+          SUMMARY_ID="$(date -d @${SUMMARY_TIMESTAMP} '+%Y%m%d%H%M%S').${{ inputs.commit-hash || github.sha }}"
+          echo "summary_timestamp=$SUMMARY_TIMESTAMP" >> "$GITHUB_OUTPUT"
           echo "summary_id=$SUMMARY_ID" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout latest runs list from GitHub Pages
+        if: inputs.enable-summary-visualiser-html-upload
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: site
+          sparse-checkout: _includes/runs-list.md
+
       - name: Generate summary visualiser
+        id: generate-summary-visualiser
         run: |
+          mkdir -p ./site
+          OUTPUT_FILE="run.${{ steps.generate-summary-id.outputs.summary_id }}.html"
+
           # The summary visualiser can only take one file at a time,
           # but only one summariser report JSON file is fed to it in a run.
           # The wildcard here is because we don't know the name of the file.
-          mkdir -p ./nomad-summary-visualiser
-          output_file="./nomad-summary-visualiser/run.${{ steps.generate-summary-id.outputs.summary_id }}.html"
-          nix run .#generate-summary-visualiser ./summariser-report-*.json "$output_file"
+          nix run .#generate-summary-visualiser ./summariser-report-*.json "./site/${OUTPUT_FILE}"
 
-      - name: Push run.html to GitHub Pages
+          echo "output_file=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Add summary to runs list
+        if: inputs.enable-summary-visualiser-html-upload
+        run: |
+          SUMMARY_TIMESTAMP_HUMAN="$(date -d @${{ steps.generate-summary-id.outputs.summary_timestamp }} '+%Y-%m-%d %H:%M:%S')"
+          LIST_ITEM_STRING="- [${SUMMARY_TIMESTAMP_HUMAN} (${{ inputs.commit-hash || github.sha }})](${{ steps.generate-summary-visualiser.outputs.output_file }})"
+
+          # Prepend to runs list
+          sed -i "1i${LIST_ITEM_STRING}" site/_includes/runs-list.md
+
+      - name: Push summary visualiser html and updated runs list to GitHub Pages
+        if: inputs.enable-summary-visualiser-html-upload
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./nomad-summary-visualiser # The directory containing the generated HTML file
+          publish_dir: ./site/
           publish_branch: gh-pages
           keep_files: true
           enable_jekyll: true
 
       - name: Upload run summary to bucket
+        if: inputs.enable-summary-json-upload
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}

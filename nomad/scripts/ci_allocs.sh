@@ -14,11 +14,12 @@ set -euo pipefail
 # $6 - alloc_ids: A space-separated list of allocation IDs.
 function make_allocs_csv() {
     local output_file=$1
-    local job_name=$2
-    local scenario_name=$3
-    local run_id=$4
-    local started_at=$5
-    local alloc_ids=$6
+    local vars_path=$2
+    local job_name=$3
+    local scenario_name=$4
+    local run_id=$5
+    local started_at=$6
+    local alloc_ids=$7
 
     touch "$output_file"
 
@@ -26,8 +27,8 @@ function make_allocs_csv() {
     local behaviours
     local csv_behaviours
 
-    duration=$(jq -e -r '.duration' "nomad/vars/${job_name}.json")
-    behaviours=$(jq -r '(.behaviours // [""])[]' "nomad/vars/${job_name}.json")
+    duration=$(jq -e -r '.duration' "${vars_path}/${job_name}.json")
+    behaviours=$(jq -r '(.behaviours // [""])[]' "${vars_path}/${job_name}.json")
     csv_behaviours=""
     for behaviour in $behaviours; do
         if [ -z "$csv_behaviours" ]; then

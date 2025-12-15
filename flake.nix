@@ -392,7 +392,8 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              ./nomad/scripts/generate_jobs.sh "$@"
+              ./nomad/scripts/generate_jobs.sh "$@" nomad/job-variants/demo
+              ./nomad/scripts/generate_jobs.sh "$@" nomad/job-variants/canonical
             '';
           };
           validate-nomad-jobs = pkgs.writeShellApplication {
@@ -405,7 +406,8 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              ./nomad/scripts/generate_jobs.sh --validate "$@"
+              ./nomad/scripts/generate_jobs.sh --validate "$@" nomad/job-variants/demo
+              ./nomad/scripts/generate_jobs.sh --validate "$@" nomad/job-variants/canonical
             '';
           };
           generate-summary-visualiser = pkgs.writeShellApplication {
