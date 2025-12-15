@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload scenario as artifact
         id: upload-scenario
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: |
             ./result/bin/
@@ -161,7 +161,7 @@ jobs:
           nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${JOB_NAME}" "${{ matrix.scenario-name }}" "${RUN_ID}" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
 
       - name: Upload alloc_ids
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: alloc_ids_${{ env.JOB_NAME }}
           path: alloc_ids.csv
@@ -304,7 +304,7 @@ jobs:
           enable_jekyll: true
 
       - name: Upload run summary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: summariser-report
           path: ./summariser-report-*.json
