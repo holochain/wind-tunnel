@@ -32,8 +32,6 @@ on:
         required: true
       INFLUX_TOKEN:
         required: true
-      GITHUB_TOKEN:
-        required: false
       HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS:
         required: false
       HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET:
@@ -358,13 +356,13 @@ jobs:
           LIST_ITEM_STRING="- [${SUMMARY_TIMESTAMP_HUMAN} (${{ inputs.commit-hash || github.sha }})](${{ steps.generate-summary-visualiser.outputs.output_file }})"
 
           # Prepend to runs list
-          sed -i "1i${LIST_ITEM_STRING}" site/_includes/runs-list.md
+          sed -i "1i${LIST_ITEM_STRING}" ./site/_includes/runs-list.md
 
       - name: Push summary visualiser html and updated runs list to GitHub Pages
         if: inputs.enable-summary-visualiser-html-upload
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           publish_dir: ./site/
           publish_branch: gh-pages
           keep_files: true
