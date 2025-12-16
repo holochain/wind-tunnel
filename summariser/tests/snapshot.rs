@@ -130,6 +130,12 @@ async fn local_signals() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn mixed_arc_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("d874c654d75fdc83f5f7c0d7eb2d6be8cfcaf2cc0f5abbc281ad939397351727");
+    Ok(())
+}
+
+#[tokio::test]
 async fn remote_call_rate() -> anyhow::Result<()> {
     run_snapshot_test!("f92e98962b23bfe104373a735dd9af8eb363e347a0c528902d4a2aaa8351cd74");
     Ok(())
