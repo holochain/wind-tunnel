@@ -20,7 +20,7 @@ fi
 # Note: unsupported scenarios (ones without templates) won't cause a failure;
 # instead, it'll output a `<section class="scenario-not-found scenario-not-found-<foo>">` element
 # with some notice text about the missing template.
-html_output="$(bash "$script_dir/generate.sh" "$script_dir/test_data/all.json")"
+html_output="$("$script_dir/generate.sh" "$script_dir/test_data/all.json")"
 
 # Check that the scenario has an HTML element in the output.
 # Arguments:
