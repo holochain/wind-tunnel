@@ -139,21 +139,35 @@ jobs:
           NOMAD_VAR_holochain_bin_url: "${{ env.HOLOCHAIN_BIN_URL }}"
         run: |-
           set -euo pipefail
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl)
-          echo "$nomad_output"
-          echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
-          alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
-          if [ -z "$alloc_ids" ]; then
-            echo "Failed to extract allocation IDs from Nomad job output"
+
+          # Run nomad cli command, capturing stdout and stderr
+          nomad_stderr=$(mktemp)
+          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl 2>"$nomad_stderr")
+
+          if [ $? -ne 0 ]; then
+            # If nomad cli command returned an error code, print the output to stderr and exit
+
+            echo $nomad_stdout
+            echo $nomad_stderr >&2
             exit 1
+          else
+            # If nomad cli returns success code, save the allocation id to the step output
+
+            echo "$nomad_output"
+            echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+            alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
+            if [ -z "$alloc_ids" ]; then
+              echo "Failed to extract allocation IDs from Nomad job output"
+              exit 1
+            fi
+
+            duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json")"
+
+            echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
+            echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+            echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
+            echo "duration=$duration" >> "$GITHUB_OUTPUT"
           fi
-
-          duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json")"
-
-          echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
-          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
-          echo "duration=$duration" >> "$GITHUB_OUTPUT"
 
       - name: Save alloc_ids to file
         run: |
