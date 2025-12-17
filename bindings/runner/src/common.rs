@@ -1,3 +1,5 @@
+use crate::bin_path::{holochain_path, WT_HOLOCHAIN_PATH_ENV};
+use crate::build_info::holochain_build_info;
 use crate::context::HolochainAgentContext;
 use crate::holochain_runner::{HolochainConfig, HolochainRunner};
 use crate::runner_context::HolochainRunnerContext;
@@ -22,9 +24,9 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{env, fs, io};
 use wind_tunnel_runner::prelude::{
-    holochain_path, AgentContext, HookResult, Reporter, UserValuesConstraint, WindTunnelResult,
-    WT_HOLOCHAIN_PATH_ENV,
+    AgentContext, HookResult, Reporter, RunnerContext, UserValuesConstraint, WindTunnelResult,
 };
+use wind_tunnel_summary_model::BuildInfo;
 
 /// Sets the [`HolochainAgentContext::admin_ws_url`], if not already set, getting the value from
 /// [`wind_tunnel_runner::context::RunnerContext::connection_string`].
@@ -832,4 +834,24 @@ pub fn start_conductor_and_configure_urls<SV: UserValuesConstraint>(
     run_holochain_conductor(ctx)?;
     configure_admin_ws_url(ctx)?;
     configure_app_ws_url(ctx)
+}
+
+/// Get build info from holochain binary
+pub fn conductor_build_info(
+    runner_ctx: Arc<RunnerContext<HolochainRunnerContext>>,
+) -> WindTunnelResult<Option<BuildInfo>> {
+    if runner_ctx.get_connection_string().is_some() {
+        log::info!(
+            "connection-string is set so assuming a Holochain conductor is running externally"
+        );
+        return Ok(None);
+    }
+
+    let holochain_path = holochain_path()?;
+    let holochain_build_info = holochain_build_info(holochain_path)?;
+    let build_info = BuildInfo {
+        info_type: "holochain".to_string(),
+        info: serde_json::to_value(holochain_build_info)?,
+    };
+    Ok(Some(build_info))
 }
