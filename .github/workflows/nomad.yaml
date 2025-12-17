@@ -283,15 +283,19 @@ jobs:
           RUST_LOG: debug
         run: nix develop --command cargo run --release --bin holochain-summariser
 
+      - name: Generate summary id for artifacts
+        id: generate-summary-id
+        run: |
+          SUMMARY_ID="$(date +%Y%m%d%H%M%S).${{ inputs.commit_hash || github.sha }}"
+          echo "summary_id=$SUMMARY_ID" >> "$GITHUB_OUTPUT"
+
       - name: Generate summary visualiser
-        env:
-          HASH: "${{ inputs.commit_hash || github.sha }}"
         run: |
           # The summary visualiser can only take one file at a time,
           # but only one summariser report JSON file is fed to it in a run.
           # The wildcard here is because we don't know the name of the file.
           mkdir -p ./nomad-summary-visualiser
-          output_file="./nomad-summary-visualiser/run.$(date +%Y%m%d%H%M%S).${{ env.HASH }}.html"
+          output_file="./nomad-summary-visualiser/run.${{ steps.generate-summary-id.outputs.summary_id }}.html"
           nix run .#generate-summary-visualiser ./summariser-report-*.json "$output_file"
 
       - name: Push run.html to GitHub Pages
@@ -303,8 +307,15 @@ jobs:
           keep_files: true
           enable_jekyll: true
 
-      - name: Upload run summary
-        uses: actions/upload-artifact@v6
-        with:
-          name: summariser-report
-          path: ./summariser-report-*.json
+      - name: Upload run summary to bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+          AWS_DEFAULT_REGION: fsn1
+          AWS_ENDPOINT_URL: https://fsn1.your-objectstorage.com
+          S3_BUCKET_NAME: wind-tunnel-artifacts
+        run: |-
+          OUT_PATH="${S3_BUCKET_NAME}/summariser-reports/${{ steps.generate-summary-id.outputs.summary_id }}.json"
+          nix run .#awscli-s3-cp summariser-report-*.json "s3://${OUT_PATH}"
+
+          echo "Uploaded run summary to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
