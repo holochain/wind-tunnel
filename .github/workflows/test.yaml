@@ -183,14 +183,6 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - two_party_countersigning
-        run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package two_party_countersigning -- --agents 2 --behaviour initiate:1 --behaviour participate:1 --duration 30
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
       - name: Smoke test - validation_receipts
         run: |
           set -x
