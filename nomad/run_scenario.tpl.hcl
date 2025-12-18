@@ -49,9 +49,8 @@ job "{{ (ds "vars").scenario_name }}" {
 
     content {
       restart {
-        interval         = "30m"
-        attempts         = 5
-        delay            = "120s"
+        attempts = 0
+        mode = "fail"
       }
 
       dynamic "task" {
