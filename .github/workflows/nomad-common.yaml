@@ -100,7 +100,7 @@ jobs:
 
       - name: Build Nomad Job
         run: |
-          nix run .#generate-nomad-jobs ${{ matrix.job-name }} ${{ inputs.nomad-job-variant-directory }}
+          nix run .#generate-nomad-jobs -- --job-name ${{ matrix.job-name }} --job-variant-path ${{ inputs.nomad-job-variant-directory }}
 
       - name: Build scenario
         run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}

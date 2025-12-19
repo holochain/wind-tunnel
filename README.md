@@ -563,7 +563,7 @@ Next, in a new terminal window, generate the nomad job for each scenario by
 passing the scenario name and job variant into the `generate-nomad-jobs` nix command, such as:
 
 ```bash
-nix run .#generate-nomad-jobs nomad/job-variants/demo app_install_minimal
+nix run .#generate-nomad-jobs -- --job-name app_install_minimal --job-variant-path nomad/job-variants/demo
 ```
 
 The generated job will be in the `nomad/job-variants/demo/jobs` directory.
@@ -667,7 +667,7 @@ accessible.
 At this point you have to generate the Nomad job for the scenario and job variant you want to run. This is done with:
 
 ```bash
-nix run .#generate-nomad-jobs nomad/job-variants/demo app_install_minimal
+nix run .#generate-nomad-jobs -- --job-name app_install_minimal --job-variant-path nomad/job-variants/demo
 ```
 
 Now that the scenario zip file is publicly available you can run the scenario with the following:

@@ -122,6 +122,7 @@
                 pkgs.httpie
                 pkgs.openssl
                 pkgs.tomlq
+                pkgs.getopt
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
@@ -387,27 +388,28 @@
             name = "generate-nomad-jobs";
             runtimeInputs = [
               pkgs.gomplate
+              pkgs.getopt
             ];
             text = ''
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              ./nomad/scripts/generate_jobs.sh "$@" nomad/job-variants/demo
-              ./nomad/scripts/generate_jobs.sh "$@" nomad/job-variants/canonical
+              ./nomad/scripts/generate_jobs.sh -- "$@"
             '';
           };
-          validate-nomad-jobs = pkgs.writeShellApplication {
-            name = "validate-nomad-jobs";
+          validate-all-nomad-jobs = pkgs.writeShellApplication {
+            name = "validate-all-nomad-jobs";
             runtimeInputs = [
               pkgs.gomplate
               unfreePkgs.nomad
+              pkgs.getopt
             ];
             text = ''
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              ./nomad/scripts/generate_jobs.sh --validate "$@" nomad/job-variants/demo
-              ./nomad/scripts/generate_jobs.sh --validate "$@" nomad/job-variants/canonical
+              ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/demo
+              ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/canonical
             '';
           };
           generate-summary-visualiser = pkgs.writeShellApplication {

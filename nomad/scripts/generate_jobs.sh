@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-set -x
 
 generate_job() {
     local var_file="$1"
@@ -28,23 +27,45 @@ if ! command -v gomplate &> /dev/null; then
 fi
 
 ###  Parse CLI Args ###
-ARG1="${1:-}"
-validate_jobs=false
+OPTIONS=$(getopt --longoptions validate,job-name:,job-variant-path: --name "$0" -- "$@")
+eval set -- "$OPTIONS"
 
-if [ "$ARG1" == "--validate" ]; then
-    validate_jobs=true
-    shift
-    JOB_NAME="${1:-}"
-else
-    JOB_NAME="$ARG1"
+VALIDATE=false
+JOB_NAME=""
+JOB_VARIANT_PATH=""
+while true; do
+    case "$1" in
+        --validate)
+            VALIDATE=true
+            shift
+            ;;
+        --job-name)
+            JOB_NAME="$2"
+            shift 2
+            ;;
+        --job-variant-path)
+            JOB_VARIANT_PATH="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *) echo "Invalid Arg: $1"; exit 1 ;;
+    esac
+done
+
+if [ "$JOB_VARIANT_PATH" = "" ]; then
+    echo "Argument --job-variant-path is required"
+    exit 1
 fi
 
-shift
-JOB_VARIANT_DIR="${1:-}"
-VARS_DIR="$JOB_VARIANT_DIR/vars"
-JOBS_DIR="$JOB_VARIANT_DIR/jobs"
+if [ ! -d "$JOB_VARIANT_PATH" ]; then
+    echo "Error: --job-variant-path directory does not exist: $JOB_VARIANT_PATH"
+    exit 1
+fi
 
-if [ "$validate_jobs" = true ] && ! command -v nomad &> /dev/null; then
+if [ "$VALIDATE" = true ] && ! command -v nomad &> /dev/null; then
     echo "nomad is not installed. Please install it to validate Nomad jobs."
     echo "You can install nomad from the official website: <https://www.nomadproject.io/downloads>"
     exit 1
@@ -70,7 +91,7 @@ if [ -z "$JOB_NAME" ]; then
         BASENAME=$(basename "$VAR_FILE" .json)
         JOB_FILE="$JOBS_DIR/$BASENAME.nomad.hcl"
         generate_job "$VAR_FILE" "$JOB_FILE"
-        if [ "$validate_jobs" = true ]; then
+        if [ "$VALIDATE" = true ]; then
             validate_job "$JOB_FILE"
         fi
     done
@@ -83,7 +104,7 @@ else
     fi
     JOB_FILE="$JOBS_DIR/$JOB_NAME.nomad.hcl"
     generate_job "$VAR_FILE" "$JOB_FILE"
-    if [ "$validate_jobs" = true ]; then
+    if [ "$VALIDATE" = true ]; then
         validate_job "$JOB_FILE"
     fi
 fi
