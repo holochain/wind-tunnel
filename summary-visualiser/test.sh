@@ -45,3 +45,6 @@ smoke_test_scenario "zero_arc_create_and_read"
 smoke_test_scenario "zero_arc_create_data"
 smoke_test_scenario "zome_call_single_value"
 smoke_test_scenario "zero_arc_create_data_validated"
+
+
+echo "$html_output" | tidy -eq

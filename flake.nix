@@ -36,7 +36,7 @@
 
     systems = builtins.attrNames inputs.holonix.devShells;
 
-    perSystem = { inputs', pkgs, system, config, ... }:
+    perSystem = { inputs', pkgs, lib, system, config, ... }:
       let
         unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
         rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
@@ -85,6 +85,13 @@
               };
               taplo.enable = true;
               yamlfmt.enable = true;
+              check-summary-visualiser-html = {
+                enable = true;
+                name = "check-summary-visualiser-html";
+                entry = "${config.packages.summary-visualiser-smoke-test}/bin/summary-visualiser-smoke-test";
+                files = "summary-visualiser/.*";
+                pass_filenames = false;
+              };
             };
           };
         };
@@ -468,16 +475,29 @@
               RUST_LOG=info cargo run "$@"
             '';
           };
-          summary-visualiser-smoke-test = pkgs.writeShellApplication {
-            name = "summary-visualiser-smoke-test";
-            runtimeInputs = [
-              pkgs.gomplate
-            ];
-            text = ''
-              set -euo pipefail
-              ./summary-visualiser/test.sh
-            '';
-          };
+          summary-visualiser-smoke-test =
+            let
+              summaryVisualiser = pkgs.runCommand "summary-visualiser" { } ''
+                mkdir -p $out
+                cp -r ${lib.cleanSource ./summary-visualiser}/* $out/
+                chmod +x $out/test.sh
+                chmod +x $out/generate.sh
+                chmod +x $out/scenario_template_exists.sh
+                patchShebangs $out
+              '';
+            in
+            pkgs.writeShellApplication {
+              name = "summary-visualiser-smoke-test";
+              runtimeInputs = [
+                pkgs.gomplate
+                pkgs.html-tidy
+              ];
+              text = ''
+                set -euo pipefail
+
+                ${summaryVisualiser}/test.sh
+              '';
+            };
         };
 
         checks = {
