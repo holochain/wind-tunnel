@@ -89,7 +89,7 @@
                 enable = true;
                 name = "check-summary-visualiser-html";
                 entry = "${config.packages.summary-visualiser-smoke-test}/bin/summary-visualiser-smoke-test -- --quiet";
-                files = "^summary-visualiser/.*";
+                files = "^(summary-visualiser/.*|flake\.nix)$";
                 pass_filenames = false;
               };
             };
