@@ -1,0 +1,681 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>first_call, local_signals | Wind Tunnel Report</title>
+        <style>
+            :root {
+                --background: white;
+                --subtle: rgba(0, 0, 0, 0.5);
+                --more-subtle: rgba(0, 0, 0, 0.35);
+                --smoke: rgba(0, 0, 0, 0.2);
+                --good: rgb(0, 173, 12);
+                --bad: rgb(195, 25, 25);
+                --highlight: rgb(52, 152, 219);
+                --highlight-subtle: rgba(52, 152, 219, 0.5);
+                --grid: 0.5fr 1fr;
+                --grid-gap: 2rem;
+                --numeric-size: 14rem;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+            }
+
+            main {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .scenario {
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 30px;
+                margin: 2em 0;
+            }
+
+            .scenario code {
+                font-size: 1.2em;
+            }
+
+            /*
+Sample CSS for use in scenario templates.
+This CSS needs the following variables to be defined:
+
+  Colours:
+    --background: the background colour for each scenario
+    --subtle: less prominent text/graphics
+    --more-subtle: even less prominent text/graphics
+    --smoke: an extremely light colour, used for overlays
+    --good: indicate a desirable value (e.g., performance increases)
+    --bad: indicate an undesirable value (e.g., latency increases)
+    --highlight: an item that should have attention drawn to it via colour,
+                 used for example as the line in trend graphs
+    --highlight-subtle: highlighted, but secondary to --highlight
+
+  Layout:
+    --grid: Column sizes for label/content style information; the first is for
+            labels and the second is for content. You should give a generous
+            amount of space to content.
+    --grid-gap: The space between labels and content.
+    --numeric-size: Many metrics have a numeric widget of some sort, whether a
+                    simple scalar, a min/std value, or a composite value.
+                    These metrics often also have a trend graph or other widget
+                    that comes after them -- this value gives a consistent
+                    amount of space for the numeric value so that whatever comes
+                    after it will be lined up row-on-row.
+*/
+
+.scenario {
+    background-color: var(--background);
+}
+
+.scenario-summary {
+    margin-bottom: 4em;
+}
+
+.scenario-summary-description {
+    font-size: 1.25em;
+    color: var(--subtle);
+    margin: 2em 0;
+}
+
+.scenario-summary-details-line {
+    display: grid;
+    grid-template-columns: var(--grid);
+    gap: var(--grid-gap);
+    margin: 0.75em 0;
+}
+
+.scenario-summary-details-label {
+    text-align: right;
+    color: var(--subtle);
+}
+
+.scenario-summary-details-value {
+    font-weight: bold;
+}
+
+.scenario-summary-behaviours {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.scenario-summary-behaviour-agent-count {
+    font-weight: normal;
+    color: var(--subtle);
+}
+
+/* Metric structure */
+
+.scenario-metric {
+    display: grid;
+    grid-template-columns: var(--grid);
+    align-items: center;
+    gap: var(--grid-gap);
+    border-width: 2px;
+}
+
+/* Most metrics don't look good with their label top-aligned,
+but for some larger metrics, it's hard to see the label without scrolling. */
+.scenario-metric.large {
+    align-items: start;
+}
+
+.scenario-metric, .scenario-metric-content-item {
+    margin: 1em 0;
+    width: 100%;
+}
+
+.scenario-metric, .scenario-metric-content-item:not(:first-child) {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-metric-content-item {
+    border-width: 1px;
+}
+
+.scenario-metric-content-item:first-child {
+    margin-top: 0;
+}
+
+.scenario-metric-label, .scenario-metric-content-item-label, .scalar-label {
+    color: var(--subtle);
+}
+
+.scenario-metric-content-item-label {
+    margin-bottom: 1em;
+}
+
+.scenario-metric-name {
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+.scenario-metric-label {
+    text-align: right;
+}
+
+/* The data for a metric */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+}
+
+.composite-key {
+    list-style: none;
+    padding: 0;
+}
+
+/*** Widgets ***/
+
+.scalar-value {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Supplementary numbers shouldn't be so big. */
+.std .scalar-value,
+.mean-max-max .scalar-value,
+.min-max-mean-std-min .scalar-value,
+.min-max-mean-std-max .scalar-value,
+.delta-change .scalar-value {
+    font-size: inherit;
+}
+
+.min-max-mean-std .min-max-mean-std-min .scalar-label,
+.min-max-mean-std .mean .scalar-label,
+.min-max-mean-std .min-max-mean-std-max .scalar-label {
+    display: block;
+}
+
+/* These are spans in the markup, but we want them to be block elements. */
+.mean-std > *,
+.mean-max > * {
+    display: block;
+}
+
+.min-max-mean-std .mean-std {
+    display: inline-block;
+    text-align: center;
+}
+
+.min-max-mean-std,
+.delta-start-end {
+    display: flex;
+    gap: 0.5em;
+}
+
+.min-max-mean-std {
+    align-items: flex-start;
+}
+
+.min-max-mean-std-min,
+.min-max-mean-std-max,
+.min-max-mean-std .divider {
+    padding-top: 1rem;
+}
+
+.delta-start-end {
+    align-items: baseline;
+}
+
+.delta-change {
+    display: block;
+}
+
+.divider {
+    color: var(--more-subtle);
+    font-size: 2em;
+}
+
+/* Many metrics contain both a scalar and a trend graph.
+In those cases, make sure all the scalars are the same width
+so the following graph lines up. */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    display: grid;
+    grid-template-columns: var(--numeric-size) auto;
+    grid-gap: var(--grid-gap);
+}
+
+/*** Graph SVG ***/
+
+/* Axis labels for a graph */
+.axis-label {
+    font-size: 11px;
+    fill: var(--subtle);
+}
+
+/* The line in a trend graph */
+.trend-line {
+    fill: none;
+    stroke: var(--highlight);
+    stroke-width: 2;
+}
+
+/* The area under the trend line */
+.trend-area {
+    fill: var(--smoke);
+    opacity: 0.2;
+}
+
+/* The mean line in a trend graph */
+.mean-line {
+    stroke: var(--highlight-subtle);
+    stroke-width: 2;
+    stroke-dasharray: 3, 3;
+}
+
+/* To line up with the start of the graph, indent the "no trend data available" note.
+This is a bit of a hard-coded hack based on our knowledge that the JS gives 60px for the Y axis labels. */
+.no-trend-graph {
+    margin-left: 60px;
+    color: var(--subtle);
+}
+
+        </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+        <script>
+            window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
+    // Note: if you change the left margin value,
+    // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
+    // gets updated accordingly.
+    const margin = { top: 10, right: 20, bottom: 20, left: 60 };
+    // The width of each data point on the graph.
+    // If the graph is large enough, it'll cut the width by 50% or even 80%.
+    const pointWidth = trendData.length <= 40 ? 10
+                     : trendData.length <= 80 ? 5
+                     : 2;
+    const width = (trendData.length * pointWidth);
+    const height = 120;
+
+    const svg = d3.select(`#${svgId}`)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        // The guts of the graph go into this `<g>` wrapper,
+        // in order to make the coordinates of the trend data and axis label easy to work with --
+        // they're all zero-referenced to the top-left corner of the graph.
+        // It's then moved to the right position in the SVG to make room for the legends.
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const maxVal = d3.max(trendData);
+
+    // Map time window values to the x range of the graph.
+    const x = d3.scaleLinear()
+        .domain([0, trendData.length - 1])
+        .range([0, width]);
+
+    // Map data point values to the y range of the graph.
+    const y = d3.scaleLinear()
+        .domain([0, maxVal])
+        .range([height, 0]);
+
+    // The trend line.
+    const line = d3.line()
+        .x((d, i) => x(i))
+        .y(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-line")
+        .attr("d", line);
+
+    // The area under the trend line.
+    const area = d3.area()
+        .x((d, i) => x(i))
+        .y0(height)
+        .y1(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-area")
+        .attr("d", area);
+
+    // Draw the mean line if provided.
+    if (meanValue !== null) {
+        svg.append("line")
+            .attr("class", "mean-line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(meanValue))
+            .attr("y2", y(meanValue));
+    }
+
+    // Y-axis labels -- always zero on the bottom and the max data point value on the top.
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", 0)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`${maxVal}${yUnit || ""}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", height)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`0${yUnit || ""}`);
+
+    // X-axis labels -- 0 seconds at the start,
+    // and the number of data points × the time window duration at the end.
+
+    // Extract numeric and non-numeric parts of windowDuration.
+    const match = windowDuration.match(/^(\d+)(.*)$/);
+    const durationValue = parseInt(match[1]);
+    const durationUnit = match[2];
+    const totalDuration = durationValue * trendData.length;
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", 0)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`0${durationUnit}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`${totalDuration}${durationUnit}`);
+};
+
+        </script>
+    </head>
+
+    <body><main>
+        
+
+    
+    
+    
+        <section class="scenario scenario-first-call">
+            
+
+<div class="scenario-summary">
+    <h1>First Call</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario installs a simple app which implements the <code>init</code> callback, and measures the time elapsed between start of install and calling <code>init</code>. It will uninstall the app it installed so that it can re-install it on the next iteration. This is required to re-run the initialisation callback.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Fri, 19 Dec 2025 19:33:17 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">first_call_20380493492</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Zome call timing</div>
+        
+            <div class="scenario-metric-description">The time elapsed between start of install and calling <code>init</code>.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.014697</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.002204</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-rVFWiPoGeKRK76za"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-rVFWiPoGeKRK76za", [0.015711, 0.014298, 0.014574, 0.014465, 0.014344, 0.014535, 0.014712, 0.014255, 0.01476, 0.014651, 0.014964, 0.013732, 0.014596, 0.014831, 0.01478, 0.014369, 0.015056, 0.014918, 0.014381, 0.015113, 0.014781, 0.014776, 0.014719, 0.014782, 0.014604, 0.015135, 0.014747, 0.014759, 0.014871, 0.014811], 0.014697, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-local-signals">
+            
+
+<div class="scenario-summary">
+    <h1>Local Signals</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario is for testing the speed and reliability of local signals. It uses a zome with a function that will emit 10,000 signals. The scenario measures how long it takes to send the signals and how many have been received by the time the zome call ends.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Fri, 19 Dec 2025 19:34:31 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">local_signals_20380493492</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Send timing</div>
+        
+            <div class="scenario-metric-description">The time taken to emit a batch of 10,000 signals.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.761652</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.375884</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Receive timing</div>
+        
+            <div class="scenario-metric-description">The time taken to receive the completed batch, to the nearest 250ms.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">30.763088</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.37576</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Success ratio</div>
+        
+            <div class="scenario-metric-description">The proportion of signals successfully received in a batch.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">0.9537000060081482</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.9841</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.0137</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">0.9975000023841858</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+
+    </main></body>
+</html>
