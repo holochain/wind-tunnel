@@ -139,21 +139,69 @@ jobs:
           NOMAD_VAR_holochain_bin_url: "${{ env.HOLOCHAIN_BIN_URL }}"
         run: |-
           set -euo pipefail
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl)
-          echo "$nomad_output"
-          echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
-          alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
-          if [ -z "$alloc_ids" ]; then
-            echo "Failed to extract allocation IDs from Nomad job output"
+
+          echo "Running Nomad job: ${JOB_NAME}"
+          if ! nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run nomad/jobs/${JOB_NAME}.nomad.hcl 2>&1); then
+            echo "ERROR: Failed to run Nomad job"
+            echo "Nomad command exit code: $?"
+            echo "Output:"
+            echo "$nomad_output"
             exit 1
           fi
 
-          duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json")"
+          echo "$nomad_output"
+          echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Extracting allocation IDs from Nomad output..."
+          if ! alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' 2>&1); then
+            grep_exit_code=$?
+            echo "ERROR: grep command failed with exit code ${grep_exit_code}"
+            if [ $grep_exit_code -eq 1 ]; then
+              echo "No allocation IDs found in Nomad output (no matches)"
+            elif [ $grep_exit_code -eq 2 ]; then
+              echo "grep encountered an error (invalid regex or other issue)"
+            fi
+            echo "Full Nomad output for debugging:"
+            echo "--- START NOMAD OUTPUT ---"
+            echo "$nomad_output"
+            echo "--- END NOMAD OUTPUT ---"
+            exit 1
+          fi
+
+          if ! alloc_ids=$(echo "$alloc_ids" | paste -sd ' ' - 2>&1); then
+            echo "ERROR: Failed to format allocation IDs"
+            echo "paste command failed"
+            echo "Raw allocation IDs:"
+            echo "$alloc_ids"
+            exit 1
+          fi
+
+          if [ -z "$alloc_ids" ]; then
+            echo "ERROR: Extracted allocation IDs string is empty"
+            echo "Full Nomad output for debugging:"
+            echo "--- START NOMAD OUTPUT ---"
+            echo "$nomad_output"
+            echo "--- END NOMAD OUTPUT ---"
+            exit 1
+          fi
+
+          echo "Successfully extracted allocation IDs: $alloc_ids"
+
+          echo "Reading job duration from nomad/vars/${JOB_NAME}.json..."
+          if ! duration="$(jq -e -r '.duration' "nomad/vars/${JOB_NAME}.json" 2>&1)"; then
+            echo "ERROR: Failed to read duration from nomad/vars/${JOB_NAME}.json"
+            echo "jq output: $duration"
+            exit 1
+          fi
+
+          echo "Job duration: ${duration}s"
 
           echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
           echo "duration=$duration" >> "$GITHUB_OUTPUT"
+
+          echo "Successfully configured Nomad job outputs"
 
       - name: Save alloc_ids to file
         run: |
