@@ -14,7 +14,7 @@
     {{ with .scenario_metrics }}
         {{ template "scenario_metric" (dict
             "name" "Highest observed <code>action_seq</code>"
-            "description" "The change in the <code>get_agent_activity</code> peer's source chain tip over the run."
+            "description" "The change in the <code>get_agent_activity</code> peer's source chain top over the run."
             "content" (tmpl.Exec "delta" .write_validated_must_get_agent_activity_chain_len)
         ) }}
 
