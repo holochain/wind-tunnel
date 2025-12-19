@@ -339,8 +339,6 @@
               pkgs.shellcheck
               pkgs.taplo
               pkgs.yamlfmt
-              pkgs.gomplate
-              pkgs.html-tidy
               pkgs.statix
             ];
             text = ''
