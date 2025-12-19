@@ -77,8 +77,8 @@ job "{{ (ds "vars").scenario_name }}" {
           }
 
           config {
-            command = "telegraf"
-            args    = []
+            command = "sh"
+            args    = ["-c", "mkdir -p ${WT_METRICS_DIR} && telegraf --config ${NOMAD_TASK_DIR}/telegraf.host.conf"]
           }
         }
       }
