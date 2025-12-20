@@ -294,6 +294,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - mixed_arc_must_get_agent_activity
+        run: |
+          nix run .#rust-smoke-test -- --package mixed_arc_must_get_agent_activity -- --agents 5 --behaviour zero_must_get_agent_activity:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test
