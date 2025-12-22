@@ -24,7 +24,7 @@ env:
 jobs:
   run-scenarios:
     name: Run ${{ matrix.job-name || matrix.scenario-name }}
-    runs-on: [self-hosted, wind-tunnel]
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -82,6 +82,15 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: "${{ inputs.commit_hash || github.sha }}"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       - name: Build Nomad Job
         run: |
@@ -213,7 +222,7 @@ jobs:
 
   wait-for-jobs:
     name: Wait for Nomad jobs to finish
-    runs-on: [self-hosted, wind-tunnel]
+    runs-on: ubuntu-latest
     needs: collect-github-matrix-outputs
     strategy:
       fail-fast: false
@@ -221,6 +230,15 @@ jobs:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       - name: Wait for all allocations in job
         env:
@@ -242,11 +260,20 @@ jobs:
 
   run-summary:
     name: Generate a summary of all scenarios
-    runs-on: [self-hosted, wind-tunnel]
+    runs-on: ubuntu-latest
     needs: wait-for-jobs
     if: always()
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       - name: Download all alloc_ids
         uses: actions/download-artifact@v7
