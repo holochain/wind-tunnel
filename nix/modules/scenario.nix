@@ -45,7 +45,7 @@ in
         # No sources to copy, everything comes from the build inputs
         unpackPhase = "true";
 
-        buildInputs = [ scenarioBinary scenarioHapps ];
+        buildInputs = [ scenarioBinary scenarioHapps pkgs.zip ];
 
         # To tell `nix run` which binary to run. It gets it right anyway because there is only one binary but
         # it prints an annoying warning message.
@@ -59,6 +59,8 @@ in
 
           mkdir -p $out/happs
           cp ${scenarioHapps}/.happ-build ${scenarioHapps}/*.happ $out/happs
+
+          cd $out && zip -r ${name}.zip bin happs
         '';
       };
   };

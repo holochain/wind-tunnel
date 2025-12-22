@@ -29,9 +29,11 @@ on:
       INFLUX_TOKEN:
         required: true
       HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS:
-        required: false
+        required: true
       HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET:
-        required: false
+        required: true
+      CACHIX_AUTH_TOKEN:
+        required: true
 
 jobs:
   run-scenarios:
@@ -101,15 +103,20 @@ jobs:
       - name: Build scenario
         run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
 
-      - name: Upload scenario as artifact
+      - name: Upload scenario to bucket
         id: upload-scenario
-        uses: actions/upload-artifact@v6
-        with:
-          path: |
-            ./result/bin/
-            ./result/happs/
-          name: ${{ matrix.job-name }}
-          if-no-files-found: error
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+          AWS_DEFAULT_REGION: hel1
+          AWS_ENDPOINT_URL: https://hel1.your-objectstorage.com
+          S3_BUCKET_NAME: wind-tunnel-public-artifacts
+        run: |-
+          OUT_PATH="${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip"
+          nix run .#awscli-s3 cp ./result/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip "s3://${OUT_PATH}"
+
+          echo "scenario_download_url=${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_OUTPUT"
+          echo "Uploaded run scenario artifact to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Wait For Minimum Free Nodes
         timeout-minutes: 30
@@ -132,16 +139,6 @@ jobs:
           done
           echo "done"
 
-      - name: Get Download URL
-        id: get-download-url
-        run: |
-          DOWNLOAD_URL=$(curl -Ls -o /dev/null -w %{url_effective} \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/holochain/wind-tunnel/actions/artifacts/${{ steps.upload-scenario.outputs.artifact-id}}/zip")
-          echo "download-url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
-
       - name: Run Nomad Job
         id: run-nomad-job
         env:
@@ -149,7 +146,7 @@ jobs:
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          NOMAD_VAR_scenario_url: ${{ steps.get-download-url.outputs.download-url }}
+          NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
           NOMAD_VAR_run_id: ${{ env.RUN_ID }}
           NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         run: |-
@@ -374,6 +371,35 @@ jobs:
           S3_BUCKET_NAME: wind-tunnel-artifacts
         run: |-
           OUT_PATH="${S3_BUCKET_NAME}/summariser-reports/${{ steps.generate-summary-id.outputs.summary_id }}.json"
-          nix run .#awscli-s3-cp summariser-report-*.json "s3://${OUT_PATH}"
+          nix run .#awscli-s3 cp summariser-report-*.json "s3://${OUT_PATH}"
 
           echo "Uploaded run summary to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
+
+  cleanup:
+    name: Cleanup scenario artifacts
+    runs-on: ubuntu-latest
+    needs: wait-for-jobs
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Delete scenarios from bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+          AWS_DEFAULT_REGION: hel1
+          AWS_ENDPOINT_URL: https://hel1.your-objectstorage.com
+          S3_BUCKET_NAME: wind-tunnel-public-artifacts
+        run: |-
+          nix run .#awscli-s3 -- rm "s3://${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}" --recursive
+
+          echo "Deleted ${AWS_ENDPOINT_URL}/${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
