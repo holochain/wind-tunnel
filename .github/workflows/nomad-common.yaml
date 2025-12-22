@@ -15,12 +15,8 @@ on:
         description: "The path to the directory containing the nomad job variant"
         type: string
         required: true
-      enable-summary-visualiser-html-upload:
-        description: "Enable upload of summary visualiser html to GitHub Pages"
-        type: boolean
-        required: true
-      enable-summary-json-upload:
-        description: "Enable upload of summary json"
+      enable-summary-uploads:
+        description: "Enable upload of summary visualiser html to GitHub Pages and summary json to bucket"
         type: boolean
         required: true
       ignore-summary-errors:
@@ -329,7 +325,7 @@ jobs:
           echo "summary_id=$SUMMARY_ID" >> "$GITHUB_OUTPUT"
 
       - name: Checkout latest runs list from GitHub Pages
-        if: inputs.enable-summary-visualiser-html-upload
+        if: inputs.enable-summary-uploads
         uses: actions/checkout@v6
         with:
           ref: gh-pages
@@ -350,7 +346,7 @@ jobs:
           echo "output_file=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
 
       - name: Add summary to runs list
-        if: inputs.enable-summary-visualiser-html-upload
+        if: inputs.enable-summary-uploads
         run: |
           SUMMARY_TIMESTAMP_HUMAN="$(date -d @${{ steps.generate-summary-id.outputs.summary_timestamp }} '+%Y-%m-%d %H:%M:%S')"
           LIST_ITEM_STRING="- [${SUMMARY_TIMESTAMP_HUMAN} (${{ inputs.commit-hash || github.sha }})](${{ steps.generate-summary-visualiser.outputs.output_file }})"
@@ -359,7 +355,7 @@ jobs:
           sed -i "1i${LIST_ITEM_STRING}" ./site/_includes/runs-list.md
 
       - name: Push summary visualiser html and updated runs list to GitHub Pages
-        if: inputs.enable-summary-visualiser-html-upload
+        if: inputs.enable-summary-uploads
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ github.token }}
@@ -369,7 +365,7 @@ jobs:
           enable_jekyll: true
 
       - name: Upload run summary to bucket
-        if: inputs.enable-summary-json-upload
+        if: inputs.enable-summary-uploads
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
