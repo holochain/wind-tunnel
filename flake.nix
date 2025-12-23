@@ -424,8 +424,8 @@
               ./summary-visualiser/generate.sh "$1" > "$2"
             '';
           };
-          awscli-s3-cp = pkgs.writeShellApplication {
-            name = "awscli-s3-cp";
+          awscli-s3 = pkgs.writeShellApplication {
+            name = "awscli-s3";
             runtimeInputs = [
               pkgs.awscli2
             ];
@@ -433,7 +433,7 @@
               set -euo pipefail
 
               # shellcheck disable=SC1091
-              aws s3 cp "$1" "$2"
+              aws s3 "$@"
             '';
           };
           rust-unit-tests = pkgs.writeShellApplication {
