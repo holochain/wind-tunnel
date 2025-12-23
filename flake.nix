@@ -145,6 +145,7 @@
             ci = pkgs.mkShell {
               packages = commonPackages ++ [
                 pkgs.go
+                pkgs.openssl
               ];
             };
 
