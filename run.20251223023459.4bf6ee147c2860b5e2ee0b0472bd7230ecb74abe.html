@@ -1,0 +1,5209 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>app_install, dht_sync_lag, first_call, full_arc_create_validated_zero_arc_read, local_signals, mixed_arc_get_agent_activity, mixed_arc_must_get_agent_activity, remote_call_rate, remote_signals, single_write_many_read, write_get_agent_activity, write_query, write_read, write_validated, write_validated_must_get_agent_activity, zero_arc_create_and_read, zero_arc_create_data, zero_arc_create_data_validated, zome_call_single_value | Wind Tunnel Report</title>
+        <style>
+            :root {
+                --background: white;
+                --subtle: rgba(0, 0, 0, 0.5);
+                --more-subtle: rgba(0, 0, 0, 0.35);
+                --smoke: rgba(0, 0, 0, 0.2);
+                --good: rgb(0, 173, 12);
+                --bad: rgb(195, 25, 25);
+                --highlight: rgb(52, 152, 219);
+                --highlight-subtle: rgba(52, 152, 219, 0.5);
+                --grid: 0.5fr 1fr;
+                --grid-gap: 2rem;
+                --numeric-size: 14rem;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+            }
+
+            main {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .scenario {
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 30px;
+                margin: 2em 0;
+            }
+
+            .scenario code {
+                font-size: 1.2em;
+            }
+
+            /*
+Sample CSS for use in scenario templates.
+This CSS needs the following variables to be defined:
+
+  Colours:
+    --background: the background colour for each scenario
+    --subtle: less prominent text/graphics
+    --more-subtle: even less prominent text/graphics
+    --smoke: an extremely light colour, used for overlays
+    --good: indicate a desirable value (e.g., performance increases)
+    --bad: indicate an undesirable value (e.g., latency increases)
+    --highlight: an item that should have attention drawn to it via colour,
+                 used for example as the line in trend graphs
+    --highlight-subtle: highlighted, but secondary to --highlight
+
+  Layout:
+    --grid: Column sizes for label/content style information; the first is for
+            labels and the second is for content. You should give a generous
+            amount of space to content.
+    --grid-gap: The space between labels and content.
+    --numeric-size: Many metrics have a numeric widget of some sort, whether a
+                    simple scalar, a min/std value, or a composite value.
+                    These metrics often also have a trend graph or other widget
+                    that comes after them -- this value gives a consistent
+                    amount of space for the numeric value so that whatever comes
+                    after it will be lined up row-on-row.
+*/
+
+.scenario {
+    background-color: var(--background);
+}
+
+.scenario-summary {
+    margin-bottom: 4em;
+}
+
+.scenario-summary-description {
+    font-size: 1.25em;
+    color: var(--subtle);
+    margin: 2em 0;
+}
+
+.scenario-summary-details-line {
+    display: grid;
+    grid-template-columns: var(--grid);
+    gap: var(--grid-gap);
+    margin: 0.75em 0;
+}
+
+.scenario-summary-details-label {
+    text-align: right;
+    color: var(--subtle);
+}
+
+.scenario-summary-details-value {
+    font-weight: bold;
+}
+
+.scenario-summary-behaviours {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.scenario-summary-behaviour-agent-count {
+    font-weight: normal;
+    color: var(--subtle);
+}
+
+/* Metric structure */
+
+.scenario-metric {
+    display: grid;
+    grid-template-columns: var(--grid);
+    align-items: center;
+    gap: var(--grid-gap);
+    border-width: 2px;
+}
+
+/* Most metrics don't look good with their label top-aligned,
+but for some larger metrics, it's hard to see the label without scrolling. */
+.scenario-metric.large {
+    align-items: start;
+}
+
+.scenario-metric, .scenario-metric-content-item {
+    margin: 1em 0;
+    width: 100%;
+}
+
+.scenario-metric, .scenario-metric-content-item:not(:first-child) {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-metric-content-item {
+    border-width: 1px;
+}
+
+.scenario-metric-content-item:first-child {
+    margin-top: 0;
+}
+
+.scenario-metric-label, .scenario-metric-content-item-label, .scalar-label {
+    color: var(--subtle);
+}
+
+.scenario-metric-content-item-label {
+    margin-bottom: 1em;
+}
+
+.scenario-metric-name {
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+.scenario-metric-label {
+    text-align: right;
+}
+
+/* The data for a metric */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+}
+
+.composite-key {
+    list-style: none;
+    padding: 0;
+}
+
+/*** Widgets ***/
+
+.scalar-value {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Supplementary numbers shouldn't be so big. */
+.std .scalar-value,
+.mean-max-max .scalar-value,
+.min-max-mean-std-min .scalar-value,
+.min-max-mean-std-max .scalar-value,
+.delta-change .scalar-value {
+    font-size: inherit;
+}
+
+.min-max-mean-std .min-max-mean-std-min .scalar-label,
+.min-max-mean-std .mean .scalar-label,
+.min-max-mean-std .min-max-mean-std-max .scalar-label {
+    display: block;
+}
+
+/* These are spans in the markup, but we want them to be block elements. */
+.mean-std > *,
+.mean-max > * {
+    display: block;
+}
+
+.min-max-mean-std .mean-std {
+    display: inline-block;
+    text-align: center;
+}
+
+.min-max-mean-std,
+.delta-start-end {
+    display: flex;
+    gap: 0.5em;
+}
+
+.min-max-mean-std {
+    align-items: flex-start;
+}
+
+.min-max-mean-std-min,
+.min-max-mean-std-max,
+.min-max-mean-std .divider {
+    padding-top: 1rem;
+}
+
+.delta-start-end {
+    align-items: baseline;
+}
+
+.delta-change {
+    display: block;
+}
+
+.divider {
+    color: var(--more-subtle);
+    font-size: 2em;
+}
+
+/* Many metrics contain both a scalar and a trend graph.
+In those cases, make sure all the scalars are the same width
+so the following graph lines up. */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    display: grid;
+    grid-template-columns: var(--numeric-size) auto;
+    grid-gap: var(--grid-gap);
+}
+
+/*** Graph SVG ***/
+
+/* Axis labels for a graph */
+.axis-label {
+    font-size: 11px;
+    fill: var(--subtle);
+}
+
+/* The line in a trend graph */
+.trend-line {
+    fill: none;
+    stroke: var(--highlight);
+    stroke-width: 2;
+}
+
+/* The area under the trend line */
+.trend-area {
+    fill: var(--smoke);
+    opacity: 0.2;
+}
+
+/* The mean line in a trend graph */
+.mean-line {
+    stroke: var(--highlight-subtle);
+    stroke-width: 2;
+    stroke-dasharray: 3, 3;
+}
+
+/* To line up with the start of the graph, indent the "no trend data available" note.
+This is a bit of a hard-coded hack based on our knowledge that the JS gives 60px for the Y axis labels. */
+.no-trend-graph {
+    margin-left: 60px;
+    color: var(--subtle);
+}
+
+        </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+        <script>
+            window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
+    // Note: if you change the left margin value,
+    // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
+    // gets updated accordingly.
+    const margin = { top: 10, right: 20, bottom: 20, left: 60 };
+    // The width of each data point on the graph.
+    // If the graph is large enough, it'll cut the width by 50% or even 80%.
+    const pointWidth = trendData.length <= 40 ? 10
+                     : trendData.length <= 80 ? 5
+                     : 2;
+    const width = (trendData.length * pointWidth);
+    const height = 120;
+
+    const svg = d3.select(`#${svgId}`)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        // The guts of the graph go into this `<g>` wrapper,
+        // in order to make the coordinates of the trend data and axis label easy to work with --
+        // they're all zero-referenced to the top-left corner of the graph.
+        // It's then moved to the right position in the SVG to make room for the legends.
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const maxVal = d3.max(trendData);
+
+    // Map time window values to the x range of the graph.
+    const x = d3.scaleLinear()
+        .domain([0, trendData.length - 1])
+        .range([0, width]);
+
+    // Map data point values to the y range of the graph.
+    const y = d3.scaleLinear()
+        .domain([0, maxVal])
+        .range([height, 0]);
+
+    // The trend line.
+    const line = d3.line()
+        .x((d, i) => x(i))
+        .y(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-line")
+        .attr("d", line);
+
+    // The area under the trend line.
+    const area = d3.area()
+        .x((d, i) => x(i))
+        .y0(height)
+        .y1(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-area")
+        .attr("d", area);
+
+    // Draw the mean line if provided.
+    if (meanValue !== null) {
+        svg.append("line")
+            .attr("class", "mean-line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(meanValue))
+            .attr("y2", y(meanValue));
+    }
+
+    // Y-axis labels -- always zero on the bottom and the max data point value on the top.
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", 0)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`${maxVal}${yUnit || ""}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", height)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`0${yUnit || ""}`);
+
+    // X-axis labels -- 0 seconds at the start,
+    // and the number of data points × the time window duration at the end.
+
+    // Extract numeric and non-numeric parts of windowDuration.
+    const match = windowDuration.match(/^(\d+)(.*)$/);
+    const durationValue = parseInt(match[1]);
+    const durationUnit = match[2];
+    const totalDuration = durationValue * trendData.length;
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", 0)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`0${durationUnit}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`${totalDuration}${durationUnit}`);
+};
+
+        </script>
+    </head>
+
+    <body><main>
+        
+
+    
+    
+    
+        <section class="scenario scenario-app-install">
+            
+
+<div class="scenario-summary">
+    <h1>App Install</h1>
+
+    <div class="scenario-summary-description">
+<p>Measure app installation speed. This scenario has two roles:</p>
+
+<ul>
+    <li><b><code>minimal</code></b>: Installs a simple app which implements initialisation callbacks but otherwise doesn't contain a lot of code.</li>
+    <li><b><code>large</code></b>: Installs a larger app that contains some dependencies and some generated data as padding to make the bundle larger.</li>
+</ul>
+
+<p>These are intended to catch a compilation slowdown or issues with copying around large WASMs (e.g. accidental cloning or tracing). In each case, the behaviour will uninstall the app it installed so that it can re-install it on the next iteration.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:48:05 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>minimal</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">app_install_minimal_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">First install time</div>
+        
+            <div class="scenario-metric-description">The time from conductor startup to completion of the first app installation attempt.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">1.380593589</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+
+        
+            <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Install app timing</div>
+        
+            <div class="scenario-metric-description">The time taken to install an app.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.323887</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.095273</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HstYvvN8cO5Ka5js"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HstYvvN8cO5Ka5js", [0.313633, 0.351785, 0.335468, 0.302019, 0.336217, 0.276347, 0.313386, 0.315193, 0.316937, 0.351803, 0.346455, 0.330426, 0.329128, 0.303084, 0.316091, 0.317947, 0.323026, 0.303907, 0.33832, 0.308141, 0.341844, 0.320221, 0.336689, 0.312976, 0.332964, 0.316892, 0.355257, 0.329646, 0.331824, 0.367527], 0.323887, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+        
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-app-install">
+            
+
+<div class="scenario-summary">
+    <h1>App Install</h1>
+
+    <div class="scenario-summary-description">
+<p>Measure app installation speed. This scenario has two roles:</p>
+
+<ul>
+    <li><b><code>minimal</code></b>: Installs a simple app which implements initialisation callbacks but otherwise doesn't contain a lot of code.</li>
+    <li><b><code>large</code></b>: Installs a larger app that contains some dependencies and some generated data as padding to make the bundle larger.</li>
+</ul>
+
+<p>These are intended to catch a compilation slowdown or issues with copying around large WASMs (e.g. accidental cloning or tracing). In each case, the behaviour will uninstall the app it installed so that it can re-install it on the next iteration.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:45:50 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>large</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">app_install_large_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">First install time</div>
+        
+            <div class="scenario-metric-description">The time from conductor startup to completion of the first app installation attempt.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">1.052786862</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+
+        
+            <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Install app timing</div>
+        
+            <div class="scenario-metric-description">The time taken to install an app.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.542036</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.392362</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-izTuP6zWUEuKryH0"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-izTuP6zWUEuKryH0", [0.30323, 0.60594, 0.45871, 0.591147, 0.488422, 0.532044, 0.528598, 0.557977, 0.570488, 0.562991, 0.539329], 0.542036, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+        
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-dht-sync-lag">
+            
+
+
+
+
+
+
+
+
+<div class="scenario-summary">
+    <h1>DHT Sync Lag</h1>
+
+    <div class="scenario-summary-description">
+<p>Measure lag time between an agent publishing data and other peers being able to see it. This scenario has two roles:</p>
+
+<ul>
+    <li><b><code>write</code></b>: A simple job that just creates entries with a timestamp field. Those entries are linked to a known base hash. For each write, the metric <code>ws.custom.dht_sync_sent_count</code> is incremented.</li>
+    <li><b><code>record_lag</code></b>: A job that repeatedly queries for links from the known base hash. It keeps track of records that it has seen and when a new record is found, and calculates the time difference between the timestamp of the new record and the current time. That time difference is then recorded as a custom metric called <code>wt.custom.dht_sync_lag</code>.</li>
+</ul>
+
+<p>After each behaviour loop the metric <code>ws.custom.dht_sync_recv_count</code> is incremented.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:50:16 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>record_lag</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(5 agents)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>write</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(5 agents)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">dht_sync_lag_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Create rate</div>
+        
+            <div class="scenario-metric-description">The average number of created records per agent.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">91.8</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk5wxt7QrnqBYHuct6il9F8XaDzCBxJ7nfCWnIDEcHV5aS9mgt</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">34.32</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-hoKlYjQCV7Aekmo3"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-hoKlYjQCV7Aekmo3", [124, 113, 89, 85, 87, 86, 64, 75, 25, 20, 23, 10, 21, 10, 10, 12, 8, 11, 11, 5, 11, 8, 10, 9, 5, 14, 5, 10], 34.32, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkC9bp1P6_FjegJEtfDC5oj8QEeIMZ1jrO5kotH7PYrYNhVCU_</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">47.59</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-udV7WqWt4cMOzTXI"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-udV7WqWt4cMOzTXI", [69, 91, 74, 82, 74, 64, 40, 53, 31, 32, 46, 63, 50, 43, 44, 48, 63, 55, 35, 54, 24, 27, 51, 16, 25, 17, 14], 47.59, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkLgyILOPsWt7BXnSaHlFiu7DFdJKnKc_EYckxlj1ASM2BpSEv</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">181.07</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-cWLospU1PzSjEstJ"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-cWLospU1PzSjEstJ", [446, 360, 297, 276, 242, 213, 187, 168, 152, 146, 135, 128, 122, 121, 115, 99, 77, 73, 75, 87, 216, 219, 213, 194, 178, 183, 176, 184, 169], 181.07, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkYljO_Wglz6qRUuVQOZ_-KDVL0zXyP8uuqp4oRkqdAvX_BNUA</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">26.68</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-YQgrcj6vEJ31tTPy"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-YQgrcj6vEJ31tTPy", [125, 80, 78, 69, 63, 47, 30, 18, 14, 11, 13, 13, 17, 14, 16, 14, 15, 16, 15, 15, 11, 6, 9, 10, 10, 5, 7, 6], 26.68, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAku6soa7jWM4gwge8T7Usd-R9sfpr11IYAWxbZfjYnmN_8xkoh</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">169.36</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-MaR2Hv6VXJQ19v8r"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-MaR2Hv6VXJQ19v8r", [386, 310, 284, 253, 223, 192, 171, 155, 145, 138, 125, 105, 90, 86, 83, 85, 78, 82, 77, 149, 224, 216, 192, 178, 180, 173, 183, 179], 169.36, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag timing</div>
+        
+            <div class="scenario-metric-description">The average time between when a record was created and when it is first seen by an agent.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">8.773608367636252e+30</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">3.2083099177472544e+31</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkHtQzZd0sU2f9iPzRehNYlE0ROW1K5rXLA7UURLfG0sZVEkZ2</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">136.776256</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">62.606185</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-jboLT98sdV7a44k0"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-jboLT98sdV7a44k0", [56.153634, 93.471206, 92.296, 86.908953, 107.058793, 141.924911, 162.381228, 171.463285, 232.741502, 242.069629, 241.828745], 136.776256, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkZzOvoZyZ7XQG2-OqFgpbGjQOJpuWCrtxSfWt0wASSxaHcvn7</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">3.308986732032348e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.0082142160068393e+32</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-YO9Ck6DbWug4DJDz"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-YO9Ck6DbWug4DJDz", [35.408635, 46.241754, 49.735008, 79.332801, 62.665854, 83.414632, 1.1854098847655645e+31, 1.6618441175208614e+32, 2.787419388607683e+32, 1.4617763649420597e+32, 100.964214], 3.308986732032348e+31, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk_-DleVOyt6IhSvcoxJxF-f7s3jYQFxWeF4RvNANDCzD8qsbq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">1.077817451785778e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">5.959407428667879e+31</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-2I5MsPznDMwoP7bn"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-2I5MsPznDMwoP7bn", [55.018007, 89.215738, 66.588065, 6.292893086894068e+31], 1.077817451785778e+31, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkkoWVWH_uQj7UC3Rnkrn3uqT0l1eDgTozEYKjhFcesDmdesR-</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">263.137673</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">94.634962</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-OWNkh3jS4VQxbPDP"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-OWNkh3jS4VQxbPDP", [214.468421, 149.980868, 159.166771, 166.788494, 330.607023, 208.279784, 323.879455, 361.044508, 351.240102, 371.958718, 382.503586], 263.137673, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkxeVfLHcQV7lnrXbJ4V_FBXjOYWuvpPlJsn3zD05jnsWLmb9A</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">233.015086</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">46.978684</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-dtzr70Vm2LlDvGin"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-dtzr70Vm2LlDvGin", [213.010363, 225.114287, 222.038679, 205.298311, 170.968666, 202.361134, 210.68995, 230.013052, 281.71607, 289.74673], 233.015086, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag rate</div>
+        
+            <div class="scenario-metric-description">The average number of created records discovered per agent.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">114.45</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkHtQzZd0sU2f9iPzRehNYlE0ROW1K5rXLA7UURLfG0sZVEkZ2</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">69.44</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-lIj2CbteRRQRIbfJ"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-lIj2CbteRRQRIbfJ", [3, 49, 46, 215, 102, 43, 40, 118, 9], 69.44, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkZzOvoZyZ7XQG2-OqFgpbGjQOJpuWCrtxSfWt0wASSxaHcvn7</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">191.56</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-LZnf3BJAlQn9z4qf"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-LZnf3BJAlQn9z4qf", [36, 484, 33, 224, 129, 490, 88, 96, 144], 191.56, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk_-DleVOyt6IhSvcoxJxF-f7s3jYQFxWeF4RvNANDCzD8qsbq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">238.33</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-q5hDvOUrQSEIIzFm"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-q5hDvOUrQSEIIzFm", [4, 563, 148], 238.33, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkkoWVWH_uQj7UC3Rnkrn3uqT0l1eDgTozEYKjhFcesDmdesR-</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">26.9</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-1Dt1NPUCG4xVfXys"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-1Dt1NPUCG4xVfXys", [4, 23, 65, 3, 1, 76, 3, 32, 9, 53], 26.9, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkxeVfLHcQV7lnrXbJ4V_FBXjOYWuvpPlJsn3zD05jnsWLmb9A</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">46</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-Zspf2qiemLVnMbcY"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-Zspf2qiemLVnMbcY", [6, 4, 60, 42, 70, 35, 29, 122], 46, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors encountered during the scenario.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+    
+</div>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-first-call">
+            
+
+<div class="scenario-summary">
+    <h1>First Call</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario installs a simple app which implements the <code>init</code> callback, and measures the time elapsed between start of install and calling <code>init</code>. It will uninstall the app it installed so that it can re-install it on the next iteration. This is required to re-run the initialisation callback.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:26:05 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">first_call_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Zome call timing</div>
+        
+            <div class="scenario-metric-description">The time elapsed between start of install and calling <code>init</code>.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.017255</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.015405</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-i8jBhHuuNTib8JFJ"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-i8jBhHuuNTib8JFJ", [0.01862, 0.015709, 0.016079, 0.016246, 0.016146, 0.015991, 0.016532, 0.016245, 0.016127, 0.016018, 0.015983, 0.046906, 0.016359, 0.016149, 0.016292, 0.016292, 0.016439, 0.01613, 0.016264, 0.016599, 0.016101, 0.016413, 0.016106, 0.028707, 0.016395, 0.016529, 0.016144, 0.016493, 0.016269], 0.017255, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario-not-found scenario-not-found-full-arc-create-validated-zero-arc-read">
+            <p>No scenario template for <code>full_arc_create_validated_zero_arc_read</code>!</p>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-local-signals">
+            
+
+<div class="scenario-summary">
+    <h1>Local Signals</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario is for testing the speed and reliability of local signals. It uses a zome with a function that will emit 10,000 signals. The scenario measures how long it takes to send the signals and how many have been received by the time the zome call ends.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:28:15 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">local_signals_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Send timing</div>
+        
+            <div class="scenario-metric-description">The time taken to emit a batch of 10,000 signals.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.321829</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.154458</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Receive timing</div>
+        
+            <div class="scenario-metric-description">The time taken to receive the completed batch, to the nearest 250ms.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">30.323039</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.154501</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Success ratio</div>
+        
+            <div class="scenario-metric-description">The proportion of signals successfully received in a batch.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">0.4810999929904938</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.581</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.0839</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">0.7627999782562256</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario-not-found scenario-not-found-mixed-arc-get-agent-activity">
+            <p>No scenario template for <code>mixed_arc_get_agent_activity</code>!</p>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario-not-found scenario-not-found-mixed-arc-must-get-agent-activity">
+            <p>No scenario template for <code>mixed_arc_must_get_agent_activity</code>!</p>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-remote-call-rate">
+            <div class="scenario-summary">
+    <h1>Remote Call Rate</h1>
+
+    <div class="scenario-summary-description">
+<p>Test the throughput of <code>remote_call</code> operations. Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:30:22 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">remote_call_rate_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Dispatch timing</div>
+        
+            <div class="scenario-metric-description">The time between sending a remote call and the remote handler being invoked.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.005369</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.001239</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkBovI8JP4ulo5x6stkBOJ1FHHitDAFabIOztZNTncl4Og_SSU</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.005371</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.001245</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-pTxCRLci85GfhHiN"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-pTxCRLci85GfhHiN", [0.005495, 0.005222, 0.005392, 0.005815, 0.005331, 0.005293, 0.005521, 0.005556, 0.005188, 0.005601, 0.005054, 0.005078, 0.005189, 0.005078, 0.005425, 0.0056, 0.005511, 0.005289, 0.005181, 0.00538, 0.005389, 0.005474, 0.005409, 0.005459, 0.005581, 0.005178, 0.005114, 0.005976, 0.005219, 0.005334], 0.005371, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAksg_2TQjmo65ng_tCdzMAAv0XHTtwoj67zQsrTUbws5OVK3Oq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.005366</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.001232</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-JFKRIAomy1kxj9pj"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-JFKRIAomy1kxj9pj", [0.005642, 0.005206, 0.005388, 0.005776, 0.005378, 0.005338, 0.005418, 0.005578, 0.005172, 0.005534, 0.005014, 0.005113, 0.005263, 0.00509, 0.005453, 0.005546, 0.005479, 0.005294, 0.005161, 0.005397, 0.005393, 0.005559, 0.005323, 0.005455, 0.005565, 0.005232, 0.005062, 0.005834, 0.005264, 0.005382], 0.005366, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+    <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Round-trip timing</div>
+        
+            <div class="scenario-metric-description">The total elapsed time to get a response to the client.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.012372</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.002148</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkBovI8JP4ulo5x6stkBOJ1FHHitDAFabIOztZNTncl4Og_SSU</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.012371</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.00215</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-inrDdatqm3A2GSym"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-inrDdatqm3A2GSym", [0.012761, 0.011996, 0.012412, 0.013522, 0.012393, 0.012209, 0.012668, 0.01283, 0.01187, 0.01281, 0.01162, 0.011633, 0.012052, 0.011674, 0.012623, 0.012877, 0.012721, 0.012199, 0.01187, 0.012329, 0.012555, 0.012589, 0.012463, 0.012522, 0.012882, 0.011938, 0.011684, 0.013649, 0.012064, 0.012371], 0.012371, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAksg_2TQjmo65ng_tCdzMAAv0XHTtwoj67zQsrTUbws5OVK3Oq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.012372</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.002145</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-hQzEQfTq1ttPbWUt"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-hQzEQfTq1ttPbWUt", [0.012777, 0.012048, 0.01244, 0.013552, 0.012331, 0.012233, 0.012553, 0.012796, 0.011813, 0.012737, 0.011532, 0.011682, 0.01214, 0.011751, 0.012622, 0.012753, 0.012725, 0.012282, 0.011937, 0.012372, 0.012556, 0.01263, 0.012458, 0.012558, 0.012931, 0.011958, 0.011613, 0.013496, 0.012156, 0.012335], 0.012372, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-remote-signals">
+            
+
+<div class="scenario-summary">
+    <h1>Remote Signals</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario tests the throughput of <code>remote_signals</code> operations.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:32:41 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">remote_signals_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Round trip time</div>
+        
+            <div class="scenario-metric-description">The time from origin signal dispatch to origin receive of the remote side's response signal.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.019127</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.023785</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-ccUKmVDYXDboFMuM"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-ccUKmVDYXDboFMuM", [0.037306, 0.017984, 0.017563, 0.018213, 0.018205, 0.017547, 0.015004, 0.015575, 0.015137, 0.018913, 0.018964, 0.019742, 0.019118, 0.018548, 0.0173, 0.018652, 0.029011, 0.014284, 0.015138, 0.021713, 0.018681, 0.017149, 0.018811, 0.01867, 0.018822, 0.017689, 0.018978, 0.016798, 0.014624], 0.019127, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Timeouts</div>
+        
+            <div class="scenario-metric-description">The number of timeouts waiting for the remote side's response signal (default timeout is 20 seconds).</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-single-write-many-read">
+            
+
+<div class="scenario-summary">
+    <h1>Single-write, many-read</h1>
+
+    <div class="scenario-summary-description">
+<p>Creates an entry in the agent setup, then read one's own record back. This tests the maximum read performance for reading back local data when the chain is short.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:34:44 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">single_write_many_read_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name"><code>read</code> call timing</div>
+        
+            <div class="scenario-metric-description">The time it takes to complete the zome call that retrieves the record.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.00526</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.001352</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-Ju9OyHlaCAZHEptM"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-Ju9OyHlaCAZHEptM", [0.005715, 0.005709, 0.004544, 0.005595, 0.005518, 0.005769, 0.004876, 0.005338, 0.005302, 0.004438, 0.005342, 0.005411, 0.004526, 0.005696, 0.003798, 0.005909, 0.005229, 0.005783, 0.005713, 0.005078, 0.005233, 0.005135, 0.005969, 0.005207, 0.005216, 0.00586, 0.005945, 0.005198, 0.004816, 0.005777], 0.00526, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name"><code>read</code> call rate (10s)</div>
+        
+            <div class="scenario-metric-description">The number of zome calls made in a 10-second window.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">1892.71</span><span class="scalar-unit">/10s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-7MhQrE3q0FlFG1ql"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-7MhQrE3q0FlFG1ql", [1736, 2179, 1772, 1797, 1717, 2033, 1857, 1868, 2232, 1856, 1832, 2188, 1740, 2607, 1678, 1895, 1714, 1735, 1951, 1894, 1930, 1660, 1903, 1901, 1691, 1665, 1907, 2058], 1892.71, "10s", "/10s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors collected.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-write-get-agent-activity">
+            
+
+<div class="scenario-summary">
+    <h1>Write/<code>get_agent_activity</code></h1>
+
+    <div class="scenario-summary-description">
+<p>A scenario where <b><code>write</code></b> peers write entries, while <b><code>get_agent_activity</code></b> peers each query a single <code>write</code> agent's activity with <code>get_agent_activity</code>.</p>
+
+<p>Before a target <code>write</code> peer and the requesting <code>get_agent_activity</code> peer are in sync, this will measure the <code>get_agent_activity</code> call performance over a network. Once a <code>write</code> peer reaches sync with a <code>get_agent_activity</code> peer, the <code>write</code> peer will publish their actions and entries, and so the <code>get_agent_activity</code> calls will likely have most of the data they need locally. At that point this measures the database query performance and code paths through host functions.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:52:15 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">2</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">2</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>get_agent_activity</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>write</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">write_get_agent_activity_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Highest observed <code>action_seq</code></div>
+        
+            <div class="scenario-metric-description">The change in the highest action index on the <code>write</code> peer's source chain.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="delta">
+    <span class="delta-start-end">
+        <span class="delta-start"><span class="scalar">
+    <span class="scalar-value">54</span></span></span>
+        
+            <span class="divider delta-dir delta-dir-up">&#x2B06;</span>
+        
+        
+            <span class="delta-end"><span class="scalar">
+    <span class="scalar-value">2111</span></span></span>
+        
+    </span>
+
+    
+        
+        <span class="delta-change">
+            <span class="delta-percent-change">change:
+                <span class="scalar">
+    <span class="scalar-value">3809.2592592592596</span><span class="scalar-unit">%</span></span></span>
+            <span class="delta-measurement-duration">over 859.019189263s (<span class="scalar">
+    <span class="scalar-value">2.39</span></span>/s)</span>
+        </span>
+    
+</span>
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name"><code>get_agent_activity_full</code> zome call timing</div>
+        
+            <div class="scenario-metric-description">The time taken to call the zome function that retrieves information on a <code>write</code> peer's source chain.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkJK7utjydwRdJgtw3zQHLSnwoG3qoyJUCtSzaJsi_FrGhPMQu</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.022543</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.082086</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-EIsmoIE1rkPyCcKq"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-EIsmoIE1rkPyCcKq", [0.007254, 0.008848, 0.008574, 0.008396, 0.010584, 0.00998, 0.012729, 0.011828, 0.010338, 0.014276, 0.011786, 0.016884, 0.013324, 0.012701, 0.01612, 0.016139, 0.015599, 0.017398, 0.016658, 0.016797, 0.016846, 0.016733, 0.018965, 0.018392, 0.018656, 0.022929, 0.019317, 0.018016, 0.020489, 0.019879, 0.025097, 0.023971, 0.028699, 0.023259, 0.022555, 0.023366, 0.024738, 0.028246, 0.030036, 0.027001, 0.031857, 0.021755, 0.027091, 0.032318, 0.022658, 0.025732, 0.040216, 0.025283, 0.03065, 0.026485, 0.024597, 0.035144, 0.026653, 0.028985, 0.033159, 0.029854, 0.029635, 0.037959, 0.026374, 0.035848, 0.030043, 0.030687, 0.026786, 0.029876, 0.041831, 0.031005, 0.037921, 0.030248, 0.033942, 0.034764, 0.031318, 0.038795, 0.028066, 0.040732, 0.033311, 0.041942, 0.040495, 0.042384, 0.044525, 0.059166, 0.040575, 0.05105, 0.043288, 0.050066, 0.057298, 0.047562], 0.022543, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-write-query">
+            
+
+<div class="scenario-summary">
+    <h1>Write/Query</h1>
+
+    <div class="scenario-summary-description">
+<p>Creates an entry, then queries the source chain and performs a simple operation on the entries, then repeats.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:36:50 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">write_query_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write timing</div>
+        
+            <div class="scenario-metric-description">The time it takes to complete the zome function call that writes the entry.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.106896</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.33299</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-g0lmKQnvIQuP35PX"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-g0lmKQnvIQuP35PX", [0.007499, 0.031762, 0.047271, 0.058683, 0.056603, 0.060672, 0.063473, 0.07462, 0.057654, 0.055145, 0.120742, 0.155955, 0.20226, 0.121074, 0.142897, 0.180925, 0.170072, 0.13841, 0.182392, 0.172402, 0.171209, 0.196003, 0.155423, 0.186924, 0.144449, 0.211716, 0.111557, 0.145603, 0.187054, 0.084019], 0.106896, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write rate</div>
+        
+            <div class="scenario-metric-description">The number of writes completed per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">66.86</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-h0DScpb2gIiutfwo"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-h0DScpb2gIiutfwo", [201, 146, 121, 121, 104, 97, 90, 102, 97, 54, 51, 37, 60, 47, 44, 44, 44, 27, 44, 43, 31, 44, 38, 40, 35, 39, 37, 34], 66.86, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated during the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-write-read">
+            <div class="scenario-summary">
+    <h1>Write/Read</h1>
+
+    <div class="scenario-summary-description"><p>Creates an entry and reads it back, then repeats.</p></div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:39:04 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">write_read_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write timing</div>
+        
+            <div class="scenario-metric-description">The time taken to write the entry.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.026951</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.017073</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-veykuNbdq4VA6u6T"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-veykuNbdq4VA6u6T", [0.01533, 0.022601, 0.023964, 0.020604, 0.021093, 0.019438, 0.022274, 0.020054, 0.020806, 0.020528, 0.022997, 0.022093, 0.022786, 0.025446, 0.034136, 0.029753, 0.030354, 0.033882, 0.031138, 0.034872, 0.038698, 0.0373, 0.034125, 0.034475, 0.039182, 0.038803, 0.040562, 0.043552, 0.040309, 0.036924, 0.044176], 0.026951, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write rate</div>
+        
+            <div class="scenario-metric-description">The number of writes completed per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">151.55</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-v8n09pKALeNQPkJd"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-v8n09pKALeNQPkJd", [277, 232, 251, 227, 236, 201, 218, 202, 203, 178, 182, 169, 154, 109, 132, 126, 119, 123, 114, 96, 92, 103, 102, 95, 94, 93, 88, 88, 91], 151.55, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Read timing</div>
+        
+            <div class="scenario-metric-description">The time taken to read the entry.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.038305</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.021126</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-DJCS4rmSvYIyG2jB"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-DJCS4rmSvYIyG2jB", [0.0069, 0.013475, 0.01894, 0.019192, 0.022597, 0.022904, 0.027177, 0.025558, 0.028684, 0.02853, 0.03322, 0.03298, 0.036287, 0.039639, 0.057454, 0.046213, 0.048506, 0.049863, 0.050324, 0.05325, 0.06418, 0.071445, 0.060662, 0.063936, 0.065894, 0.067716, 0.066653, 0.070164, 0.07184, 0.072615, 0.0732], 0.038305, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Read rate</div>
+        
+            <div class="scenario-metric-description">The number of reads completed per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">151.55</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HxMfQqpVkbclUgph"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HxMfQqpVkbclUgph", [276, 233, 250, 228, 236, 201, 218, 202, 203, 178, 181, 170, 153, 110, 131, 126, 120, 123, 113, 97, 92, 103, 101, 96, 93, 93, 88, 89, 91], 151.55, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated over the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-write-validated">
+            <div class="scenario-summary">
+    <h1>Write validated</h1>
+
+    <div class="scenario-summary-description"><p>Creates an entry, updates it and links the create to the update, then repeats. Each of the three actions is validated by the included hApp.</p></div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:41:22 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">write_validated_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write timing</div>
+        
+            <div class="scenario-metric-description">The time it takes to complete the zome function call that writes the entry, updates it, and links to the update.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.059915</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.031246</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-xU6HX7FgbRfoKllo"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-xU6HX7FgbRfoKllo", [0.02126, 0.027066, 0.035135, 0.036466, 0.042821, 0.045901, 0.055908, 0.046931, 0.056908, 0.055412, 0.059738, 0.063128, 0.067066, 0.069281, 0.073995, 0.069579, 0.064228, 0.070875, 0.074347, 0.077144, 0.093724, 0.083164, 0.084013, 0.087908, 0.089255, 0.09427, 0.090944, 0.094991, 0.104754, 0.094338], 0.059915, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Write rate</div>
+        
+            <div class="scenario-metric-description">The number of write zome function calls that complete per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">71.32</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-YA0FgRr9EpXFio7y"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-YA0FgRr9EpXFio7y", [133, 117, 110, 96, 87, 77, 87, 81, 74, 75, 70, 67, 66, 63, 64, 70, 66, 62, 62, 49, 56, 57, 56, 51, 52, 52, 51, 46], 71.32, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Read timing</div>
+        
+            <div class="scenario-metric-description">The time it takes to complete the zome function call that reads the data.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.074409</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.027542</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-YgUg3UQNltEAubKg"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-YgUg3UQNltEAubKg", [0.0394, 0.048163, 0.049946, 0.054163, 0.061592, 0.06902, 0.073846, 0.068139, 0.065935, 0.079124, 0.073304, 0.079534, 0.082406, 0.083623, 0.082881, 0.086737, 0.078231, 0.080242, 0.086392, 0.084765, 0.106648, 0.092499, 0.092087, 0.091233, 0.10156, 0.098541, 0.099933, 0.100059, 0.112996, 0.120848], 0.074409, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Read rate</div>
+        
+            <div class="scenario-metric-description">The number of read zome function calls that complete per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">71.36</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-XgNLSK1cpLAAOXeA"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-XgNLSK1cpLAAOXeA", [133, 117, 110, 96, 87, 77, 87, 81, 75, 75, 70, 67, 65, 63, 64, 70, 66, 62, 62, 50, 56, 56, 56, 52, 51, 52, 51, 47], 71.36, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated over the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-write-validated-must-get-agent-activity">
+            
+
+<div class="scenario-summary">
+    <h1>Write Validated <code>must_get_agent_activity</code></h1>
+
+    <div class="scenario-summary-description">
+<p>A scenario where <b><code>write</code></b> agents create entries, while <b><code>must_get_agent_activity</code></b> agents create entries which are validated with a <code>must_get_agent_activity</code> call for a single <code>write</code> agent's activity.</p>
+
+<p>Before a target <code>write</code> peer and the requesting peer are in sync, the <code>must_get_agent_activity</code> request will go over the network. Once a <code>write</code> peer reaches sync with the requesting <code>must_get_agent_activity</code> peer, the <code>write</code> peer will publish their actions and entries, and so the <code>must_get_agent_activity</code> calls will likely have the data it needs locally. At that point this measures the database query performance and code paths through host functions.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:54:17 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">2</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">2</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>must_get_agent_activity</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>write</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">write_validated_must_get_agent_activity_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Highest observed <code>action_seq</code></div>
+        
+            <div class="scenario-metric-description">The change in the <code>must_get_agent_activity</code> peer's source chain top over the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="delta">
+    <span class="delta-start-end">
+        <span class="delta-start"><span class="scalar">
+    <span class="scalar-value">16</span></span></span>
+        
+            <span class="divider delta-dir delta-dir-up">&#x2B06;</span>
+        
+        
+            <span class="delta-end"><span class="scalar">
+    <span class="scalar-value">1633</span></span></span>
+        
+    </span>
+
+    
+        
+        <span class="delta-change">
+            <span class="delta-percent-change">change:
+                <span class="scalar">
+    <span class="scalar-value">10106.25</span><span class="scalar-unit">%</span></span></span>
+            <span class="delta-measurement-duration">over 776.174865851s (<span class="scalar">
+    <span class="scalar-value">2.08</span></span>/s)</span>
+        </span>
+    
+</span>
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name"><code>create_validated_sample_entry</code> zome call timing</div>
+        
+            <div class="scenario-metric-description">The time taken to complete the zome function call that creates the entry that depends on a <code>write</code> agent's source chain.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkevLdev2UJ-tkNW1QQPY5bMDSgWzcgwBOGGFRhiSTudZj2kpw</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.513723</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.97643</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-TvTZrXgH28nXm6qP"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-TvTZrXgH28nXm6qP", [0.173667, 0.427556, 0.052927, 0.024661, 1.121059, 1.571578, 0.056307, 0.086143, 0.047214, 0.065611], 0.513723, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated over the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">45227</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-zero-arc-create-and-read">
+            <div class="scenario-summary">
+    <h1>Zero-Arc Create and Read</h1>
+
+    <div class="scenario-summary-description">
+<p>A zero-arc/full-arc mixed scenario with two types of zero-arc nodes -- ones that create data and ones that read data -- as well as full arc nodes to "relay" the data. The scenario has three roles:</p>
+
+<ul>
+    <li><b><code>zero_write</code></b>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that <code>zero_read</code> nodes can retrieve them.</li>
+    <li><b><code>zero_read</code></b>: A zero-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+    <li><b><code>full</code></b>: A full-arc conductor that is just here to serve entries to zero arc nodes.</li>
+</ul>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 02:01:43 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">9</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">9</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>full</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(3 agents)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>zero_read</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(3 agents)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>zero_write</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(3 agents)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">zero_arc_create_and_read_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Create rate</div>
+        
+            <div class="scenario-metric-description">The number of timed entries created by the zero-arc node(s) per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">122.24</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkC-mA1z5LezTSGYeE8RkLMkRRQvqF2BHbx2i9NdFsOT7zGHG6</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">122.45</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-qGsWXJSMVXNXLyRn"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-qGsWXJSMVXNXLyRn", [288, 235, 205, 171, 147, 138, 130, 117, 118, 104, 87, 93, 89, 85, 77, 77, 71, 71, 72, 74], 122.45, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkN11P4p-1mSiVxyzUftz3RYEEOsemhy5oLyV7kKZm-U1MgzH5</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">69.32</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-GdzxqIav7AtHYYa9"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-GdzxqIav7AtHYYa9", [104, 61, 65, 66, 60, 65, 62, 59, 59, 58, 75, 82, 77, 73, 82, 66, 73, 75, 55], 69.32, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkXvw3j2mpB4zTje6m-AG9yekKciMkJIV_npALdKX-U0vkBqrj</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">174.95</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-GtbHN7oPQek5Qp9Q"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-GtbHN7oPQek5Qp9Q", [361, 290, 290, 252, 228, 205, 189, 178, 163, 154, 145, 137, 128, 129, 120, 117, 113, 104, 100, 96], 174.95, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag timing</div>
+        
+            <div class="scenario-metric-description">For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkvQr172NiFLv1JJocK9X2Krhx-g9VUHJioUFBOiIWkCxmoQ1D</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">97.241317</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">40.694951</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-9Lv7oMvL95vCyqF5"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-9Lv7oMvL95vCyqF5", [36.055612, 45.353436, 54.897078, 66.846476, 74.957274, 95.136006, 106.191036, 123.016563, 137.639465, 149.633896, 161.709346], 97.241317, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag rate</div>
+        
+            <div class="scenario-metric-description">The number of entries per second received by full nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkvQr172NiFLv1JJocK9X2Krhx-g9VUHJioUFBOiIWkCxmoQ1D</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">75.22</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-9VZ4mt0sHf2rpqea"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-9VZ4mt0sHf2rpqea", [59, 59, 70, 50, 113, 68, 101, 91, 66], 75.22, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        
+            <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Open connections</div>
+        
+            <div class="scenario-metric-description">The number of currently open connections to other conductors.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">full-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">0</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">5.48</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.8</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">7</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">zero-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">2</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">5.1</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.8</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">7</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+
+    </div>
+</div>
+
+        
+
+        
+        
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated across all nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">2</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-zero-arc-create-data">
+            <div class="scenario-summary">
+    <h1>Zero-Arc Create Data</h1>
+
+    <div class="scenario-summary-description">
+A zero-arc/full-arc mixed scenario where zero-arc nodes create data and full-arc nodes read the data. The scenario has two roles:
+
+<ul>
+    <li><b><code>zero</code></b>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that full-arc nodes can retrieve them.</li>
+    <li><b><code>full</code></b>: A full-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+</ul>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:56:23 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>full</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(4 agents)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>zero</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(6 agents)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">zero_arc_create_data_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Create rate</div>
+        
+            <div class="scenario-metric-description">The number of timed entries created by the zero-arc node(s) per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">45.76</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk30BpvPWeAJUv0rvdGnVBjSLTm4aV1ZmR8K-OawxKmlT6XD4y</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">14.62</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-6HCgnwvK89JKbK9g"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-6HCgnwvK89JKbK9g", [14, 30, 25, 16, 17, 14, 9, 13, 11, 8, 10, 12, 11], 14.62, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkDJtdrtBlwpRoq_uQodPPD0upr15zRtng2oRe58Szwqtv2ZHw</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">22</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-68A8SwrshUrAzolY"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-68A8SwrshUrAzolY", [63, 23, 12, 13, 18, 17, 25, 10, 17, 22], 22, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkIOb1OLpkUff5__Anp75Xf50k4lzHWWbksDWWLzdkmZn8l2MC</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">41.91</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-TsVdSqBI2EOzB3Jr"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-TsVdSqBI2EOzB3Jr", [72, 51, 46, 40, 35, 38, 37, 38, 38, 33, 33], 41.91, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkS3Ezf_oLQL7QwrYufCkEnNm1xe5rhKYMDg_og5Sia2cbwsF5</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">22.25</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-8ESaPEKCx6ZsVrG9"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-8ESaPEKCx6ZsVrG9", [31, 24, 25, 19, 26, 30, 17, 29, 23, 17, 16, 10], 22.25, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkdc3gGoluEDjAtYzYBFMqrK-004cLxpuUX5eDeaiuJVaAUNRa</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">159.2</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-kIAhy87t5OLZ8NV7"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-kIAhy87t5OLZ8NV7", [287, 234, 136, 183, 152, 141, 130, 115, 107, 107], 159.2, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkioMYi-_62pb4Yk6nf-pI5-NFIijm5O6okUsuPU8QMb81x8eo</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">14.57</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-9Dff7AwG3GPZgjLr"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-9Dff7AwG3GPZgjLr", [28, 26, 25, 21, 22, 16, 16, 10, 6, 5, 7, 6, 10, 6], 14.57, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag timing</div>
+        
+            <div class="scenario-metric-description">For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">4.802204772048853e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">9.944144534527237e+31</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkORm9H36pTyXYWATF6OjhS_8el770yJPlqoOA0t2gCmqkCSQT</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">5.425347033162004e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.2457150659398232e+32</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-4hhRFMjsWyeY9U7s"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-4hhRFMjsWyeY9U7s", [4.399087633198444e+31, 6.7543484891342065e+31, 27.679281, 8.322123104044685e+31, 4.512891146664885e+31], 5.425347033162004e+31, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfcxMjcC60qAo6YWUDkVHbTLkMR4L5mDDBdDscFbZIgq2LmWQ</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">6.364993913629065e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.326937722412666e+32</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-gbA4OyZ5PicS8Zei"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-gbA4OyZ5PicS8Zei", [3.4028236692093845e+31, 2.8698512872850223e+31, 4.8611766702991215e+31, 6.980151116326945e+31, 6.730860005029553e+31, 4.990808048173765e+31, 8.673864254847452e+31, 1.1059176924930502e+32], 6.364993913629065e+31, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfhiYC6k-2a2GlzY2GXTdwD5wKiDFKFfTUt78SQ70qY5h3r6v</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">7.418478141404345e+31</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.4050050254584053e+32</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-YLODnwLKm9LVDyrt"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-YLODnwLKm9LVDyrt", [8.814543239518283e+31, 8.59660716431845e+31, 6.972999322150381e+31, 4.0033219637757464e+31, 1.0675525236735326e+32, 3.926335002933905e+31, 5.235113337245208e+31], 7.418478141404345e+31, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkprEmQYWud24FKWuyKLBbmRljEd0xBWQlQwR6Ye-ke4nvN46n</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">689.185104</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">38.356063</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag rate</div>
+        
+            <div class="scenario-metric-description">The number of entries per second received by full nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">89.48</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkORm9H36pTyXYWATF6OjhS_8el770yJPlqoOA0t2gCmqkCSQT</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">196.33</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-SirZcdAIfYh4wyCa"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-SirZcdAIfYh4wyCa", [400, 3, 186], 196.33, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfcxMjcC60qAo6YWUDkVHbTLkMR4L5mDDBdDscFbZIgq2LmWQ</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">82</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-zSIyNv1soxeN11n8"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-zSIyNv1soxeN11n8", [85, 65, 119, 93, 77, 53], 82, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfhiYC6k-2a2GlzY2GXTdwD5wKiDFKFfTUt78SQ70qY5h3r6v</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">79.6</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-thLyjt3x1HHXAHSu"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-thLyjt3x1HHXAHSu", [97, 124, 70, 53, 54], 79.6, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkprEmQYWud24FKWuyKLBbmRljEd0xBWQlQwR6Ye-ke4nvN46n</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">/s</span></span></span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        
+            <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Open connections</div>
+        
+            <div class="scenario-metric-description">The number of currently open connections to other conductors.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">full-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">0</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">6.12</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">2.7</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">9</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">zero-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">7</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">8.08</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.58</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">9</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+
+    </div>
+</div>
+
+        
+
+        
+        
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated across all nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-zero-arc-create-data-validated">
+            
+
+<div class="scenario-summary">
+    <h1>Zero-arc Create Data (Validated)</h1>
+
+    <div class="scenario-summary-description">
+<p>A zero-arc/full-arc mixed scenario where zero-arc nodes create data that gets validated and full-arc nodes read the data. The scenario has two roles:</p>
+
+<ul>
+    <li><b><code>zero</code></b>: A zero-arc conductor that just creates entries with a timestamp field. Those entries are linked to a known base hash so that full-arc nodes can retrieve them.</li>
+    <li><b><code>full</code></b>: A full-arc conductor that reads the entries created by the zero-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+</ul>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:58:28 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">10</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>full</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(4 agents)</span>
+                        </li>
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>zero</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(6 agents)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">zero_arc_create_data_validated_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Create rate</div>
+        
+            <div class="scenario-metric-description">The number of timed entries created by the zero-arc node(s) per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">58.41</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk0VkR1zeh1KtiwjlO-vj5UQcGmvNlXoMHIQ4irqL_ptpxaBMf</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">149</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-FpRqC9rjagomoRMr"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-FpRqC9rjagomoRMr", [319, 279, 232, 229, 201, 202, 193, 176, 157, 152, 141, 132, 123, 115, 100, 115, 105, 102, 96, 92, 87, 86, 79, 63], 149, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk0bLfKgdrHQWjRCztEl9M_RRxjcBhJpGi30_wX8fAsjj1jHXN</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">12.36</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-ZxBhJQR9wbZy4UaL"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-ZxBhJQR9wbZy4UaL", [20, 22, 20, 12, 17, 13, 12, 12, 6, 11, 6, 12, 6, 12, 12, 17, 7, 14, 8, 9, 16, 4, 18, 11, 12], 12.36, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk2nWlBLvkW-5CUhEDIIAqV9Gm_V6EdyBkqsz21ZpFl6nA0GIi</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">117.78</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-TLmpgT7GF8bT00gX"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-TLmpgT7GF8bT00gX", [163, 115, 115, 141, 149, 152, 126, 128, 130, 139, 128, 131, 125, 116, 113, 107, 96, 101, 92, 87, 86, 86, 83], 117.78, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAk62YXJFPJZHqOvpKbymqjKWHd6kR8nNzl_XsFp-aObVDqK-2w</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">39.22</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-89Gon4ge4H4re53s"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-89Gon4ge4H4re53s", [92, 73, 62, 56, 49, 42, 48, 45, 55, 54, 46, 44, 23, 23, 17, 17, 24, 18, 17, 24, 24, 29, 20], 39.22, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkViSqIfmew-Ex5ZHbR_pVlS2OqsSLEnzx4CRE7qekfglCiQop</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">12.28</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-E4DtaQu6EHdSpYl4"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-E4DtaQu6EHdSpYl4", [28, 22, 21, 18, 24, 19, 18, 5, 6, 11, 8, 9, 13, 6, 6, 11, 12, 6, 10, 7, 9, 9, 11, 12, 6], 12.28, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkVuLqn8edsh0Uda33H-L-6giQ9vuNXLW9G4OqwqWeLkhUszx9</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">19.82</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-pUENhNMwmLn4rV5a"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-pUENhNMwmLn4rV5a", [24, 17, 22, 13, 14, 21, 14, 21, 24, 18, 22, 15, 20, 17, 28, 18, 21, 26, 24, 23, 18, 16], 19.82, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag timing</div>
+        
+            <div class="scenario-metric-description">For each entry, the time lag between when it was created and when the full-arc node could read it via the <code>get_timed_local_entries</code> zome function.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">96.758643</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">40.314569</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkMuiHIabI3nQGLU8n0PukcXPQYFeXdPofpDTyFnMKx-8GBWHq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">66.849748</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">42.193199</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-qMBBRhIKAnoW5k0Y"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-qMBBRhIKAnoW5k0Y", [10.923198, 12.762911, 14.619535, 35.97511, 48.88919, 63.002997, 71.394903, 78.699629, 109.057793], 66.849748, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfKL9tR34udK2SwwPugzABan9uyXVr6HcIv6x9VJb7CFchscG</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">109.252069</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.751905</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkmtlZghLGmZpKuBqRo2glEsBJ82tqSf-QS22FGBLAAQlS__DJ</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">166.290654</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">79.078337</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-9pHkeUnicUDpH9AF"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-9pHkeUnicUDpH9AF", [16.234867, 24.043214, 65.970483, 148.654121, 226.517008], 166.290654, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkvNAIHEEdu4sL6C7JXuI6t9ivm08m2JYISHrAu0PH516zDszv</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">44.642099</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">39.234834</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-2V5i3XJs6WvRtppj"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-2V5i3XJs6WvRtppj", [5.88131, 14.668583, 15.734969, 15.455294, 29.801837, 47.556301, 80.675092], 44.642099, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric large">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Sync lag rate</div>
+        
+            <div class="scenario-metric-description">The number of entries per second received by full nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">All agents</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">89.67</span><span class="scalar-unit">/s</span></span></span>
+
+
+    </div>
+</div>
+
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkMuiHIabI3nQGLU8n0PukcXPQYFeXdPofpDTyFnMKx-8GBWHq</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">167.5</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-A1TIM55ZhzYiiZ9q"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-A1TIM55ZhzYiiZ9q", [167, 38, 61, 257, 28, 278, 293, 218], 167.5, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkfKL9tR34udK2SwwPugzABan9uyXVr6HcIv6x9VJb7CFchscG</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">/s</span></span></span>
+
+
+    <div class="no-trend-graph">Not enough time data to show a trend.</div>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkmtlZghLGmZpKuBqRo2glEsBJ82tqSf-QS22FGBLAAQlS__DJ</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">43.33</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-lbs7GrEmmlIK4uv1"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-lbs7GrEmmlIK4uv1", [25, 56, 49], 43.33, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+    <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name"><ul class="composite-key">
+    
+        <li><code class="composite-key-key">agent</code>: <code class="composite-key-value">uhCAkvNAIHEEdu4sL6C7JXuI6t9ivm08m2JYISHrAu0PH516zDszv</code></li>
+    
+</ul>
+</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">147.86</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-gEidTtbVlcr487gY"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-gEidTtbVlcr487gY", [303, 286, 169, 2, 43, 1, 231], 147.86, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+
+    </div>
+</div>
+
+
+        
+            <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Open connections</div>
+        
+            <div class="scenario-metric-description">The number of currently open connections to other conductors.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">full-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">0</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">4.83</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">3.22</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">9</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+        
+        <div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">zero-arc</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="min-max-mean-std">
+    <span class="min-max-mean-std-min">
+        <span class="scalar"><span class="scalar-label">min </span>
+    <span class="scalar-value">1</span></span>
+    </span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">5.52</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.52</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max">
+        <span class="scalar"><span class="scalar-label"> max</span>
+    <span class="scalar-value">9</span></span>
+    </span>
+</span>
+    </div>
+</div>
+
+    
+
+    </div>
+</div>
+
+        
+
+        
+        
+            
+    
+        
+
+        
+    
+
+        
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated across all nodes.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">1</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-zome-call-single-value">
+            <div class="scenario-summary">
+    <h1>Zome Call, Single Value</h1>
+
+    <div class="scenario-summary-description"><p>Calls a zome function that returns a fixed value. This tests the maximum performance of zome calls when the zome function is not calling into Holochain other otherwise doing any work.</p></div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Tue, 23 Dec 2025 01:43:36 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">1</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name">Default</span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.5.0-dev.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">zome_call_single_value_20448549296</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Call timing</div>
+        
+            <div class="scenario-metric-description">The time taken for the call to complete.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean-std">
+    <span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.006053</span><span class="scalar-unit">s</span></span></span>
+
+    <span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.009111</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-JB89CzZEeW7g3IBB"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-JB89CzZEeW7g3IBB", [0.006945, 0.006436, 0.006334, 0.006308, 0.006621, 0.005918, 0.006605, 0.005903, 0.005679, 0.006166, 0.006041, 0.006023, 0.006373, 0.006129, 0.006023, 0.006318, 0.006323, 0.006313, 0.006171, 0.005932, 0.005086, 0.006229, 0.006365, 0.00607, 0.005937, 0.005947, 0.0054, 0.005047, 0.006016, 0.005598], 0.006053, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Call rate</div>
+        
+            <div class="scenario-metric-description">The number of zome calls completed per second.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">1644.11</span><span class="scalar-unit">/s</span></span></span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-MX6WHFJeN6rkIOkq"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-MX6WHFJeN6rkIOkq", [1544, 1569, 1577, 1500, 1679, 1505, 1683, 1749, 1612, 1644, 1651, 1559, 1620, 1649, 1572, 1572, 1573, 1610, 1674, 1896, 1594, 1561, 1637, 1674, 1671, 1838, 1969, 1653], 1644.11, "10s", "/s");</script>
+
+
+
+    </div>
+</div>
+
+
+        <div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Error count</div>
+        
+            <div class="scenario-metric-description">The number of errors accumulated during the run.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0</span></span>
+    </div>
+</div>
+
+    
+</div>
+
+        </section>
+    
+
+
+    </main></body>
+</html>
