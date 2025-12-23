@@ -107,7 +107,7 @@
             ];
           in
           {
-            default = pkgs.mkShell {
+            default = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
               buildInputs = [
                 pkgs.go
                 lp-tool
@@ -125,6 +125,8 @@
                 pkgs.pkg-config
                 pkgs.tomlq
                 pkgs.getopt
+                pkgs.llvmPackages_21.clang-tools
+                pkgs.libcxx
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ];
@@ -132,11 +134,16 @@
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
+              CXXFLAGS = "-stdlib=libc++ -I${pkgs.libcxx}/include/c++/v1";
+              LDFLAGS = "-L${pkgs.libcxx}/lib";
+
               shellHook = ''
                 ${config.pre-commit.installationScript}
                 source ${./scripts/influx.sh}
                 source ${./scripts/telegraf.sh}
                 source ${./scripts/checks.sh}
+
+                export CMAKE_CXX_COMPILER="${pkgs.llvmPackages_21.clang.cc}/bin/clang++"
               '';
             };
 
