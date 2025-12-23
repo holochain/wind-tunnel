@@ -12,11 +12,11 @@
     };
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.5";
+      url = "github:holochain/holonix?ref=main-0.6";
     };
 
     kitsune2 = {
-      url = "github:holochain/kitsune2?ref=v0.1.8";
+      url = "github:holochain/kitsune2?ref=release-0.3";
     };
 
     crane = {
@@ -124,10 +124,6 @@
                 pkgs.tomlq
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-                pkgs.darwin.apple_sdk.frameworks.Security
-                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
               ];
 
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
@@ -179,7 +175,7 @@
               use_influx
               import_lp_metrics
 
-              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
+              #rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
             '';
           };
           check-scripts = pkgs.writeShellApplication {

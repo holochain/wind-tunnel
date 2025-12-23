@@ -30,8 +30,8 @@ fn behavior(
     // Say messages.
     say(ctx, messages)?;
     // Wait a random amount of time between 10 and 1000 ms.
-    let mut rng = rand::thread_rng();
-    let interval = rng.gen_range(10..1000);
+    let mut rng = rand::rng();
+    let interval = rng.random_range(10..1000);
     ctx.runner_context().executor().execute_in_place(async {
         tokio::time::sleep(Duration::from_millis(interval)).await;
         Ok(())
