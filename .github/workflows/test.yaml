@@ -78,7 +78,8 @@ jobs:
 
       - name: Lint Rust
         run: |
-          nix run .#check-rust-lint
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
 
           echo "==> Available space after step"
           echo
