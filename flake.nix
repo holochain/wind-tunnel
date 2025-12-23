@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -122,6 +122,7 @@
                 pkgs.httpie
                 pkgs.openssl
                 pkgs.libpcap
+                pkgs.pkg-config
                 pkgs.tomlq
                 pkgs.getopt
                 unfreePkgs.nomad
