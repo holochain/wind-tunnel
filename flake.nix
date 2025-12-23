@@ -121,6 +121,7 @@
                 pkgs.yq
                 pkgs.httpie
                 pkgs.openssl
+                pkgs.libpcap
                 pkgs.tomlq
                 pkgs.getopt
                 unfreePkgs.nomad
@@ -251,6 +252,8 @@
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
+              pkgs.openssl
+              pkgs.libpcap
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
