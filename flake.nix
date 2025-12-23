@@ -127,10 +127,6 @@
                 pkgs.getopt
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-                pkgs.darwin.apple_sdk.frameworks.Security
-                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
               ];
 
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
@@ -149,8 +145,6 @@
                 pkgs.go
                 pkgs.openssl
                 pkgs.libpcap
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-                pkgs.darwin.libpcap
               ];
 
             };
