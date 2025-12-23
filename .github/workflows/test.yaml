@@ -45,6 +45,15 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Lint Rust
+        run: |
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
+          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       # We do a custom build of Holochain in the CI shell which can take up a lot of
       # disk space. We want to build and cache this early in the workflow so that if we
       # do run out of disk space, then at least we've captured that big piece in the
@@ -71,15 +80,6 @@ jobs:
       - name: Verify go cli tool
         run: |
           nix run .#check-go
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Lint Rust
-        run: |
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_fmt"
-          nix develop .#ci -c bash -c "source ./scripts/checks.sh && check_rust_static"
 
           echo "==> Available space after step"
           echo
