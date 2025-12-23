@@ -529,6 +529,16 @@ RUST_LOG=info cargo run -p zome_call_single_value -- --duration 60 --connection-
 
 #### Running Wind Tunnel Scenarios with Nomad
 
+##### Job Variants
+
+A Nomad job will be deployed in different "job variants" depending on its context. A job variant defines the nomad variables applied to the job.
+
+Currently there are two job variants:
+- **demo**: Intended for CI runs on pull requests. They may use a smaller subset of all nodes, and may have shorter durations.
+- **canonical**: Intended for CI runs on the `main` branch, which produce summaries that get published to the wind tunnel results website. They may use a larger subset of available nodes, and may have longer durations.
+
+Each job variant has its own set of variables files for each job, located in the directory `nomad/job-variants/<job variant name>/vars/`.
+
 ##### Running Locally
 
 You can easily test the Wind Tunnel scenarios with
@@ -550,13 +560,13 @@ sudo nomad agent -config=nomad/dev-agent-config.hcl
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
 
 Next, in a new terminal window, generate the nomad job for each scenario by
-passing the scenario name into the `generate_jobs` script, such as:
+passing the scenario name and job variant into the `generate-nomad-jobs` nix command, such as:
 
 ```bash
-./nomad/generate_jobs.sh app_install_minimal
+nix run .#generate-nomad-jobs -- --job-name app_install_minimal --job-variant-path nomad/job-variants/demo
 ```
 
-The generated job will be in the `nomad/jobs` directory.
+The generated job will be in the `nomad/job-variants/demo/jobs` directory.
 
 Next, in a new terminal window, build the scenario you want to run with:
 
@@ -569,10 +579,10 @@ Replace `app_install` with the name of the scenario that you want to run.
 Once the scenario is built you can run the Nomad job with:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
-All the jobs are in the `nomad/jobs` directory, so you can replace `app_install_minimal` with the name of the job you want to run.
+All the jobs are in the `nomad/job-variants/<job-variant>/jobs` directories, so you can replace `app_install_minimal` with the name of the job, and `demo` with the job variant you want to run.
 
 - `-address` sets Nomad to talk to the locally running instance and not the dedicated Wind Tunnel cluster one.
 - `-var scenario_url=...` provides the path to the scenario binary that you built in the previous step.
@@ -581,13 +591,13 @@ All the jobs are in the `nomad/jobs` directory, so you can replace `app_install_
 You can also override existing and omitted variables with the `-var` flag. For example, to set the duration (in seconds) use:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var duration=300 nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 Or to download and use a different Holochain binary to start the conductors:
 
 ```bash
-nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -address=http://localhost:4646 -var scenario_url=result/bin/app_install -var reporter=in-memory -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 Then, navigate to <http://localhost:4646/ui/jobs> where you should see your job listed, after clicking on
@@ -654,16 +664,16 @@ accessible.
 > Unlike when running locally in the section above, we cannot just pass a path because the path needs to be
 > accessible to the client and Nomad doesn't have native support for uploading artefacts.
 
-At this point you have to generate the Nomad job for the scenario you want to run. This is done with:
+At this point you have to generate the Nomad job for the scenario and job variant you want to run. This is done with:
 
 ```bash
-./nomad/scripts/generate_jobs.sh app_install_minimal
+nix run .#generate-nomad-jobs -- --job-name app_install_minimal --job-variant-path nomad/job-variants/demo
 ```
 
 Now that the scenario zip file is publicly available you can run the scenario with the following:
 
 ```bash
-nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var holochain_bin_url=https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-x86_64-unknown-linux-gnu nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 - `-var scenario_url=...` provides the URL to the scenario zip file that you uploaded in the previous step.
@@ -673,7 +683,7 @@ You can also override existing and omitted variables with the `-var` flag. For e
 (in seconds) or to set the reporter to print to `stdout`.
 
 ```bash
-nomad job run -var scenario_url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/jobs/app_install_minimal.nomad.hcl
+nomad job run -var scenario_url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/job-variants/demo/jobs/app_install_minimal.nomad.hcl
 ```
 
 Then, navigate to <https://nomad-server-01.holochain.org:4646/ui/jobs> where you should see a job with the
