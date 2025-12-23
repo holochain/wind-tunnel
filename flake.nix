@@ -146,7 +146,11 @@
               packages = commonPackages ++ [
                 pkgs.go
                 pkgs.openssl
+                pkgs.libpcap
+              ] ++ pkgs.lib.options pkgs.stdenv.isDarwin [
+                pkgs.darwin.libpcap
               ];
+
             };
 
             kitsune = pkgs.mkShell {
