@@ -147,7 +147,7 @@
                 pkgs.go
                 pkgs.openssl
                 pkgs.libpcap
-              ] ++ pkgs.lib.options pkgs.stdenv.isDarwin [
+              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 pkgs.darwin.libpcap
               ];
 
