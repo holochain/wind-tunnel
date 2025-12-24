@@ -127,6 +127,7 @@
                 pkgs.getopt
                 pkgs.llvmPackages_21.clang-tools
                 pkgs.libcxx
+                pkgs.gnumake
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ];
@@ -135,6 +136,8 @@
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
               CXXFLAGS = "-stdlib=libc++ -I${pkgs.libcxx}/include/c++/v1";
+              CMAKE_C_COMPILER = "${pkgs.llvmPackages_21.clang.cc}/bin/clang";
+              CMAKE_CXX_COMPILER = "${pkgs.llvmPackages_21.clang.cc}/bin/clang++";
               LDFLAGS = "-L${pkgs.libcxx}/lib";
 
               shellHook = ''
@@ -142,8 +145,6 @@
                 source ${./scripts/influx.sh}
                 source ${./scripts/telegraf.sh}
                 source ${./scripts/checks.sh}
-
-                export CMAKE_CXX_COMPILER="${pkgs.llvmPackages_21.clang.cc}/bin/clang++"
               '';
             };
 

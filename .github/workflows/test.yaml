@@ -87,7 +87,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          nix run .#rust-unit-tests
+          nix develop -c bash -c "cargo test --workspace --all-targets"
 
           echo "==> Available space after step"
           echo
