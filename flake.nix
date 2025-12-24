@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -107,7 +107,7 @@
             ];
           in
           {
-            default = pkgs.mkShell {
+            default = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
               buildInputs = [
                 pkgs.go
                 lp-tool
@@ -121,18 +121,24 @@
                 pkgs.yq
                 pkgs.httpie
                 pkgs.openssl
+                pkgs.libpcap
+                pkgs.pkg-config
                 pkgs.tomlq
                 pkgs.getopt
+                pkgs.llvmPackages_21.clang-tools
+                pkgs.libcxx
+                pkgs.gnumake
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-                pkgs.darwin.apple_sdk.frameworks.Security
-                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
               ];
 
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
+
+              CXXFLAGS = "-stdlib=libc++ -I${pkgs.libcxx}/include/c++/v1";
+              CMAKE_C_COMPILER = "${pkgs.llvmPackages_21.clang.cc}/bin/clang";
+              CMAKE_CXX_COMPILER = "${pkgs.llvmPackages_21.clang.cc}/bin/clang++";
+              LDFLAGS = "-L${pkgs.libcxx}/lib";
 
               shellHook = ''
                 ${config.pre-commit.installationScript}
@@ -145,7 +151,10 @@
             ci = pkgs.mkShell {
               packages = commonPackages ++ [
                 pkgs.go
+                pkgs.openssl
+                pkgs.libpcap
               ];
+
             };
 
             kitsune = pkgs.mkShell {
@@ -246,6 +255,8 @@
               pkgs.perl
               pkgs.gnumake
               pkgs.cmake
+              pkgs.openssl
+              pkgs.libpcap
               pkgs.rustPlatform.bindgenHook
             ];
             text = ''
