@@ -1,0 +1,2 @@
+{{/* Create a useful description from a list of scenarios. */}}
+Run summaries for the scenario(s): {{ conv.Join (coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .)) ", " -}}
