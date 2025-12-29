@@ -1,5 +1,6 @@
 {{/*
 Create a useful title from a list of scenarios.
+Expects a list of scenario objects with .run_summary.scenario_name fields.
 Deduplicates scenario names, truncates to three, and indicates if there are more.
 */}}
 {{ $deduped_summaries := coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .) }}
