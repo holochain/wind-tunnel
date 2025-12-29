@@ -12,12 +12,48 @@ because your code editor's syntax highlighter can make it look more legible. */}
 <p>After each behaviour loop the metric <code>ws.custom.dht_sync_recv_count</code> is incremented.</p>
 {{ end -}}
 
-{{/* This helper template gets used further down, in the "WASM usage" metric line.
+{{/*
+Render the use time for a DB connection pool.
+Corresponding Rust type: `holochain_metrics::StandardTimingStats`
+*/}}
+{{ define "dht_sync_lag_db_connection_use_time" }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Use time"
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{/*
+The pattern of a pairing of "DB utilisation" and "DB use time" metrics per database comes up quite often.
+This helper creates a single metric row for both of them.
+Render DB connection metrics, used primarily in `dht_sync_lag`.
+Two properties:
+
+* `utilization`: DB connection pool utilization metrics.
+  Corresponding Rust type: `Option<BTreeMap<String, holochain_metrics::GaugeStats>>`
+* `use_time`: DB connection use time metrics.
+  Corresponding Rust type: `Option<holochain_metrics::StandardTimingStats>`
+*/}}
+{{ define "dht_sync_lag_db_connection"}}
+    {{ with .utilization }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" "Utilisation"
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .))
+        ) }}
+    {{ end }}
+    {{ with .use_time }}
+        {{ template "dht_sync_lag_db_connection_use_time" . }}
+    {{ end }}
+{{ end }}
+
+{{/* This helper template gets used in the "WASM usage" metric line.
 It's a separate template because it needs to be concatenated with other templates
 into a content block that gets passed to the scenario_metric template call.
 In most cases we just call `tmpl.Exec` with a metric,
 but in this case we need to loop over an array of function calls,
-and there's no function equivalent to `range` like there is for `template`/`tmpl.Exec`. */}}
+and there's no function equivalent to `range` like there is for `template`/`tmpl.Exec`.
+Corresponding Rust type: `BTreeMap<String, holochain_metrics::CounterStats>`
+*/}}
 {{ define "dht_sync_lag_wasm_usage_by_fn" }}
     {{ range $key, $data := . }}
         {{ template "scenario_metric_content_item" (dict
@@ -27,21 +63,23 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
     {{ end }}
 {{ end }}
 
-{{/* Same situation here, for the authored DB utilisation. */}}
+{{/* Same situation here, for the authored DB utilisation.
+We can't just use the `dht_sync_lag_db_connection` helper
+because the authored DB is broken down by agent.
+Corresponding Rust type: `BTreeMap<String, holochain_metrics::GaugeStats>`
+*/}}
 {{ define "dht_sync_lag_authored_db_utilization" }}
     {{ range $name, $value := . }}
         {{ template "scenario_metric_content_item" (dict
             "name" (print "Utilisation for " $name)
-            "content" (tmpl.Exec "mean_max" (dict
-                "mean" $value.mean
-                "max" $value.max
-                "unit" "%"
-            ))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") $value))
         ) }}
     {{ end }}
 {{ end }}
 
-{{/* And for countersigning agents. */}}
+{{/* And for countersigning agents.
+Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStats>`
+*/}}
 {{ define "dht_sync_lag_countersigning_workflow_duration" }}
     {{ range $agent, $value := .}}
         {{ template "scenario_metric_content_item" (dict
@@ -50,6 +88,8 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
         )}}
     {{ end }}
 {{ end }}
+
+{{/* SCENARIO START */}}
 
 {{ template "scenario_summary" (dict
     "title" "DHT Sync Lag"
@@ -166,7 +206,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
                 "description" "The utilization of connections in the authored database connection pool."
                 "content" (print
                     (default "" (and .authored_db_utilization (tmpl.Exec "dht_sync_lag_authored_db_utilization" .authored_db_utilization)))
-                    (default "" (and .authored_db_connection_use_time (tmpl.Exec "db_connection_use_time" .authored_db_connection_use_time)))
+                    (default "" (and .authored_db_connection_use_time (tmpl.Exec "dht_sync_lag_db_connection_use_time" .authored_db_connection_use_time)))
                 )
             ) }}
         {{ end }}
@@ -175,7 +215,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ template "scenario_metric" (dict
                 "name" "Conductor DB"
                 "description" "The utilization of connections in the conductor database connection pool."
-                "content" (tmpl.Exec "db_connection" (dict
+                "content" (tmpl.Exec "dht_sync_lag_db_connection" (dict
                     "utilization" .conductor_db_utilization
                     "use_time" .conductor_db_connection_use_time
                 ))
@@ -186,7 +226,7 @@ and there's no function equivalent to `range` like there is for `template`/`tmpl
             {{ template "scenario_metric" (dict
                 "name" "DHT DB"
                 "description" "The utilization of connections in the DHT database connection pool."
-                "content" (tmpl.Exec "db_connection" (dict
+                "content" (tmpl.Exec "dht_sync_lag_db_connection" (dict
                     "utilization" .dht_db_utilization
                     "use_time" .dht_db_connection_use_time
                 ))

@@ -19,7 +19,7 @@
         {{ template "scenario_metric" (dict
             "name" "<code>read</code> call rate (10s)"
             "description" "The number of zome calls made in a 10-second window."
-            "content" (tmpl.Exec "rate_and_trend" (set "unit" "/10s" .rate_10s))
+            "content" (tmpl.Exec "rate_and_trend" (merge (dict "unit" "/10s") .rate_10s))
         ) }}
 
         {{ template "scenario_metric" (dict
