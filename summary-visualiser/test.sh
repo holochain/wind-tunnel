@@ -3,7 +3,7 @@
 # This test tries to run the script and look for an expected HTML element that
 # shows that a template could be found for the scenario type given in the JSON.
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+script_dir=$(dirname "$0")
 if [[ ! -d "$script_dir" ]]; then
     echo "Could not find script directory: $script_dir" >&2
     exit 1
