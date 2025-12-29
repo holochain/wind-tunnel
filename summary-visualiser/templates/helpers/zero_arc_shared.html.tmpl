@@ -1,6 +1,15 @@
-{{/* `zero_arc_create_data`, `zero_arc_create_data_validated`, and `zero_arc_create_and_read`
+{{/*
+`zero_arc_create_data`, `zero_arc_create_data_validated`, and `zero_arc_create_and_read`
 all have identical sets of scenario metrics.
-This helper serves them all. */}}
+This helper serves them all.
+Fields:
+
+* `scenario_metrics`: The scenario metrics data structure.
+  Fields: `create_rate`, `sync_lag_timing`, `sync_lag_rate`, `open_connections`, `error_count`
+* `extra_metrics` (HTML, optional): Extra metrics to inject
+  between the open connections metric and the error count metric.
+  Only used by `zero_arc_create_data_validated` at present.
+*/}}
 
 {{ define "zero_arc_shared_open_connections" }}
     {{ range . }}

@@ -1,3 +1,15 @@
+{{/*
+Render a min ≤ (mean ± std) ≤ max summary.
+Fields:
+
+* `min` (scalar): The minimum value.
+* `mean` (scalar): The mean value.
+* `std` (scalar): The standard deviation value.
+* `max` (scalar): The maximum value.
+* `unit` (string, optional): The unit of measurement to display alongside all values.
+
+Corresponding Rust type: `holochain_metrics::GaugeStats`
+*/}}
 <span class="min-max-mean-std">
     <span class="min-max-mean-std-min">
         {{ template "scalar" (dict

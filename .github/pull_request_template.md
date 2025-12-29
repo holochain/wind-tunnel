@@ -5,6 +5,7 @@
 ### TODO:
 
 - [ ] All code changes are reflected in docs, including module-level docs
+- [ ] All new/edited/removed scenarios are reflected in summary visualiser tool (see [checklist](https://github.com/holochain/wind-tunnel/tree/main/summary-visualiser/README.md#maintenance))
 - [ ] I ran the Nomad CI workflow successfully on my branch
 
 
