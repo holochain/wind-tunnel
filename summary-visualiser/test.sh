@@ -2,6 +2,7 @@
 
 # This test tries to run the script and look for an expected HTML element that
 # shows that a template could be found for the scenario type given in the JSON.
+# When you add or remove a scenario + template, add or remove a corresponding `smoke_test_scenario` call below.
 
 script_dir=$(dirname "$0")
 

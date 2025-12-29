@@ -1,3 +1,13 @@
+{{/*
+Render a trend graph and hook up the JS required to display it.
+Fields:
+
+* `data` (array of scalars): The data points to plot.
+* `mean` (scalar): The mean value of the data points.
+* `window_duration` (string): The duration of the window over which the data was collected,
+  in the format `"<number><unit>"`, e.g. `"10s"` or `"5m"`.
+* `unit` (string, optional): The unit for the data points.
+*/}}
 {{ if (and .data (gt (len .data) 1)) }}
     {{ $svg_id := random.AlphaNum 16 }}
     <div class="trend-graph">

@@ -1,4 +1,16 @@
-<span class="scalar">
+{{/*
+Render a simple scalar value with optional label and unit.
+Fields:
+
+* `label` (string, optional): A label to display before the value.
+* `value` (scalar): The value to display.
+* `unit` (string, optional): A unit to display after the value.
+
+Opening tag comes right after this comment's closing tag
+because this helper gets used in a lot of contexts
+where an extra space looks ugly.
+That's also why there's no trailing newline in this file.
+*/}}<span class="scalar">
     {{- if (index . "label") -}}
         <span class="scalar-label">{{ .label }}</span>
     {{- end }}
