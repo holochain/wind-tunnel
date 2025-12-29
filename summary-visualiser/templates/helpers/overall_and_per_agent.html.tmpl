@@ -1,11 +1,26 @@
-{{/* This helper expects a dictionary in the following form:
-    .overall_data: The value to pass to the "overall" template.
-    .overall_template: The name of the template to apply the overall data to.
-    .per_agent_data: The array of per-agent data to iterate over.
-                     Each item should be a dict with a .key and a dict containing the data.
-                     The data dict is named by .per_agent_data_key .
-    .per_agent_data_key: The key for getting the data element from an agent data item.
-    .per_agent_template: The name of the template to apply the agent data item to.
+{{/*
+Render overall metrics plus per-agent metrics.
+This gets used for both rates-type metrics and timings-type metrics in many scenarios.
+
+Fields:
+
+* `overall_data`: The value to pass to the "overall" template.
+* `overall_template`: The name of the template to apply the overall data to.
+* `per_agent_data`: The array of per-agent data to iterate over.
+  Each item should be a dict with at least:
+  * a `key` field which is a composite key
+  * a field containing the data.
+  The data field is named by `.per_agent_data_key`.
+  E.g., if `per_agent_data` looks like this:
+  ```json
+  [
+    { "key": {"agent": "Alice"}, "data": { ... } },
+    { "key": {"agent": "Bob"}, "data": { ... } }
+  ]
+  ```
+  then `per_agent_data_key` would be `"data"`.
+* `per_agent_data_key`: The key for getting the data element from an agent data item.
+* `per_agent_template`: The name of the template to apply the agent data item to.
 */}}
 {{/* If there's only one agent, skip the 'overall'. */}}
 {{ if (gt (len .per_agent_data) 1) }}
