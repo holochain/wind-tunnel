@@ -10,11 +10,6 @@ if [[ ! -d "$script_dir" ]]; then
     exit 1
 fi
 
-quiet=false
-if [[ "${1:-}" == "--quiet" ]] || [[ "${1:-}" == "-q" ]]; then
-    quiet=true
-fi
-
 # Summaries from a recent run of all scenarios can be found in test_data/all.json.
 # If any template has an error in it, this command will fail.
 # Note: unsupported scenarios (ones without templates) won't cause a failure;
@@ -31,9 +26,7 @@ smoke_test_scenario() {
     expected_html_tag="<section class=\"scenario scenario-$scenario_class_name_str\">"
     expected_element_in_output=$(echo "$html_output" | grep "$expected_html_tag")
     if [ -n "$expected_element_in_output" ]; then
-        if [ "$quiet" = false ]; then
-            echo "Found expected .scenario-$scenario_class_name_str element in output"
-        fi
+        echo "Found expected .scenario-$scenario_class_name_str element in output"
     else
         echo "Couldn't find expected .scenario-$scenario_class_name_str element in output" >&2
         exit 1
