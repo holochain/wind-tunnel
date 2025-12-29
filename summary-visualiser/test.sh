@@ -4,7 +4,7 @@
 # shows that a template could be found for the scenario type given in the JSON.
 # When you add or remove a scenario + template, add or remove a corresponding `smoke_test_scenario` call below.
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+script_dir=$(dirname "$0")
 if [[ ! -d "$script_dir" ]]; then
     echo "Could not find script directory: $script_dir" >&2
     exit 1

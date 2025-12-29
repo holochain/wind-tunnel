@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+script_dir=$(dirname "$0")
 
 # Get all the helper templates and make them available to gomplate
 # via their unadorned filename
