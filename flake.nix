@@ -495,7 +495,9 @@
             pkgs.writeShellApplication {
               name = "summary-visualiser-smoke-test";
               runtimeInputs = [
+                pkgs.coreutils
                 pkgs.gomplate
+                pkgs.grep
                 pkgs.html-tidy
               ];
               text = ''
