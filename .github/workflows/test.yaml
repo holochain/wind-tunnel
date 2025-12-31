@@ -336,7 +336,7 @@ jobs:
           name: holochain-ci
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-      - name: Build scenario bundles
+      - name: Build scenarios
         if: runner.os == 'Linux'
         run: |
           set -euxo pipefail
@@ -345,22 +345,11 @@ jobs:
             find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
           }
 
-          scenario_names | xargs -I % nix bundle .#packages.x86_64-linux.%
-
-          mkdir -p dist
-          scenario_names | xargs -I % cp %-arx dist/%
+          scenario_names | xargs -I % nix build .#packages.x86_64-linux.%
 
           echo "==> Available space after step"
           echo
           df -h
-
-      - name: Archive scenario bundles
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v6
-        with:
-          name: scenario-bundles
-          if-no-files-found: error
-          path: dist/*
 
   changelog-preview-comment:
     if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'hra-release') && github.actor != 'dependabot[bot]'
