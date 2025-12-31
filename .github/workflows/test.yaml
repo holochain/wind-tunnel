@@ -80,7 +80,7 @@ jobs:
 
       - name: Lint Rust
         run: |
-          nix run .#check-rust-lint
+          nix develop -c bash -c "source scripts/checks.sh && check_rust_static"
 
           echo "==> Available space after step"
           echo
@@ -88,7 +88,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          nix run .#rust-unit-tests
+          nix develop -c bash -c "cargo test --workspace --all-targets"
 
           echo "==> Available space after step"
           echo
