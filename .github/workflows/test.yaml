@@ -44,6 +44,8 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v3-rust
 
       # We do a custom build of Holochain in the CI shell which can take up a lot of
       # disk space. We want to build and cache this early in the workflow so that if we
