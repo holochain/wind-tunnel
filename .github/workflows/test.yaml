@@ -44,6 +44,9 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          # Additional key to ensure that cache is invalidated when flake lock updated
+          key: ${{ hashFiles('flake.lock') }}
 
       # We do a custom build of Holochain in the CI shell which can take up a lot of
       # disk space. We want to build and cache this early in the workflow so that if we
@@ -78,7 +81,7 @@ jobs:
 
       - name: Lint Rust
         run: |
-          nix run .#check-rust-lint
+          nix develop -c bash -c "source scripts/checks.sh && check_rust_static"
 
           echo "==> Available space after step"
           echo
@@ -86,7 +89,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          nix run .#rust-unit-tests
+          nix develop -c bash -c "cargo test --workspace --all-targets"
 
           echo "==> Available space after step"
           echo
@@ -228,7 +231,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=info MIN_AGENTS=2 cargo run --package write_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
 
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
@@ -245,7 +248,7 @@ jobs:
           nix develop .#ci --command bash ./scripts/wait-for-hc.sh
 
           # Run the scenario
-          RUST_LOG=warn MIN_AGENTS=2 cargo run --package write_validated_must_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
 
           # Stop sandbox conductor
           pkill hc && pkill holochain && pkill lair-keystore
@@ -334,7 +337,7 @@ jobs:
           name: holochain-ci
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-      - name: Build scenario bundles
+      - name: Build scenarios
         if: runner.os == 'Linux'
         run: |
           set -euxo pipefail
@@ -343,22 +346,11 @@ jobs:
             find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
           }
 
-          scenario_names | xargs -I % nix bundle .#packages.x86_64-linux.%
-
-          mkdir -p dist
-          scenario_names | xargs -I % cp %-arx dist/%
+          scenario_names | xargs -I % nix build .#packages.x86_64-linux.%
 
           echo "==> Available space after step"
           echo
           df -h
-
-      - name: Archive scenario bundles
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v6
-        with:
-          name: scenario-bundles
-          if-no-files-found: error
-          path: dist/*
 
   changelog-preview-comment:
     if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'hra-release') && github.actor != 'dependabot[bot]'

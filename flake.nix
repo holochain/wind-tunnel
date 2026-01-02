@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -107,7 +107,7 @@
             ];
           in
           {
-            default = pkgs.mkShell {
+            default = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
               buildInputs = [
                 pkgs.go
                 lp-tool
@@ -125,10 +125,6 @@
                 pkgs.getopt
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-                pkgs.darwin.apple_sdk.frameworks.Security
-                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
               ];
 
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
@@ -237,26 +233,6 @@
               source ${./scripts/checks.sh}
 
               check_rust_fmt
-            '';
-          };
-          check-rust-lint = pkgs.writeShellApplication {
-            name = "check-rust-lint";
-            runtimeInputs = [
-              config.rustHelper.rust
-              pkgs.perl
-              pkgs.gnumake
-              pkgs.cmake
-              pkgs.rustPlatform.bindgenHook
-            ];
-            text = ''
-              set -euo pipefail
-
-              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
-
-              # shellcheck disable=SC1091
-              source ${./scripts/checks.sh}
-
-              check_rust_static
             '';
           };
           check-go = pkgs.writeShellApplication {
@@ -434,23 +410,6 @@
 
               # shellcheck disable=SC1091
               aws s3 cp "$1" "$2"
-            '';
-          };
-          rust-unit-tests = pkgs.writeShellApplication {
-            name = "rust-unit-tests";
-            runtimeInputs = [
-              config.rustHelper.rust
-              pkgs.perl
-              pkgs.gnumake
-              pkgs.cmake
-              pkgs.rustPlatform.bindgenHook
-            ];
-            text = ''
-              set -euo pipefail
-
-              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
-
-              cargo test --workspace --all-targets
             '';
           };
           rust-smoke-test = pkgs.writeShellApplication {
