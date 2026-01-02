@@ -496,8 +496,8 @@
               name = "summary-visualiser-smoke-test";
               runtimeInputs = [
                 pkgs.coreutils
+                pkgs.gnugrep
                 pkgs.gomplate
-                pkgs.grep
                 pkgs.html-tidy
               ];
               text = ''
