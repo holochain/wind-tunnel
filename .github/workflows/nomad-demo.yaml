@@ -24,6 +24,9 @@ jobs:
     secrets:
       NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
       INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     with:
       holochain-bin-url: ${{ inputs.holochain_bin_url != '' && inputs.holochain_bin_url || 'https://github.com/holochain/holochain/releases/download/holochain-0.5.6/holochain-go-pion-unstable-x86_64-unknown-linux-gnu' }}
       commit-hash: ${{ inputs.commit-hash }}
