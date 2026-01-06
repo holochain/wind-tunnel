@@ -33,4 +33,7 @@
     {{ end }}
 {{ end }}
 
-{{ template "zero_arc_shared" (coll.Set "extra_metrics" (tmpl.Exec "zero_arc_create_data_validated_extra_metrics" .) .) }}
+{{ template "zero_arc_shared" (merge
+    (dict "extra_metrics" (tmpl.Exec "zero_arc_create_data_validated_extra_metrics" .))
+    .
+) }}
