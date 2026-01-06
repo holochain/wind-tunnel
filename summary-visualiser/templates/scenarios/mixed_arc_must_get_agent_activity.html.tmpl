@@ -9,10 +9,11 @@
             "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
         ) }}
     {{ end }}
-{{ end}}
+{{ end }}
 
 {{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" }}
     {{ template "scenario_metric" (dict
+        "class" "large"
         "name" "Open connections"
         "description" "The average number of open connections maintained by an agent over the run, broken down by role."
         "content" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent" .scenario_metrics.open_connections)

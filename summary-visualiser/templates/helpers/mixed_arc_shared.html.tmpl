@@ -27,24 +27,28 @@ As such, they end up sharing a lot of the same metrics. */}}
         ) }}
 
         {{ template "scenario_metric" (dict
+            "class" "large"
             "name" "Chain batch delay timing"
             "description" "The time between a write agent's creation of a batch and a <code>must_get_agent_activity</code> agent's successful discovery of the batch and creation/self-validation of a new entry based on it."
             "content" (tmpl.Exec "timings_overall_and_per_agent" .chain_batch_delay_timing)
         ) }}
 
         {{ template "scenario_metric" (dict
+            "class" "large"
             "name" "Chain batch delay rate"
             "description" "The rate at which a <code>must_get_agent_activity</code> agent was able to discover, create, and self-validate batches."
             "content" (tmpl.Exec "rates_overall_and_per_agent" .chain_batch_delay_rate)
         ) }}
 
         {{ template "scenario_metric" (dict
+            "class" "large"
             "name" "<code>create_validated_sample_entry</code> zome call timing"
             "description" "The time taken to complete the zome function call that creates the entry that depends on a <code>write</code> agent's source chain."
             "content" (tmpl.Exec "timings_overall_and_per_agent" .create_validated_sample_entry_zome_calls)
         ) }}
 
         {{ template "scenario_metric" (dict
+            "class" "large"
             "name" "Retrieval errors"
             "description" "A running accumulation of the errors encountered by an agent when attempting to self-validate actions that depend on <code>must_get_agent_activity</code> calls."
             "content" (tmpl.Exec "mixed_arc_shared_retrieval_errors" .retrieval_errors)
