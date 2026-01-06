@@ -10,24 +10,4 @@
     "data" .run_summary
 ) }}
 
-<div class="scenario-metrics">
-    {{ with .scenario_metrics }}
-        {{ template "scenario_metric" (dict
-            "name" "Highest observed <code>action_seq</code>"
-            "description" "The change in the <code>must_get_agent_activity</code> peer's source chain top over the run."
-            "content" (tmpl.Exec "delta" .write_validated_must_get_agent_activity_chain_len)
-        ) }}
-
-        {{ template "scenario_metric" (dict
-            "name" "<code>create_validated_sample_entry</code> zome call timing"
-            "description" "The time taken to complete the zome function call that creates the entry that depends on a <code>write</code> agent's source chain."
-            "content" (tmpl.Exec "timings_overall_and_per_agent" .create_validated_sample_entry_zome_calls)
-        ) }}
-
-        {{ template "scenario_metric" (dict
-            "name" "Error count"
-            "description" "The number of errors accumulated over the run."
-            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
-        ) }}
-    {{ end }}
-</div>
+{{ template "mixed_arc_shared" . }}
