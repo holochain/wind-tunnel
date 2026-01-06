@@ -12,6 +12,21 @@ let
 
     cargoExtraArgs = "-p ${name}";
     SKIP_HAPP_BUILD = "1";
+
+    # When built from an x86_64-linux system, modify the executable to specify the standard linux
+    # system path for `ld` as its interpreter.
+    #
+    # Otherwise it will specify the nix store path from the system it was built on,
+    # and thus will not run on any other system.
+    #
+    # Even though our target wind-tunnel-runner systems should have have the library dependencies installed
+    # from nixpkgs, their flake lock files may be out of sync, and thus the nix store path for `ld` may be different.
+    #
+    # As long as the target system makes ld available on the standard linux system path, the executable should run.
+    # On NixOS systems, this requires enabling nix-ld.
+    postFixup = lib.optionalString (system == "x86_64-linux") ''
+      patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 $out/bin/${name}
+    '';
   });
 in
 {
