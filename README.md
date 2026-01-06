@@ -646,15 +646,8 @@ Run:
 nix build .#packages.x86_64-linux.app_install
 ```
 
-Replace `app_install` with the name of the scenario that you want to run.
-This will build the scenario, the output will be in your `/nix/store/` with a symlink to it in your local
-with the name `./result`, zip the files found in the results directory, keeping the directory structure.
-
-An example to do this is with:
-
-```bash
-mkdir app_install && cp -r result/* app_install/ && cd app_install && zip -r app_install.zip . && cd -
-```
+This will build the scenario and its required hApps in your Nix store along with a zip of the binary and hApps.
+A symlink will then be created to this derivation from the root directory with the name `result`.
 
 You now need to upload the scenario zip file to somewhere public so that the Nomad client can download it.
 This could be a GitHub release, a public file sharing services, or some other means, as long as it's publicly
