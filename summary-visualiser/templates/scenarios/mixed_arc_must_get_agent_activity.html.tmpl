@@ -1,0 +1,31 @@
+{{ define "mixed_arc_must_get_agent_activity_description" }}
+<p>A scenario where zero-arc (<b><code>zero_write</code></b>) and full-arc (<b><code>full_write</code></b>) peers create entries in batches of 10, while other zero-arc (<b><code>zero_must_get_agent_activity</code></b>) peers each repeatedly attempt to create an entry that includes a <code>must_get_agent_activity</code> call as part of its validation.</p>
+{{ end }}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent" }}
+    {{ range .partitions }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+        ) }}
+    {{ end }}
+{{ end}}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" }}
+    {{ template "scenario_metric" (dict
+        "name" "Open connections"
+        "description" "The average number of open connections maintained by an agent over the run, broken down by role."
+        "content" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent" .scenario_metrics.open_connections)
+    ) }}
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Mixed Arc <code>must_get_agent_activity</code>"
+    "description" (tmpl.Exec "mixed_arc_must_get_agent_activity_description")
+    "data" .run_summary
+) }}
+
+{{ template "mixed_arc_shared" (merge
+    (dict "extra_metrics" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" .))
+    .
+) }}
