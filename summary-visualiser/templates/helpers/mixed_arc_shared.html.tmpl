@@ -1,0 +1,65 @@
+{{/* `mixed_arc_must_get_agent_activity` and `write_validated_must_get_agent_activity` are similar to each other --
+mixed-arc scenarios that build dependent data on existing source chain states.
+As such, they end up sharing a lot of the same metrics. */}}
+
+{{ define "mixed_arc_shared_retrieval_errors" }}
+    {{ range .timings }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
+            "content" (tmpl.Exec "trend_graph" (dict
+                "data" .summary_timing.trend.trend
+                "window_duration" .summary_timing.trend.window_duration
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ $retrieved_chain_len_metric := (or
+            (index . "retrieved_chain_len")
+            (index . "write_validated_must_get_agent_activity_chain_len")
+        ) }}
+        {{ template "scenario_metric" (dict
+            "name" "Highest observed <code>action_seq</code>"
+            "description" "The change in the <code>must_get_agent_activity</code> peer's source chain top over the run."
+            "content" (tmpl.Exec "delta" $retrieved_chain_len_metric)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Chain batch delay timing"
+            "description" "The time between a write agent's creation of a batch and a <code>must_get_agent_activity</code> agent's successful discovery of the batch and creation/self-validation of a new entry based on it."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .chain_batch_delay_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Chain batch delay rate"
+            "description" "The rate at which a <code>must_get_agent_activity</code> agent was able to discover, create, and self-validate batches."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .chain_batch_delay_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "<code>create_validated_sample_entry</code> zome call timing"
+            "description" "The time taken to complete the zome function call that creates the entry that depends on a <code>write</code> agent's source chain."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .create_validated_sample_entry_zome_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Retrieval errors"
+            "description" "A running accumulation of the errors encountered by an agent when attempting to self-validate actions that depend on <code>must_get_agent_activity</code> calls."
+            "content" (tmpl.Exec "mixed_arc_shared_retrieval_errors" .retrieval_errors)
+        ) }}
+
+        {{/* Allow scenarios to inject extra metrics before error count.
+        Currently this is only used by mixed_arc_must_get_agent_activity. */}}
+        {{ if (index $ "extra_metrics") }}
+            {{ $.extra_metrics }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Final error count"
+            "description" "The total number of <em>all</em> types of error accumulated over the run by <em>all</em> agents."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+    {{ end }}
+</div>
