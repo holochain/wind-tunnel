@@ -248,7 +248,7 @@ jobs:
           started_at=${{ matrix.started_at }}
           duration=${{ matrix.duration }}
           current_time=$(date +%s)
-          buffer=300
+          buffer=600
           # set timeout to $duration + $buffer (seconds $buffer) - ($current_time - $started_at)
           remaining=$(( duration - (current_time - started_at) ))
           export TIMEOUT=$(( $remaining + $buffer ))
