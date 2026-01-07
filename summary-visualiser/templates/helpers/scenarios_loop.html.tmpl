@@ -1,5 +1,8 @@
-{{/* Loop through an array of scenarios and render them,
-choosing the proper template for each. */}}
+{{/*
+Loop through an array of scenarios and render them,
+choosing the proper template for each.
+Use this in your page template to render all the scenarios.
+*/}}
 {{ range . }}
     {{ $scenario_css_class := (strings.ReplaceAll "_" "-" .run_summary.scenario_name) }}
     {{/* The proper scenario-specific template name is a field in the run_summary object.

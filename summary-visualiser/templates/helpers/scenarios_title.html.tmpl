@@ -1,2 +1,8 @@
-{{/* Create a useful title from a list of scenarios. */}}
-{{- conv.Join (coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .)) ", " -}}
+{{/*
+Create a useful title from a list of scenarios.
+Expects a list of scenario objects with .run_summary.scenario_name fields.
+Deduplicates scenario names, truncates to three, and indicates if there are more.
+*/}}
+{{ $deduped_summaries := coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .) }}
+{{- conv.Join (coll.GoSlice $deduped_summaries 0 3) ", " -}}
+{{- if gt (len $deduped_summaries) 3 }} and {{ sub (len $deduped_summaries) 3 }} more{{ end -}}

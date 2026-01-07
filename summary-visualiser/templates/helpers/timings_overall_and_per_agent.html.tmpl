@@ -1,3 +1,7 @@
+{{/*
+Render a summary of overall timings and per-agent timings.
+Corresponding Rust type: `holochain_metrics::PartitionedTimingStats`
+*/}}
 {{ define "timings_overall_template" }}
     {{ template "mean_std" (dict "mean" .mean "std" .mean_std_dev "unit" "s") }}
 {{ end }}

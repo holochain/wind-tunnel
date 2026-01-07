@@ -1,3 +1,19 @@
+{{/*
+Render a change between two scalar values, including percent change and rate of change.
+Fields:
+
+* `start` (scalar): The starting value.
+* `end` (scalar): The ending value.
+* `delta` (scalar): The difference between end and start.
+* `measurement_duration`: A duration object representing the time between the two measurements.
+   Contains `secs` and `nanos` fields.
+   Corresponding Rust type: `std::time::Duration`
+* `rate_per_second` (scalar): The rate of change per second.
+* `unit` (string, optional): The unit of measurement.
+  This will be displayed alongside the start, end, and rate_per_second values.
+
+Corresponding Rust type: `holochain_metrics::CounterStats` with the `unit` field added on.
+*/}}
 <span class="delta">
     <span class="delta-start-end">
         <span class="delta-start">

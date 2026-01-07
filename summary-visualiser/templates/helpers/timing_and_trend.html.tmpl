@@ -1,3 +1,8 @@
+{{/*
+Render a timing and trend metric.
+Corresponding Rust type: `holochain_metrics::StandardTimingStats`
+with an optional string `unit` field that will default to `"s"`.
+*/}}
 {{ $unit := default "s" (index . "unit") }}
 {{ template "mean_std" (dict
     "mean" .mean
