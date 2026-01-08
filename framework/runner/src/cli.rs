@@ -59,8 +59,6 @@ pub enum ReporterOpt {
     InMemory,
     /// Recommended during scenario development for quick feedback with no extra services needed. All metrics including custom metrics will be printed to the console.
     InMemoryWithCustomMetrics,
-    /// Recommended for running tests locally. Metrics will be uploaded to a running InfluxDB.
-    InfluxClient,
     /// Recommended for running distributed tests. Metrics will be written to a local influx file that can later be imported to InfluxDB.
     InfluxFile,
 }
