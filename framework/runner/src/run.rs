@@ -79,9 +79,6 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             ReporterOpt::InMemoryWithCustomMetrics => {
                 report_config = report_config.enable_in_memory_with_custom_metrics();
             }
-            ReporterOpt::InfluxClient => {
-                report_config = report_config.enable_influx_client();
-            }
             ReporterOpt::InfluxFile => {
                 let dir = PathBuf::from(
                     std::env::var("WT_METRICS_DIR")

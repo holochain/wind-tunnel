@@ -76,19 +76,6 @@ impl ReportConfig {
                     RwLock::new(Box::new(report::InMemoryWithCustomMetricsReporter::new())
                         as Box<dyn ReportCollector + Send + Sync>)
                 }),
-                if self.enable_influx_client {
-                    let metrics_collector = report::InfluxClientReportCollector::new(
-                        runtime,
-                        shutdown_listener.clone(),
-                        self.run_id.clone(),
-                        self.scenario_name.clone(),
-                    )?;
-                    Some(RwLock::new(
-                        Box::new(metrics_collector) as Box<dyn ReportCollector + Send + Sync>
-                    ))
-                } else {
-                    None
-                },
                 if self.enable_influx_file {
                     let influx_file_reporter = report::InfluxFileReportCollector::new(
                         runtime,

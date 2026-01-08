@@ -1,6 +1,5 @@
 mod in_memory_reporter;
 mod in_memory_with_custom_metrics_reporter;
-mod influx_client_reporter;
 mod influx_file_reporter;
 mod influx_reporter_base;
 
@@ -10,7 +9,6 @@ use std::ops::Deref;
 
 pub use in_memory_reporter::InMemoryReporter;
 pub use in_memory_with_custom_metrics_reporter::InMemoryWithCustomMetricsReporter;
-pub use influx_client_reporter::InfluxClientReportCollector;
 pub use influx_file_reporter::InfluxFileReportCollector;
 
 /// A simple, opinionated, newtype for the influxive_core::Metric type.
