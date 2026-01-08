@@ -220,6 +220,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                     log::error!(
                                         "Agent behaviour [{assigned_behaviour}] failed for agent {agent_name}: {e:?}"
                                     );
+                                    behaviour_ran_to_complete = false;
+                                    break;
                                 }
                             }
                         }
