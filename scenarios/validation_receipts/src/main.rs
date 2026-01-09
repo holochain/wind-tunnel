@@ -15,11 +15,10 @@ struct PendingAction {
     /// The action hash of the pending action.
     action_hash: ActionHash,
     /// A map of operation types to whether their receipts are complete.
-    /// - if the inner map is empty, we haven't received any receipts yet,
+    /// - if the map is empty, we haven't received any receipts yet,
     //  so we're still pending
     //  - if any of the receipts_complete are false, we are still pending
     //  - if all the receipts_complete are true, we are complete
-    //    so this should be set to [`None`]
     receipts_complete: HashMap<OpType, ReceiptsComplete>,
     /// The time the action was created.
     created_at: Instant,
