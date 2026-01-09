@@ -1,0 +1,36 @@
+{{ define "mixed_arc_must_get_agent_activity_description" }}
+<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while zero-arc <b><code>must_get_agent_activity</code></b> agents each repeatedly attempt to create an entry that references the chain top of a random batch. This reference means that the validation function includes a <code>must_get_agent_activity</code> call.</p>
+
+<p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among all authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
+
+<p>This test is similar to <b>Write Validated <code>must_get_agent_activity</code></b>, but some <code>write</code> agents are zero-arc and <em>all</em> <code>must_get_agent_activity</code> agents are zero-arc. This forces the <code>must_get_agent_activity</code> host call to go to the network.</p>
+{{ end }}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent" }}
+    {{ range .partitions }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" }}
+    {{ template "scenario_metric" (dict
+        "class" "large"
+        "name" "Open connections"
+        "description" "The average number of open connections maintained by an agent over the run, broken down by role."
+        "content" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent" .scenario_metrics.open_connections)
+    ) }}
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Mixed Arc <code>must_get_agent_activity</code>"
+    "description" (tmpl.Exec "mixed_arc_must_get_agent_activity_description")
+    "data" .run_summary
+) }}
+
+{{ template "mixed_arc_shared" (merge
+    (dict "extra_metrics" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" .))
+    .
+) }}
