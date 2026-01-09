@@ -101,11 +101,6 @@ fn agent_behaviour(
 
     get_receipts_for_action(ctx, wait_for_all)?;
 
-    // remove the action from pending if complete
-    if ctx.get().scenario_values.is_action_complete() {
-        ctx.get_mut().scenario_values.pending_action = None;
-    }
-
     Ok(())
 }
 
