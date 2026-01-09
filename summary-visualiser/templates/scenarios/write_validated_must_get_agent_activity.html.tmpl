@@ -1,7 +1,9 @@
 {{ define "write_validated_must_get_agent_activity_description" }}
-<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while zero-arc <b><code>must_get_agent_activity</code></b> agents repeatedly attempt to create entries that depend on a batch.</p>
+<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while <b><code>must_get_agent_activity</code></b> agents each repeatedly attempt to create an entry that references the chain top of a random batch. This reference means that the validation function includes a <code>must_get_agent_activity</code> call.</p>
 
-<p>The purpose of this scenario is to measure the performance of <code>must_get_agent_activity</code> calls, and to measure the error rate (that is, the number of times validation can't complete because of an <code>UnresolvedDependencies</code> error).</p>
+<p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among all authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
+
+<p>This test is similar to <b>Mixed-Arc <code>must_get_agent_activity</code></b>, but all agents are full-arc.</p>
 {{ end }}
 
 {{ template "scenario_summary" (dict
