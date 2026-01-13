@@ -99,19 +99,19 @@ fn agent_behaviour(
     // collect validation receipts until complete
     let wait_for_all = std::env::var_os("NO_VALIDATION_COMPLETE").is_none();
 
-    get_receipts_for_action(ctx, wait_for_all)?;
+    wait_for_receipts_for_action(ctx, wait_for_all)?;
 
     Ok(())
 }
 
-/// Get validation receipts for the given action hash.
+/// Wait until validation receipts for the given action hash are complete.
 ///
 /// If `wait_for_all` is true, will wait until all receipt types are complete.
 /// If false, will return as soon as any receipt type is complete.
 ///
 /// If the validation receipts are marked complete, will report the time taken to the reporter, and
 /// set the `pending_action` to [`None`].
-fn get_receipts_for_action(
+fn wait_for_receipts_for_action(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     wait_for_all: bool,
 ) -> WindTunnelResult<()> {
@@ -133,60 +133,51 @@ fn get_receipts_for_action(
         )
         .ok_or_else(|| anyhow::anyhow!("No pending action to get receipts for"))?;
 
-    let response: Vec<ValidationReceiptSet> = call_zome(
-        ctx,
-        "crud",
-        "get_sample_entry_validation_receipts",
-        action_hash.clone(),
-    )?;
+    loop {
+        let response: Vec<ValidationReceiptSet> = call_zome(
+            ctx,
+            "crud",
+            "get_sample_entry_validation_receipts",
+            action_hash.clone(),
+        )?;
 
-    for set in response.iter() {
-        let op_complete = ctx
-            .get_mut()
-            .scenario_values
-            .mut_op_complete(&action_hash, set.op_type.clone());
+        for set in response.iter() {
+            let op_complete = ctx
+                .get_mut()
+                .scenario_values
+                .mut_op_complete(&action_hash, set.op_type.clone());
 
-        // if the action wasn't already complete report the time
-        // and mark it complete
-        if set.receipts_complete && !*op_complete {
-            reporter.add_custom(
-                ReportMetric::new("validation_receipts_complete_time")
-                    .with_tag("op_type", set.op_type.clone())
-                    .with_tag("agent", agent.clone())
-                    .with_field("value", created_at.elapsed().as_secs_f64()),
-            );
-            *op_complete = true;
-            // if we are not waiting for all, break out
-            if !wait_for_all {
-                log::info!("All required validations received for {action_hash} (short-circuit)");
-                // mark the action as complete
-                ctx.get_mut().scenario_values.pending_action = None;
-
-                return Ok(());
+            // if the action wasn't already complete report the time
+            // and mark it complete
+            if set.receipts_complete && !*op_complete {
+                reporter.add_custom(
+                    ReportMetric::new("validation_receipts_complete_time")
+                        .with_tag("op_type", set.op_type.clone())
+                        .with_tag("agent", agent.clone())
+                        .with_field("value", created_at.elapsed().as_secs_f64()),
+                );
+                *op_complete = true;
+                // if we are not waiting for all, break out
+                if !wait_for_all {
+                    log::info!(
+                        "All required validations received for {action_hash} (short-circuit)"
+                    );
+                    break;
+                }
             }
         }
+
+        if ctx.get().scenario_values.is_action_complete() {
+            break;
+        }
+        // not complete yet, will try again next tick
+        log::debug!("Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}");
+        std::thread::sleep(std::time::Duration::from_secs(5));
     }
 
-    // if all actions are complete, return
-    if ctx.get().scenario_values.is_action_complete() {
-        log::info!("All required validations received for {action_hash}");
-        // mark the action as complete
-        ctx.get_mut().scenario_values.pending_action = None;
-
-        return Ok(());
-    }
-
-    // check for timeout
-    if created_at.elapsed() > VALIDATION_RECEIPT_TIMEOUT {
-        log::error!("Timed out waiting for validation receipts for action {action_hash}; last validation receipt set response: {response:?}");
-        // remove pending action
-        ctx.get_mut().scenario_values.pending_action = None;
-        // return error
-        anyhow::bail!("Timed out waiting for validation receipts for action {action_hash}");
-    }
-
-    // not complete yet, will try again next tick
-    log::debug!("Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}");
+    log::info!("All required validations received for {action_hash}");
+    // mark the action as complete
+    ctx.get_mut().scenario_values.pending_action = None;
 
     Ok(())
 }
