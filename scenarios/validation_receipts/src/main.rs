@@ -7,8 +7,6 @@ use std::time::{Duration, Instant};
 type OpType = String;
 type ReceiptsComplete = bool;
 
-const VALIDATION_RECEIPT_TIMEOUT: Duration = Duration::from_secs(60);
-
 /// Represents a pending action and its validation receipt status.
 #[derive(Debug)]
 struct PendingAction {
