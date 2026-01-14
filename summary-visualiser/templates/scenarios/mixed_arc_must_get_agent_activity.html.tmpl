@@ -1,9 +1,9 @@
+{{ template "must_get_agent_activity_shared" }}{{/* This just loads up shared content; doesn't output anything */}}
+
 {{ define "mixed_arc_must_get_agent_activity_description" }}
-<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while zero-arc <b><code>must_get_agent_activity</code></b> agents each repeatedly attempt to create an entry that references the chain top of a random batch. This reference means that the validation function includes a <code>must_get_agent_activity</code> call.</p>
+    {{ template "must_get_agent_activity_shared_description" }}
 
-<p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among all authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
-
-<p>This test is similar to <b>Write Validated <code>must_get_agent_activity</code></b>, but some <code>write</code> agents are zero-arc and <em>all</em> <code>must_get_agent_activity</code> agents are zero-arc. This forces the <code>must_get_agent_activity</code> host call to go to the network.</p>
+    <p>This test is similar to <b>Write Validated <code>must_get_agent_activity</code></b>, but some <code>write</code> agents are zero-arc and <em>all</em> <code>must_get_agent_activity</code> agents are zero-arc. This forces the <code>must_get_agent_activity</code> host call to go to the network.</p>
 {{ end }}
 
 {{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent" }}
@@ -19,7 +19,7 @@
     {{ template "scenario_metric" (dict
         "class" "large"
         "name" "Open connections"
-        "description" "The average number of open connections maintained by an agent over the run, broken down by role."
+        "description" "The average number of open connections maintained by an agent over the run, broken down by behaviour."
         "content" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent" .scenario_metrics.open_connections)
     ) }}
 {{ end }}
@@ -30,7 +30,7 @@
     "data" .run_summary
 ) }}
 
-{{ template "mixed_arc_shared" (merge
+{{ template "must_get_agent_activity_shared_metrics" (merge
     (dict "extra_metrics" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" .))
     .
 ) }}

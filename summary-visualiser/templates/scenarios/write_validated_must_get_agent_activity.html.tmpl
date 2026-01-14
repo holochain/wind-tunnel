@@ -1,9 +1,9 @@
+{{ template "must_get_agent_activity_shared" }}{{/* This just loads up shared content; doesn't output anything */}}
+
 {{ define "write_validated_must_get_agent_activity_description" }}
-<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while <b><code>must_get_agent_activity</code></b> agents each repeatedly attempt to create an entry that references the chain top of a random batch. This reference means that the validation function includes a <code>must_get_agent_activity</code> call.</p>
+    {{ template "must_get_agent_activity_shared_description" }}
 
-<p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among all authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
-
-<p>This test is similar to <b>Mixed-Arc <code>must_get_agent_activity</code></b>, but all agents are full-arc.</p>
+    <p>This test is similar to <b>Mixed-Arc <code>must_get_agent_activity</code></b>, but all agents are full-arc.</p>
 {{ end }}
 
 {{ template "scenario_summary" (dict
@@ -12,4 +12,4 @@
     "data" .run_summary
 ) }}
 
-{{ template "mixed_arc_shared" . }}
+{{ template "must_get_agent_activity_shared_metrics" . }}
