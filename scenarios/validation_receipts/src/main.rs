@@ -131,7 +131,7 @@ fn wait_for_receipts_for_action(
         )
         .ok_or_else(|| anyhow::anyhow!("No pending action to get receipts for"))?;
 
-    loop {
+    'wait_for_receipts: loop {
         let response: Vec<ValidationReceiptSet> = call_zome(
             ctx,
             "crud",
@@ -160,13 +160,13 @@ fn wait_for_receipts_for_action(
                     log::info!(
                         "All required validations received for {action_hash} (short-circuit)"
                     );
-                    break;
+                    break 'wait_for_receipts;
                 }
             }
         }
 
         if ctx.get().scenario_values.is_action_complete() {
-            break;
+            break 'wait_for_receipts;
         }
         // not complete yet, will try again next tick
         log::debug!("Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}");
