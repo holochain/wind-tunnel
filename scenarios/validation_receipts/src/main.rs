@@ -132,6 +132,13 @@ fn wait_for_receipts_for_action(
         .ok_or_else(|| anyhow::anyhow!("No pending action to get receipts for"))?;
 
     'wait_for_receipts: loop {
+        if ctx.shutdown_listener().should_shutdown() {
+            log::warn!(
+                "Shutdown signal received, aborting wait for validation receipts for {action_hash}"
+            );
+            break 'wait_for_receipts;
+        }
+
         let response: Vec<ValidationReceiptSet> = call_zome(
             ctx,
             "crud",
@@ -166,6 +173,7 @@ fn wait_for_receipts_for_action(
         }
 
         if ctx.get().scenario_values.is_action_complete() {
+            log::info!("All required validations received for {action_hash}");
             break 'wait_for_receipts;
         }
         // not complete yet, will try again next tick
@@ -173,7 +181,6 @@ fn wait_for_receipts_for_action(
         std::thread::sleep(std::time::Duration::from_secs(5));
     }
 
-    log::info!("All required validations received for {action_hash}");
     // mark the action as complete
     ctx.get_mut().scenario_values.pending_action = None;
 
