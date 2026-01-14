@@ -2,7 +2,7 @@
 mixed-arc scenarios that build dependent data on existing source chain states.
 As such, they end up sharing a lot of the same metrics. */}}
 
-{{ define "mixed_arc_shared_retrieval_errors" }}
+{{ define "must_get_agent_activity_shared_retrieval_errors" }}
     {{ range .timings }}
         {{ template "scenario_metric_content_item" (dict
             "name" (tmpl.Exec "composite_key" .key)
@@ -51,7 +51,7 @@ As such, they end up sharing a lot of the same metrics. */}}
             "class" "large"
             "name" "Retrieval errors"
             "description" "A running accumulation of the errors encountered by an agent when attempting to self-validate actions that depend on <code>must_get_agent_activity</code> calls."
-            "content" (tmpl.Exec "mixed_arc_shared_retrieval_errors" .retrieval_errors)
+            "content" (tmpl.Exec "must_get_agent_activity_shared_retrieval_errors" .retrieval_errors)
         ) }}
 
         {{/* Allow scenarios to inject extra metrics before error count.
