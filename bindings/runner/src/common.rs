@@ -663,17 +663,13 @@ where
                 .agent_info(None)
                 .await
                 .context("Failed to get agent info")?;
-            let mut agent_infos = Vec::new();
+            let mut agent_pub_keys = Vec::new();
             for info in agent_infos_encoded {
                 let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
-                agent_infos.push(a);
+                agent_pub_keys.push(AgentPubKey::from_k2_agent(&a.agent))
             }
-            let mut peer_list = agent_infos
+            let mut peer_list = agent_pub_keys
                 .into_iter()
-                // Filtering by CellId in agent_info() call does not return agent_infos of remote agents in holochain 0.5.x
-                // See https://github.com/holochain/holochain/pull/5293
-                .filter(|i| &DnaHash::from_k2_space(&i.space) == cell_id.dna_hash())
-                .map(|i| AgentPubKey::from_k2_agent(&i.agent))
                 .filter(|a| a != cell_id.agent_pubkey()) // Don't include ourselves!
                 .collect::<Vec<_>>();
             peer_list.shuffle(&mut rng());
