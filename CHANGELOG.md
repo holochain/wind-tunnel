@@ -4,6 +4,375 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.5.0](https://github.com/holochain/wind-tunnel/compare/v0.5.0-dev.0...v0.5.0)\] - 2026-01-15
+
+### Features
+
+- *(kitsune)* To_connection_string returns String as before by @cdunster
+- *(metrics)* Integrated Host metrics into Nomad runs (#250) by @veeso in [#250](https://github.com/holochain/wind-tunnel/pull/250)
+  - Removed sed and temp telegraf config; read RUN_ID from env (or default to ""). Added a new `RUN_SUMMARY_PATH` env variable to specify a different location for the run_summary.jsonl when reporting summaries
+- *(nomad)* Add agent config for local development by @cdunster
+- *(nomad)* Use Holochain binary from PATH if no download URL by @cdunster
+- *(nomad)* Run scenario from bin dir as provided by zip file by @cdunster
+- *(nomad)* Set holochain bin to be executable by @cdunster
+- *(nomad)* Download the `holochain` binary from provided URL by @cdunster
+  - Use example URL for testing
+- *(nomad)* Don't start a sandboxed Holochain conductor by @cdunster
+  - This is now done via Wind Tunnel itself.
+- *(runner)* Canonicalize the conductor root path by @cdunster
+- *(runner)* Use temp-dir for conductor root dir by @cdunster
+- *(runner)* Clean conductor parent directories after error by @cdunster in [#260](https://github.com/holochain/wind-tunnel/pull/260)
+- *(runner)* Use '127.0.0.1' for admin URL instead of localhost by @cdunster
+- *(runner)* Add helper function to call common agent_setup functions by @cdunster
+- *(runner)* Take conductor stdin to avoid deadlocks by @cdunster
+- *(runner)* Remove parent directory on drop if empty by @cdunster
+- *(runner)* Create parent directories for conductor root path by @cdunster
+- *(runner)* Get OS to select a free port instead of a random u16 by @cdunster
+- *(runner)* Remove random conductor password and hardcode it by @cdunster
+- *(runner)* Add agent name to stdout logs from conductors by @cdunster
+- *(runner)* Set conductor root path base on agent name by @cdunster
+- *(runner)* Only run conductor if connection-string not set by @cdunster
+  - Generate a random admin port and run a conductor in-process with an admin interface on that port.
+- *(runner)* Make `connection_string` an optional CLI option by @cdunster
+- *(runner)* Store admin_ws_url in `HolochainAgentContext` by @cdunster
+- *(runner)* Store app_ws_url as a `SocketAddr` by @cdunster
+- *(runner)* Cleanup conductor file on error by @cdunster
+- *(runner)* Only run conductor internally if WT_HOLOCHAIN_PATH set by @cdunster
+- *(runner)* Allow setting target arc factor from agent_setup by @cdunster
+- *(runner)* Move holochain_runner to agent context instead of runner by @cdunster
+  - This allows `run_holochain_conductor` to be called in `agent_setup` instead of `setup`.
+- *(runner)* Move app_ws_url to agent context instead of runner by @cdunster
+  - This allows `configure_app_ws_url` to be called in `agent_setup` instead of `setup`.
+- *(runner)* Wait for Holochain conductor to be ready after started by @cdunster
+- *(runner)* Directly run Holochain conductor instead of via sandbox by @cdunster
+- *(runner)* Add config struct for Holochain sandbox by @cdunster
+- *(runner)* Add process to wait for the Holochain conductor by @cdunster
+- *(runner)* Generate a random password for each new sandbox by @cdunster
+- *(runner)* Allow setting hc bin path with env var by @cdunster
+- *(runner)* Take sandbox admin port from connection string by @cdunster
+- *(runner)* Creating a sandbox no longer cleans existing ones by @cdunster
+- *(runner)* Add hard-coded sandbox clean, create, and run logic by @cdunster
+- *(socket)* Impl `ToSocketAddr` for `SocketAddr` by @cdunster
+- *(summariser)* Added Host metrics to the summariser analysis (#255) by @veeso in [#255](https://github.com/holochain/wind-tunnel/pull/255)
+  - Feat(summariser): Added Host metrics to the summariser analysis
+- Remove influx-client reporter, which is dead code (#450) by @mattyg in [#450](https://github.com/holochain/wind-tunnel/pull/450)
+- Summary visualiser documentation (#437) by @pdaoust in [#437](https://github.com/holochain/wind-tunnel/pull/437)
+  - Feat: document summary visualiser tool and all its templates
+- Do not retry jobs or tasks when a task fails, instead fail the job immediately (#424) by @mattyg in [#424](https://github.com/holochain/wind-tunnel/pull/424)
+- Add mixed arc must_get_agent_activity scenario (#398) by @matthme in [#398](https://github.com/holochain/wind-tunnel/pull/398)
+- `write_validated_must_get_agent_activity` scenario template (#385) by @pdaoust in [#385](https://github.com/holochain/wind-tunnel/pull/385)
+  - Feat: add write_validated_must_get_agent_activity scenario template * chore: add write_validated_must_get_agent_activity to smoke test * chore: alphabetised smoke tests
+- Holochain version number in scenario run summary (#404) by @pdaoust in [#404](https://github.com/holochain/wind-tunnel/pull/404)
+  - Feat: Holochain version number in scenario run summary * chore: update scenario summary test data with new build info structure
+- Upload summary json to hetzner bucket (#403) by @mattyg in [#403](https://github.com/holochain/wind-tunnel/pull/403)
+- Run nomad scenario on all node pools (#409) by @mattyg in [#409](https://github.com/holochain/wind-tunnel/pull/409)
+- Add mixed arc get_agent_activity scenario (#392) by @matthme in [#392](https://github.com/holochain/wind-tunnel/pull/392)
+- `app_install` scenario template (#371) by @pdaoust in [#371](https://github.com/holochain/wind-tunnel/pull/371)
+  - Feat: add app_install scenario template * chore: add app_install to smoke test
+- `zome_call_single_value` scenario template (#388) by @pdaoust in [#388](https://github.com/holochain/wind-tunnel/pull/388)
+  - Feat: add zome_call_single_value scenario template * chore: add zome_call_single_value to smoke test
+- `local_signals` scenario template (#376) by @pdaoust in [#376](https://github.com/holochain/wind-tunnel/pull/376)
+  - Fix: incorrect scenario name in readme * feat: scenario template for local_signals * chore: add local_signals to smoke test
+- Add full arc create validated zero arc read scenario (#364) by @matthme in [#364](https://github.com/holochain/wind-tunnel/pull/364)
+- Adjust dht_sync_lag nomad vars to leverage the available nodes (#370) by @matthme in [#370](https://github.com/holochain/wind-tunnel/pull/370)
+- Add flag to summariser to optionally ignore errors (#360) by @matthme in [#360](https://github.com/holochain/wind-tunnel/pull/360)
+- Add quick-start guide to README (#357) by @matthme in [#357](https://github.com/holochain/wind-tunnel/pull/357)
+- Report all errors in summariser (#356) by @matthme in [#356](https://github.com/holochain/wind-tunnel/pull/356)
+- Add zero arc create data scenario with validation (#345) by @matthme in [#345](https://github.com/holochain/wind-tunnel/pull/345)
+- Scenario template for `remote_call_rate` (#349) by @pdaoust in [#349](https://github.com/holochain/wind-tunnel/pull/349)
+  - Fix: styling tweaks to scenario summary
+  - Feat: support more scenario summary fields
+  - Feat: remote_call_rate scenario template
+  - Fix: top-align metric labels for remote_call_rate
+  - Fix: default value for empty behaviour name
+  - Chore: real test data for remote_call_rate
+  - Fix: broken path to test data JSON
+  - Chore: refactor smoke test for summary HTML generator
+  - Fix: small tweaks to k/v data in scenario summary
+  - Fix: smoke test looking for wrong CSS class
+  - Chore: refactor scenario loop to include wrapper section that formats class name predictably
+  - Chore: fix old test label
+  - Fix: make HTML generator smoke tag messages consistent
+  - Feat: composite key helper
+  - Fix: edit remote_call_rate description
+- Wind tunnel scenario summary visualiser (#327) by @pdaoust in [#327](https://github.com/holochain/wind-tunnel/pull/327)
+- Add zero arc create and read scenario (#338) by @matthme in [#338](https://github.com/holochain/wind-tunnel/pull/338)
+- Add the Holochain build info to Run Summary (#333) by @veeso in [#333](https://github.com/holochain/wind-tunnel/pull/333)
+- Add mixed zero arc/full arc scenario (#318) by @matthme in [#318](https://github.com/holochain/wind-tunnel/pull/318)
+  - Feat: add mixed zero arc/full arc scenario
+  - Feat: zero arc nodes wait with entry creation until they discovered full arc nodes
+  - Feat: add dashboard template for zero arc create data scenario
+- If the summary report was not generated, the job is considered failed by @mattyg in [#312](https://github.com/holochain/wind-tunnel/pull/312)
+- Make 'duration' a required nomad variable by @mattyg in [#313](https://github.com/holochain/wind-tunnel/pull/313)
+- Add holochain metrics to Summariser (#263) by @ddd-mtl in [#263](https://github.com/holochain/wind-tunnel/pull/263)
+- Add call to create_and_run_sandbox in all HC scenario setups by @cdunster
+- Add Holochain Metrics dashboards (#261) by @ddd-mtl in [#261](https://github.com/holochain/wind-tunnel/pull/261)
+- Support for importing Holochain metrics into InfluxDB (#254) by @ddd-mtl in [#254](https://github.com/holochain/wind-tunnel/pull/254)
+- New CLI tool `lp-tool` for processing InfluxDB line protocol files (#256) by @ddd-mtl in [#256](https://github.com/holochain/wind-tunnel/pull/256)
+- Integrate Host Metrics (#246) by @veeso in [#246](https://github.com/holochain/wind-tunnel/pull/246)
+  - Added telegraf configurations and scripts to import Host and scenario metrics by the last run_id. Added a telegraf agent configuration to write Host metrics to file
+- Use job-level Nomad secret for `INFLUX_TOKEN` by @cdunster in [#233](https://github.com/holochain/wind-tunnel/pull/233)
+  - Having a separate token per job would be too much maintenance when they can just share a single token.
+- Created a Job per scenario using a template (#227) by @veeso in [#227](https://github.com/holochain/wind-tunnel/pull/227)
+- Added Host metrics to Telegraf and InfluxDB (#230) by @veeso in [#230](https://github.com/holochain/wind-tunnel/pull/230)
+- Distinguish "canonical" runs from the "demo" runs that are run on PRs by @mattyg in [#412](https://github.com/holochain/wind-tunnel/pull/412)
+  - Split nomad vars into 2 sets for "canonical" and "demo" runs.
+  - Make 2 github actions for each, sharing common logic.
+  - Reduce noise in github action by reading minimum nodes and scenario name from vars file.
+- Add (almost) all scenario templates (#395) by @pdaoust in [#395](https://github.com/holochain/wind-tunnel/pull/395)
+- Scenario template for `zero_arc_create_and_read` (#365) by @pdaoust in [#365](https://github.com/holochain/wind-tunnel/pull/365)
+- Scenario template for `zero_arc_create_data` (#351) by @pdaoust in [#351](https://github.com/holochain/wind-tunnel/pull/351)
+- Scenario template for `validation_receipts` (#350) by @pdaoust in [#350](https://github.com/holochain/wind-tunnel/pull/350)
+- Update dashboards (#242) by @veeso in [#242](https://github.com/holochain/wind-tunnel/pull/242)
+- Add `write_validated_must_get_agent_activity` scenario (#282) by @mattyg in [#282](https://github.com/holochain/wind-tunnel/pull/282)
+- Add `write_get_agent_activity` scenario (#277) by @mattyg in [#277](https://github.com/holochain/wind-tunnel/pull/277)
+- Add custom metrics in summarizer (#279) by @mattyg in [#279](https://github.com/holochain/wind-tunnel/pull/279)
+
+### Bug Fixes
+
+- *(nix)* Correct runtime inputs for Nix scripts by @cdunster in [#285](https://github.com/holochain/wind-tunnel/pull/285)
+- *(nix)* Fix the flake-parts pkgs module override by @cdunster
+  - The module override needs to be in the attribute set and not in the let statement.
+- *(nomad)* Add extra participating agent for two_party_countersigning by @cdunster
+- *(nomad)* Change nomad upload metrics script to use lp-tool and influx write instead of telegraf (#262) by @veeso in [#262](https://github.com/holochain/wind-tunnel/pull/262)
+- *(runner)* Get_peer_list_randomized includes other agent's info (#281) by @mattyg in [#281](https://github.com/holochain/wind-tunnel/pull/281)
+  - Fix(runner): get_peer_list_randomized was not including remote agent_infos in results due to a bug in holochain 0.5.x. The bug has already been resolved in holochain 0.6.x. This is a temporary workaround
+  - Docs: link to gh PR explaining issue
+  - Refactor: avoid redundant conversion of agent pub key
+- *(runner)* Drain conductor stdout even if not printing by @cdunster
+- *(runner)* Error if WT_HOLOCHAIN_PATH not set and bin not in PATH by @cdunster
+- *(scripts)* Fix tq query command for INFLUX_TOKEN by @cdunster
+- *(scripts)* Make all scripts executable by @cdunster
+- *(summariser)* Format date-time in report name as NTFS-valid string by @cdunster
+- Removed timeout logic from validation receipts scenario (#459) by @veeso in [#459](https://github.com/holochain/wind-tunnel/pull/459)
+  - Fix: removed timeout logic from validation receipts scenario
+  - Restored blocking wait_for
+- Validation_receipts scenario gets stuck (#447) by @veeso in [#447](https://github.com/holochain/wind-tunnel/pull/447)
+  - Fix: validation_receipts scenario gets stuck
+  - Increased required nodes to 5; agents per node set to 1. Limit the scenario loop by twice the scenario duration
+- Create telegraf metrics output dir if not found, to avoid the task failing and restarting 2m later (#423) by @mattyg in [#423](https://github.com/holochain/wind-tunnel/pull/423)
+- Run run-summary job even if individual scenarios fail (#421) by @mattyg in [#421](https://github.com/holochain/wind-tunnel/pull/421)
+- Eliminate race condition in holochain_binary tests by @ThetaSinner in [#400](https://github.com/holochain/wind-tunnel/pull/400)
+  - The test `test_should_get_default_holochain_path` was flaky due to race conditions caused by parallel test execution modifying shared global environment variables (WT_HOLOCHAIN_PATH_ENV and PATH).
+  - When tests ran in parallel, one test could modify environment variables while another was executing, causing sporadic failures with the error: "Path to Holochain binary overwritten with 'WT_HOLOCHAIN_PATH=/non/existent/path/to/holochain' but that path doesn't exist"
+- Filter links by agent in write validated must_get_agent_activity zome (#394) by @matthme in [#394](https://github.com/holochain/wind-tunnel/pull/394)
+- Change holochain binary url to specific tag (#390) by @matthme in [#390](https://github.com/holochain/wind-tunnel/pull/390)
+- Namespace all helpers defined locally in scenario templates (#369) by @pdaoust in [#369](https://github.com/holochain/wind-tunnel/pull/369)
+- Added missing summariser report for remote_signals (#340) by @veeso in [#340](https://github.com/holochain/wind-tunnel/pull/340)
+  - Fix: Added missing summariser report for remote_signals
+  - The summariser report for the scenario `remote_signals` was missing.
+- Added `customHolochain` as a dependency to nix `rust-smoke-test` job. (#336) by @veeso in [#336](https://github.com/holochain/wind-tunnel/pull/336)
+  - Fix: Added `customHolochain` as a dependency to nix `rust-smoke-test` job.
+  - This caused smoke tests to fail because they could not find holochain bin
+- Use `force_stop_scenario` if conductor fails to start (#332) by @veeso in [#332](https://github.com/holochain/wind-tunnel/pull/332)
+- Increase timeout when waiting for conductor to be ready by @cdunster
+- Path handling and directory creation for conductor root path by @cdunster
+  - `canonicalize` fails if the path doesn't exist so do it after creating the directories. `fs::create_dir_all` should not fail if directories already exist so no need to check.
+- Use boostrap & signal servers compatible with holochain 0.5.x+ (#283) by @mattyg in [#283](https://github.com/holochain/wind-tunnel/pull/283)
+- Generate jobs script failed if called without arguments (#243) by @veeso in [#243](https://github.com/holochain/wind-tunnel/pull/243)
+  - The script failed due to the fact that set -e is set and JOB_NAME was set to $1; instead it must be set to ${1:-}
+- Fixed host dashboards to skip custom buckets (#237) by @veeso in [#237](https://github.com/holochain/wind-tunnel/pull/237)
+- Telegraf.conf missing tail plugin (#238) by @veeso in [#238](https://github.com/holochain/wind-tunnel/pull/238)
+  - The tail plugin was removed by mistake in a previous cleanup of the conf file, but should be there to report metrics when running scenarios
+- Add missing fixture (#288) by @mattyg in [#288](https://github.com/holochain/wind-tunnel/pull/288)
+
+### Miscellaneous Tasks
+
+- *(nix)* Add missing tomlq package to devShell by @cdunster
+- *(nix)* Add missing openssl package to devShell by @cdunster
+- *(nix)* Use Nix store paths for scripts by @cdunster
+- *(nix)* Add package override for rustfmt in git-hooks.nix by @cdunster
+- *(nix)* Git-hooks' nixpkgs inputs follows nixpkgs by @cdunster
+- *(nix)* Use rust-overlay's default overlays instead of importing by @cdunster
+- *(nomad)* Cleanup Nomad job spec variables (#274) by @veeso in [#274](https://github.com/holochain/wind-tunnel/pull/274)
+  - Chore(nomad): Cleanup Nomad job spec variables
+  - Removed unnecessary variables that won't change between runs, i.e. scenario-name. Remove undesired defaults Update the gomplate comment about the defaults to remove the blank line in the generated file Rename all variables to use underscores instead of hyphens Update the Nomad CI workflow to use the new variable names Update README based on changes, i.e., no scenario name and different var names
+- *(telegraf)* Changed local-telegraf and ci-telegraf scripts to use lp-tool and influx CLI to import metrics (#258) by @veeso in [#258](https://github.com/holochain/wind-tunnel/pull/258)
+  - Chore(telegraf): Changed local-telegraf and ci-telegraf scripts to use lp-tool and influx CLI to import metrics
+  - This is necessary because telegraf when run with --once and inputs.file caps the amount of metrics to 10k lines
+- Fix margin between scenario summaries (#368) by @pdaoust in [#368](https://github.com/holochain/wind-tunnel/pull/368)
+- Remove redundant missing value checks, standardise on `default` rather than `or` (#363) by @pdaoust in [#363](https://github.com/holochain/wind-tunnel/pull/363)
+- Update Cargo.lock file by @ThetaSinner in [#248](https://github.com/holochain/wind-tunnel/pull/248)
+- Update flake.lock file by @ThetaSinner in [#273](https://github.com/holochain/wind-tunnel/pull/273)
+- Add nix directory to direnv watch list by @cdunster
+- Add .direnv directory to gitignore by @cdunster
+  - This stops statix from checking it.
+- Review step 1 by @veeso
+- Review by @veeso
+- Refactor nix flake by @veeso
+  - Added rust-toolchain
+- Fix wrong field name in expect log by @cdunster
+- Have nomad support Holochain metrics by @ddd-mtl in [#265](https://github.com/holochain/wind-tunnel/pull/265)
+- Update flake.lock file by @ThetaSinner in [#251](https://github.com/holochain/wind-tunnel/pull/251)
+- Snake-case everything (#362) by @pdaoust in [#362](https://github.com/holochain/wind-tunnel/pull/362)
+- Make CSS reusable (#361) by @pdaoust in [#361](https://github.com/holochain/wind-tunnel/pull/361)
+- Refactor summary visualiser tests (#352) by @pdaoust in [#352](https://github.com/holochain/wind-tunnel/pull/352)
+
+### Build System
+
+- Fix issue where scenarios failed to execute when built from a nixos system with an updated flake lock, because the nix store path for the interpreter had changed (#439) by @mattyg in [#439](https://github.com/holochain/wind-tunnel/pull/439)
+- Bump rust 1.90 (#319) by @mattyg in [#319](https://github.com/holochain/wind-tunnel/pull/319)
+
+### CI
+
+- *(nomad)* Run summariser step even if there are failures by @cdunster in [#331](https://github.com/holochain/wind-tunnel/pull/331)
+  - Otherwise if a single scenario fails the summariser report isn't produced.
+- *(nomad)* Generate a single Summariser report for all scenarios by @cdunster
+- *(nomad)* Fix JSON in matrix persist step to be strings by @cdunster in [#325](https://github.com/holochain/wind-tunnel/pull/325)
+  - In the rare chance that one of the fields is a valid number then the JSON type would be a number.
+- *(nomad)* Add 30 minute timeout for waiting for free nodes by @cdunster
+- *(nomad)* Re-enable all scenarios by @cdunster
+- *(nomad)* Add the job name to the summariser report name by @cdunster
+- *(nomad)* Fix the required-nodes for two_party_countersigning by @cdunster
+- *(nomad)* Disable the write_read scenario by @cdunster
+- *(nomad)* Disable the single_write_many_read scenario by @cdunster
+- *(nomad)* Disable the write_get_agent_activity scenario by @cdunster
+- *(nomad)* Disable the app_install scenarios by @cdunster
+- *(nomad)* Disable the validation_receipts scenario by @cdunster
+- *(nomad)* Disable the two_party_countersigning scenario by @cdunster
+- *(nomad)* Set timeout for waiting for jobs to finish to 90 minutes by @cdunster
+- *(nomad)* Run the Summariser after running nomad scenarios (#278) by @veeso in [#278](https://github.com/holochain/wind-tunnel/pull/278)
+- *(nomad)* Update default holochain_bin_url to official latest release by @cdunster
+- *(nomad)* Remove required and default from holochain_bin_url input by @cdunster
+- *(nomad)* Add default for NOMAD_VAR_holochain_bin_url by @cdunster
+  - When running on schedule or without workflow_dispatch the inputs are all null.
+- *(nomad)* Add holochain_bin_url input with default by @cdunster
+- *(nomad)* Upload artifact of scenario bin and happs instead of bundle by @cdunster
+- Increase timeout buffer for Nomad jobs by @cdunster in [#446](https://github.com/holochain/wind-tunnel/pull/446)
+  - Uploading the metrics sometimes takes more than 5 minutes so a buffer of 5 minutes is not long enough to ensure the job finishes.
+- Remove self-hosted github action runner (#433) by @mattyg in [#433](https://github.com/holochain/wind-tunnel/pull/433)
+- Increase time buffer when timing out an allocation by @ThetaSinner in [#414](https://github.com/holochain/wind-tunnel/pull/414)
+- Automate generation of summary visualizer for nomad (#374) by @veeso in [#374](https://github.com/holochain/wind-tunnel/pull/374)
+- Disable validation_receipts scenario (#373) by @veeso in [#373](https://github.com/holochain/wind-tunnel/pull/373)
+- Change Nomad scenario timeout to `(created_at - t_now) + duration + buffer` (#355) by @veeso in [#355](https://github.com/holochain/wind-tunnel/pull/355)
+- Cache summariser build (#344) by @veeso in [#344](https://github.com/holochain/wind-tunnel/pull/344)
+- Run nomad ci workflow if there are relevant files changed (#328) by @veeso in [#328](https://github.com/holochain/wind-tunnel/pull/328)
+  - Ci: Run nomad ci workflow if there are relevant files changed
+  - Automatically runs the nomad ci workflow if either the nomad workflow file or any scenario file changed
+- Replace default Holochain bin URL with go-pion-unstable version by @cdunster
+  - A build with unstable features enabled is required for Wind Tunnel scenarios.
+- Don't add changelog preview comment to dependabot PRs by @cdunster in [#293](https://github.com/holochain/wind-tunnel/pull/293)
+- Upload run_summary artifact to github ci by @veeso in [#286](https://github.com/holochain/wind-tunnel/pull/286)
+- Kitsune by @veeso
+- Tests by @veeso
+- Moved rust toolchain to nix rust module by @veeso
+- Taplo by @veeso
+- Remove running of hc sandbox in scenario tests by @cdunster
+- Run Nomad workflow once a week on Thu (#276) by @veeso in [#276](https://github.com/holochain/wind-tunnel/pull/276)
+  - New HC version is released on Wednesday, so we can run the Nomad workflow with the latest release once a week
+- Parallelise the running of nomad jobs (#272) by @veeso in [#272](https://github.com/holochain/wind-tunnel/pull/272)
+- Removed performance workflow (#275) by @veeso in [#275](https://github.com/holochain/wind-tunnel/pull/275)
+  - Removed the performance workflow and the ci-upload-metrics script.
+- Wait for Nomad CI jobs to run (#245) by @veeso in [#245](https://github.com/holochain/wind-tunnel/pull/245)
+- Use the same branch name for every nix flake update by @cdunster in [#247](https://github.com/holochain/wind-tunnel/pull/247)
+- Use the same branch name for every cargo update by @cdunster
+- Fix step that builds Nomad job file to use job-name if exists by @cdunster
+
+### Testing
+
+- Add snapshot tests to zero arc create data validated test (#366) by @matthme in [#366](https://github.com/holochain/wind-tunnel/pull/366)
+
+### Refactor
+
+- *(nix)* Remove unnecessary shellcheck packages from scripts by @cdunster
+- *(nix)* Use git-hooks.nix enabledPackages by @cdunster
+  - Instead of manually including all the packages again.
+- *(nix)* Move setting of formatter out of module by @cdunster
+- *(runner)* Check WT_HOLOCHAIN_PATH env var first by @cdunster
+- *(runner)* All HolochainConfigBuilder methods take `&mut self` by @cdunster
+  - This keeps the builder API consistent as other methods need to be called with a mut ref.
+- *(runner)* Only set holochain bin path if env var is set by @cdunster
+- Upload scenario bin to bucket, delete after scenario completes (#434) by @mattyg in [#434](https://github.com/holochain/wind-tunnel/pull/434)
+- Remove countersigning scenario from CI workflows (#415) by @matthme in [#415](https://github.com/holochain/wind-tunnel/pull/415)
+- Move code to get holochain build info from framework runner to holochain bindings (#396) by @mattyg in [#396](https://github.com/holochain/wind-tunnel/pull/396)
+  - Refactor: move code to get holochain build info from framework runner -> holochain bindings runner, since it is holochain scenario specific
+  - Test: update summarizer fixture outputs
+- Github workflow 'nomad' now runs summarizer for each job individually, rather than waiting for all jobs to succeed before running summarizer by @mattyg
+- Call helper function in scenario to start the conductor by @cdunster
+
+### Styling
+
+- *(nix)* Remove whitespace from the start of empty lines by @cdunster
+- *(runner)* Reformat the holochain runner code by @cdunster
+- Format influx templates (#239) by @veeso in [#239](https://github.com/holochain/wind-tunnel/pull/239)
+  - In order to catch changes when working on PRs, let's prettify template json files
+
+### Documentation
+
+- *(nomad)* Update the scenario_url description by @cdunster in [#284](https://github.com/holochain/wind-tunnel/pull/284)
+- *(runner)* Add details to `run_holochain_conductor` doc-comment by @cdunster
+- *(runner)* Add doc-comments to `run_holochain_conductor` function by @cdunster
+- *(runner)* Add doc-comments to the holochain_runner module by @cdunster
+- Update 0.5.0-dev.0 release in changelog to match template
+  - Only do this version because it was the first version to start using conventional commits and a generated changelog.
+- Add missing footer to changelog
+- Update changelog first-time heading to match template
+- Update changelog version headings to match template
+- Update changelog header to match template
+- Add GitHub issue numbers to the todos for fixing the scenarios by @cdunster in [#295](https://github.com/holochain/wind-tunnel/pull/295)
+- Update the README with how to run with Holochain binary by @cdunster
+- Update section in README about generating Nomad job files by @cdunster
+- Reword section about connecting to an external conductor by @cdunster
+- Fix punctuation in README by @cdunster
+- Fix copy-paste error in doc-comment by @cdunster
+- Add paragram in project README about conductor stdout and logs by @cdunster
+- Update default run examples in all scenario READMEs by @cdunster
+- Update project readme to use in-process conductors by @cdunster
+- Move conventional commits remark in PR template to one line by @cdunster in [#229](https://github.com/holochain/wind-tunnel/pull/229)
+  - GitHub appears to not respect markdown properly and so was adding linebreaks to this remark.
+
+### Automated Changes
+
+- *(deps)* Bump actions/upload-artifact from 5 to 6 (#407) by @dependabot[bot] in [#407](https://github.com/holochain/wind-tunnel/pull/407)
+  - Bumps [actions/upload-artifact](https://github.com/actions/upload-artifact) from 5 to 6. - [Release notes](https://github.com/actions/upload-artifact/releases) - [Commits](https://github.com/actions/upload-artifact/compare/v5...v6)
+  - Updated-dependencies: - dependency-name: actions/upload-artifact   dependency-version: '6'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump actions/download-artifact from 5 to 7 (#408) by @dependabot[bot] in [#408](https://github.com/holochain/wind-tunnel/pull/408)
+  - Bumps [actions/download-artifact](https://github.com/actions/download-artifact) from 5 to 7. - [Release notes](https://github.com/actions/download-artifact/releases) - [Commits](https://github.com/actions/download-artifact/compare/v5...v7)
+  - Updated-dependencies: - dependency-name: actions/download-artifact   dependency-version: '7'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump actions/cache from 4 to 5 by @dependabot[bot] in [#405](https://github.com/holochain/wind-tunnel/pull/405)
+  - Bumps [actions/cache](https://github.com/actions/cache) from 4 to 5. - [Release notes](https://github.com/actions/cache/releases) - [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md) - [Commits](https://github.com/actions/cache/compare/v4...v5)
+  - Updated-dependencies: - dependency-name: actions/cache   dependency-version: '5'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump peter-evans/create-pull-request from 7 to 8 by @dependabot[bot] in [#406](https://github.com/holochain/wind-tunnel/pull/406)
+  - Bumps [peter-evans/create-pull-request](https://github.com/peter-evans/create-pull-request) from 7 to 8. - [Release notes](https://github.com/peter-evans/create-pull-request/releases) - [Commits](https://github.com/peter-evans/create-pull-request/compare/v7...v8)
+  - Updated-dependencies: - dependency-name: peter-evans/create-pull-request   dependency-version: '8'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump actions/upload-artifact from 4 to 5 (#315) by @dependabot[bot] in [#315](https://github.com/holochain/wind-tunnel/pull/315)
+  - Bumps [actions/upload-artifact](https://github.com/actions/upload-artifact) from 4 to 5. - [Release notes](https://github.com/actions/upload-artifact/releases) - [Commits](https://github.com/actions/upload-artifact/compare/v4...v5)
+  - Updated-dependencies: - dependency-name: actions/upload-artifact   dependency-version: '5'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump actions/download-artifact from 5 to 6 (#314) by @dependabot[bot] in [#314](https://github.com/holochain/wind-tunnel/pull/314)
+  - Bumps [actions/download-artifact](https://github.com/actions/download-artifact) from 5 to 6. - [Release notes](https://github.com/actions/download-artifact/releases) - [Commits](https://github.com/actions/download-artifact/compare/v5...v6)
+  - Updated-dependencies: - dependency-name: actions/download-artifact   dependency-version: '6'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump holochain/actions from 1.2.0 to 1.3.0 by @dependabot[bot] in [#290](https://github.com/holochain/wind-tunnel/pull/290)
+  - Bumps [holochain/actions](https://github.com/holochain/actions) from 1.2.0 to 1.3.0. - [Release notes](https://github.com/holochain/actions/releases) - [Commits](https://github.com/holochain/actions/compare/v1.2.0...v1.3.0)
+  - Updated-dependencies: - dependency-name: holochain/actions   dependency-version: 1.3.0   dependency-type: direct:production   update-type: version-update:semver-minor ...
+- *(deps)* Bump actions/download-artifact from 4 to 5 by @dependabot[bot] in [#280](https://github.com/holochain/wind-tunnel/pull/280)
+  - Bumps [actions/download-artifact](https://github.com/actions/download-artifact) from 4 to 5. - [Release notes](https://github.com/actions/download-artifact/releases) - [Commits](https://github.com/actions/download-artifact/compare/v4...v5)
+  - Updated-dependencies: - dependency-name: actions/download-artifact   dependency-version: '5'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- *(deps)* Bump actions/checkout from 4 to 5 by @dependabot[bot] in [#252](https://github.com/holochain/wind-tunnel/pull/252)
+  - Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 5. - [Release notes](https://github.com/actions/checkout/releases) - [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md) - [Commits](https://github.com/actions/checkout/compare/v4...v5)
+  - Updated-dependencies: - dependency-name: actions/checkout   dependency-version: '5'   dependency-type: direct:production   update-type: version-update:semver-major ...
+- Update Cargo.lock file (#326) by @github-actions[bot] in [#326](https://github.com/holochain/wind-tunnel/pull/326)
+  - Chore: update Cargo.lock file
+  - Build: update kitsune2_bootstrap_srv
+  - 
+- Update flake.lock file (#320) by @github-actions[bot] in [#320](https://github.com/holochain/wind-tunnel/pull/320)
+  - Chore: update flake.lock file
+  - Ci: bump rust cache key to force rebuild
+  - Ci: run rust unit tests and clippy check in nix devShell, rather than writeShellApplication, use clang stdenv
+  - Ci: test building scenario packages with `nix build` instead of `nix bundle`, to mirror how we actually build the packages.
+  - Ci: invalidate rust cache when flake.lock changes
+  - Ci: run all smoke tests via rust-smoke-test nix package
+  - Build: bump nixpkgs to 25.11 -- crane does not support 25.05
+  - 
+- Update flake.lock file (#298) by @github-actions[bot] in [#298](https://github.com/holochain/wind-tunnel/pull/298)
+
+### First-time Contributors
+
+- @veeso made their first contribution in [#459](https://github.com/holochain/wind-tunnel/pull/459)
+- @mattyg made their first contribution in [#450](https://github.com/holochain/wind-tunnel/pull/450)
+- @pdaoust made their first contribution in [#437](https://github.com/holochain/wind-tunnel/pull/437)
+- @matthme made their first contribution in [#398](https://github.com/holochain/wind-tunnel/pull/398)
+- @ddd-mtl made their first contribution in [#263](https://github.com/holochain/wind-tunnel/pull/263)
+
 ## \[[0.5.0-dev.0](https://github.com/holochain/wind-tunnel/compare/v0.4.0-dev.1...v0.5.0-dev.0)\] - 2025-07-16
 
 ### Features
