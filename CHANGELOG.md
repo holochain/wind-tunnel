@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0-dev.0] - 2025-07-15
+## \[[0.5.0-dev.0](https://github.com/holochain/wind-tunnel/compare/v0.4.0-dev.1...v0.5.0-dev.0)\] - 2025-07-16
 
 ### Added
 
@@ -41,7 +41,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * @zippy made their first contribution in [#182](https://github.com/holochain/wind-tunnel/pull/182)
 
-## [0.4.0-dev.1] - 2025-06-19
+## \[[0.4.0-dev.1](https://github.com/holochain/wind-tunnel/compare/0.2.0-alpha.2...v0.4.0-dev.1)\] - 2025-06-19
 
 ### Added
 
@@ -88,13 +88,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Run the TryCP scenarios in the [Performance Workflow](.github/workflows/performance.yaml) on the Holo Ports defined in [targets.yaml](targets.yaml). [#117](https://github.com/holochain/wind-tunnel/pull/117)
 - Fix Kitsune op store to always return all processed op ids. Previously ops processed multiple times would not be removed from the request queue. Duplicate ops are still not considered for reporting.
 
-## [0.2.0-alpha.2] - 2024-05-25
+## \[[0.2.0-alpha.2](https://github.com/holochain/wind-tunnel/compare/0.2.0-alpha.1...0.2.0-alpha.2)\] - 2024-05-24
 
 ### Changed
 
 - Updated Holochain version to 0.3.1-rc.0 and updated all other dependencies to their corresponding versions.
 
-## [0.2.0-alpha.1] - 2024-03-29
+## \[[0.2.0-alpha.1](https://github.com/holochain/wind-tunnel/commits/0.2.0-alpha.1)\] - 2024-03-29
 
 ### Added
 
