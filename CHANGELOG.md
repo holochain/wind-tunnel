@@ -37,7 +37,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Remove empty changelog headings and add missing release
 
-## First-time Contributors
+### First-time Contributors
 
 * @zippy made their first contribution in [#182](https://github.com/holochain/wind-tunnel/pull/182)
 
