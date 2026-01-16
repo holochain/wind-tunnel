@@ -1,0 +1,36 @@
+{{ template "must_get_agent_activity_shared" }}{{/* This just loads up shared content; doesn't output anything */}}
+
+{{ define "mixed_arc_must_get_agent_activity_description" }}
+    {{ template "must_get_agent_activity_shared_description" }}
+
+    <p>This test is similar to <b>Write Validated <code>must_get_agent_activity</code></b>, but some <code>write</code> agents are zero-arc and <em>all</em> <code>must_get_agent_activity</code> agents are zero-arc. This forces the <code>must_get_agent_activity</code> host call to go to the network.</p>
+{{ end }}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent" }}
+    {{ range .partitions }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ define "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" }}
+    {{ template "scenario_metric" (dict
+        "class" "large"
+        "name" "Open connections"
+        "description" "The average number of open connections maintained by an agent over the run, broken down by behaviour."
+        "content" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent" .scenario_metrics.open_connections)
+    ) }}
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Mixed Arc <code>must_get_agent_activity</code>"
+    "description" (tmpl.Exec "mixed_arc_must_get_agent_activity_description")
+    "data" .run_summary
+) }}
+
+{{ template "must_get_agent_activity_shared_metrics" (merge
+    (dict "extra_metrics" (tmpl.Exec "mixed_arc_must_get_agent_activity_open_connections_per_agent_metric" .))
+    .
+) }}
