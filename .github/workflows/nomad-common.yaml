@@ -155,7 +155,7 @@ jobs:
           JOB_NAME="${{ matrix.job-name }}"
           nomad_rc=0
           nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
-          if [ "nomad_rc" -ne 0 ]; then
+          if [ "$nomad_rc" -ne 0 ]; then
               echo "Nomad job submission failed with exit code $nomad_rc"
               echo "$nomad_output"
               exit "nomad_rc"
