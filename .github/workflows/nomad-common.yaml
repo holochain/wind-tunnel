@@ -158,7 +158,7 @@ jobs:
           if [ "$nomad_rc" -ne 0 ]; then
               echo "Nomad job submission failed with exit code $nomad_rc"
               echo "$nomad_output"
-              exit "nomad_rc"
+              exit "$nomad_rc"
           fi
           echo "$nomad_output"
           echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
