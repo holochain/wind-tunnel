@@ -1,10 +1,10 @@
 {{/* `mixed_arc_must_get_agent_activity` and `write_validated_must_get_agent_activity` are similar to each other --
-mixed-arc scenarios that build dependent data on existing source chain states.
+must_get_agent_activity scenarios that build dependent data on existing source chain states.
 As such, they end up sharing a lot of the same metrics.
 This helper doesn't actually output anything -- it just provides some helpers to use in the templates that use it. */}}
 
 {{ define "must_get_agent_activity_shared_description" }}
-<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while zero-arc <b><code>must_get_agent_activity</code></b> agents each pick a random <code>write</code> agent and repeatedly attempt to create an entry that references the chain top of their latest batch. This reference means that the entry's validation function needs to make a <code>must_get_agent_activity</code> call.</p>
+<p>A scenario where <b><code>write</code></b> agents create entries in batches of 10, while <b><code>must_get_agent_activity</code></b> agents each pick a random <code>write</code> agent and repeatedly attempt to create an entry that references the chain top of their latest batch. This reference means that the entry's validation function needs to make a <code>must_get_agent_activity</code> call.</p>
 
 <p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
 {{ end }}
