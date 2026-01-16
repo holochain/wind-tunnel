@@ -151,9 +151,15 @@ jobs:
           NOMAD_VAR_run_id: ${{ env.RUN_ID }}
           NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         run: |-
-          set -euo pipefail
+          set -exuo pipefail
           JOB_NAME="${{ matrix.job-name }}"
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl)
+          nomad_rc=0
+          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+          if [ "$nomad_rc" -ne 0 ]; then
+              echo "Nomad job submission failed with exit code $nomad_rc"
+              echo "$nomad_output"
+              exit "$nomad_rc"
+          fi
           echo "$nomad_output"
           echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
           alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
