@@ -663,15 +663,17 @@ where
                 .agent_info(None)
                 .await
                 .context("Failed to get agent info")?;
-            let mut agent_pub_keys = Vec::new();
-            for info in agent_infos_encoded {
-                let a = AgentInfoSigned::decode(&Ed25519Verifier, info.as_bytes())?;
-                agent_pub_keys.push(AgentPubKey::from_k2_agent(&a.agent))
+            let mut peer_list = Vec::with_capacity(agent_infos_encoded.len().saturating_sub(1));
+            for info_encoded in agent_infos_encoded {
+                let info_decoded =
+                    AgentInfoSigned::decode(&Ed25519Verifier, info_encoded.as_bytes())?;
+                let agent_pub_key = AgentPubKey::from_k2_agent(&info_decoded.agent);
+
+                // Add all agents except for ourselves
+                if &agent_pub_key != cell_id.agent_pubkey() {
+                    peer_list.push(agent_pub_key);
+                }
             }
-            let mut peer_list = agent_pub_keys
-                .into_iter()
-                .filter(|a| a != cell_id.agent_pubkey()) // Don't include ourselves!
-                .collect::<Vec<_>>();
             peer_list.shuffle(&mut rng());
             Ok(peer_list)
         })
