@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! scenario_happ_path {
+macro_rules! happ_path {
     ($name:literal) => {{
         let local_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../happs")

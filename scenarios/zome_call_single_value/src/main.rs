@@ -1,5 +1,5 @@
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
@@ -7,7 +7,7 @@ fn agent_setup(
     start_conductor_and_configure_urls(ctx)?;
     install_app(
         ctx,
-        scenario_happ_path!("return_single_value"),
+        happ_path!("return_single_value"),
         &"return_single_value".to_string(),
     )?;
 

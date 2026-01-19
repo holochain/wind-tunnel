@@ -68,10 +68,11 @@ When you want to use one or more zomes in a scenario, you should package them in
 your scenario needs to do three things:
 1. Reference the custom build script which will package the zomes into a hApp for you as `build = "../scenario_build.rs"`
 2. Add custom sections to the `Cargo.toml` to describe the hApps you need in your scenario. There is an example at the end of this section.
-3. Reference the installed app from your scenario using the provided macro `scenario_happ_path!("<hApp name>")`. This produces a `std::path::Path`
+3. Reference the installed app from your scenario using the provided macro `happ_path!("<hApp name>")`. This produces a `std::path::Path`
    that can be passed to Holochain when asking it to install a hApp from the file system.
 
 Adding a hApp to your scenario using the `Cargo.toml`:
+
 ```toml
 [package.metadata.required-dna] # This can either be a single DNA or you can specify this multiple times as a list using [[package.metadata.required-dna]]
 name = "return_single_value" # The name to give the DNA that gets built
@@ -81,6 +82,19 @@ zomes = ["return_single_value"] # The name(s) of the zomes to include in the DNA
 name = "return_single_value" # The name to give the hApp that gets built
 dnas = ["return_single_value"] # The name(s) of the DNA to include in the hApp, which must match the name(s) given above.
 ```
+
+You can also fetch hApps from a remote URL by using `fetch-required-happ` table:
+
+```toml
+[package.metadata.fetch-required-happ] # This can either be a single hApp or you can specify this multiple times as a list using [[package.metadata.fetch-required-happ]]
+name = "some_remote_happ" # The name to give the hApp that gets fetched
+url = "https://example.com/some_remote_happ.happ" # The URL to fetch the hApp from
+sha256 = "abc123..." # The expected sha256 checksum of the hApp file to verify integrity
+```
+
+When you build your scenario, the build script will read this section and fetch the required hApps.
+
+The sha256 checksum must be provided to determine whether the file has changed and needs to be re-downloaded. The hApp is only downloaded if the local version does not exist or its checksum differs from the one specified in `Cargo.toml`.
 
 If you need to debug this step, you can run `cargo build -p <your-scenario-crate>` and check the `dnas` and `happs` directories.
 
@@ -219,7 +233,7 @@ Add the following imports to the top of your `main.rs`:
 ```rust
 use holochain_types::prelude::ExternIO;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
+use holochain_wind_tunnel_runner::happ_path;
 ```
 
 Then replace your `main` function with the following:
