@@ -17,7 +17,6 @@ fn create_timed_entry(timed: TimedSampleEntry) -> ExternResult<ActionHash> {
 
 #[hdk_extern]
 fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
-    // No way to control whether this goes to the network at this HDK version
     let links = get_links(
         LinkQuery::try_new(fixed_base(), LinkTypes::FixedToTimedEntry).unwrap(),
         GetStrategy::Local,
@@ -41,7 +40,6 @@ fn get_timed_entries_local() -> ExternResult<Vec<Record>> {
 
 #[hdk_extern]
 fn get_timed_entries_network() -> ExternResult<Vec<Record>> {
-    // No way to control whether this goes to the network at this HDK version
     let links = get_links(
         LinkQuery::try_new(fixed_base(), LinkTypes::FixedToTimedEntry).unwrap(),
         GetStrategy::Network,
