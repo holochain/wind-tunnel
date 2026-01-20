@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ ubuntu-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -320,7 +320,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - id: Check if nix files changed
+      - name: Check if nix files changed
+        id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
