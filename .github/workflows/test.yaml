@@ -333,13 +333,19 @@ jobs:
     needs:
       - test
       - check_nix_changed
-    if: needs.check_nix_changed.outputs.nix_changed == 'true'
     steps:
+      - name: Skip if no nix changes
+        if: needs.check_nix_changed.outputs.nix_changed != 'true'
+        run: |
+          echo "No .nix or flake.lock changes, skipping archive_bundles"
+          exit 0
+
       - name: Checkout
+        if: needs.check_nix_changed.outputs.nix_changed == 'true'
         uses: actions/checkout@v6
 
       - name: Maximize build space
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && needs.check_nix_changed.outputs.nix_changed == 'true'
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
           remove-dotnet: "true"
@@ -348,6 +354,7 @@ jobs:
           remove-docker-images: "true"
 
       - name: Install nix
+        if: needs.check_nix_changed.outputs.nix_changed == 'true'
         uses: cachix/install-nix-action@v31
         with:
           install_url: https://releases.nixos.org/nix/nix-2.28.3/install
@@ -355,12 +362,13 @@ jobs:
             accept-flake-config = true
 
       - uses: cachix/cachix-action@v16
+        if: needs.check_nix_changed.outputs.nix_changed == 'true'
         with:
           name: holochain-ci
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build scenarios
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && needs.check_nix_changed.outputs.nix_changed == 'true'
         run: |
           set -euxo pipefail
 
