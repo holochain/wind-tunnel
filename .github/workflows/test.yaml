@@ -313,21 +313,6 @@ jobs:
         run: |
           nix run .#summary-visualiser-smoke-test
 
-  check_nix_changed:
-    runs-on: ubuntu-latest
-    outputs:
-      nix_changed: ${{ steps.filter.outputs.nix }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            nix:
-              - '**/*.nix'
-              - 'flake.lock'
-
   archive_bundles:
     runs-on: ubuntu-latest
     needs:
