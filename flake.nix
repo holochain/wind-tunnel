@@ -1,5 +1,5 @@
 {
-  description = "Flake for Holochain testing"; # force archive_bundle
+  description = "Flake for Holochain testing";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
