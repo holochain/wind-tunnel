@@ -39,6 +39,7 @@ smoke_test_scenario() {
 smoke_test_scenario "app_install"
 smoke_test_scenario "dht_sync_lag"
 smoke_test_scenario "first_call"
+smoke_test_scenario "full_arc_create_validated_zero_arc_read"
 smoke_test_scenario "local_signals"
 smoke_test_scenario "mixed_arc_must_get_agent_activity"
 smoke_test_scenario "remote_call_rate"

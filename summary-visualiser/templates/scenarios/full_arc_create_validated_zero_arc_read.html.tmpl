@@ -1,0 +1,48 @@
+{{ define "full_arc_create_validated_zero_arc_read_description" }}
+<p>A full-arc/zero-arc mixed scenario where full-arc nodes create data that gets validated and zero-arc nodes read the data. The scenario has two roles:</p>
+
+<ul>
+    <li><b><code>full</code></b>: A full-arc conductor that creates entries with a timestamp field. Those entries get validated and then retrieved by zero-arc nodes.</li>
+    <li><b><code>zero</code></b>: A zero-arc conductor that reads the entries created by the full-arc node(s) and records the time lag between when the entry had been created and when it was first discovered.</li>
+</ul>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Full-Arc Create (Validated) / Zero-Arc Read"
+    "description" (tmpl.Exec "full_arc_create_validated_zero_arc_read_description")
+    "data" .run_summary
+) }}
+
+{{ define "full_arc_create_validated_zero_arc_read_extra_metrics" }}
+    {{ with .scenario_metrics }}
+        {{ with .retrieval_errors }}
+            {{ template "scenario_metric" (dict
+                "name" "Retrieval errors"
+                "description" "Statistics on errors encountered by zero-arc nodes when attempting to retrieve entries created by full-arc nodes."
+                "content" (tmpl.Exec "min_max_mean_std" .)
+            ) }}
+        {{ end }}
+
+        {{ with .app_validation_workflow_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "App validation workflow duration"
+                "description" "The time taken to apply app validation to the data."
+                "content" (tmpl.Exec "timing_and_trend" .)
+            ) }}
+        {{ end }}
+
+        {{ with .system_validation_workflow_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "System validation workflow duration"
+                "description" "The time taken to apply system validation to the data."
+                "content" (tmpl.Exec "timing_and_trend" .)
+            ) }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{ template "zero_arc_shared" (merge
+    (dict "extra_metrics" (tmpl.Exec "full_arc_create_validated_zero_arc_read_extra_metrics" .))
+    .
+) }}
+
