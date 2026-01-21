@@ -322,15 +322,14 @@ jobs:
 
       - name: Check if nix files changed
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: tj-actions/changed-files@v47
         with:
-          filters: |
-            nix:
-              - '**/*.nix'
-              - 'flake.lock'
+          files: |
+            '**/*.nix'
+            'flake.lock'
 
       - name: Maximize build space
-        if: runner.os == 'Linux' && steps.filter.outputs.nix == 'true'
+        if: runner.os == 'Linux' && steps.filter.outputs.any_changed == 'true'
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
           remove-dotnet: "true"
@@ -339,7 +338,7 @@ jobs:
           remove-docker-images: "true"
 
       - name: Install nix
-        if: steps.filter.outputs.nix == 'true'
+        if: steps.filter.outputs.any_changed == 'true'
         uses: cachix/install-nix-action@v31
         with:
           install_url: https://releases.nixos.org/nix/nix-2.28.3/install
@@ -347,13 +346,13 @@ jobs:
             accept-flake-config = true
 
       - uses: cachix/cachix-action@v16
-        if: steps.filter.outputs.nix == 'true'
+        if: steps.filter.outputs.any_changed == 'true'
         with:
           name: holochain-ci
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build scenarios
-        if: runner.os == 'Linux' && steps.filter.outputs.nix == 'true'
+        if: runner.os == 'Linux' && steps.filter.outputs.any_changed == 'true'
         run: |
           set -euxo pipefail
 
