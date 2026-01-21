@@ -1,0 +1,104 @@
+{{ define "mixed_arc_get_agent_activity_description" }}
+<p>A mixed-arc scenario that measures the DHT's ability to propagate agent activity and make it available via <code>get_agent_activity</code> calls. The scenario has three roles:</p>
+
+<ul>
+    <li><b><code>zero_write</code></b>: A zero-arc conductor that creates entries on its source chain.</li>
+    <li><b><code>full_write</code></b>: A full-arc conductor that creates entries on its source chain.</li>
+    <li><b><code>zero_read</code></b>: A zero-arc conductor that picks a random writer and repeatedly calls <code>get_agent_activity</code> to observe new entries appearing on the writer's chain, measuring the lag between creation and discovery.</li>
+</ul>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Mixed Arc <code>get_agent_activity</code>"
+    "description" (tmpl.Exec "mixed_arc_get_agent_activity_description")
+    "data" .run_summary
+) }}
+
+{{ define "mixed_arc_get_agent_activity_retrieval_errors" }}
+    {{ range .timings }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (tmpl.Exec "composite_key" .key)
+            "content" (tmpl.Exec "trend_graph" (dict
+                "data" .summary_timing.trend.trend
+                "window_duration" .summary_timing.trend.window_duration
+            ))
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ define "mixed_arc_get_agent_activity_open_connections" }}
+    {{ range .partitions }}
+        {{ $key := (index .key 0) }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (print $key.value)
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+        ) }}
+    {{ end }}
+{{ end }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Entry created count"
+            "description" "The cumulative number of entries created by write agents over the run, partitioned by agent and behaviour."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .entry_created_count)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Highest observed <code>action_seq</code>"
+            "description" "The rate at which zero-arc readers observe new chain heads on the writers' chains via <code>get_agent_activity</code>. This reflects the DHT's ability to propagate agent activity ops and make them available to querying peers."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .highest_observed_action_seq)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Chain head delay timing"
+            "description" "The time lag between when a writer creates a new entry and when a reader discovers it via <code>get_agent_activity</code>. This is measured per new action in the chain."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .chain_head_delay_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Chain head delay rate"
+            "description" "The rate at which readers detect new chain heads appearing on writers' chains."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .chain_head_delay_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "<code>get_agent_activity_full</code> zome call timing"
+            "description" "The time taken to complete the <code>get_agent_activity_full</code> zome call that queries a writer's chain."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .get_agent_activity_full_zome_calls)
+        ) }}
+
+        {{ with .retrieval_errors }}
+            {{ if gt .mean 0.0 }}
+                {{ template "scenario_metric" (dict
+                    "class" "large"
+                    "name" "Retrieval errors"
+                    "description" "A running accumulation of errors encountered by read agents when calling <code>get_agent_activity</code>."
+                    "content" (tmpl.Exec "mixed_arc_get_agent_activity_retrieval_errors" .)
+                ) }}
+            {{ end }}
+        {{ end }}
+
+        {{ with .open_connections.partitions }}
+            {{ template "scenario_metric" (dict
+                "name" "Open connections"
+                "description" "The number of currently open connections to other conductors, partitioned by agent behaviour."
+                "content" (tmpl.Exec "mixed_arc_get_agent_activity_open_connections" $.scenario_metrics.open_connections)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Final error count"
+            "description" "The total number of errors accumulated across all agents over the run."
+            "content" (tmpl.Exec "scalar" (dict
+                "value" .error_count
+            ))
+        ) }}
+    {{ end }}
+</div>
+
