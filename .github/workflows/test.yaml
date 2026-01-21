@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ ubuntu-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -325,8 +325,8 @@ jobs:
         uses: tj-actions/changed-files@v47
         with:
           files: |
-            '**/*.nix'
-            'flake.lock'
+            **/*.nix
+            flake.lock
 
       - name: Maximize build space
         if: runner.os == 'Linux' && steps.filter.outputs.any_changed == 'true'
