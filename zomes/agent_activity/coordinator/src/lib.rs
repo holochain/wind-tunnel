@@ -14,7 +14,12 @@ fn create_sample_entry(value: String) -> ExternResult<ActionHash> {
 
 #[hdk_extern]
 fn get_agent_activity_full(agent: AgentPubKey) -> ExternResult<AgentActivity> {
-    get_agent_activity(agent, ChainQueryFilter::new(), ActivityRequest::Full)
+    get_agent_activity(
+        agent,
+        ChainQueryFilter::new(),
+        ActivityRequest::Full,
+        GetOptions::default(),
+    )
 }
 
 #[hdk_extern]

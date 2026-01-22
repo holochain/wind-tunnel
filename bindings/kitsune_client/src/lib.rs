@@ -2,7 +2,7 @@ use anyhow::Context;
 use bytes::Bytes;
 use kitsune2::default_builder;
 use kitsune2_api::{
-    AgentId, BoxFut, Builder, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler,
+    AgentId, BoxFut, Builder, Config, DhtArc, DynKitsune, DynLocalAgent, DynSpace, DynSpaceHandler,
     K2Result, KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
 };
 use kitsune2_core::{
@@ -26,7 +26,11 @@ impl SpaceHandler for WtSpaceHandler {}
 #[derive(Debug)]
 struct WtKitsuneHandler;
 impl KitsuneHandler for WtKitsuneHandler {
-    fn create_space(&self, _space: SpaceId) -> BoxFut<'_, K2Result<DynSpaceHandler>> {
+    fn create_space(
+        &self,
+        _space: SpaceId,
+        _config: Option<&Config>,
+    ) -> BoxFut<'_, K2Result<DynSpaceHandler>> {
         let space_handler: DynSpaceHandler = Arc::new(WtSpaceHandler);
         Box::pin(async move { Ok(space_handler) })
     }
@@ -73,7 +77,7 @@ impl WtChatter {
             .config
             .set_module_config(&CoreBootstrapModConfig {
                 core_bootstrap: CoreBootstrapConfig {
-                    server_url: bootstrap_server_url.to_string(),
+                    server_url: Some(bootstrap_server_url.to_string()),
                     ..Default::default()
                 },
             })?;
@@ -99,7 +103,10 @@ impl WtChatter {
         kitsune.register_handler(Arc::new(WtKitsuneHandler)).await?;
         // This will call the op store factory's `create` method.
         let space = kitsune
-            .space(SpaceId::from(Bytes::copy_from_slice(space_id.as_bytes())))
+            .space(
+                SpaceId::from(Bytes::copy_from_slice(space_id.as_bytes())),
+                None,
+            )
             .await?;
 
         log::info!("created chatter with id {}", agent.agent());
