@@ -198,6 +198,7 @@ fn commit_two_party(responses: Vec<PreflightResponse>) -> ExternResult<()> {
             agent.clone(),
             ChainQueryFilter::new(),
             ActivityRequest::Full,
+            GetOptions::default(),
         )?;
     }
 
