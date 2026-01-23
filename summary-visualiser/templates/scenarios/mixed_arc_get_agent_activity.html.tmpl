@@ -27,10 +27,9 @@
 {{ end }}
 
 {{ define "mixed_arc_get_agent_activity_open_connections" }}
-    {{ range .partitions }}
-        {{ $key := (index .key 0) }}
+    {{ range . }}
         {{ template "scenario_metric_content_item" (dict
-            "name" (print $key.value)
+            "name" (tmpl.Exec "composite_key" .key)
             "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
         ) }}
     {{ end }}
@@ -88,7 +87,7 @@
             {{ template "scenario_metric" (dict
                 "name" "Open connections"
                 "description" "The number of currently open connections to other conductors, partitioned by agent behaviour."
-                "content" (tmpl.Exec "mixed_arc_get_agent_activity_open_connections" $.scenario_metrics.open_connections)
+                "content" (tmpl.Exec "mixed_arc_get_agent_activity_open_connections" .)
             ) }}
         {{ end }}
 
