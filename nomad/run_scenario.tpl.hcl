@@ -44,8 +44,8 @@ job "{{ (ds "vars").scenario_name }}" {
   }
 
   dynamic "group" {
-    for_each = {{ index (ds "vars") "behaviours" | default (coll.Slice "") | toJSON }}
-    labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value}"]
+    for_each = {{- $a := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- if gt (len $a) 0 -}}{{ $a | toJSON }}{{- else -}}{{ (coll.Slice (dict "behaviour" "")) | toJSON }}{{- end }}
+    labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value.behaviour}"]
 
     content {
       restart {
@@ -125,7 +125,7 @@ job "{{ (ds "vars").scenario_name }}" {
           RUST_LOG          = "info"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS        = "{{ mul (index (ds "vars") "agents_per_node" | default 1) (len (index (ds "vars") "behaviours" | default (coll.Slice "") )) }}"
+          MIN_AGENTS        = "{{- $assignments := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- $sum := 0 -}}{{- range $assignments -}}{{- $nodes := (index . "nodes" | default 1) -}}{{- $agents := (index . "agents" | default 1) -}}{{- $sum = add $sum (mul $nodes $agents) -}}{{- end -}}{{- if eq $sum 0 -}}1{{- else -}}{{ $sum }}{{- end -}}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           WT_HOLOCHAIN_PATH = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
         }
@@ -137,9 +137,11 @@ job "{{ (ds "vars").scenario_name }}" {
           args = compact([
             "--duration=${var.duration}",
             "--reporter=${var.reporter}",
-            group.value != "" ? "--behaviour=${group.value}:1" : null,
+            group.value.behaviour != "" ?
+              "--behaviour=${group.value.behaviour}:${lookup(group.value, "nodes", 1)}" :
+              null,
             var.run_id != null ? "--run-id=${var.run_id}" : null,
-            "--agents={{ index (ds "vars") "agents_per_node" | default 1 }}",
+            "--agents=${lookup(group.value, "agents", 1)}",
             "--no-progress"
           ])
         }

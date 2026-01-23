@@ -11,8 +11,12 @@ A simple Example:
 ```json
 {
   "scenario_name": "app_install",
-  "behaviours": [
-    "large"
+  "assignments": [
+    {
+      "behaviour": "large",
+      "nodes": 2,
+      "agents": 5
+    }
   ]
 }
 ```
@@ -21,7 +25,10 @@ The following variables are available:
 
 - `scenario_name`: The name of the scenario you want to run. (**required**)
 - `duration`: The duration of the scenario in seconds. (**required**)
-- `behaviours`: A list of behaviours to apply to the scenario. (_optional_, defaults to `[""]`)
+- `assignments`: A list of assignments to apply to the scenario. (_optional_, defaults to `[{"behaviour": ""}]`)
+  - `behaviour`: The behaviour to apply to the nodes in this assignment. (_optional_, defaults to `""`)
+  - `nodes`: The number of nodes to run with this behaviour. (_optional_, defaults to `1`)
+  - `agents`: The number of agents to run with this behaviour. (_optional_, defaults to `1`)
 - `connection_string`: The connection string to the Holochain conductor. (_optional_, defaults to `ws://localhost:8888`)
 - `run_id`: The ID of the run to distinguish it from other runs. (_optional_, defaults to `null`)
 - `agents_per_node`: The number of agents per node. (_optional_, defaults to `1`)
