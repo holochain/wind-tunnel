@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{KitsuneAgentContext, KitsuneRunnerContext};
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use kitsune_client_instrumented::WtChatter;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_runner::prelude::{

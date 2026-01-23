@@ -1,7 +1,7 @@
 use crate::model::SummaryOutput;
 use anyhow::Context;
-use futures::future::BoxFuture;
 use futures::FutureExt;
+use futures::future::BoxFuture;
 use scenario::*;
 use wind_tunnel_summary_model::RunSummary;
 

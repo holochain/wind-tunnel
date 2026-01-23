@@ -177,7 +177,9 @@ fn wait_for_receipts_for_action(
             break 'wait_for_receipts;
         }
         // not complete yet, will try again next tick
-        log::debug!("Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}");
+        log::debug!(
+            "Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}"
+        );
         std::thread::sleep(std::time::Duration::from_secs(5));
     }
 

@@ -1,10 +1,10 @@
-use crate::report::{ReportCollector, ReportMetric};
 use crate::OperationRecord;
+use crate::report::{ReportCollector, ReportMetric};
 
 use influxdb::{InfluxDbWriteable, Timestamp, WriteQuery};
 use influxive_core::DataType;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
 use tokio::sync::mpsc::UnboundedSender;

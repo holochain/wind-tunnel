@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use crate::analyze::{counter_stats, gauge_stats, standard_timing_stats};
 use crate::model::{CounterStats, GaugeStats, StandardTimingsStats};
-use crate::partition::{partition_by_tags, Partition};
+use crate::partition::{Partition, partition_by_tags};
 use crate::{
     frame::LoadError,
     query::host_metrics::{HostMetricField, Values as _},

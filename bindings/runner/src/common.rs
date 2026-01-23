@@ -1,14 +1,14 @@
-use crate::bin_path::{holochain_path, WT_HOLOCHAIN_PATH_ENV};
+use crate::bin_path::{WT_HOLOCHAIN_PATH_ENV, holochain_path};
 use crate::build_info::holochain_build_info;
 use crate::context::HolochainAgentContext;
 use crate::holochain_runner::{HolochainConfig, HolochainRunner};
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
-use holochain_client_instrumented::prelude::{
-    handle_api_err, AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload,
-    ClientAgentSigner,
-};
 use holochain_client_instrumented::ToSocketAddr;
+use holochain_client_instrumented::prelude::{
+    AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
+    handle_api_err,
+};
 use holochain_conductor_api::{AppInfo, CellInfo};
 use holochain_types::prelude::*;
 use holochain_types::prelude::{
@@ -798,19 +798,19 @@ async fn start_holochain_conductor(
     } else {
         log::info!("Successfully cleaned up the conductor files after error");
     }
-    if let Some(parent) = conductor_root_path.parent() {
-        if fs::remove_dir(parent).is_ok() {
-            log::info!("Successfully cleaned up all conductor directories after error");
-        }
+    if let Some(parent) = conductor_root_path.parent()
+        && fs::remove_dir(parent).is_ok()
+    {
+        log::info!("Successfully cleaned up all conductor directories after error");
     }
 
-    if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>() {
-        if io_error.kind() == io::ErrorKind::NotFound {
-            if let Err(_) | Ok("holochain") = env::var(WT_HOLOCHAIN_PATH_ENV).as_deref() {
-                err = err.context("'holochain' binary not found in your PATH");
-            } else {
-                err = err.context(format!("Cannot run 'holochain' binary found at the path provided with '{WT_HOLOCHAIN_PATH_ENV}'"));
-            }
+    if let Some(io_error) = err.root_cause().downcast_ref::<io::Error>()
+        && io_error.kind() == io::ErrorKind::NotFound
+    {
+        if let Err(_) | Ok("holochain") = env::var(WT_HOLOCHAIN_PATH_ENV).as_deref() {
+            err = err.context("'holochain' binary not found in your PATH");
+        } else {
+            err = err.context(format!("Cannot run 'holochain' binary found at the path provided with '{WT_HOLOCHAIN_PATH_ENV}'"));
         }
     }
 

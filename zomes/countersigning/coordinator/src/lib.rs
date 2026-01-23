@@ -115,7 +115,7 @@ fn start_two_party(with_other: AgentPubKey) -> ExternResult<PreflightResponse> {
         e => {
             return Err(wasm_error!(WasmErrorInner::Guest(format!(
                 "Unexpected response: {e:?}"
-            ))))
+            ))));
         }
     };
 
