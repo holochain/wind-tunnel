@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.6.0](https://github.com/holochain/wind-tunnel/compare/v0.5.0...v0.6.0)\] - 2026-01-23
+
+### Features
+
+- Check summary html on pre commit (#397) by @pdaoust in [#397](https://github.com/holochain/wind-tunnel/pull/397)
+  - Feat: check summary visualiser templates and HTML output on commit, when either the templates, the summary visualiser tool itself, or the flake file have changed
+- Remove extra filtering after fix in Holochain 0.6.x by @cdunster
+  - See https://github.com/holochain/holochain/issues/4255.
+- Update release url by @matthme
+- Upgrade to Holochain version 0.6 by @ThetaSinner
+- Scenario template for `mixed_arc_must_get_agent_activity`, updates to `write_validated_must_get_agent_activity` (#444) by @pdaoust in [#444](https://github.com/holochain/wind-tunnel/pull/444)
+  - Chore: refactor templates for reuse with must_get_agent_acitivty scenarios * feat: scenario template for mixed_arc_must_get_agent_activity
+
+### Bug Fixes
+
+- Update flake.lock only selectively to try and evade derivation error by @matthme
+
+### Miscellaneous Tasks
+
+- Remove invalid comment about getting links by @cdunster
+
+### Build System
+
+- Upgrade kitsune2 input to 0.3 in nix flake by @jost-s
+
+### CI
+
+- Fix pkill call in kitsune2 test by @cdunster in [#486](https://github.com/holochain/wind-tunnel/pull/486)
+- Update `holochain-bin-url` in Nomad workflows to `v0.6.0` by @cdunster
+- Run `archive_bundle` step in ci only if nix files changed (#473) by @veeso in [#473](https://github.com/holochain/wind-tunnel/pull/473)
+  - Ci: Run `archive_bundle` step in ci only if nix files changed
+- Fix reference to `holochain-bin-url` variable by @cdunster in [#470](https://github.com/holochain/wind-tunnel/pull/470)
+  - The variable name has been changed but the reference to it was not updated to the new name.
+
+### Refactor
+
+- `get_peer_list_randomized` to reduce iterators by @cdunster
+  - The code was unnecessarily iterating and collecting multiple times.
+
+### Styling
+
+- Format the `bytes` dev-dependency in the standard way by @cdunster in [#317](https://github.com/holochain/wind-tunnel/pull/317)
+
 ## \[[0.5.0](https://github.com/holochain/wind-tunnel/compare/v0.5.0-dev.0...v0.5.0)\] - 2026-01-16
 
 ### Features
