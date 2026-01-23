@@ -221,7 +221,7 @@ jobs:
           nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --signal-server-url "ws://$kitsune_host" --duration 15 --agents 2
 
           # Stop servers
-          pkill kitsune2-bootstrap-srv || true
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
