@@ -1,16 +1,14 @@
 {
   "scenario_name": "dht_sync_lag",
   "duration": 300,
-  "behaviours": [
-    "write",
-    "write",
-    "write",
-    "write",
-    "write",
-    "record_lag",
-    "record_lag",
-    "record_lag",
-    "record_lag",
-    "record_lag"
+  "assignments": [
+    {
+      "behaviour": "write",
+      "nodes": 5
+    },
+    {
+      "behaviour": "record_lag",
+      "nodes": 5
+    }
   ]
 }

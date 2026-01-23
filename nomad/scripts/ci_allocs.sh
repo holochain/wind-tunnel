@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Create a CSV file with allocation details for a given job.
 # The CSV file will have the following columns:
-# job_name,scenario_name,alloc_id,run_id,started_at,duration,behaviours
+# job_name,scenario_name,alloc_id,run_id,started_at,duration,peer_count,behaviours
 # Parameters:
 # $1 - output_file: The path to the output CSV file.
 # $2 - job_name: The name of the Nomad job.
@@ -25,10 +25,12 @@ function make_allocs_csv() {
 
     local duration
     local behaviours
+    local peer_count
     local csv_behaviours
 
     duration=$(jq -e -r '.duration' "${vars_path}/${job_name}.json")
-    behaviours=$(jq -r '(.behaviours // [""])[]' "${vars_path}/${job_name}.json")
+    behaviours=$(jq -r '(.assignments // [{ "behaviour": "default" }])[].behaviour' "${vars_path}/${job_name}.json")
+    peer_count=$(jq -r '(.assignments // []) | map((.agents // 1) * (.nodes // 1)) | add // 0' "${vars_path}/${job_name}.json")
     csv_behaviours=""
     for behaviour in $behaviours; do
         if [ -z "$csv_behaviours" ]; then
@@ -39,7 +41,7 @@ function make_allocs_csv() {
     done
     for alloc_id in $alloc_ids; do
         # job_name,scenario_name,alloc_id,run_id,started_at,duration,behaviours
-        echo "${job_name},${scenario_name},${alloc_id},${run_id},${started_at},${duration},${csv_behaviours}" >> "${output_file}"
+        echo "${job_name},${scenario_name},${alloc_id},${run_id},${started_at},${duration},${peer_count},${csv_behaviours}" >> "${output_file}"
     done
 }
 
@@ -84,12 +86,13 @@ function generate_run_summary() {
     local duration
     local behaviours
 
-    while IFS=',' read -r _job_name scenario_name alloc_id run_id started_at duration behaviours; do
-        echo "Processing line: $run_id / $scenario_name / $alloc_id / $started_at / $duration / $behaviours"
+    while IFS=',' read -r _job_name scenario_name alloc_id run_id started_at duration peer_count behaviours; do
+        echo "Processing line: $run_id / $scenario_name / $alloc_id / $started_at / $duration / $peer_count / $behaviours"
         jq -cn \
           --arg run_id "$run_id" \
           --arg scenario_name "$scenario_name" \
           --argjson started_at "$started_at" \
+          --argjson peer_count "$peer_count" \
           --arg behaviours "${behaviours:-}" \
           --arg wind_tunnel_version "$wind_tunnel_version" \
           --argjson holochain_build_info "$holochain_build_info" \
@@ -102,8 +105,8 @@ function generate_run_summary() {
                 started_at: $started_at,
                 duration: $duration,
                 assigned_behaviours: (reduce $bs[] as $b ({}; .[$b] += 1)),
-                peer_count: ($bs | length),
-                peer_end_count: ($bs | length),
+                peer_count: $peer_count,
+                peer_end_count: $peer_count,
                 env: {},
                 holochain_build_info: $holochain_build_info,
                 wind_tunnel_version: $wind_tunnel_version
@@ -147,4 +150,3 @@ case $cmd in
         exit 1
         ;;
 esac
-

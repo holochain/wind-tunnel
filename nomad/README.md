@@ -2,7 +2,9 @@
 
 ## Create new jobs
 
-In order to define new jobs, you just need to create a new vars file in the `./vars` directory with a JSON file with the name of the job you want to create. For example, if you want to create a job for the `app_install` scenario, you can create a file named `app_install.json` in the `nomad/vars` directory.
+In order to define new jobs, you just need to create a new vars file in the `./vars` directory with a JSON file with the
+name of the job you want to create. For example, if you want to create a job for the `app_install` scenario, you can
+create a file named `app_install.json` in the `nomad/vars` directory.
 
 ### Vars file syntax
 
@@ -11,8 +13,13 @@ A simple Example:
 ```json
 {
   "scenario_name": "app_install",
-  "behaviours": [
-    "large"
+  "duration": 300,
+  "assignments": [
+    {
+      "behaviour": "large",
+      "nodes": 2,
+      "agents": 5
+    }
   ]
 }
 ```
@@ -21,12 +28,15 @@ The following variables are available:
 
 - `scenario_name`: The name of the scenario you want to run. (**required**)
 - `duration`: The duration of the scenario in seconds. (**required**)
-- `behaviours`: A list of behaviours to apply to the scenario. (_optional_, defaults to `[""]`)
+- `assignments`: A list of assignments to apply to the scenario. (_optional_, defaults to `[{"behaviour": "default"}]`)
+  - `behaviour`: The behaviour to apply to the nodes in this assignment. (_optional_, defaults to `"default"`)
+  - `nodes`: The number of nodes to run with this behaviour. (_optional_, defaults to `1`)
+  - `agents`: The number of agents to run on each node with this behaviour. (_optional_, defaults to `1`)
 - `connection_string`: The connection string to the Holochain conductor. (_optional_, defaults to `ws://localhost:8888`)
 - `run_id`: The ID of the run to distinguish it from other runs. (_optional_, defaults to `null`)
-- `agents_per_node`: The number of agents per node. (_optional_, defaults to `1`)
-- `min_agents`: The minimum number of agents to run the scenario with. (_optional_, defaults to `2`)
 - `reporter`: The reporter type to use. (_optional_, defaults to `influx-file`)
+- `min_agents`: The minimum number of agents each agent will wait for, including itself, before running some
+  scenarios. (_optional_, defaults to `2`)
 
 ## Generate Nomad Jobs
 
@@ -37,10 +47,14 @@ nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/demo
 nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/canonical
 ```
 
-This will generate the nomad job files in the `nomad/job-variants/demo` and `nomad/job-variants/canonical` directories. The job files will be named after the scenario name, with the `.nomad.hcl` extension.
+This will generate the nomad job files in the `nomad/job-variants/demo` and `nomad/job-variants/canonical` directories.
+The job files will be named after the scenario name, with the `.nomad.hcl` extension.
 
-Mind that in order to generate the jobs, you need to have `gomplate` installed. You can use the one provided by nix shell in this repository or download the latest version from the [gomplate releases page](https://github.com/hairyhenderson/gomplate/releases).
+Mind that in order to generate the jobs, you need to have `gomplate` installed. You can use the one provided by nix
+shell in this repository or download the latest version from
+the [gomplate releases page](https://github.com/hairyhenderson/gomplate/releases).
 
 ## Jobs template
 
-Currently, all the jobs are generated from the same template, which is located in `nomad/run_scenario.tpl.hcl`. This template uses the variables defined in the vars file to generate the Nomad job file.
+Currently, all the jobs are generated from the same template, which is located in `nomad/run_scenario.tpl.hcl`. This
+template uses the variables defined in the vars file to generate the Nomad job file.

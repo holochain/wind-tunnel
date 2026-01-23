@@ -1,16 +1,18 @@
 {
   "scenario_name": "mixed_arc_get_agent_activity",
   "duration": 300,
-  "behaviours": [
-    "zero_read",
-    "zero_read",
-    "zero_read",
-    "zero_read",
-    "zero_read",
-    "zero_read",
-    "zero_write",
-    "zero_write",
-    "full_write",
-    "full_write"
+  "assignments": [
+    {
+      "behaviour": "zero_read",
+      "nodes": 6
+    },
+    {
+      "behaviour": "zero_write",
+      "nodes": 2
+    },
+    {
+      "behaviour": "full_write",
+      "nodes": 2
+    }
   ]
 }
