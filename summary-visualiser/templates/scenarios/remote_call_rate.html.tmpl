@@ -9,14 +9,40 @@
 ) }}
 
 <div class="scenario-metrics">
-    {{ template "scenario_metric" (dict
-        "name" "Dispatch timing"
-        "description" "The time between sending a remote call and the remote handler being invoked."
-        "content" (tmpl.Exec "timings_overall_and_per_agent" .scenario_metrics.dispatch_timing)
-    ) }}
-    {{ template "scenario_metric" (dict
-        "name" "Round-trip timing"
-        "description" "The total elapsed time to get a response to the client."
-        "content" (tmpl.Exec "timings_overall_and_per_agent" .scenario_metrics.round_trip_timing)
-    ) }}
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Dispatch timing"
+            "description" "The time between sending a remote call and the remote handler being invoked."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .dispatch_timing)
+        ) }}
+        {{ template "scenario_metric" (dict
+            "name" "Round-trip timing"
+            "description" "The total elapsed time to get a response to the client."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .round_trip_timing)
+        ) }}
+
+        {{ if .p2p_request_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "Outgoing p2p request duration"
+                "description" "The time spent sending an outgoing p2p request awaiting the response"
+                "content" (tmpl.Exec "timing_and_trend" .p2p_request_duration)
+            ) }}
+        {{ end }}
+
+        {{ if .p2p_handle_request_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "Incoming p2p request handling duration"
+                "description" "The time spent handling an incoming p2p request"
+                "content" (tmpl.Exec "timing_and_trend" .p2p_handle_request_duration)
+            ) }}
+        {{ end }}
+
+        {{ if .p2p_handle_request_ignored_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Incoming p2p requests ignored"
+                "description" "The number of incoming p2p requests that have been ignored."
+                "content" (tmpl.Exec "scalar" (dict "value" .p2p_handle_request_ignored_count))
+            ) }}
+        {{ end }}
+    {{ end }}
 </div>

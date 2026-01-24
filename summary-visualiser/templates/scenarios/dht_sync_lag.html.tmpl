@@ -14,7 +14,7 @@ because your code editor's syntax highlighter can make it look more legible. */}
 
 {{/*
 Render the use time for a DB connection pool.
-Corresponding Rust type: `holochain_metrics::StandardTimingStats`
+Corresponding Rust type: `holochain_metrics::StandardTimingsStats`
 */}}
 {{ define "dht_sync_lag_db_connection_use_time" }}
     {{ template "scenario_metric_content_item" (dict
@@ -32,7 +32,7 @@ Two properties:
 * `utilization`: DB connection pool utilization metrics.
   Corresponding Rust type: `Option<BTreeMap<String, holochain_metrics::GaugeStats>>`
 * `use_time`: DB connection use time metrics.
-  Corresponding Rust type: `Option<holochain_metrics::StandardTimingStats>`
+  Corresponding Rust type: `Option<holochain_metrics::StandardTimingsStats>`
 */}}
 {{ define "dht_sync_lag_db_connection"}}
     {{ with .utilization }}
@@ -78,7 +78,7 @@ Corresponding Rust type: `BTreeMap<String, holochain_metrics::GaugeStats>`
 {{ end }}
 
 {{/* And for countersigning agents.
-Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStats>`
+Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingsStats>`
 */}}
 {{ define "dht_sync_lag_countersigning_workflow_duration" }}
     {{ range $agent, $value := .}}
@@ -230,6 +230,30 @@ Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStat
                     "utilization" .dht_db_utilization
                     "use_time" .dht_db_connection_use_time
                 ))
+            ) }}
+        {{ end }}
+
+        {{ if .p2p_request_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "Outgoing p2p request duration"
+                "description" "The time spent sending an outgoing p2p request awaiting the response"
+                "content" (tmpl.Exec "timing_and_trend" .p2p_request_duration)
+            ) }}
+        {{ end }}
+
+        {{ if .p2p_handle_request_duration }}
+            {{ template "scenario_metric" (dict
+                "name" "Incoming p2p request handling duration"
+                "description" "The time spent handling an incoming p2p request"
+                "content" (tmpl.Exec "timing_and_trend" .p2p_handle_request_duration)
+            ) }}
+        {{ end }}
+
+        {{ if .p2p_handle_request_ignored_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Incoming p2p requests ignored"
+                "description" "The number of incoming p2p requests that have been ignored."
+                "content" (tmpl.Exec "scalar" (dict "value" .p2p_handle_request_ignored_count))
             ) }}
         {{ end }}
     {{ end }}
