@@ -9,14 +9,18 @@
 ) }}
 
 <div class="scenario-metrics">
-    {{ template "scenario_metric" (dict
-        "name" "Dispatch timing"
-        "description" "The time between sending a remote call and the remote handler being invoked."
-        "content" (tmpl.Exec "timings_overall_and_per_agent" .scenario_metrics.dispatch_timing)
-    ) }}
-    {{ template "scenario_metric" (dict
-        "name" "Round-trip timing"
-        "description" "The total elapsed time to get a response to the client."
-        "content" (tmpl.Exec "timings_overall_and_per_agent" .scenario_metrics.round_trip_timing)
-    ) }}
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Dispatch timing"
+            "description" "The time between sending a remote call and the remote handler being invoked."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .dispatch_timing)
+        ) }}
+        {{ template "scenario_metric" (dict
+            "name" "Round-trip timing"
+            "description" "The total elapsed time to get a response to the client."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .round_trip_timing)
+        ) }}
+
+        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
+    {{ end }}
 </div>
