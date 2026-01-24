@@ -1,4 +1,5 @@
 pub mod holochain_metrics;
+pub mod holochain_p2p_metrics;
 pub mod host_metrics;
 
 use std::collections::BTreeMap;

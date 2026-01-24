@@ -59,7 +59,7 @@ pub async fn query_wasm_usage_by_fn(
     }
 }
 
-/// Query `hc.conductor.post_commit.duration` metric and compute its stats.
+/// Query `hc.conductor.post_commit.duration.s` metric and compute its stats.
 pub async fn query_post_commit_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
@@ -69,21 +69,6 @@ pub async fn query_post_commit_duration(
         Err(e) => match e.downcast_ref::<LoadError>() {
             Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
             None => Err(e).context("query post_commit duration"),
-        },
-    }
-}
-
-/// Query `hc.holochain_p2p.request.duration` metric and compute its stats.
-#[allow(dead_code)]
-pub async fn query_p2p_request_duration(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-) -> anyhow::Result<Option<StandardTimingsStats>> {
-    match query_duration(client, summary, "hc.holochain_p2p.request.duration.s", None).await {
-        Ok(duration) => Ok(Some(duration)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e).context("query p2p request duration"),
         },
     }
 }
