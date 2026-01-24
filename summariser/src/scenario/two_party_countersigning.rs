@@ -5,6 +5,7 @@ use crate::model::{
     SummaryOutput,
 };
 use crate::query;
+use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
@@ -18,6 +19,7 @@ struct TwoPartyCountersigningSummary {
     initiated_timing: PartitionedTimingStats,
     initiated_success_rate: PartitionedRateStats,
     initiated_failure_rate: PartitionedRateStats,
+    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_countersigning_two_party(
@@ -97,7 +99,7 @@ pub(crate) async fn summarize_countersigning_two_party(
         .await;
 
     SummaryOutput::new(
-        summary,
+        summary.clone(),
         TwoPartyCountersigningSummary {
             accepted_timing: partitioned_timing_stats(accepted_timing, "value", "10s", &["agent"])
                 .context("Accepted duration timing")?,
@@ -112,6 +114,7 @@ pub(crate) async fn summarize_countersigning_two_party(
             .context("Initiated duration timing")?,
             initiated_success_rate: initiated_success,
             initiated_failure_rate: initiated_failures,
+            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
         },
         host_metrics,
     )

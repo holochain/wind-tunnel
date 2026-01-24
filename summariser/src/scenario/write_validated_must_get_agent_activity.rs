@@ -5,6 +5,7 @@ use crate::analyze::{
 };
 use crate::model::{CounterStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput};
 use crate::query;
+use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,7 @@ struct WriteValidatedMustGetAgentActivitySummary {
     create_validated_sample_entry_zome_calls: PartitionedTimingStats,
     retrieval_errors: PartitionedTimingStats,
     error_count: usize,
+    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_write_validated_must_get_agent_activity(
@@ -105,7 +107,8 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
                 &["agent"],
             )
             .context("Partitioned timing stats for retrieval errors")?,
-            error_count: query::zome_call_error_count(client, &summary).await?,
+            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
         },
         host_metrics,
     )
