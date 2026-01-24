@@ -6,6 +6,7 @@ use crate::model::{
 };
 use crate::query;
 use crate::query::holochain_metrics::query_workflow_duration;
+use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,7 @@ struct ZeroArcCreateValidatedSummary {
     app_validation_workflow_duration: Option<StandardTimingsStats>,
     system_validation_workflow_duration: Option<StandardTimingsStats>,
     error_count: usize,
+    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_zero_arc_create_data_validated(
@@ -83,6 +85,7 @@ pub(crate) async fn summarize_zero_arc_create_data_validated(
             )
             .await?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
         },
         host_metrics,
     )
