@@ -6,8 +6,10 @@ use crate::model::{
 };
 use crate::query::holochain_metrics::{
     query_cascade_duration, query_database_connection_use_time, query_database_utilization,
-    query_database_utilization_by_id, query_post_commit_duration, query_wasm_usage,
-    query_wasm_usage_by_fn, query_workflow_duration, query_workflow_duration_by_agent,
+    query_database_utilization_by_id, query_p2p_handle_request_duration,
+    query_p2p_handle_request_ignored_count, query_p2p_request_duration, query_post_commit_duration,
+    query_wasm_usage, query_wasm_usage_by_fn, query_workflow_duration,
+    query_workflow_duration_by_agent,
 };
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
@@ -41,6 +43,9 @@ struct DhtSyncLagSummary {
     conductor_db_connection_use_time: Option<StandardTimingsStats>,
     dht_db_utilization: Option<GaugeStats>,
     dht_db_connection_use_time: Option<StandardTimingsStats>,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_dht_sync_lag(
@@ -157,6 +162,13 @@ pub(crate) async fn summarize_dht_sync_lag(
                 &client,
                 &summary,
                 HolochainDatabaseKind::Dht,
+            )
+            .await?,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
+            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
+                &client, &summary,
             )
             .await?,
         },

@@ -2,9 +2,13 @@ use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
-    SummaryOutput,
+    StandardTimingsStats, SummaryOutput,
 };
 use crate::query;
+use crate::query::holochain_metrics::{
+    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
+    query_p2p_request_duration,
+};
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
@@ -18,6 +22,9 @@ struct TwoPartyCountersigningSummary {
     initiated_timing: PartitionedTimingStats,
     initiated_success_rate: PartitionedRateStats,
     initiated_failure_rate: PartitionedRateStats,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_countersigning_two_party(
@@ -97,7 +104,7 @@ pub(crate) async fn summarize_countersigning_two_party(
         .await;
 
     SummaryOutput::new(
-        summary,
+        summary.clone(),
         TwoPartyCountersigningSummary {
             accepted_timing: partitioned_timing_stats(accepted_timing, "value", "10s", &["agent"])
                 .context("Accepted duration timing")?,
@@ -112,6 +119,13 @@ pub(crate) async fn summarize_countersigning_two_party(
             .context("Initiated duration timing")?,
             initiated_success_rate: initiated_success,
             initiated_failure_rate: initiated_failures,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
+            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
+                &client, &summary,
+            )
+            .await?,
         },
         host_metrics,
     )

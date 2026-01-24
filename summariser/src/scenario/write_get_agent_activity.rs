@@ -1,6 +1,10 @@
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::counter_stats;
-use crate::model::{CounterStats, PartitionedTimingStats, SummaryOutput};
+use crate::model::{CounterStats, PartitionedTimingStats, StandardTimingsStats, SummaryOutput};
+use crate::query::holochain_metrics::{
+    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
+    query_p2p_request_duration,
+};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
@@ -13,6 +17,9 @@ struct WriteGetAgentActivitySummary {
     highest_observed_action_seq: CounterStats,
     get_agent_activity_full_zome_calls: PartitionedTimingStats,
     error_count: usize,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_write_get_agent_activity(
@@ -55,7 +62,14 @@ pub(crate) async fn summarize_write_get_agent_activity(
                 &["agent"],
             )
             .context("Timing stats for zome call get_agent_activity_full")?,
-            error_count: query::zome_call_error_count(client, &summary).await?,
+            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
+            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
+                &client, &summary,
+            )
+            .await?,
         },
         host_metrics,
     )
