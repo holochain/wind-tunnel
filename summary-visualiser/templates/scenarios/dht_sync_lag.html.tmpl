@@ -14,7 +14,7 @@ because your code editor's syntax highlighter can make it look more legible. */}
 
 {{/*
 Render the use time for a DB connection pool.
-Corresponding Rust type: `holochain_metrics::StandardTimingStats`
+Corresponding Rust type: `holochain_metrics::StandardTimingsStats`
 */}}
 {{ define "dht_sync_lag_db_connection_use_time" }}
     {{ template "scenario_metric_content_item" (dict
@@ -32,7 +32,7 @@ Two properties:
 * `utilization`: DB connection pool utilization metrics.
   Corresponding Rust type: `Option<BTreeMap<String, holochain_metrics::GaugeStats>>`
 * `use_time`: DB connection use time metrics.
-  Corresponding Rust type: `Option<holochain_metrics::StandardTimingStats>`
+  Corresponding Rust type: `Option<holochain_metrics::StandardTimingsStats>`
 */}}
 {{ define "dht_sync_lag_db_connection"}}
     {{ with .utilization }}
@@ -78,7 +78,7 @@ Corresponding Rust type: `BTreeMap<String, holochain_metrics::GaugeStats>`
 {{ end }}
 
 {{/* And for countersigning agents.
-Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStats>`
+Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingsStats>`
 */}}
 {{ define "dht_sync_lag_countersigning_workflow_duration" }}
     {{ range $agent, $value := .}}
@@ -232,5 +232,7 @@ Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStat
                 ))
             ) }}
         {{ end }}
+
+        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
 </div>
