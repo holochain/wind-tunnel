@@ -1,5 +1,5 @@
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 use std::time::Instant;
@@ -8,7 +8,7 @@ fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
     start_conductor_and_configure_urls(ctx)?;
-    install_app(ctx, scenario_happ_path!("signal"), &"signal".into())?;
+    install_app(ctx, happ_path!("signal"), &"signal".into())?;
 
     Ok(())
 }

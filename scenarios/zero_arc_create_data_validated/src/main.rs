@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use holochain_types::prelude::Record;
 use holochain_types::prelude::{ActionHash, Timestamp};
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashSet;
 use std::time::SystemTime;
 use timed_and_validated_integrity::TimedSampleEntry;
@@ -26,7 +26,7 @@ fn agent_setup(
     start_conductor_and_configure_urls(ctx)?;
     install_app(
         ctx,
-        scenario_happ_path!("timed_and_validated"),
+        happ_path!("timed_and_validated"),
         &"timed_and_validated".to_string(),
     )?;
 

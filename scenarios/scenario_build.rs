@@ -1,11 +1,11 @@
-use happ_builder::{BuildOptions, HappBuilderResult, build_happs, required_tools_available};
+use happ_builder::{HappBuilderResult, HappManager};
 use std::{path::PathBuf, str::FromStr};
 
 /// Build the required DNA(s) and hApps for the scenario.
 /// The built DNA(s) will appear as `/dnas/<scenario-name>/<dna-name>.dna` from the project root.
 /// The built hApp(s) will appear as `/happs/<scenario-name>/<happ-name>.happ` from the project root.
 fn main() -> HappBuilderResult {
-    let scenario_dir = PathBuf::from_str(std::env!("CARGO_MANIFEST_DIR")).unwrap();
+    let scenario_dir = PathBuf::from_str(std::env!("CARGO_MANIFEST_DIR"))?;
     let dir_name = scenario_dir.file_name().unwrap().to_str().unwrap();
     let package_name = std::env!("CARGO_PKG_NAME");
     if package_name != dir_name {
@@ -22,10 +22,12 @@ fn main() -> HappBuilderResult {
         return Ok(());
     }
 
-    if !required_tools_available() {
+    let happ_builder = HappManager::default();
+
+    if happ_builder.required_tools_available().is_err() {
         println!("cargo:warning=Missing required tools for building hApps. Skipping hApp build.");
         return Ok(());
     }
 
-    build_happs(BuildOptions::default())
+    happ_builder.ensure_happs_available()
 }
