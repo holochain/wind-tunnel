@@ -65,7 +65,7 @@ fn agent_behaviour_zero(
     let network_stats = ctx
         .runner_context()
         .executor()
-        .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
+        .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
     let metric = ReportMetric::new("zero_arc_create_data_validated_open_connections")
         .with_tag("arc", "zero")
@@ -131,7 +131,7 @@ fn agent_behaviour_full(
     let network_stats = ctx
         .runner_context()
         .executor()
-        .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
+        .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
     let metric = ReportMetric::new("zero_arc_create_data_validated_open_connections")
         .with_tag("arc", "full")
