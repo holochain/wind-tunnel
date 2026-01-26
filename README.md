@@ -180,11 +180,7 @@ and then run:
 configure_influx
 ```
 
-4. Before running the scenario we want to set the `HOLOCHAIN_INFLUXIVE_FILE` variable in order to have holochain process record metrics and write them to a `.influx` file:
-```bash
-export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
-```
-5. Now you can run a scenario. Available scenario commands are documented in the scenario's README, for example in `scenarios/app_install/README.md`:
+4. Now you can run a scenario. Available scenario commands are documented in the scenario's README, for example in `scenarios/app_install/README.md`:
 
 ```
    RUST_LOG=info cargo run --package app_install -- --behaviour minimal --duration 300
@@ -197,11 +193,12 @@ However, since we want to record metrics and upload them to InfluxDB, we additio
 ```
 which will write the metrics to a file in the folder `./telegraf/metrics`.
 
-6. Once the scenario run has completed, we can upload the metrics to InfluxDB by running the following command:
+5. Once the scenario run has completed, we can upload the metrics to InfluxDB by running the following command:
 ```bash
 nix run .#local-upload-metrics
 ```
-7. With the metrics uploaded to InfluxDB we can now finally also run the summariser to generate a summary report:
+
+6. With the metrics uploaded to InfluxDB we can now finally also run the summariser to generate a summary report:
 ```
 cargo run summariser
 ```

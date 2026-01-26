@@ -1,6 +1,11 @@
 //! Provides the ability to configure and run a Holochain conductor as a [`Child`] process.
 
-use std::{fs, path::PathBuf, process::Stdio, time::Duration};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Stdio,
+    time::Duration,
+};
 
 use anyhow::{Context, anyhow};
 use holochain_conductor_api::{
@@ -154,8 +159,11 @@ impl HolochainRunner {
     /// Runs an instance of Holochain, using the passed [`HolochainConfig`]. Storing the [`Child`]
     /// process internally so it can be gracefully shutdown and clean up directories on
     /// [`Drop::drop`].
-    pub async fn run(config: &HolochainConfig) -> WindTunnelResult<Self> {
-        let conductor_root_path = config.conductor_config_root_path.to_path_buf();
+    pub async fn run(
+        config: &HolochainConfig,
+        holochain_influxive_file: &Path,
+    ) -> WindTunnelResult<Self> {
+        let conductor_root_path: PathBuf = config.conductor_config_root_path.to_path_buf();
         fs::create_dir_all(&conductor_root_path).with_context(|| {
             format!(
                 "Failed to create conductor root directory '{}'",
@@ -177,6 +185,7 @@ impl HolochainRunner {
 
         log::info!("Running a Holochain conductor");
         let mut holochain_handle = Command::new(&config.bin_path)
+            .env("HOLOCHAIN_INFLUXIVE_FILE", holochain_influxive_file)
             .arg("--config-path")
             .arg(conductor_config_path)
             .arg("--piped")
