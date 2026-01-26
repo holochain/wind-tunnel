@@ -94,7 +94,7 @@ sha256 = "abc123..." # The expected sha256 checksum of the hApp file to verify i
 
 When you build your scenario, the build script will read this section and fetch the required hApps.
 
-The sha256 checksum must be provided to determine whether the file has changed and needs to be re-downloaded. The hApp is only downloaded if the local version does not exist or its checksum differs from the one specified in `Cargo.toml`.
+The sha256 checksum must be provided to determine whether the file has changed and needs to be re-downloaded. The hApp is only downloaded if the local version does not exist or its checksum differs from the one specified in `Cargo.toml`. If the downloaded file's sha256 does not match the expected checksum, the build will fail with an error. This prevents the scenario where a corrupted or incorrect file would trigger re-downloads on every build.
 
 If you need to debug this step, you can run `cargo build -p <your-scenario-crate>` and check the `dnas` and `happs` directories.
 
