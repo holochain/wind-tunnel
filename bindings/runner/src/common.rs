@@ -730,6 +730,18 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
         path
     };
+    let holochain_metrics_path = {
+        let mut path: PathBuf = std::env::var("WT_METRICS_DIR")
+            .expect("WT_METRICS_DIR must be set.")
+            .into();
+        path.push(format!(
+            "holochain-{}-{}.influx",
+            ctx.runner_context().get_run_id(),
+            ctx.agent_name()
+        ));
+
+        path
+    };
     let agent_name = ctx.agent_name().to_string();
     ctx.get_mut()
         .holochain_config_mut()
@@ -739,19 +751,23 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 
     let config = ctx.get_mut().take_holochain_config().build()?;
 
-    ctx.get_mut().holochain_runner = match ctx
-        .runner_context()
-        .executor()
-        .execute_in_place(start_holochain_conductor(config, &conductor_root_path))
-    {
-        Ok(runner) => Some(runner),
-        Err(err) => {
-            log::error!("Failed to start Holochain conductor: {err}");
-            // force stop conductor if we failed to start it and return error
-            ctx.runner_context().force_stop_scenario();
-            return Err(err);
-        }
-    };
+    ctx.get_mut().holochain_runner =
+        match ctx
+            .runner_context()
+            .executor()
+            .execute_in_place(start_holochain_conductor(
+                config,
+                &conductor_root_path,
+                &holochain_metrics_path,
+            )) {
+            Ok(runner) => Some(runner),
+            Err(err) => {
+                log::error!("Failed to start Holochain conductor: {err}");
+                // force stop conductor if we failed to start it and return error
+                ctx.runner_context().force_stop_scenario();
+                return Err(err);
+            }
+        };
 
     ctx.get_mut().admin_ws_url = Some(
         format!("ws://127.0.0.1:{admin_port}")
@@ -771,8 +787,9 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 async fn start_holochain_conductor(
     config: HolochainConfig,
     conductor_root_path: &Path,
+    holochain_metrics_path: &Path,
 ) -> anyhow::Result<HolochainRunner> {
-    let mut err = match HolochainRunner::run(&config).await {
+    let mut err = match HolochainRunner::run(&config, holochain_metrics_path).await {
         Ok(runner) => return Ok(runner),
         Err(err) => err,
     };
