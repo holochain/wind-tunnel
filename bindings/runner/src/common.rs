@@ -613,8 +613,7 @@ where
                 fn_name,
                 ExternIO::encode(payload).context("Encoding failure")?,
             )
-            .await
-            .map_err(handle_api_err)?;
+            .await?;
 
         result
             .decode()
