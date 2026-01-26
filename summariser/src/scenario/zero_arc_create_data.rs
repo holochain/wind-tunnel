@@ -1,12 +1,15 @@
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_gauge_stats, partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
-    PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
+    PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, StandardTimingsStats,
+    SummaryOutput,
 };
 use crate::query;
+use crate::query::holochain_metrics;
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,6 +20,10 @@ struct ZeroArcCreateSummary {
     sync_lag_rate: PartitionedRateStats,
     open_connections: PartitionedGaugeStats,
     error_count: usize,
+    p2p_outgoing_request_duration: Option<StandardTimingsStats>,
+    p2p_outgoing_request_duration_by_tag: Option<BTreeMap<String, StandardTimingsStats>>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration_by_message_type: Option<BTreeMap<String, StandardTimingsStats>>,
 }
 
 pub(crate) async fn summarize_zero_arc_create_data(
@@ -55,6 +62,26 @@ pub(crate) async fn summarize_zero_arc_create_data(
         .try_aggregate()
         .await;
 
+    let p2p_outgoing_request_duration =
+        holochain_metrics::query_p2p_request_duration(&client, &summary)
+            .await
+            .context("Load p2p outgoing request duration")?;
+
+    let p2p_outgoing_request_duration_by_tag =
+        holochain_metrics::query_p2p_request_duration_by_tag(&client, &summary)
+            .await
+            .context("Load p2p outgoing request duration by tag")?;
+
+    let p2p_handle_request_duration =
+        holochain_metrics::query_p2p_handle_request_duration(&client, &summary)
+            .await
+            .context("Load p2p handle request duration")?;
+
+    let p2p_handle_request_duration_by_message_type =
+        holochain_metrics::query_p2p_handle_request_duration_by_message_type(&client, &summary)
+            .await
+            .context("Load p2p handle request duration by message type")?;
+
     SummaryOutput::new(
         summary.clone(),
         ZeroArcCreateSummary {
@@ -67,6 +94,10 @@ pub(crate) async fn summarize_zero_arc_create_data(
             open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
                 .context("Open connections")?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            p2p_outgoing_request_duration,
+            p2p_outgoing_request_duration_by_tag,
+            p2p_handle_request_duration,
+            p2p_handle_request_duration_by_message_type,
         },
         host_metrics,
     )

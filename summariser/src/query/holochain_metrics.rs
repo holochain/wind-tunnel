@@ -74,7 +74,6 @@ pub async fn query_post_commit_duration(
 }
 
 /// Query `hc.holochain_p2p.request.duration` metric and compute its stats.
-#[allow(dead_code)]
 pub async fn query_p2p_request_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
@@ -84,6 +83,71 @@ pub async fn query_p2p_request_duration(
         Err(e) => match e.downcast_ref::<LoadError>() {
             Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
             None => Err(e).context("query p2p request duration"),
+        },
+    }
+}
+
+/// Query `hc.holochain_p2p.request.duration` metric, partition results by message tag and compute their stats.
+pub async fn query_p2p_request_duration_by_tag(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+    match query_and_partition_duration(
+        client,
+        summary,
+        "hc.holochain_p2p.request.duration.s",
+        &["tag"],
+        None,
+    )
+    .await
+    {
+        Ok(res) => Ok(Some(res)),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
+            None => Err(e).context("query p2p request duration by tag"),
+        },
+    }
+}
+
+/// Query `hc.holochain_p2p.handle_request.duration` metric and compute its stats.
+pub async fn query_p2p_handle_request_duration(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<Option<StandardTimingsStats>> {
+    match query_duration(
+        client,
+        summary,
+        "hc.holochain_p2p.handle_request.duration.s",
+        None,
+    )
+    .await
+    {
+        Ok(duration) => Ok(Some(duration)),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
+            None => Err(e).context("query p2p handle request duration"),
+        },
+    }
+}
+
+/// Query `hc.holochain_p2p.handle_request.duration` metric, partition results by message type and compute their stats.
+pub async fn query_p2p_handle_request_duration_by_message_type(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+    match query_and_partition_duration(
+        client,
+        summary,
+        "hc.holochain_p2p.handle_request.duration.s",
+        &["message_type"],
+        None,
+    )
+    .await
+    {
+        Ok(res) => Ok(Some(res)),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
+            None => Err(e).context("query p2p handle request duration by message type"),
         },
     }
 }
