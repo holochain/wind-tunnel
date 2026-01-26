@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, sync::Arc};
 
-use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::sync::Mutex;
+use tokio::sync::broadcast::{Receiver, Sender};
 
 #[derive(Debug, Clone)]
 pub struct ShutdownHandle {

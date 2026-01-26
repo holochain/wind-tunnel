@@ -9,7 +9,7 @@ mod report;
 
 pub mod prelude {
     pub use crate::report::{ReportCollector, ReportMetric};
-    pub use crate::{report_operation, OperationRecord, ReportConfig, Reporter};
+    pub use crate::{OperationRecord, ReportConfig, Reporter, report_operation};
 }
 
 #[derive(Debug)]
@@ -63,7 +63,9 @@ impl ReportConfig {
         shutdown_listener: DelegatedShutdownListener,
     ) -> anyhow::Result<Reporter> {
         if self.enable_influx_client && self.enable_influx_file {
-            log::warn!("Influx client metrics and Influx file metrics are enabled at the same time. This is not recommended!");
+            log::warn!(
+                "Influx client metrics and Influx file metrics are enabled at the same time. This is not recommended!"
+            );
         }
 
         Ok(Reporter {

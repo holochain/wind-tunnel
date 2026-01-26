@@ -1,11 +1,11 @@
 mod operations_table;
 
-use crate::report::in_memory_reporter::operations_table::OperationRow;
-use crate::report::ReportCollector;
 use crate::OperationRecord;
+use crate::report::ReportCollector;
+use crate::report::in_memory_reporter::operations_table::OperationRow;
 use std::collections::HashMap;
-use tabled::settings::Style;
 use tabled::Table;
+use tabled::settings::Style;
 
 /// A very basic reporter that is useful while developing scenarios. It keeps all of the operations
 /// in memory and prints a summary of the operations at the end of the run.

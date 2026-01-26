@@ -1,8 +1,8 @@
 mod custom_metrics_table;
 
+use crate::OperationRecord;
 use crate::report::in_memory_with_custom_metrics_reporter::custom_metrics_table::CustomMetricsTableBuilder;
 use crate::report::{InMemoryReporter, ReportCollector, ReportMetric};
-use crate::OperationRecord;
 
 /// A very basic reporter that is useful while developing scenarios. It keeps all of the operations
 /// and custom metrics in memory and prints a summary of the operations at the end of the run.

@@ -1,14 +1,14 @@
+use crate::OperationRecord;
 use crate::report::influx_reporter_base::InfluxReporterBase;
 use crate::report::{ReportCollector, ReportMetric};
-use crate::OperationRecord;
 
 use influxdb::{Query, WriteQuery};
 
 use std::fmt::Debug;
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;

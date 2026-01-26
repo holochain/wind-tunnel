@@ -1,5 +1,5 @@
 use hdk::prelude::*;
-use timed_and_validated_integrity::{fixed_base, EntryTypes, LinkTypes, TimedSampleEntry};
+use timed_and_validated_integrity::{EntryTypes, LinkTypes, TimedSampleEntry, fixed_base};
 
 #[hdk_extern]
 fn create_timed_entry(timed: TimedSampleEntry) -> ExternResult<ActionHash> {

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 use std::time::Duration;
 
 use crate::cli::ReporterOpt;
@@ -16,7 +16,7 @@ use anyhow::Context;
 use log::debug;
 use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
-use wind_tunnel_summary_model::{append_run_summary, RunSummaryInitArgs};
+use wind_tunnel_summary_model::{RunSummaryInitArgs, append_run_summary};
 
 /// Environment variable name to set a custom run summary file path
 const RUN_SUMMARY_PATH_ENV: &str = "RUN_SUMMARY_PATH";

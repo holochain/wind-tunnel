@@ -6,8 +6,8 @@ use kitsune2_api::{
     K2Result, KitsuneHandler, LocalAgent, OpId, SpaceHandler, SpaceId, StoredOp, Timestamp,
 };
 use kitsune2_core::{
-    factories::config::{CoreBootstrapConfig, CoreBootstrapModConfig},
     Ed25519LocalAgent,
+    factories::config::{CoreBootstrapConfig, CoreBootstrapModConfig},
 };
 use kitsune2_gossip::{K2GossipConfig, K2GossipModConfig};
 use kitsune2_transport_tx5::config::{Tx5TransportConfig, Tx5TransportModConfig};

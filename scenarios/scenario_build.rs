@@ -1,4 +1,4 @@
-use happ_builder::{build_happs, required_tools_available, BuildOptions, HappBuilderResult};
+use happ_builder::{BuildOptions, HappBuilderResult, build_happs, required_tools_available};
 use std::{path::PathBuf, str::FromStr};
 
 /// Build the required DNA(s) and hApps for the scenario.

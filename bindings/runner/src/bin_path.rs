@@ -1,5 +1,5 @@
-use anyhow::bail;
 use anyhow::Context;
+use anyhow::bail;
 use std::env;
 use std::path::PathBuf;
 use wind_tunnel_runner::prelude::WindTunnelResult;
@@ -30,9 +30,9 @@ pub(crate) fn holochain_path() -> WindTunnelResult<PathBuf> {
             let holochain_path = PathBuf::from(path);
             if !holochain_path.exists() {
                 bail!(
-                "Path to Holochain binary overwritten with '{WT_HOLOCHAIN_PATH_ENV}={path}' but that path doesn't exist",
-                path = holochain_path.display()
-            );
+                    "Path to Holochain binary overwritten with '{WT_HOLOCHAIN_PATH_ENV}={path}' but that path doesn't exist",
+                    path = holochain_path.display()
+                );
             }
             Ok(holochain_path)
         }
@@ -52,7 +52,9 @@ mod tests {
     #[test]
     #[serial]
     fn test_should_not_get_holochain_path_if_not_exist() {
-        env::set_var(WT_HOLOCHAIN_PATH_ENV, "/non/existent/path/to/holochain");
+        unsafe {
+            env::set_var(WT_HOLOCHAIN_PATH_ENV, "/non/existent/path/to/holochain");
+        }
         let result = holochain_path();
         assert!(result.is_err());
     }
@@ -62,7 +64,9 @@ mod tests {
     fn test_should_get_holochain_path_from_env() {
         let temp = NamedTempFile::new().expect("failed to create temp file");
         let test_path = temp.path().to_str().expect("failed to get temp file path");
-        env::set_var(WT_HOLOCHAIN_PATH_ENV, test_path);
+        unsafe {
+            env::set_var(WT_HOLOCHAIN_PATH_ENV, test_path);
+        }
         let result = holochain_path().expect("failed to get holochain path");
         assert_eq!(result, PathBuf::from(test_path));
     }
@@ -83,10 +87,14 @@ mod tests {
 
         // put test_path parent to PATH
         let new_path = format!("{}", temp.path().display());
-        env::set_var("PATH", new_path);
+        unsafe {
+            env::set_var("PATH", new_path);
+        }
 
         // remove WT_HOLOCHAIN_PATH_ENV to test default behavior
-        env::remove_var(WT_HOLOCHAIN_PATH_ENV);
+        unsafe {
+            env::remove_var(WT_HOLOCHAIN_PATH_ENV);
+        }
 
         let result = holochain_path().expect("failed to get holochain path");
         assert_eq!(result, holochain_file_path);
@@ -95,11 +103,12 @@ mod tests {
     #[test]
     #[serial]
     fn test_should_not_get_default_holochain_path() {
-        // unset PATH
-        env::remove_var("PATH");
-
-        // remove WT_HOLOCHAIN_PATH_ENV to test default behavior
-        env::remove_var(WT_HOLOCHAIN_PATH_ENV);
+        unsafe {
+            // unset PATH
+            env::remove_var("PATH");
+            // remove WT_HOLOCHAIN_PATH_ENV to test default behavior
+            env::remove_var(WT_HOLOCHAIN_PATH_ENV);
+        }
 
         let result = holochain_path();
         println!("{result:?}",);

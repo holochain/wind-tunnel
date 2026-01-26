@@ -7,8 +7,8 @@ use holochain_wind_tunnel_runner::scenario_happ_path;
 use rand::rng;
 use rand::seq::SliceRandom;
 use std::ops::Add;
-use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 use std::time::Duration;
 use tokio::time::Instant;
 
@@ -261,7 +261,9 @@ async fn run_initiated_session(
                 response
             }
             Ok(_) => {
-                log::debug!("Received a signal that is not a response for this countersigning session, listening for other signals.");
+                log::debug!(
+                    "Received a signal that is not a response for this countersigning session, listening for other signals."
+                );
                 continue;
             }
             Err(_) => {
@@ -539,7 +541,9 @@ async fn await_countersigning_success(
             }
             Signal::System(SystemSignal::SuccessfulCountersigning(_)) => {
                 // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
-                log::error!("Received a successful countersigning signal for a different session, listening for other signals.");
+                log::error!(
+                    "Received a successful countersigning signal for a different session, listening for other signals."
+                );
                 continue;
             }
             Signal::System(SystemSignal::AbandonedCountersigning(eh))
@@ -549,12 +553,16 @@ async fn await_countersigning_success(
             }
             Signal::System(SystemSignal::AbandonedCountersigning(_)) => {
                 // This shouldn't happen because only one countersigning session can be active at a time. There's a bug if this log message shows up.
-                log::error!("Received an abandoned countersigning signal for a different session, listening for other signals.");
+                log::error!(
+                    "Received an abandoned countersigning signal for a different session, listening for other signals."
+                );
                 continue;
             }
             // Note that this might include other initiations. Since we will ignore the signal here, the initiator will have to wait for the timeout.
             signal => {
-                log::debug!("Received a signal that is not a successful countersigning signal, listening for other signals. {signal:?}");
+                log::debug!(
+                    "Received a signal that is not a successful countersigning signal, listening for other signals. {signal:?}"
+                );
                 continue;
             }
         };

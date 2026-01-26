@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use wind_tunnel_core::prelude::AgentBailError;
 use wind_tunnel_runner::prelude::{
-    run, AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
-    UserValuesConstraint, WindTunnelScenarioCli,
+    AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
+    UserValuesConstraint, WindTunnelScenarioCli, run,
 };
 
 #[derive(Default, Debug)]

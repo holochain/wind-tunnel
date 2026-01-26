@@ -4,7 +4,7 @@ use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
-use polars::prelude::{col, lit, IntoLazy};
+use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
