@@ -7,7 +7,6 @@ use anyhow::Context;
 use holochain_client_instrumented::ToSocketAddr;
 use holochain_client_instrumented::prelude::{
     AdminWebsocket, AppWebsocket, AuthorizeSigningCredentialsPayload, ClientAgentSigner,
-    handle_api_err,
 };
 use holochain_conductor_api::{AppInfo, CellInfo};
 use holochain_types::prelude::*;
@@ -91,10 +90,7 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
                 .await
                 .context("Unable to connect admin client")?;
 
-            let existing_app_interfaces = admin_client
-                .list_app_interfaces()
-                .await
-                .map_err(handle_api_err)?;
+            let existing_app_interfaces = admin_client.list_app_interfaces().await?;
 
             let existing_app_ports = existing_app_interfaces
                 .into_iter()
@@ -115,8 +111,7 @@ pub fn configure_app_ws_url<SV: UserValuesConstraint>(
                 let attached_app_port = admin_client
                     // Don't specify the port, let the conductor pick one
                     .attach_app_interface(0, None, AllowedOrigins::Any, None)
-                    .await
-                    .map_err(handle_api_err)?;
+                    .await?;
                 Ok(attached_app_port)
             }
         })
@@ -192,10 +187,7 @@ where
             log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
             let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
-            let key = client
-                .generate_agent_pub_key()
-                .await
-                .map_err(handle_api_err)?;
+            let key = client.generate_agent_pub_key().await?;
             log::debug!("Generated agent pub key: {key}");
 
             let content = std::fs::read(app_path)?;
@@ -209,14 +201,10 @@ where
                     network_seed: Some(run_id),
                     ignore_genesis_failure: false,
                 })
-                .await
-                .map_err(handle_api_err)?;
+                .await?;
             log::debug!("Installed app: {installed_app_id}");
 
-            client
-                .enable_app(installed_app_id.clone())
-                .await
-                .map_err(handle_api_err)?;
+            client.enable_app(installed_app_id.clone()).await?;
             log::debug!("Enabled app: {installed_app_id}");
 
             let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
@@ -300,7 +288,7 @@ where
         .execute_in_place(async move {
             let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
-            let app_infos = client.list_apps(None).await.map_err(handle_api_err)?;
+            let app_infos = client.list_apps(None).await?;
             let app_info = app_infos
                 .into_iter()
                 .find(|app_info| app_info.installed_app_id == installed_app_id)
@@ -555,8 +543,7 @@ where
 
             admin_client
                 .uninstall_app(installed_app_id.unwrap())
-                .await
-                .map_err(handle_api_err)?;
+                .await?;
             Ok(())
         })?;
 
