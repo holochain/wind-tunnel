@@ -17,7 +17,8 @@ sha256 = "{}"
 "#,
         happ_name, url, sha256
     );
-    std::fs::write(dir.join("Cargo.toml"), manifest_content).expect("failed to write test manifest");
+    std::fs::write(dir.join("Cargo.toml"), manifest_content)
+        .expect("failed to write test manifest");
 }
 
 #[test]
@@ -41,7 +42,9 @@ fn should_fetch_happ() {
     };
 
     let manager = HappManager::from(options);
-    manager.ensure_happs_available().expect("failed to fetch happ");
+    manager
+        .ensure_happs_available()
+        .expect("failed to fetch happ");
 
     let fetched_happ_path = happ_target_dir.join("dino-adventure.happ");
     assert!(
@@ -76,7 +79,9 @@ fn should_refetch_if_hash_mismatch() {
     };
 
     let manager = HappManager::from(options);
-    manager.ensure_happs_available().expect("failed to fetch happ");
+    manager
+        .ensure_happs_available()
+        .expect("failed to fetch happ");
 
     assert!(
         file_path.exists(),
