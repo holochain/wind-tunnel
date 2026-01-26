@@ -38,23 +38,12 @@ impl HappFetcher<'_> {
             .happ_target_dir
             .join(format!("{name}.happ", name = happ.name));
 
-        // do not fetch if already exists
-        if out_path.exists() {
-            if let Ok(existing_sha256) = Self::sha256_file(&out_path) {
-                if existing_sha256 == happ.sha256 {
-                    return Ok(());
-                }
-            }
-        }
-
-        /* requires ed 2024
         if out_path.exists()
             && let Ok(existing_sha256) = Self::sha256_file(&out_path)
             && existing_sha256 == happ.sha256
         {
             return Ok(());
         }
-        */
 
         let agent = ureq::config::Config::builder()
             .timeout_global(Some(Duration::from_secs(60)))
