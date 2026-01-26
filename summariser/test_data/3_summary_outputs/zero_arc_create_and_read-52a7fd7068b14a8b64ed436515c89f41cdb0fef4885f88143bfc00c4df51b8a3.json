@@ -1,0 +1,666 @@
+{
+  "run_summary": {
+    "run_id": "TfGX5CUUC1GF17mqcRXVA",
+    "scenario_name": "zero_arc_create_and_read",
+    "started_at": 1770369186,
+    "run_duration": 500,
+    "peer_count": 4,
+    "peer_end_count": 4,
+    "assigned_behaviours": {
+      "full": 2,
+      "zero_read": 1,
+      "zero_write": 1
+    },
+    "env": {},
+    "wind_tunnel_version": "0.6.0",
+    "build_info": {
+      "info_type": "holochain",
+      "info": {
+        "cargo_pkg_version": "0.6.1-rc.0",
+        "hdk_version_req": "0.6.1-rc.0",
+        "hdi_version_req": "0.7.1-rc.0",
+        "lair_keystore_version_req": "0.6.3",
+        "timestamp": "2026-01-27T23:05:13.564711967Z",
+        "hostname": "runnervmvkxkw",
+        "host": "aarch64-unknown-linux-gnu",
+        "target": "aarch64-unknown-linux-gnu",
+        "rustc_version": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+        "rustflags": "",
+        "profile": "release",
+        "git_info": {
+          "rev": "b499bd881580f9e0dd8f4494aafd4b2093a06168",
+          "dirty": false
+        }
+      }
+    }
+  },
+  "scenario_metrics": {
+    "create_rate": {
+      "mean": 1.86,
+      "rates": [
+        {
+          "key": [
+            {
+              "key": "agent",
+              "value": "uhCAk0TeO2qH9AE5bt6qfV8v8PnpUUncXKVveXLmSLlqybG7CNE7z"
+            }
+          ],
+          "summary_rate": {
+            "mean": 1.86,
+            "trend": [
+              5,
+              2,
+              1,
+              1,
+              1,
+              2,
+              1
+            ],
+            "window_duration": "10s"
+          }
+        }
+      ]
+    },
+    "sync_lag_timing": {
+      "mean": 443.558428,
+      "mean_std_dev": 11.370842,
+      "timings": [
+        {
+          "key": [
+            {
+              "key": "agent",
+              "value": "uhCAkVus1s6PwdG7Z-7ZkW3zNwdyTHRdICNwqc4o-mYxR0nDeFhbo"
+            }
+          ],
+          "summary_timing": {
+            "mean": 443.558428,
+            "std": 11.370842,
+            "within_std": 0.5,
+            "within_2std": 1.0,
+            "within_3std": 1.0,
+            "trend": {
+              "trend": [
+                443.203155
+              ],
+              "window_duration": "10s"
+            }
+          }
+        }
+      ]
+    },
+    "sync_lag_rate": {
+      "mean": 0.0,
+      "rates": [
+        {
+          "key": [
+            {
+              "key": "agent",
+              "value": "uhCAkVus1s6PwdG7Z-7ZkW3zNwdyTHRdICNwqc4o-mYxR0nDeFhbo"
+            }
+          ],
+          "summary_rate": {
+            "mean": 0.0,
+            "trend": [],
+            "window_duration": "10s"
+          }
+        }
+      ]
+    },
+    "open_connections": {
+      "partitions": [
+        {
+          "key": [
+            {
+              "key": "arc",
+              "value": "full"
+            }
+          ],
+          "gauge_stats": {
+            "count": 5743,
+            "max": 3.0,
+            "mean": 2.96,
+            "min": 0.0,
+            "std": 0.32
+          }
+        },
+        {
+          "key": [
+            {
+              "key": "arc",
+              "value": "zero"
+            }
+          ],
+          "gauge_stats": {
+            "count": 105,
+            "max": 3.0,
+            "mean": 2.53,
+            "min": 2.0,
+            "std": 0.5
+          }
+        }
+      ]
+    },
+    "error_count": 0,
+    "holochain_p2p_metrics": {
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000922,
+          "std": 0.001317,
+          "within_std": 0.9197,
+          "within_2std": 0.9663,
+          "within_3std": 0.9829,
+          "trend": {
+            "trend": [
+              0.002125,
+              0.003427,
+              0.001461,
+              0.003393,
+              0.001536,
+              0.001732,
+              0.001233,
+              0.000956,
+              0.000717,
+              0.000658,
+              0.00089,
+              0.000661,
+              0.000671,
+              0.000622,
+              0.000634,
+              0.000863,
+              0.0008,
+              0.000676,
+              0.000841,
+              0.000676,
+              0.000878,
+              0.000891,
+              0.000527,
+              0.000786,
+              0.000691,
+              0.000655,
+              0.000641,
+              0.000797,
+              0.000626,
+              0.000695,
+              0.000549,
+              0.000689,
+              0.000782,
+              0.002388,
+              0.002637,
+              0.002331,
+              0.001884,
+              0.001988,
+              0.001038,
+              0.002211,
+              0.001658,
+              0.002252
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.000833,
+          "std": 0.000612,
+          "within_std": 0.8949,
+          "within_2std": 0.9545,
+          "within_3std": 0.9773,
+          "trend": {
+            "trend": [
+              0.001751,
+              0.00098,
+              0.000734,
+              0.000842,
+              0.000688,
+              0.001,
+              0.001063,
+              0.001016,
+              0.001349,
+              0.000876,
+              0.001019,
+              0.000699,
+              0.001176,
+              0.000606,
+              0.000408,
+              0.000461,
+              0.000624,
+              0.000517,
+              0.000914,
+              0.000428,
+              0.00067,
+              0.000794,
+              0.00065,
+              0.000393,
+              0.000499,
+              0.000514,
+              0.000551,
+              0.000656,
+              0.000437,
+              0.000631,
+              0.000443,
+              0.000622,
+              0.000378,
+              0.000546,
+              0.000589
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.008778,
+          "std": 0.0,
+          "within_std": 1.0,
+          "within_2std": 1.0,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "handle_incoming_request_duration": {
+        "response": {
+          "mean": 0.000013,
+          "std": 0.000061,
+          "within_std": 0.9676,
+          "within_2std": 0.9838,
+          "within_3std": 0.9895,
+          "trend": {
+            "trend": [
+              0.000026,
+              0.000012,
+              0.000023,
+              0.000017,
+              9e-6,
+              4e-6,
+              0.00002,
+              6e-6,
+              7e-6,
+              0.000034,
+              0.000019,
+              0.000026,
+              6e-6,
+              6e-6,
+              0.000013,
+              0.000013,
+              0.000012,
+              9e-6,
+              8e-6,
+              0.000015,
+              0.000012,
+              8e-6,
+              0.000016,
+              8e-6,
+              5e-6,
+              0.000019,
+              7e-6,
+              0.00001,
+              8e-6,
+              7e-6,
+              6e-6,
+              8e-6,
+              5e-6,
+              0.000017,
+              0.000013,
+              5e-6,
+              7e-6,
+              9e-6,
+              0.00001,
+              5e-6,
+              5e-6,
+              8e-6,
+              0.000015,
+              8e-6,
+              0.000062,
+              6e-6,
+              5e-6,
+              0.000193
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.000327,
+          "std": 0.000902,
+          "within_std": 0.9582,
+          "within_2std": 0.983,
+          "within_3std": 0.9933,
+          "trend": {
+            "trend": [
+              0.000521,
+              0.000652,
+              0.000601,
+              0.000799,
+              0.000452,
+              0.000557,
+              0.00028,
+              0.000289,
+              0.000274,
+              0.000284,
+              0.000332,
+              0.000298,
+              0.000295,
+              0.000218,
+              0.000258,
+              0.000224,
+              0.00018,
+              0.000164,
+              0.00033,
+              0.000305,
+              0.00019,
+              0.00018,
+              0.000236,
+              0.000255,
+              0.000205,
+              0.000235,
+              0.000276,
+              0.00024,
+              0.000207,
+              0.000231,
+              0.000256,
+              0.00033,
+              0.000347,
+              0.000248,
+              0.001247,
+              0.000881,
+              0.000776,
+              0.000615,
+              0.000573,
+              0.000565,
+              0.000625,
+              0.000796,
+              0.000864
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.000382,
+          "std": 0.000407,
+          "within_std": 0.8943,
+          "within_2std": 0.9459,
+          "within_3std": 0.9755,
+          "trend": {
+            "trend": [
+              0.000197,
+              0.000289,
+              0.000298,
+              0.000377,
+              0.000272,
+              0.000366,
+              0.000373,
+              0.000346,
+              0.000523,
+              0.000695,
+              0.000317,
+              0.000261,
+              0.000282,
+              0.00038,
+              0.00026,
+              0.000274,
+              0.000348,
+              0.000223,
+              0.000644,
+              0.000491,
+              0.000409,
+              0.000296,
+              0.000449,
+              0.000445,
+              0.000273,
+              0.000313,
+              0.000326,
+              0.000284,
+              0.000552,
+              0.00029,
+              0.000265,
+              0.000418,
+              0.000379,
+              0.000314,
+              0.000352,
+              0.000434,
+              0.000324,
+              0.000417,
+              0.000426,
+              0.000264,
+              0.001208,
+              0.000796,
+              0.00147,
+              0.00049,
+              0.000589
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.003611,
+          "std": 0.001033,
+          "within_std": 1.0,
+          "within_2std": 0.0,
+          "within_3std": 0.0,
+          "trend": {
+            "trend": [],
+            "window_duration": "10s"
+          }
+        }
+      }
+    }
+  },
+  "host_metrics": {
+    "cpu": {
+      "usage_user": {
+        "count": 245,
+        "max": 91.42280524722582,
+        "mean": 68.26,
+        "min": 49.304812834227626,
+        "std": 6.22
+      },
+      "usage_system": {
+        "count": 245,
+        "max": 24.54361054766803,
+        "mean": 19.45,
+        "min": 3.9354187689202025,
+        "std": 2.93
+      }
+    },
+    "memory": {
+      "active": {
+        "count": 50,
+        "max": 3821789184.0,
+        "mean": 3081751429.12,
+        "min": 1766232064.0,
+        "std": 446782632.99
+      },
+      "available": {
+        "count": 50,
+        "max": 8075923456.0,
+        "mean": 7107575480.32,
+        "min": 6345994240.0,
+        "std": 417800577.64
+      },
+      "available_percent": {
+        "count": 50,
+        "max": 48.28012872343708,
+        "mean": 42.49,
+        "min": 37.93812812301502,
+        "std": 2.5
+      },
+      "free": {
+        "count": 50,
+        "max": 3094970368.0,
+        "mean": 1117012869.12,
+        "min": 183455744.0,
+        "std": 853346882.14
+      },
+      "inactive": {
+        "count": 50,
+        "max": 12080603136.0,
+        "mean": 11473309696.0,
+        "min": 10471264256.0,
+        "std": 454743926.07
+      },
+      "swap_free": {
+        "count": 50,
+        "max": 4087869440.0,
+        "mean": 4087869440.0,
+        "min": 4087869440.0,
+        "std": 0.0
+      },
+      "swap_total": {
+        "count": 50,
+        "max": 4088393728.0,
+        "mean": 4088393728.0,
+        "min": 4088393728.0,
+        "std": 0.0
+      },
+      "total": {
+        "count": 50,
+        "max": 16727220224.0,
+        "mean": 16727220224.0,
+        "min": 16727220224.0,
+        "std": 0.0
+      },
+      "used": {
+        "count": 50,
+        "max": 10381225984.0,
+        "mean": 9619644743.68,
+        "min": 8651296768.0,
+        "std": 417800577.64
+      },
+      "used_percent": {
+        "count": 50,
+        "max": 62.06187187698498,
+        "mean": 57.51,
+        "min": 51.71987127656292,
+        "std": 2.5
+      }
+    },
+    "network": {
+      "bytes_recv": {
+        "docker0": {
+          "start": 0,
+          "end": 0,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        },
+        "enp0s5": {
+          "start": 40779825,
+          "end": 43128582,
+          "delta": 2348757,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 4793.38
+        },
+        "tailscale0": {
+          "start": 1378,
+          "end": 1378,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        }
+      },
+      "bytes_sent": {
+        "docker0": {
+          "start": 0,
+          "end": 0,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        },
+        "enp0s5": {
+          "start": 26224442,
+          "end": 26747862,
+          "delta": 523420,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 1068.2
+        },
+        "tailscale0": {
+          "start": 15554,
+          "end": 16634,
+          "delta": 1080,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 2.2
+        }
+      },
+      "packets_recv": {
+        "docker0": {
+          "start": 0,
+          "end": 0,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        },
+        "enp0s5": {
+          "start": 61134,
+          "end": 66033,
+          "delta": 4899,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 10.0
+        },
+        "tailscale0": {
+          "start": 17,
+          "end": 17,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        }
+      },
+      "packets_sent": {
+        "docker0": {
+          "start": 0,
+          "end": 0,
+          "delta": 0,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.0
+        },
+        "enp0s5": {
+          "start": 32307,
+          "end": 35831,
+          "delta": 3524,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 7.19
+        },
+        "tailscale0": {
+          "start": 247,
+          "end": 265,
+          "delta": 18,
+          "measurement_duration": {
+            "secs": 490,
+            "nanos": 0
+          },
+          "rate_per_second": 0.04
+        }
+      }
+    }
+  }
+}
