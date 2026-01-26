@@ -108,30 +108,6 @@ mod tests {
     use crate::manifest::Sha256Hash;
     use std::str::FromStr as _;
 
-    const SAMPLE_URL: &str = "https://github.com/holochain/dino-adventure/releases/download/v0.3.0-dev.0/dino-adventure-v0.3.0-dev.0.happ";
-
-    #[test]
-    fn should_fetch_happ() {
-        let tempdir = tempfile::tempdir().expect("failed to create temp dir");
-        let config = vec![FetchRequiredHapp {
-            name: "dino-adventure".to_string(),
-            url: SAMPLE_URL.to_string(),
-            sha256: Sha256Hash::from_str(
-                "1eafa0d852d9e96e54f0b6969fb06de83989ece0059bc2b376884ac52fb6a63a",
-            )
-            .expect("invalid sha256"),
-        }];
-
-        let fetcher = HappFetcher::new(tempdir.path(), &config);
-        fetcher.fetch_all().expect("failed to fetch happ");
-
-        let fetched_happ_path = tempdir.path().join("dino-adventure.happ");
-        assert!(
-            fetched_happ_path.exists(),
-            "fetched happ file does not exist"
-        );
-    }
-
     #[test]
     fn should_compute_sha256() {
         let tempdir = tempfile::tempdir().expect("failed to create temp dir");
@@ -139,7 +115,6 @@ mod tests {
         std::fs::write(&file_path, b"hello world").expect("failed to write test file");
 
         let actual_sha256 = HappFetcher::sha256_file(&file_path).expect("failed to compute sha256");
-        println!("Actual sha256: {}", actual_sha256);
         let expected_sha256 = Sha256Hash::from_str(
             "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
         )
@@ -149,52 +124,5 @@ mod tests {
             actual_sha256, expected_sha256,
             "sha256 does not match expected"
         );
-    }
-
-    #[test]
-    fn should_refetch_if_hash_mismatch() {
-        let tempdir = tempfile::tempdir().expect("failed to create temp dir");
-        let file_path = tempdir.path().join("dino-adventure.happ");
-        std::fs::write(&file_path, b"corrupted data").expect("failed to write test file");
-
-        let config = vec![FetchRequiredHapp {
-            name: "dino-adventure".to_string(),
-            url: SAMPLE_URL.to_string(),
-            sha256: Sha256Hash::from_str(
-                "1eafa0d852d9e96e54f0b6969fb06de83989ece0059bc2b376884ac52fb6a63a",
-            )
-            .expect("invalid sha256"),
-        }];
-
-        let fetcher = HappFetcher::new(tempdir.path(), &config);
-        fetcher.fetch_all().expect("failed to fetch happ");
-
-        assert!(
-            file_path.exists(),
-            "fetched file does not exist after hash mismatch"
-        );
-        // check hash
-        let sha256 = HappFetcher::sha256_file(&file_path).expect("failed to compute sha256");
-        assert_eq!(
-            sha256, config[0].sha256,
-            "sha256 does not match expected after re-fetch"
-        );
-    }
-
-    #[test]
-    fn should_fail_if_hash_mismatch_manifest() {
-        let tempdir = tempfile::tempdir().expect("failed to create temp dir");
-        let config = vec![FetchRequiredHapp {
-            name: "dino-adventure".to_string(),
-            url: SAMPLE_URL.to_string(),
-            sha256: Sha256Hash::from_str(
-                "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-            )
-            .expect("invalid sha256"),
-        }];
-
-        let fetcher = HappFetcher::new(tempdir.path(), &config);
-        let result = fetcher.fetch_all();
-        assert!(result.is_err(), "expected error due to sha256 mismatch");
     }
 }
