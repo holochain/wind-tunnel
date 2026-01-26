@@ -256,6 +256,17 @@ pub async fn query_duration(
     standard_timing_stats(frame, "value", "10s", None)
 }
 
+/// Query the measurement with the filter tag and return the number of data points.
+pub async fn query_count(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    filter_tag: Option<(&str, &str)>,
+) -> anyhow::Result<usize> {
+    let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
+    Ok(frame.height())
+}
+
 /// Query the measurement with the filter tag, then partition the data by `partitioning_tags`.
 /// and run [`standard_timing_stats()`] on each partition.
 pub async fn query_and_partition_duration(
