@@ -4,7 +4,9 @@ use crate::model::{
     PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
 };
 use crate::query;
-use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
+use crate::query::holochain_p2p_metrics::{
+    HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
+};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -18,7 +20,7 @@ struct ZeroArcCreateAndReadSummary {
     sync_lag_rate: PartitionedRateStats,
     open_connections: PartitionedGaugeStats,
     error_count: usize,
-    holochain_p2p_metrics: HolochainP2pMetrics,
+    holochain_p2p_metrics: HolochainP2pMetricsWithCounts,
 }
 
 pub(crate) async fn summarize_zero_arc_create_and_read(
@@ -69,7 +71,8 @@ pub(crate) async fn summarize_zero_arc_create_and_read(
             open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
                 .context("Open connections")?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
+            holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary)
+                .await?,
         },
         host_metrics,
     )
