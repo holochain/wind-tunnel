@@ -10,17 +10,18 @@ Either install the `gomplate` templating tool, or run `nix develop` in the repo 
 
 The command takes input JSON (either as a filename or from stdin) and outputs HTML to stdout.
 
-You can use this tool on a recent artifact containing all scenarios by running:
+You can use this tool on all the summaries fixtures used in the summariser snapshot tests from `../summariser/test_data/3_summary_outputs`
 
 ```bash
-summary-visualiser/generate.sh summary-visualiser/test_data/all.json > out.html
+jq -s '.' summariser/test_data/3_summary_outputs/*.json > /tmp/summary-visualiser-test-data.json
+summary-visualiser/generate.sh /tmp/summary-visualiser-test-data.json > out.html
 ```
 
 and opening `out.html` in your browser. It'll contain a `<section class="scenario scenario-foo">` element for every scenario in your JSON. If your JSON contains scenarios for which there are no templates yet, it'll display a warning for each of them.
 
 ### With ideal sample data
 
-There are some individual scenario sample files in `summary-visualiser/test_data/` that you can use for testing too. They're likely to have more complete sets of data than that what you'll find in `all.json`, although their metrics may not be as realistic. However, they're just bare objects, and this tool expects the input JSON to be an array of objects. You can wrap the individual objects in an array like this (make sure you have `jq` installed, or run `nix develop` to get it).
+This tool expects the input JSON to be an array of objects. You can wrap the individual objects in an array like this (make sure you have `jq` installed, or run `nix develop` to get it).
 
 ```bash
 cat summariser/test_data/3_summary_outputs/dht_sync_lag-3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51.json | jq '[.]' | summary-visualiser/generate.sh > dht_sync_lag.html
@@ -44,17 +45,15 @@ When you create a scenario, you need to:
 
 1. Add a file called `<scenario_name>.html.tmpl` to the `templates/scenarios` folder.
 2. Populate that file with an HTML template that renders the scenario's data (you can take a look at that folder's README or other scenario templates to get a sense of how to build one).
-3. Replace `test_data/all.json` with a summary output artifact from a recent Nomad run that contains your new scenario.
-4. Add the line `smoke_test_scenario "<scenario_name>"` to `test.sh`.
-5. Run `./test.sh` and look for errors. (Note that, when you commit the file, a pre-commit check will check for errors and invalid HTML.)
+3. Add the line `smoke_test_scenario "<scenario_name>"` to `test.sh`.
+4. Run `./test.sh` and look for errors. (Note that, when you commit the file, a pre-commit check will check for errors and invalid HTML.)
 
 When you modify a scenario, you need to:
 
 1. Modify `templates/scenarios/<scenario_name>.html.tmpl` to match the scenario's changed summary JSON structure.
-2. Replace `test_data/all.json` with a summary output artifact from a recent Nomad run that contains the modifications to the scenario.
-3. Run `./test.sh` and look for errors.
+2. Run `./test.sh` and look for errors.
 
-When you delete a scenario, you need to remove its line from `./test.sh`. It'd also be good to tidy up by removing the scenario template and updating `test_data.all.json`.
+When you delete a scenario, you need to remove its line from `./test.sh`.
 
 ## Nomad workflow integration
 
