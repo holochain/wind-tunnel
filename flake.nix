@@ -174,6 +174,7 @@
               pkgs.gnused
               pkgs.influxdb2-cli
               pkgs.jq
+              pkgs.tomlq
               pkgs.yq
             ];
             text = ''
