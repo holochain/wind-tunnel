@@ -214,11 +214,11 @@ jobs:
 
           kitsune_host="127.0.0.1:30000"
 
-          # Start local bootstrap and signal server
-          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --listen $kitsune_host &"
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
 
           # Run the scenario
-          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --signal-server-url "ws://$kitsune_host" --duration 15 --agents 2
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
 
           # Stop servers
           pkill -f kitsune2-bootstrap-srv || true

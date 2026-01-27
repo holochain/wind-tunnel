@@ -23,7 +23,7 @@ kitsune2 = { workspace = true }
 kitsune2_api = { workspace = true }
 kitsune2_core = { workspace = true }
 kitsune2_gossip = { workspace = true }
-kitsune2_transport_tx5 = { workspace = true }
+kitsune2_transport_iroh = { workspace = true }
 
 wind_tunnel_core = { workspace = true }
 wind_tunnel_instruments = { workspace = true }
@@ -31,7 +31,10 @@ wind_tunnel_instruments_derive = { workspace = true }
 
 [dev-dependencies]
 env_logger = { workspace = true }
-kitsune2_bootstrap_srv = "=0.4.0-dev.2"
+kitsune2_bootstrap_srv = { version = "=0.4.0-dev.2", default-features = false, features = [
+  "iroh-relay",
+] }
+rustls = "0.23.36"
 
 [lints]
 workspace = true

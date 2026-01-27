@@ -727,7 +727,7 @@ like to test a different version of Holochain, the default is the latest 0.6.x r
 
 For Kitsune Wind Tunnel tests, start a bootstrap and signal server:
 ```bash
-kitsune2-bootstrap-srv --listen 127.0.0.1:30000
+kitsune2-bootstrap-srv --no-sbd --listen 127.0.0.1:30000
 ```
 
 This starts the two servers on the provided address. If for some reason the port 30000 is used on your system, you can specify a different port or omit the `--listen` option altogether to let the command choose a free port.

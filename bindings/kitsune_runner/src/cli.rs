@@ -10,9 +10,9 @@ pub struct WindTunnelKitsuneScenarioCli {
     #[clap(long)]
     pub bootstrap_server_url: String,
 
-    /// The signal server URL.
+    /// The Iroh relay server URL.
     #[clap(long)]
-    pub signal_server_url: String,
+    pub relay_url: String,
 
     /// The number of agents to run. All agents will run on the local machine.
     /// Each agent creates an instance of "Chatter", the WindTunnel Kitsune2 app.
@@ -67,9 +67,8 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<WindTunnelScenarioCli, Self::Error> {
-        // Build connection string from bootstrap and signal server URLs.
-        let connection_string =
-            to_connection_string(self.bootstrap_server_url, self.signal_server_url);
+        // Build connection string from bootstrap and relay server URLs.
+        let connection_string = to_connection_string(self.bootstrap_server_url, self.relay_url);
 
         Ok(WindTunnelScenarioCli {
             connection_string: Some(connection_string),
