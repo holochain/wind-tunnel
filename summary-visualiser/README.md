@@ -10,11 +10,10 @@ Either install the `gomplate` templating tool, or run `nix develop` in the repo 
 
 The command takes input JSON (either as a filename or from stdin) and outputs HTML to stdout.
 
-You can use this tool on all the summaries fixtures used in the summariser snapshot tests from `../summariser/test_data/3_summary_outputs`
+You can use this tool on all the summaries fixtures used in the summariser snapshot tests from `../summariser/test_data/3_summary_outputs` by running:
 
 ```bash
-jq -s '.' summariser/test_data/3_summary_outputs/*.json > /tmp/summary-visualiser-test-data.json
-summary-visualiser/generate.sh /tmp/summary-visualiser-test-data.json > out.html
+nix run .#generate-summary-visualiser-with-test-data out.html
 ```
 
 and opening `out.html` in your browser. It'll contain a `<section class="scenario scenario-foo">` element for every scenario in your JSON. If your JSON contains scenarios for which there are no templates yet, it'll display a warning for each of them.

@@ -410,6 +410,21 @@
               ./summary-visualiser/generate.sh "$1" > "$2"
             '';
           };
+          generate-summary-visualiser-with-test-data = pkgs.writeShellApplication {
+            name = "generate-summary-visualiser-with-test-data";
+            runtimeInputs = [
+              pkgs.gomplate
+              pkgs.jq
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              temp_dir=$(mktemp -d)
+              jq -s '.' summariser/test_data/3_summary_outputs/*.json > "$temp_dir/summary-visualiser-test-data.json"
+              ./summary-visualiser/generate.sh "$temp_dir/summary-visualiser-test-data.json" > "$1"
+            '';
+          };
           awscli-s3 = pkgs.writeShellApplication {
             name = "awscli-s3";
             runtimeInputs = [
