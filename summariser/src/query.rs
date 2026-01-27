@@ -213,7 +213,14 @@ pub async fn query_metrics(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
+        return crate::frame::parse_time_column(
+            // If we fail to load the test data, we return the error NoSeriesInResult,
+            // so it is handled the same as an influxdb result with an empty series.
+            super::test_data::load_query_result(&q).map_err(|_| LoadError::NoSeriesInResult {
+                table: measurement.to_string(),
+                result: serde_json::Value::Null,
+            })?,
+        );
     }
 
     let res = client.json_query(q.clone()).await?;
