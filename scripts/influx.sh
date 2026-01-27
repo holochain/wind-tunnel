@@ -16,7 +16,8 @@ export INFLUX_CONFIGS_PATH
 use_influx() {
     export INFLUX_HOST="http://localhost:8087"
     export INFLUX_BUCKET="windtunnel"
-    INFLUX_TOKEN="$(tq --file "$INFLUX_CONFIGS_PATH" .default.token)"
+    # The --raw flag ensures output does not include the quote characters.
+    INFLUX_TOKEN="$(tq --file "$INFLUX_CONFIGS_PATH" --raw .default.token)"
     export INFLUX_TOKEN
 }
 
