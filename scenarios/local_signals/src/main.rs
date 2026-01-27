@@ -17,6 +17,7 @@ fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
     let received_count = Arc::new(AtomicU32::new(0));
+    let start = Instant::now();
 
     let app_client = ctx.get().app_client();
     ctx.runner_context().executor().execute_in_place({
@@ -32,9 +33,34 @@ fn agent_behaviour(
         }
     })?;
 
-    let start = Instant::now();
+    // Create a guard that will write recv metrics on drop (even on early exit)
+    let reporter = ctx.runner_context().reporter().clone();
+    let _metrics_guard = MetricsGuard {
+        write_fn: Box::new({
+            let reporter = reporter.clone();
+            let start = start.clone();
+            let received_count = received_count.clone();
+            move || {
+                let recv_elapsed_s = start.elapsed().as_secs_f64();
+                let count = received_count.load(std::sync::atomic::Ordering::Acquire);
+
+                let metric =
+                    ReportMetric::new("signal_batch_recv").with_field("value", recv_elapsed_s);
+                reporter.clone().add_custom(metric);
+
+                let metric = ReportMetric::new("signal_success_ratio")
+                    .with_field("value", count as f32 / 10_000.0);
+                reporter.clone().add_custom(metric);
+            }
+        }),
+    };
+
     call_zome::<_, (), _>(ctx, "signal", "emit_10k_signals", ())?;
     let send_elapsed_s = start.elapsed().as_secs_f64();
+
+    // Write send metric immediately after zome call
+    let metric = ReportMetric::new("signal_batch_send").with_field("value", send_elapsed_s);
+    ctx.runner_context().reporter().clone().add_custom(metric);
 
     ctx.runner_context().executor().execute_in_place({
         let received_count = received_count.clone();
@@ -57,20 +83,23 @@ fn agent_behaviour(
         }
     })?;
 
-    let recv_elapsed_s = start.elapsed().as_secs_f64();
-
-    let metric = ReportMetric::new("signal_batch_send").with_field("value", send_elapsed_s);
-    ctx.runner_context().reporter().clone().add_custom(metric);
-
-    let metric = ReportMetric::new("signal_batch_recv").with_field("value", recv_elapsed_s);
-    ctx.runner_context().reporter().clone().add_custom(metric);
-
-    let received_count = received_count.load(std::sync::atomic::Ordering::Acquire);
-    let metric = ReportMetric::new("signal_success_ratio")
-        .with_field("value", received_count as f32 / 10_000.0);
-    ctx.runner_context().reporter().clone().add_custom(metric);
+    // Guard will write recv metrics on drop automatically
 
     Ok(())
+}
+
+// Guard struct that writes recv metrics when dropped, ensuring they're always written even on early exit
+struct MetricsGuard {
+    write_fn: Box<dyn FnOnce() + Send>,
+}
+
+impl Drop for MetricsGuard {
+    fn drop(&mut self) {
+        // SAFETY: We use take_mut to safely extract the FnOnce from the Option
+        // This is safe because Drop is only called once
+        let write_fn = std::mem::replace(&mut self.write_fn, Box::new(|| {}));
+        write_fn();
+    }
 }
 
 fn main() -> WindTunnelResult<()> {
