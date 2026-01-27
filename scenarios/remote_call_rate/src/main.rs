@@ -1,7 +1,7 @@
 use anyhow::Context;
 use holochain_types::prelude::AgentPubKey;
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use remote_call_integrity::TimedResponse;
 use std::time::{Duration, Instant};
 
@@ -16,11 +16,7 @@ fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     start_conductor_and_configure_urls(ctx)?;
-    install_app(
-        ctx,
-        scenario_happ_path!("remote_call"),
-        &"remote_call".to_string(),
-    )?;
+    install_app(ctx, happ_path!("remote_call"), &"remote_call".to_string())?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     Ok(())

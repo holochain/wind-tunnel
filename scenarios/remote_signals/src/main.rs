@@ -1,5 +1,5 @@
 use holochain_types::prelude::*;
-use holochain_wind_tunnel_runner::{prelude::*, scenario_happ_path};
+use holochain_wind_tunnel_runner::{happ_path, prelude::*};
 use remote_signal_integrity::TimedMessage;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -43,7 +43,7 @@ fn agent_setup(
     start_conductor_and_configure_urls(ctx)?;
     install_app(
         ctx,
-        scenario_happ_path!("remote_signal"),
+        happ_path!("remote_signal"),
         &"remote_signal".to_string(),
     )?;
 

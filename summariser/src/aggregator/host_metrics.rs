@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use polars::frame::{DataFrame, UniqueKeepStrategy};
-use polars::prelude::{col, lit, IntoLazy};
+use polars::prelude::{IntoLazy, col, lit};
 use wind_tunnel_summary_model::RunSummary;
 
 use crate::analyze::{counter_stats, gauge_stats};

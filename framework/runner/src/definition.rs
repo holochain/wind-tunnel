@@ -251,7 +251,9 @@ fn build_assigned_behaviours(
     for (behaviour_name, agent_count) in &cli.behaviour {
         resolved_agent_count -= *agent_count as i32;
         if resolved_agent_count < 0 {
-            return Err(anyhow::anyhow!("The number of agents assigned to behaviours must be less than or equal to the total number of agents"));
+            return Err(anyhow::anyhow!(
+                "The number of agents assigned to behaviours must be less than or equal to the total number of agents"
+            ));
         }
 
         assigned_behaviours.push(AssignedBehaviour {

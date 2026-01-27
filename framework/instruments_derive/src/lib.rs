@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{parse::Parse, parse_macro_input, parse_quote, Expr, Ident, ItemFn, LitStr, Token};
+use syn::{Expr, Ident, ItemFn, LitStr, Token, parse::Parse, parse_macro_input, parse_quote};
 
 #[derive(Default)]
 struct InstrumentArgs {

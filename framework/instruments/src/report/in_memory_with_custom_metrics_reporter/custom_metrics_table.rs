@@ -1,8 +1,8 @@
 use crate::report::ReportMetric;
 use std::collections::{BTreeMap, HashSet};
-use tabled::settings::Style;
 use tabled::Table;
 use tabled::Tabled;
+use tabled::settings::Style;
 
 #[derive(Tabled)]
 pub struct MetricTableRow {

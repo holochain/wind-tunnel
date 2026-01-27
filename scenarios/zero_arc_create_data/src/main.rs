@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use holochain_types::prelude::Record;
 use holochain_types::prelude::{ActionHash, Timestamp};
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashSet;
 use std::time::SystemTime;
 use timed_integrity::TimedEntry;
@@ -24,7 +24,7 @@ fn agent_setup(
             .with_target_arc_factor(0);
     }
     start_conductor_and_configure_urls(ctx)?;
-    install_app(ctx, scenario_happ_path!("timed"), &"timed".to_string())?;
+    install_app(ctx, happ_path!("timed"), &"timed".to_string())?;
 
     if ctx.assigned_behaviour() == "zero" {
         try_wait_until_full_arc_peer_discovered(ctx)?;

@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use holochain_types::prelude::{ActionHash, Record, Timestamp};
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashSet;
 use std::time::SystemTime;
 use timed_integrity::TimedEntry;
@@ -18,7 +18,7 @@ fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     start_conductor_and_configure_urls(ctx)?;
-    install_app(ctx, scenario_happ_path!("timed"), &"timed".to_string())?;
+    install_app(ctx, happ_path!("timed"), &"timed".to_string())?;
 
     Ok(())
 }

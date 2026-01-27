@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use chrono::Utc;
 use log::debug;
 use std::fs::File;
@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
                 match holochain_summariser::test_data::insert_run_summary(&summary) {
                     Ok(()) => log::info!("Inserted test data for {}", summary.scenario_name),
                     Err(e) => {
-                        use futures::{future::ready, FutureExt};
+                        use futures::{FutureExt, future::ready};
 
                         log::error!("Failed to insert test data for {summary:?}: {e:?}",);
                         return Some(ready(Err(e)).boxed());

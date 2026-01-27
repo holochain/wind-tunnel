@@ -1,7 +1,7 @@
 [package]
 name = "happ_builder"
 version = "0.1.0"
-description = "A tool for building happs from TOML configuration"
+description = "A tool for building and fetching happs from TOML configuration"
 license.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -11,12 +11,19 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-toml = { workspace = true }
 anyhow = { workspace = true }
+hex = { workspace = true }
 holochain_types = { workspace = true }
+serde = { workspace = true }
 serde_yaml = { workspace = true }
+sha2 = { workspace = true }
+toml = { workspace = true }
+ureq = { workspace = true }
 walkdir = { workspace = true }
 which = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

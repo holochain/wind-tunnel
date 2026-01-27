@@ -1,7 +1,7 @@
 use holochain_types::prelude::Timestamp;
 use holochain_types::prelude::{ActionHash, AgentPubKey};
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::time::Duration;
 use validated_must_get_agent_activity_coordinator::GetChainTopForBatchInput;
 use validated_must_get_agent_activity_coordinator::SampleEntryInput;
@@ -27,7 +27,7 @@ fn agent_setup(
     start_conductor_and_configure_urls(ctx)?;
     install_app(
         ctx,
-        scenario_happ_path!("validated_must_get_agent_activity"),
+        happ_path!("validated_must_get_agent_activity"),
         &"validated_must_get_agent_activity".to_string(),
     )?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;

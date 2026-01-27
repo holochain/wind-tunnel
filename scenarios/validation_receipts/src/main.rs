@@ -1,6 +1,6 @@
 use holochain_types::prelude::*;
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -73,7 +73,7 @@ fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
     start_conductor_and_configure_urls(ctx)?;
-    install_app(ctx, scenario_happ_path!("crud"), &"crud".to_string())?;
+    install_app(ctx, happ_path!("crud"), &"crud".to_string())?;
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     Ok(())
@@ -177,7 +177,9 @@ fn wait_for_receipts_for_action(
             break 'wait_for_receipts;
         }
         // not complete yet, will try again next tick
-        log::debug!("Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}");
+        log::debug!(
+            "Validation receipts not yet complete for {action_hash}; current receipt set response: {response:?}"
+        );
         std::thread::sleep(std::time::Duration::from_secs(5));
     }
 

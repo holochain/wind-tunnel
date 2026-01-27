@@ -1,6 +1,6 @@
 use holochain_types::prelude::ActionHash;
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 
 #[derive(Debug, Default)]
 struct ScenarioValues {
@@ -33,7 +33,7 @@ fn agent_behaviour(
 ) -> HookResult {
     // Will log a warning on the first run, but makes it easier to run the scenario multiple times
     uninstall_app(ctx, None)?;
-    install_app(ctx, scenario_happ_path!("crud"), &"crud".into())?;
+    install_app(ctx, happ_path!("crud"), &"crud".into())?;
     let _: ActionHash = call_zome(ctx, "crud", "create_sample_entry", "a value")?;
 
     Ok(())

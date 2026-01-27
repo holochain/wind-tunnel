@@ -1,5 +1,5 @@
+use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
 use std::path::PathBuf;
 
 #[derive(Debug, Default)]
@@ -31,7 +31,7 @@ fn agent_setup(
 fn agent_behaviour_minimal(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    install_app_behaviour(ctx, scenario_happ_path!("callback"), "callback")?;
+    install_app_behaviour(ctx, happ_path!("callback"), "callback")?;
 
     Ok(())
 }
@@ -39,7 +39,7 @@ fn agent_behaviour_minimal(
 fn agent_behaviour_large(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    install_app_behaviour(ctx, scenario_happ_path!("large"), "large")?;
+    install_app_behaviour(ctx, happ_path!("large"), "large")?;
     Ok(())
 }
 

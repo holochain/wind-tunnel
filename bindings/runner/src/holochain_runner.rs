@@ -2,10 +2,10 @@
 
 use std::{fs, path::PathBuf, process::Stdio, time::Duration};
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use holochain_conductor_api::{
-    conductor::{paths::ConfigRootPath, ConductorConfig, KeystoreConfig},
     AdminInterfaceConfig, InterfaceDriver,
+    conductor::{ConductorConfig, KeystoreConfig, paths::ConfigRootPath},
 };
 use holochain_conductor_config::config::write_config;
 use holochain_types::websocket::AllowedOrigins;
@@ -247,10 +247,10 @@ impl Drop for HolochainRunner {
             log::info!("Successfully cleaned up the conductor files");
         }
 
-        if let Some(parent) = self.conductor_root_path.parent() {
-            if fs::remove_dir(parent).is_ok() {
-                log::info!("Successfully cleaned up all conductor directories");
-            }
+        if let Some(parent) = self.conductor_root_path.parent()
+            && fs::remove_dir(parent).is_ok()
+        {
+            log::info!("Successfully cleaned up all conductor directories");
         }
     }
 }

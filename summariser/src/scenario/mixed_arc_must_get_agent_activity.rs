@@ -10,7 +10,7 @@ use crate::model::{
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
-use polars::prelude::{col, lit, IntoLazy};
+use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 

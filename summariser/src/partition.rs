@@ -1,4 +1,4 @@
-use polars::prelude::{col, lit, AnyValue, DataFrame, IntoLazy, UniqueKeepStrategy};
+use polars::prelude::{AnyValue, DataFrame, IntoLazy, UniqueKeepStrategy, col, lit};
 use std::collections::{BTreeMap, HashSet};
 
 pub enum Partition {
