@@ -16,7 +16,7 @@ export INFLUX_CONFIGS_PATH
 use_influx() {
     export INFLUX_HOST="http://localhost:8087"
     export INFLUX_BUCKET="windtunnel"
-    INFLUX_TOKEN="$(tq --file "$INFLUX_CONFIGS_PATH" .default.token)"
+    INFLUX_TOKEN="$(tq -r --file "$INFLUX_CONFIGS_PATH" .default.token)"
     export INFLUX_TOKEN
 }
 
@@ -26,7 +26,7 @@ configure_influx() {
     use_influx
 
     # Import variables
-    find influx/templates/variables/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "{}" -quiet --force yes \;
+    find influx/templates/variables/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "{}" --quiet --force yes \;
 
     # Import dashboards
     find influx/templates/dashboards/*.json -maxdepth 1 -exec influx apply --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --file "{}" --quiet --force yes \;
