@@ -11,10 +11,10 @@ use wind_tunnel_runner::prelude::{
 #[derive(Debug, Deserialize, Serialize)]
 struct KitsuneServerUrls {
     bootstrap_server_url: String,
-    signal_server_url: String,
+    relay_url: String,
 }
 
-/// Parse cli argument "connection-string" for bootstrap and signal server URLs and return
+/// Parse cli argument "connection-string" for bootstrap and relay server URLs and return
 /// them separately.
 pub fn get_server_urls(
     ctx: &AgentContext<KitsuneRunnerContext, KitsuneAgentContext>,
@@ -24,21 +24,18 @@ pub fn get_server_urls(
         .get_connection_string()
         .expect("connection-string is empty even though it is required");
     let connections = serde_json::from_str::<KitsuneServerUrls>(connection_string)
-        .context("failed to parse bootstrap and server URL from connection string")?;
-    Ok((
-        connections.bootstrap_server_url,
-        connections.signal_server_url,
-    ))
+        .context("failed to parse bootstrap and relay server URL from connection string")?;
+    Ok((connections.bootstrap_server_url, connections.relay_url))
 }
 
-/// Convert bootstrap and signal server URL into single connection string.
-pub fn to_connection_string(bootstrap_server_url: String, signal_server_url: String) -> String {
+/// Convert bootstrap and relay server URL into single connection string.
+pub fn to_connection_string(bootstrap_server_url: String, relay_url: String) -> String {
     let server_urls = KitsuneServerUrls {
         bootstrap_server_url,
-        signal_server_url,
+        relay_url,
     };
     serde_json::to_string(&server_urls)
-        .expect("failed to convert bootstrap and signal server URLs to connection string")
+        .expect("failed to convert bootstrap and relay server URLs to connection string")
 }
 
 /// Create a Kitsune chatter instance.
@@ -48,20 +45,14 @@ pub fn create_chatter(
     if ctx.get().chatter.is_some() {
         bail!("create_chatter: Chatter already created.");
     }
-    let (bootstrap_server_url, signal_server_url) = get_server_urls(ctx)?;
+    let (bootstrap_server_url, relay_url) = get_server_urls(ctx)?;
     let space_id = ctx.runner_context().get_run_id();
     let reporter = ctx.runner_context().reporter();
     let chatter = ctx
         .runner_context()
         .executor()
         .execute_in_place(async move {
-            WtChatter::create(
-                &bootstrap_server_url,
-                &signal_server_url,
-                space_id,
-                reporter,
-            )
-            .await
+            WtChatter::create(&bootstrap_server_url, &relay_url, space_id, reporter).await
         })?;
     ctx.get_mut().chatter = Some(Arc::new(chatter));
     Ok(())

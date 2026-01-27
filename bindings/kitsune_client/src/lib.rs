@@ -10,7 +10,7 @@ use kitsune2_core::{
     factories::config::{CoreBootstrapConfig, CoreBootstrapModConfig},
 };
 use kitsune2_gossip::{K2GossipConfig, K2GossipModConfig};
-use kitsune2_transport_tx5::config::{Tx5TransportConfig, Tx5TransportModConfig};
+use kitsune2_transport_iroh::config::{IrohTransportConfig, IrohTransportModConfig};
 use op_store::{DynWtOpStore, WtOp, WtOpStore, WtOpStoreFactory};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
@@ -56,7 +56,7 @@ impl WtChatter {
     /// Construct an instance.
     pub async fn create(
         bootstrap_server_url: &str,
-        signal_server_url: &str,
+        relay_url: &str,
         space_id: &str,
         reporter: Arc<Reporter>,
     ) -> anyhow::Result<Self> {
@@ -83,10 +83,10 @@ impl WtChatter {
             })?;
         kitsune_builder
             .config
-            .set_module_config(&Tx5TransportModConfig {
-                tx5_transport: Tx5TransportConfig {
-                    server_url: signal_server_url.to_string(),
-                    signal_allow_plain_text: true,
+            .set_module_config(&IrohTransportModConfig {
+                iroh_transport: IrohTransportConfig {
+                    relay_url: Some(relay_url.to_string()),
+                    relay_allow_plain_text: true,
                     ..Default::default()
                 },
             })?;
@@ -210,6 +210,7 @@ impl WtChatter {
 mod tests {
     use super::*;
     use kitsune2_bootstrap_srv::{BootstrapSrv, Config};
+    use rustls::crypto;
     use std::time::{Duration, Instant};
     use wind_tunnel_core::prelude::ShutdownHandle;
     use wind_tunnel_instruments::{ReportConfig, Reporter};
@@ -228,31 +229,29 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn say_something_to_other_chatter() {
         env_logger::init();
+        crypto::aws_lc_rs::default_provider()
+            .install_default()
+            .unwrap();
         let bootstrap_server =
             tokio::task::spawn_blocking(|| BootstrapSrv::new(Config::testing()).unwrap())
                 .await
                 .unwrap();
         let bootstrap_server_url = format!("http://{}", bootstrap_server.listen_addrs()[0]);
-        let signal_server_url = format!("ws://{}", bootstrap_server.listen_addrs()[0]);
+        let relay_url = format!("http://{}", bootstrap_server.listen_addrs()[0]);
 
         let reporter = test_reporter();
         let space_id = Timestamp::now().as_micros().to_string();
         let chatter_1 = WtChatter::create(
             &bootstrap_server_url,
-            &signal_server_url,
+            &relay_url,
             &space_id,
             reporter.clone(),
         )
         .await
         .unwrap();
-        let chatter_2 = WtChatter::create(
-            &bootstrap_server_url,
-            &signal_server_url,
-            &space_id,
-            reporter,
-        )
-        .await
-        .unwrap();
+        let chatter_2 = WtChatter::create(&bootstrap_server_url, &relay_url, &space_id, reporter)
+            .await
+            .unwrap();
         let agent_1 = chatter_1.state.lock().await.agent.agent().clone();
         let agent_2 = chatter_2.state.lock().await.agent.agent().clone();
         chatter_1.join_space().await.unwrap();

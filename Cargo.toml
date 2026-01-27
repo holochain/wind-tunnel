@@ -150,11 +150,13 @@ hdk = { version = "0.6.1-rc.0", features = [
 hdi = { version = "0.7.1-rc.0", features = ["unstable-functions"] }
 
 # Deps for Kitsune
-kitsune2 = "0.4.0-dev.2"
+kitsune2 = { version = "0.4.0-dev.2", default-features = false, features = [
+  "transport-iroh",
+] }
 kitsune2_api = "0.4.0-dev.2"
 kitsune2_core = "0.4.0-dev.2"
 kitsune2_gossip = "0.4.0-dev.2"
-kitsune2_transport_tx5 = { version = "0.4.0-dev.2", default-features = false }
+kitsune2_transport_iroh = { version = "0.4.0-dev.2", default-features = false }
 
 # Framework
 wind_tunnel_core = { path = "./framework/core", version = "0.6.0" }

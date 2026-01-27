@@ -16,12 +16,12 @@ The scenario runs for 30 s by default unless otherwise configured with option `-
 
 You can run the scenario locally with the following commands:
 
-Start bootstrap and signal server in one terminal:
+Start bootstrap and relay server in one terminal:
 ```bash
-nix develop -c bash -c "kitsune2-bootstrap-srv --listen 127.0.0.1:30000"
+nix develop -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen 127.0.0.1:30000"
 ```
 
 In a new terminal:
 ```bash
-RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --signal-server-url ws://127.0.0.1:30000 --agents 2
+RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --relay-url ws://127.0.0.1:30000 --agents 2
 ```
