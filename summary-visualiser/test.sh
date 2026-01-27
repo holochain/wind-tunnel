@@ -10,12 +10,15 @@ if [[ ! -d "$script_dir" ]]; then
     exit 1
 fi
 
-# Summaries from a recent run of all scenarios can be found in test_data/all.json.
+# Generate input summaries json by merging all summaries used in summariser snapshot tests
+temp_dir=$(mktemp -d)
+jq -s '.' "$script_dir"/../summariser/test_data/3_summary_outputs/*.json > "$temp_dir/summary-visualiser-test-data.json"
+
 # If any template has an error in it, this command will fail.
 # Note: unsupported scenarios (ones without templates) won't cause a failure;
 # instead, it'll output a `<section class="scenario-not-found scenario-not-found-<foo>">` element
 # with some notice text about the missing template.
-html_output="$("$script_dir/generate.sh" "$script_dir/test_data/all.json")"
+html_output="$("$script_dir/generate.sh" "$temp_dir/summary-visualiser-test-data.json")"
 
 # Check that the scenario has an HTML element in the output.
 # Arguments:
