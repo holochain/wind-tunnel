@@ -17,7 +17,6 @@ fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
 ) -> HookResult {
     let received_count = Arc::new(AtomicU32::new(0));
-    let start = Instant::now();
 
     let app_client = ctx.get().app_client();
     ctx.runner_context().executor().execute_in_place({
@@ -32,6 +31,8 @@ fn agent_behaviour(
             Ok(())
         }
     })?;
+
+    let start = Instant::now();
 
     // Create a guard that will write recv metrics on drop (even on early exit)
     let reporter = ctx.runner_context().reporter().clone();
@@ -95,8 +96,10 @@ struct MetricsGuard {
 
 impl Drop for MetricsGuard {
     fn drop(&mut self) {
-        // SAFETY: We use take_mut to safely extract the FnOnce from the Option
-        // This is safe because Drop is only called once
+        // FnOnce() gets consumed when executed,
+        // since we're bound to a self reference (&mut self) because of the Drop trait,
+        // we take it out and replace it with a no-op, so we can call and consume it
+        // without consuming self.
         let write_fn = std::mem::replace(&mut self.write_fn, Box::new(|| {}));
         write_fn();
     }
