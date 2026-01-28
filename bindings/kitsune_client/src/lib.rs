@@ -228,7 +228,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn say_something_to_other_chatter() {
-        env_logger::init();
+        let _ = env_logger::builder().is_test(true).try_init();
         crypto::aws_lc_rs::default_provider()
             .install_default()
             .unwrap();
