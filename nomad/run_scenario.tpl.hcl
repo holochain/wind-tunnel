@@ -138,7 +138,7 @@ job "{{ (ds "vars").scenario_name }}" {
             "--duration=${var.duration}",
             "--reporter=${var.reporter}",
             group.value.behaviour != "" ?
-              "--behaviour=${group.value.behaviour}:${lookup(group.value, "nodes", 1)}" :
+              "--behaviour=${group.value.behaviour}:${lookup(group.value, "agents", 1)}" :
               null,
             var.run_id != null ? "--run-id=${var.run_id}" : null,
             "--agents=${lookup(group.value, "agents", 1)}",
