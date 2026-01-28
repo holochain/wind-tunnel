@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 use crate::query::holochain_metrics::{
-    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
-    query_p2p_request_duration,
+    query_p2p_handle_request_duration, query_p2p_request_duration,
 };
 use crate::{
     aggregator::HostMetricsAggregator,
@@ -19,7 +18,6 @@ struct RemoteSignalsSummary {
     remote_signal_timeout: Option<CounterStats>,
     p2p_request_duration: Option<StandardTimingsStats>,
     p2p_handle_request_duration: Option<StandardTimingsStats>,
-    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_remote_signals(
@@ -72,10 +70,6 @@ pub(crate) async fn summarize_remote_signals(
             p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
             p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
                 .await?,
-            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
-                &client, &summary,
-            )
-            .await?,
         },
         host_metrics,
     )

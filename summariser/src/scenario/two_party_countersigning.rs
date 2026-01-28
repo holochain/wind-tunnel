@@ -6,8 +6,7 @@ use crate::model::{
 };
 use crate::query;
 use crate::query::holochain_metrics::{
-    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
-    query_p2p_request_duration,
+    query_p2p_handle_request_duration, query_p2p_request_duration,
 };
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -24,7 +23,6 @@ struct TwoPartyCountersigningSummary {
     initiated_failure_rate: PartitionedRateStats,
     p2p_request_duration: Option<StandardTimingsStats>,
     p2p_handle_request_duration: Option<StandardTimingsStats>,
-    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_countersigning_two_party(
@@ -122,10 +120,6 @@ pub(crate) async fn summarize_countersigning_two_party(
             p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
             p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
                 .await?,
-            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
-                &client, &summary,
-            )
-            .await?,
         },
         host_metrics,
     )

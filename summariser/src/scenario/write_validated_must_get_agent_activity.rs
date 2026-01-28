@@ -8,8 +8,7 @@ use crate::model::{
 };
 use crate::query;
 use crate::query::holochain_metrics::{
-    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
-    query_p2p_request_duration,
+    query_p2p_handle_request_duration, query_p2p_request_duration,
 };
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
@@ -26,7 +25,6 @@ struct WriteValidatedMustGetAgentActivitySummary {
     error_count: usize,
     p2p_request_duration: Option<StandardTimingsStats>,
     p2p_handle_request_duration: Option<StandardTimingsStats>,
-    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_write_validated_must_get_agent_activity(
@@ -118,10 +116,6 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
             p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
             p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
                 .await?,
-            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
-                &client, &summary,
-            )
-            .await?,
         },
         host_metrics,
     )

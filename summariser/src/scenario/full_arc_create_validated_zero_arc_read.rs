@@ -8,8 +8,7 @@ use crate::model::{
 };
 use crate::query;
 use crate::query::holochain_metrics::{
-    query_p2p_handle_request_duration, query_p2p_handle_request_ignored_count,
-    query_p2p_request_duration, query_workflow_duration,
+    query_p2p_handle_request_duration, query_p2p_request_duration, query_workflow_duration,
 };
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
@@ -29,7 +28,6 @@ struct FullArcCreateValidatedZeroArcReadSummary {
     error_count: usize,
     p2p_request_duration: Option<StandardTimingsStats>,
     p2p_handle_request_duration: Option<StandardTimingsStats>,
-    p2p_handle_request_ignored_count: u64,
 }
 
 pub(crate) async fn summarize_full_arc_create_validated_zero_arc_read(
@@ -107,10 +105,6 @@ pub(crate) async fn summarize_full_arc_create_validated_zero_arc_read(
             p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
             p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
                 .await?,
-            p2p_handle_request_ignored_count: query_p2p_handle_request_ignored_count(
-                &client, &summary,
-            )
-            .await?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         },
         host_metrics,
