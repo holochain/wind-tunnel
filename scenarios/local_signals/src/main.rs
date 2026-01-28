@@ -39,7 +39,6 @@ fn agent_behaviour(
     let _metrics_guard = MetricsGuard {
         write_fn: Box::new({
             let reporter = reporter.clone();
-            let start = start.clone();
             let received_count = received_count.clone();
             move || {
                 let recv_elapsed_s = start.elapsed().as_secs_f64();
