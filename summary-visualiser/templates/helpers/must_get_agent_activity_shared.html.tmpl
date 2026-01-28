@@ -89,6 +89,14 @@ This helper doesn't actually output anything -- it just provides some helpers to
                     "content" (tmpl.Exec "timing_and_trend" .p2p_handle_request_duration)
                 ) }}
             {{ end }}
+
+            {{ if .p2p_handle_request_ignored_count }}
+                {{ template "scenario_metric" (dict
+                    "name" "Incoming p2p requests ignored"
+                    "description" "The number of incoming p2p requests that have been ignored."
+                    "content" (tmpl.Exec "scalar" (dict "value" .p2p_handle_request_ignored_count))
+                ) }}
+            {{ end }}
         {{ end }}
     </div>
 {{ end }}
