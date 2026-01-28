@@ -13,6 +13,7 @@ A simple Example:
 ```json
 {
   "scenario_name": "app_install",
+  "duration": 300,
   "assignments": [
     {
       "behaviour": "large",
@@ -33,7 +34,6 @@ The following variables are available:
     - `agents`: The number of agents to run on each node with this behaviour. (_optional_, defaults to `1`)
 - `connection_string`: The connection string to the Holochain conductor. (_optional_, defaults to `ws://localhost:8888`)
 - `run_id`: The ID of the run to distinguish it from other runs. (_optional_, defaults to `null`)
-- `agents_per_node`: The number of agents per node. (_optional_, defaults to `1`)
 - `min_agents`: The minimum number of agents to run the scenario with. (_optional_, defaults to `2`)
 - `reporter`: The reporter type to use. (_optional_, defaults to `influx-file`)
 
