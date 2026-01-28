@@ -108,6 +108,27 @@ pub async fn query_p2p_handle_request_duration(
     }
 }
 
+/// Query `hc.holochain_p2p.handle_request.ignored.requests` metric and compute its stats.
+pub async fn query_p2p_handle_request_ignored_count(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<u64> {
+    match query_counter(
+        client,
+        summary,
+        "hc.holochain_p2p.handle_request.ignored.requests",
+        None,
+    )
+    .await
+    {
+        Ok(stats) => Ok(stats.end),
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
+            None => Err(e).context("query p2p handle request ignored count"),
+        },
+    }
+}
+
 /// Query `hc.conductor.workflow.duration` metric for a specific workflow and compute its stats.
 pub async fn query_workflow_duration(
     client: &influxdb::Client,
