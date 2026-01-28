@@ -23,5 +23,5 @@ nix develop -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen 127.0.0.1:30000
 
 In a new terminal:
 ```bash
-RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --relay-url ws://127.0.0.1:30000 --agents 2
+RUST_LOG=info cargo run -p kitsune_continuous_flow -- --bootstrap-server-url http://127.0.0.1:30000 --relay-url http://127.0.0.1:30000 --agents 2
 ```
