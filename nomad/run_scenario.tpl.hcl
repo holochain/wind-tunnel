@@ -125,7 +125,7 @@ job "{{ (ds "vars").scenario_name }}" {
           RUST_LOG          = "info"
           HOME              = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS        = "{{- $assignments := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- $sum := 0 -}}{{- range $assignments -}}{{- $nodes := (index . "nodes" | default 1) -}}{{- $agents := (index . "agents" | default 1) -}}{{- $sum = add $sum (mul $nodes $agents) -}}{{- end -}}{{- if eq $sum 0 -}}1{{- else -}}{{ $sum }}{{- end -}}"
+          MIN_AGENTS        = "${lookup(group.value, "agents", 1)}"
           RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           WT_HOLOCHAIN_PATH = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
         }
