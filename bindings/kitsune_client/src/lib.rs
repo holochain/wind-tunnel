@@ -210,7 +210,7 @@ impl WtChatter {
 mod tests {
     use super::*;
     use kitsune2_bootstrap_srv::{BootstrapSrv, Config};
-    use rustls::crypto;
+    use rustls::crypto::{self, CryptoProvider};
     use std::time::{Duration, Instant};
     use wind_tunnel_core::prelude::ShutdownHandle;
     use wind_tunnel_instruments::{ReportConfig, Reporter};
@@ -229,9 +229,11 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn say_something_to_other_chatter() {
         let _ = env_logger::builder().is_test(true).try_init();
-        crypto::aws_lc_rs::default_provider()
-            .install_default()
-            .unwrap();
+        if CryptoProvider::get_default().is_none() {
+            crypto::aws_lc_rs::default_provider()
+                .install_default()
+                .unwrap();
+        }
         let bootstrap_server =
             tokio::task::spawn_blocking(|| BootstrapSrv::new(Config::testing()).unwrap())
                 .await
