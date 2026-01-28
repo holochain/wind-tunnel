@@ -44,8 +44,8 @@ job "{{ (ds "vars").scenario_name }}" {
   }
 
   dynamic "group" {
-    for_each = {{- $a := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- if gt (len $a) 0 -}}{{ $a | toJSON }}{{- else -}}{{ (coll.Slice (dict "behaviour" "")) | toJSON }}{{- end }}
-    labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value.behaviour}"]
+    for_each = [{{- $assignments := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- range $aIdx, $assignment := $assignments -}}{{- $nodes := (index $assignment "nodes" | default 1) -}}{{- range $nodeIdx := math.Seq 0 (sub $nodes 1) -}}{{- if or (gt $aIdx 0) (gt $nodeIdx 0) -}},{{- end -}}{{ merge $assignment (dict "nodeIndex" $nodeIdx) | toJSON }}{{- end -}}{{- end -}}{{- if eq (len $assignments) 0 -}}{{ dict "behaviour" "" | toJSON }}{{- end -}}]
+    labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value.behaviour}-${lookup(group.value, "nodeIndex", 0)}"]
 
     content {
       restart {
