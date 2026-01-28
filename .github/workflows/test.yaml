@@ -229,16 +229,7 @@ jobs:
 
       - name: Smoke test - write_get_agent_activity
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
-          # Run the scenario
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
-
-          # Stop sandbox conductor
-          pkill hc && pkill holochain && pkill lair-keystore
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
 
           echo "==> Available space after step"
           echo
@@ -246,16 +237,8 @@ jobs:
 
       - name: Smoke test - write_validated_must_get_agent_activity
         run: |
-          # Start a sandbox conductor and run it in the background
-          nix develop .#ci -c bash -c "hc s clean && echo "1234" | hc s --piped create && echo "1234" | hc s --piped -f 8888 run &"
-
-          nix develop .#ci --command bash ./scripts/wait-for-hc.sh
-
           # Run the scenario
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --connection-string ws://localhost:8888 --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
-
-          # Stop sandbox conductor
-          pkill hc && pkill holochain && pkill lair-keystore
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
 
           echo "==> Available space after step"
           echo
