@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 
@@ -87,7 +87,7 @@ pub struct RunSummary {
     ///
     /// This won't capture all environment variables. Just the ones that the runner is aware of or
     /// that are included by the scenario itself.
-    pub env: HashMap<String, String>,
+    pub env: BTreeMap<String, String>,
     /// The version of Wind Tunnel that was used for this run
     ///
     /// This is the version of the Wind Tunnel runner that was used to run the scenario.
@@ -107,7 +107,7 @@ impl RunSummary {
             peer_count: args.peer_count,
             peer_end_count: 0,
             assigned_behaviours: BTreeMap::new(),
-            env: HashMap::new(),
+            env: BTreeMap::new(),
             wind_tunnel_version: args.wind_tunnel_version,
             build_info: None,
         }

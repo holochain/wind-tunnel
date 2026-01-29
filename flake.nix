@@ -132,6 +132,7 @@
                 pkgs.openssl
                 pkgs.tomlq
                 pkgs.getopt
+                pkgs.jq
                 unfreePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ];
@@ -409,6 +410,21 @@
               ./summary-visualiser/generate.sh "$1" > "$2"
             '';
           };
+          generate-summary-visualiser-with-test-data = pkgs.writeShellApplication {
+            name = "generate-summary-visualiser-with-test-data";
+            runtimeInputs = [
+              pkgs.gomplate
+              pkgs.jq
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              temp_dir=$(mktemp -d)
+              jq -s '.' summariser/test_data/3_summary_outputs/*.json > "$temp_dir/summary-visualiser-test-data.json"
+              ./summary-visualiser/generate.sh "$temp_dir/summary-visualiser-test-data.json" > "$1"
+            '';
+          };
           awscli-s3 = pkgs.writeShellApplication {
             name = "awscli-s3";
             runtimeInputs = [
@@ -443,11 +459,15 @@
           summary-visualiser-smoke-test =
             let
               summaryVisualiser = pkgs.runCommand "summary-visualiser" { } ''
-                mkdir -p $out
-                cp -r ${lib.cleanSource ./summary-visualiser}/* $out/
-                chmod +x $out/test.sh
-                chmod +x $out/generate.sh
-                chmod +x $out/scenario_template_exists.sh
+                mkdir -p $out/summary-visualiser
+                cp -r ${lib.cleanSource ./summary-visualiser}/* $out/summary-visualiser/
+
+                mkdir -p $out/summariser/test_data/3_summary_outputs
+                cp -r ${lib.cleanSource ./summariser/test_data/3_summary_outputs}/* $out/summariser/test_data/3_summary_outputs/
+                
+                chmod +x $out/summary-visualiser/test.sh
+                chmod +x $out/summary-visualiser/generate.sh
+                chmod +x $out/summary-visualiser/scenario_template_exists.sh
                 patchShebangs $out
               '';
             in
@@ -458,10 +478,11 @@
                 pkgs.gnugrep
                 pkgs.gomplate
                 pkgs.html-tidy
+                pkgs.jq
               ];
               text = ''
                 set -euo pipefail
-                ${summaryVisualiser}/test.sh "$@"
+                ${summaryVisualiser}/summary-visualiser/test.sh "$@"
               '';
             };
         };

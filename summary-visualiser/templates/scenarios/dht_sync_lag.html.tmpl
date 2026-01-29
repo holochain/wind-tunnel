@@ -138,7 +138,7 @@ Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingStat
                 "content" (print
                     (default "" (and .wasm_usage_total (tmpl.Exec "scenario_metric_content_item" (dict
                         "name" "Total"
-                        "content" (tmpl.Exec "delta" .wasm_usage)
+                        "content" (tmpl.Exec "delta" .wasm_usage_total)
                     ))))
                     (default "" (and .wasm_usage_by_fn (tmpl.Exec "dht_sync_lag_wasm_usage_by_fn" .wasm_usage_by_fn)))
                 )
