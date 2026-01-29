@@ -1,7 +1,8 @@
 use crate::ToSocketAddr;
+use crate::error::handle_api_err;
 use anyhow::Result;
 use holo_hash::DnaHash;
-use holochain_client::{AgentSigner, AppWebsocket, ConductorApiResult, ZomeCallTarget};
+use holochain_client::{AgentSigner, AppWebsocket, ZomeCallTarget};
 use holochain_conductor_api::{AppAuthenticationToken, AppInfo};
 use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload};
 use holochain_types::prelude::{
@@ -43,16 +44,19 @@ impl AppWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn app_info(&self) -> ConductorApiResult<Option<AppInfo>> {
-        self.inner.app_info().await
+    pub async fn app_info(&self) -> anyhow::Result<Option<AppInfo>> {
+        self.inner.app_info().await.map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
     pub async fn agent_info(
         &self,
         dna_hashes: Option<Vec<DnaHash>>,
-    ) -> ConductorApiResult<Vec<String>> {
-        self.inner.agent_info(dna_hashes).await
+    ) -> anyhow::Result<Vec<String>> {
+        self.inner
+            .agent_info(dna_hashes)
+            .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_", pre_hook = pre_call_zome)]
@@ -62,39 +66,49 @@ impl AppWebsocketInstrumented {
         zome_name: impl Into<ZomeName> + Clone,
         fn_name: impl Into<FunctionName> + Clone,
         payload: ExternIO,
-    ) -> ConductorApiResult<ExternIO> {
+    ) -> anyhow::Result<ExternIO> {
         self.inner
             .call_zome(target, zome_name.into(), fn_name.into(), payload)
             .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
     pub async fn create_clone_cell(
         &self,
         payload: CreateCloneCellPayload,
-    ) -> ConductorApiResult<ClonedCell> {
-        self.inner.create_clone_cell(payload).await
+    ) -> anyhow::Result<ClonedCell> {
+        self.inner
+            .create_clone_cell(payload)
+            .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
     pub async fn enable_clone_cell(
         &self,
         payload: EnableCloneCellPayload,
-    ) -> ConductorApiResult<ClonedCell> {
-        self.inner.enable_clone_cell(payload).await
+    ) -> anyhow::Result<ClonedCell> {
+        self.inner
+            .enable_clone_cell(payload)
+            .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn disable_clone_cell(
-        &self,
-        payload: DisableCloneCellPayload,
-    ) -> ConductorApiResult<()> {
-        self.inner.disable_clone_cell(payload).await
+    pub async fn disable_clone_cell(&self, payload: DisableCloneCellPayload) -> anyhow::Result<()> {
+        self.inner
+            .disable_clone_cell(payload)
+            .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn dump_network_stats(&self) -> ConductorApiResult<TransportStats> {
-        self.inner.dump_network_stats().await
+    pub async fn dump_network_stats(&self) -> anyhow::Result<TransportStats> {
+        self.inner
+            .dump_network_stats()
+            .await
+            .map_err(handle_api_err)
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
@@ -102,10 +116,11 @@ impl AppWebsocketInstrumented {
         &self,
         dna_hash: Option<DnaHash>,
         include_dht_summary: bool,
-    ) -> ConductorApiResult<std::collections::HashMap<DnaHash, Kitsune2NetworkMetrics>> {
+    ) -> anyhow::Result<std::collections::HashMap<DnaHash, Kitsune2NetworkMetrics>> {
         self.inner
             .dump_network_metrics(dna_hash, include_dht_summary)
             .await
+            .map_err(handle_api_err)
     }
 }
 

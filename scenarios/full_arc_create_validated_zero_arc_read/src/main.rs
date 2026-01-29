@@ -51,7 +51,7 @@ fn record_open_connections_if_necessary(
         let network_stats = ctx
             .runner_context()
             .executor()
-            .execute_in_place(async move { Ok(app_client.dump_network_stats().await?) })?;
+            .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
         let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_open_connections")
             .with_tag("arc", arc)
