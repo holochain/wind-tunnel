@@ -5,7 +5,10 @@ use crate::analyze::{
 };
 use crate::model::{
     CounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
-    SummaryOutput,
+    StandardTimingsStats, SummaryOutput,
+};
+use crate::query::holochain_metrics::{
+    query_p2p_handle_request_duration, query_p2p_request_duration,
 };
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
@@ -23,6 +26,8 @@ struct MixedArcMustGetAgentActivitySummary {
     retrieval_errors: PartitionedTimingStats,
     open_connections: PartitionedGaugeStats,
     error_count: usize,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
 }
 
 pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
@@ -114,7 +119,10 @@ pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
             .context("Partitioned timing stats for retrieval errors")?,
             open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"])
                 .context("Open connections")?,
-            error_count: query::zome_call_error_count(client, &summary).await?,
+            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
         },
         host_metrics,
     )

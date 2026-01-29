@@ -3,6 +3,9 @@ use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
 use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
 use crate::query;
+use crate::query::holochain_metrics::{
+    query_p2p_handle_request_duration, query_p2p_request_duration,
+};
 use anyhow::Context;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -13,6 +16,8 @@ struct SingleWriteManyReadSummary {
     read_call: StandardTimingsStats,
     rate_10s: StandardRateStats,
     error_count: usize,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
 }
 
 pub(crate) async fn summarize_single_write_many_read(
@@ -47,11 +52,14 @@ pub(crate) async fn summarize_single_write_many_read(
         .await;
 
     SummaryOutput::new(
-        summary,
+        summary.clone(),
         SingleWriteManyReadSummary {
             read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
             rate_10s: standard_rate(zome_calls, "value", "10s")?,
             error_count,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
         },
         host_metrics,
     )

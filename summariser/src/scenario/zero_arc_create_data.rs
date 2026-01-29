@@ -1,9 +1,13 @@
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_gauge_stats, partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
-    PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
+    PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, StandardTimingsStats,
+    SummaryOutput,
 };
 use crate::query;
+use crate::query::holochain_metrics::{
+    query_p2p_handle_request_duration, query_p2p_request_duration,
+};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -17,6 +21,8 @@ struct ZeroArcCreateSummary {
     sync_lag_rate: PartitionedRateStats,
     open_connections: PartitionedGaugeStats,
     error_count: usize,
+    p2p_request_duration: Option<StandardTimingsStats>,
+    p2p_handle_request_duration: Option<StandardTimingsStats>,
 }
 
 pub(crate) async fn summarize_zero_arc_create_data(
@@ -67,6 +73,9 @@ pub(crate) async fn summarize_zero_arc_create_data(
             open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
                 .context("Open connections")?,
             error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            p2p_request_duration: query_p2p_request_duration(&client, &summary).await?,
+            p2p_handle_request_duration: query_p2p_handle_request_duration(&client, &summary)
+                .await?,
         },
         host_metrics,
     )
