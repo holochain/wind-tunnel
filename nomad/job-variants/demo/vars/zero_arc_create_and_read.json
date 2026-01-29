@@ -1,15 +1,18 @@
 {
   "scenario_name": "zero_arc_create_and_read",
   "duration": 300,
-  "behaviours": [
-    "zero_write",
-    "zero_write",
-    "zero_write",
-    "zero_read",
-    "zero_read",
-    "zero_read",
-    "full",
-    "full",
-    "full"
+  "assignments": [
+    {
+      "behaviour": "zero_write",
+      "nodes": 3
+    },
+    {
+      "behaviour": "zero_read",
+      "nodes": 3
+    },
+    {
+      "behaviour": "full",
+      "nodes": 3
+    }
   ]
 }
