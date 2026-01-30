@@ -81,6 +81,7 @@ fn agent_behaviour_must_get_agent_activity(
 
     // get write peer if we don't have one yet
     let Some(write_peer) = ctx.get().scenario_values.write_peer.clone() else {
+        log::debug!("Fetching random write peer agent...");
         ctx.get_mut().scenario_values.write_peer = call_zome(
             ctx,
             "validated_must_get_agent_activity",
