@@ -219,8 +219,10 @@ where
 ///             let agent_pubkey = admin_client.generate_agent_pub_key().await?;
 ///             Ok(agent_pubkey)
 ///         })?;
-///     let dna_properties =
-///         serde_yaml::from_str(&format!("some_agent_pubkey: {some_agent_pubkey}"))?;
+///     let dna_properties = serde_yaml::to_value(HashMap::from([(
+///         "some_agent_pubkey".to_string(),
+///         some_agent_pubkey.to_string(),
+///     )]))?;
 ///     let role_settings = HashMap::from([(
 ///         "some_role".to_string(),
 ///         RoleSettings::Provisioned {
