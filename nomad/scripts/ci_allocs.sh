@@ -30,7 +30,7 @@ function make_allocs_csv() {
 
     duration=$(jq -e -r '.duration' "${vars_path}/${job_name}.json")
     behaviours=$(jq -r '(.assignments // [{ "behaviour": "default" }])[].behaviour' "${vars_path}/${job_name}.json")
-    peer_count=$(jq -r '(.assignments // []) | map((.agents // 1) * (.nodes // 1)) | add // 0' "${vars_path}/${job_name}.json")
+    peer_count=$(jq -r '(.assignments // []) | map((.agents // 1) * (.nodes // 1)) | add // 1' "${vars_path}/${job_name}.json")
     csv_behaviours=""
     for behaviour in $behaviours; do
         if [ -z "$csv_behaviours" ]; then
