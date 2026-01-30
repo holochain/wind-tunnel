@@ -91,7 +91,7 @@ fn agent_behaviour_must_get_agent_activity(
             "Got random write peer agent: {:?}",
             ctx.get().scenario_values.write_peer
         );
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_secs(1));
         return Ok(());
     };
 
@@ -143,7 +143,7 @@ fn agent_behaviour_must_get_agent_activity(
                 batch_chain_top
             }
             Err(err) => {
-                log::warn!(
+                log::debug!(
                     "Could not get chain top for batch {next_batch_num} for agent {write_peer}: {err}",
                 );
                 // The next batch may not yet have been created by the writing peer.
