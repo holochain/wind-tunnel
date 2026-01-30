@@ -73,6 +73,8 @@ This helper doesn't actually output anything -- it just provides some helpers to
                 "description" "The total number of <em>all</em> types of error accumulated over the run by <em>all</em> agents."
                 "content" (tmpl.Exec "scalar" (dict "value" .error_count))
             ) }}
+
+            {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
         {{ end }}
     </div>
 {{ end }}

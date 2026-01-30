@@ -45,5 +45,7 @@
             "description" "The number of initiated sessions that failed per second."
             "content" (tmpl.Exec "rates_overall_and_per_agent" .initiated_failure_rate)
         ) }}
+
+        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
 </div>
