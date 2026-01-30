@@ -191,6 +191,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         return;
                     }
 
+                    log::info!("Agent {agent_name} starting behaviour [{assigned_behaviour}]");
+
                     // TODO implement warmup
                     let mut behaviour_ran_to_complete = true;
                     if let Some(behaviour) = agent_behaviour_fn {
