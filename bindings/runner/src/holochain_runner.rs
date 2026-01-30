@@ -183,12 +183,19 @@ impl HolochainRunner {
         .context("Failed to write conductor config file")?
         .to_path_buf();
 
+        // get `WT_HOLOCHAIN_RUST_LOG` env var and pass it to the child process as `RUST_LOG`.
+        // If not set, fall back to `RUST_LOG`, and if that is also not set, default to "error".
+        let wt_hc_log = std::env::var("WT_HOLOCHAIN_RUST_LOG")
+            .or_else(|_| std::env::var("RUST_LOG"))
+            .unwrap_or_else(|_| "error".to_string());
+
         log::info!("Running a Holochain conductor");
         let mut holochain_handle = Command::new(&config.bin_path)
             .env("HOLOCHAIN_INFLUXIVE_FILE", holochain_metrics_path)
             .arg("--config-path")
             .arg(conductor_config_path)
             .arg("--piped")
+            .env("RUST_LOG", &wt_hc_log)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .kill_on_drop(true)

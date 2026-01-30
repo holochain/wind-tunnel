@@ -2,6 +2,7 @@ use crate::bin_path::{WT_HOLOCHAIN_PATH_ENV, holochain_path};
 use crate::build_info::holochain_build_info;
 use crate::context::HolochainAgentContext;
 use crate::holochain_runner::{HolochainConfig, HolochainRunner};
+use crate::prelude::AgentSigner;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
 use holochain_client_instrumented::ToSocketAddr;
@@ -18,6 +19,7 @@ use kitsune2_api::{AgentInfoSigned, DhtArc};
 use kitsune2_core::Ed25519Verifier;
 use rand::rng;
 use rand::seq::SliceRandom;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -179,8 +181,9 @@ where
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
     let run_id = ctx.runner_context().get_run_id().to_string();
+    let ws_client_configs = ctx.app_websocket_clients();
 
-    let (installed_app_id, cell_id, app_client) = ctx
+    let (installed_app_id, cell_id, app_client, user_clients) = ctx
         .runner_context()
         .executor()
         .execute_in_place(async move {
@@ -226,17 +229,39 @@ where
                 .await
                 .map_err(|e| anyhow::anyhow!("Could not issue auth token for app client: {e:?}"))?;
 
-            let app_client =
-                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), None, reporter)
-                    .await?;
+            let signer: Arc<dyn AgentSigner + Send + Sync> = signer.into();
+            let app_client = AppWebsocket::connect(
+                app_ws_url,
+                issued.token.clone(),
+                signer.clone(),
+                None,
+                reporter.clone(),
+            )
+            .await?;
 
-            Ok((installed_app_id, cell_id, app_client))
+            // get user clients
+            let mut user_clients = HashMap::default();
+            for (id, config) in ws_client_configs {
+                let user_client = AppWebsocket::connect_with_config(
+                    app_ws_url,
+                    config,
+                    issued.token.clone(),
+                    signer.clone(),
+                    None,
+                    reporter.clone(),
+                )
+                .await?;
+                user_clients.insert(id, user_client);
+            }
+
+            Ok((installed_app_id, cell_id, app_client, user_clients))
         })
         .context("Failed to install app")?;
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
+    ctx.get_mut().app_websocket_clients = user_clients;
 
     Ok(())
 }
@@ -550,11 +575,11 @@ where
     Ok(())
 }
 
-/// Calls a zome function on the cell specified in `ctx.get().cell_id()`.
+/// Call the zome as specified at [`call_zome_with_client`] using the default `app_agent_client` from the context.
 ///
 /// Requires:
-/// - The [HolochainAgentContext] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
-/// - The [HolochainAgentContext] to have a valid `app_agent_client`. Consider calling [install_app] in your setup before using this function.
+/// - The [`HolochainAgentContext`] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
+/// - The [`HolochainAgentContext`] to have a valid `app_agent_client`. Consider calling [install_app] in your setup before using this function.
 ///
 /// Call this function as follows:
 /// ```rust
@@ -590,8 +615,53 @@ where
     I: serde::Serialize + std::fmt::Debug,
     SV: UserValuesConstraint,
 {
-    let cell_id = ctx.get().cell_id();
     let app_agent_client = ctx.get().app_client();
+    call_zome_with_client(ctx, &app_agent_client, zome_name, fn_name, payload)
+}
+
+/// Calls a zome function using the specified [`AppWebsocket`] client on the cell specified in `ctx.get().cell_id()`.
+///
+/// Requires:
+/// - The [`HolochainAgentContext`] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
+/// - The [`HolochainAgentContext`] to have a valid `app_agent_client`. Consider calling [install_app] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_types::prelude::ActionHash;
+/// use holochain_wind_tunnel_runner::prelude::{call_zome_with_client, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     // Return type determined by why you assign the result to
+///     let client = ctx.get().app_client();
+///     let action_hash: ActionHash = call_zome_with_client(
+///         ctx,
+///         &client, // specify the client to use
+///         "crud", // zome name
+///         "create_sample_entry", // function name
+///         "this is a test entry value" // payload
+///     )?;
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Tries to serialize the input payload.
+/// - Calls the zome function using the provided client.
+/// - Tries to deserialize and return the response.
+pub fn call_zome_with_client<I, O, SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    app_agent_client: &AppWebsocket,
+    zome_name: &str,
+    fn_name: &str,
+    payload: I,
+) -> anyhow::Result<O>
+where
+    O: std::fmt::Debug + serde::de::DeserializeOwned,
+    I: serde::Serialize + std::fmt::Debug,
+    SV: UserValuesConstraint,
+{
+    let cell_id = ctx.get().cell_id();
     ctx.runner_context().executor().execute_in_place(async {
         let result = app_agent_client
             .call_zome(

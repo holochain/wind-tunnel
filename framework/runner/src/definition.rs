@@ -1,3 +1,4 @@
+use holochain_client_instrumented::prelude::WebsocketConfig;
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 use wind_tunnel_summary_model::BuildInfo;
@@ -35,6 +36,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
     teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     teardown_fn: Option<GlobalHook<RV>>,
+    app_websocket_clients: HashMap<&'static str, Arc<WebsocketConfig>>,
 }
 
 pub struct AssignedBehaviour {
@@ -58,6 +60,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) teardown_fn: Option<GlobalHook<RV>>,
     pub(crate) run_id: String,
+    pub(crate) app_websocket_clients: HashMap<&'static str, Arc<WebsocketConfig>>,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V> {
@@ -108,7 +111,23 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             agent_behaviour: HashMap::new(),
             teardown_agent_fn: None,
             teardown_fn: None,
+            app_websocket_clients: HashMap::new(),
         }
+    }
+
+    /// Set a custom websocket client config with the given configuration and a name.
+    ///
+    /// When the scenario is initialized a client is generated for each config provided here,
+    /// associated with the provided name.
+    ///
+    /// The client can then be accessed from the agent context.
+    pub fn with_app_websocket_client(
+        mut self,
+        id: &'static str,
+        config: Arc<WebsocketConfig>,
+    ) -> Self {
+        self.app_websocket_clients.insert(id, config);
+        self
     }
 
     /// Set the default number of agents that should be spawned for this scenario.
@@ -238,6 +257,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
             run_id,
+            app_websocket_clients: self.app_websocket_clients,
         })
     }
 }
