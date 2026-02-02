@@ -206,7 +206,8 @@ pub async fn query_metrics(
     }
     // Add tag filter if provided
     if let Some((tag_name, tag_value)) = filter_by_tag {
-        query_str += format!(r#" AND {tag_name} = '{tag_value}'"#).as_str();
+        // The tag name is wrapped in double quote marks so it does not conflict with influxql syntax keywords.
+        query_str += format!(r#" AND "{tag_name}" = '{tag_value}'"#).as_str();
     };
 
     let q = ReadQuery::new(query_str);
