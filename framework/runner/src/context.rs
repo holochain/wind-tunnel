@@ -1,4 +1,5 @@
 use crate::executor::Executor;
+use holochain_client_instrumented::prelude::WebsocketConfig;
 use std::{fmt::Debug, sync::Arc};
 use wind_tunnel_core::prelude::{DelegatedShutdownListener, ShutdownHandle};
 use wind_tunnel_instruments::Reporter;
@@ -106,6 +107,7 @@ pub struct AgentContext<RV: UserValuesConstraint, V: UserValuesConstraint> {
     runner_context: Arc<RunnerContext<RV>>,
     shutdown_listener: DelegatedShutdownListener,
     value: V,
+    websocket_config: Option<Arc<WebsocketConfig>>,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
@@ -123,7 +125,14 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
             runner_context,
             shutdown_listener,
             value: Default::default(),
+            websocket_config: None,
         }
+    }
+
+    /// Construct a new [`AgentContext``] with the given websocket configuration.
+    pub fn with_websocket_config(mut self, config: Arc<WebsocketConfig>) -> Self {
+        self.websocket_config = Some(config);
+        self
     }
 
     /// The index of the agent within the scenario.
@@ -158,6 +167,11 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> AgentContext<RV, V> {
     /// In general, please consider using [Executor::execute_in_place] which automatically handles shutdown.
     pub fn shutdown_listener(&mut self) -> &mut DelegatedShutdownListener {
         &mut self.shutdown_listener
+    }
+
+    /// Get the websocket configuration for the agent, if one was set.
+    pub fn websocket_config(&self) -> Option<Arc<WebsocketConfig>> {
+        self.websocket_config.clone()
     }
 
     /// Get mutable access to the user-defined state for the agent.

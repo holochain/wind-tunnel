@@ -174,7 +174,7 @@ impl HolochainRunner {
         )
         .context("Failed to write conductor config file")?
         .to_path_buf();
-        
+
         // get WT_HC_LOG env var and pass it to the child process
         let wt_hc_log = std::env::var("WT_HC_LOG").unwrap_or_else(|_| "error".to_string());
 

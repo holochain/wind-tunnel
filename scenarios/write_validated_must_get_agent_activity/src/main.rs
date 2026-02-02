@@ -2,6 +2,7 @@ use holochain_types::prelude::Timestamp;
 use holochain_types::prelude::{ActionHash, AgentPubKey};
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
+use std::sync::Arc;
 use std::time::Duration;
 use validated_must_get_agent_activity_coordinator::GetChainTopForBatchInput;
 use validated_must_get_agent_activity_coordinator::SampleEntryInput;
@@ -24,13 +25,17 @@ impl UserValuesConstraint for ScenarioValues {}
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    log::info!("Starting conductor and installing app...");
     start_conductor_and_configure_urls(ctx)?;
+    log::info!("Conductor started.");
     install_app(
         ctx,
         happ_path!("validated_must_get_agent_activity"),
         &"validated_must_get_agent_activity".to_string(),
     )?;
+    log::info!("App installed.");
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
+    log::info!("Minimum number of agents reached.");
 
     // 'write' peers create a link to announce their behaviour so 'get_agent_activity' peers can find them
     if ctx.assigned_behaviour() == "write" {
@@ -41,6 +46,10 @@ fn agent_setup(
             (),
         )?;
     }
+    log::info!(
+        "Agent setup complete for behaviour '{}'.",
+        ctx.assigned_behaviour()
+    );
 
     Ok(())
 }
@@ -237,10 +246,14 @@ fn agent_behaviour_must_get_agent_activity(
 }
 
 fn main() -> WindTunnelResult<()> {
+    let mut websocket_config = WebsocketConfig::CLIENT_DEFAULT;
+    websocket_config.default_request_timeout = Duration::from_secs(15);
+
     let builder = ScenarioDefinitionBuilder::<
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
+    .with_websocket_config(Arc::new(websocket_config))
     .with_default_duration_s(60)
     .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)

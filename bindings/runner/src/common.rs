@@ -184,6 +184,7 @@ where
     let installed_app_id = installed_app_id_for_agent(ctx);
     let reporter = ctx.runner_context().reporter();
     let run_id = ctx.runner_context().get_run_id().to_string();
+    let websocket_config = ctx.websocket_config();
 
     let (installed_app_id, cell_id, app_client) = ctx
         .runner_context()
@@ -238,9 +239,23 @@ where
                 .await
                 .map_err(|e| anyhow::anyhow!("Could not issue auth token for app client: {e:?}"))?;
 
-            let app_client =
-                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), None, reporter)
-                    .await?;
+            let app_client = match websocket_config {
+                Some(config) => {
+                    AppWebsocket::connect_with_config(
+                        app_ws_url,
+                        config,
+                        issued.token,
+                        signer.into(),
+                        None,
+                        reporter,
+                    )
+                    .await?
+                }
+                None => {
+                    AppWebsocket::connect(app_ws_url, issued.token, signer.into(), None, reporter)
+                        .await?
+                }
+            };
 
             Ok((installed_app_id, cell_id, app_client))
         })

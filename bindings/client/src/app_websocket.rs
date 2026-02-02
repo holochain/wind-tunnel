@@ -1,7 +1,9 @@
 use crate::ToSocketAddr;
 use anyhow::Result;
 use holo_hash::DnaHash;
-use holochain_client::{AgentSigner, AppWebsocket, ConductorApiResult, ZomeCallTarget};
+use holochain_client::{
+    AgentSigner, AppWebsocket, ConductorApiResult, WebsocketConfig, ZomeCallTarget,
+};
 use holochain_conductor_api::{AppAuthenticationToken, AppInfo};
 use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload};
 use holochain_types::prelude::{
@@ -33,6 +35,26 @@ impl AppWebsocketInstrumented {
                 .await
                 .map(|inner| Self { inner, reporter })?,
         )
+    }
+
+    /// Connect to a Conductor API app websocket with a custom [`WebsocketConfig`].
+    pub async fn connect_with_config(
+        app_url: impl ToSocketAddr,
+        websocket_config: Arc<WebsocketConfig>,
+        token: AppAuthenticationToken,
+        signer: Arc<dyn AgentSigner + Send + Sync>,
+        origin: Option<String>,
+        reporter: Arc<Reporter>,
+    ) -> Result<Self> {
+        Ok(AppWebsocket::connect_with_config(
+            app_url.to_socket_addr()?,
+            websocket_config,
+            token,
+            signer.clone(),
+            origin,
+        )
+        .await
+        .map(|inner| Self { inner, reporter })?)
     }
 
     pub async fn on_signal<F>(&self, handler: F) -> Result<String>

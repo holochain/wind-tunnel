@@ -158,6 +158,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let setup_agent_fn = definition.setup_agent_fn;
         let agent_behaviour_fn = definition.agent_behaviour.get(assigned_behaviour).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
+        let websocket_config = definition.websocket_config.clone();
 
         let agents_run_to_completion = agents_run_to_completion.clone();
 
@@ -181,6 +182,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         runner_context,
                         delegated_shutdown_listener,
                     );
+                    // Apply websocket config if provided
+                    if let Some(websocket_config) = websocket_config {
+                        context = context.with_websocket_config(websocket_config);
+                    }
                     if let Some(Err(e)) = setup_agent_fn.map(|f| f(&mut context)) {
                         log::error!("Agent setup failed for agent {agent_name}: {e:?}");
 

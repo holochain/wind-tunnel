@@ -1,3 +1,4 @@
+use holochain_client_instrumented::prelude::WebsocketConfig;
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 use wind_tunnel_summary_model::BuildInfo;
@@ -35,6 +36,7 @@ pub struct ScenarioDefinitionBuilder<RV: UserValuesConstraint, V: UserValuesCons
     agent_behaviour: HashMap<String, AgentHookMut<RV, V>>,
     teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     teardown_fn: Option<GlobalHook<RV>>,
+    websocket_config: Option<Arc<WebsocketConfig>>,
 }
 
 pub struct AssignedBehaviour {
@@ -58,6 +60,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) teardown_fn: Option<GlobalHook<RV>>,
     pub(crate) run_id: String,
+    pub(crate) websocket_config: Option<Arc<WebsocketConfig>>,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V> {
@@ -108,7 +111,14 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             agent_behaviour: HashMap::new(),
             teardown_agent_fn: None,
             teardown_fn: None,
+            websocket_config: None,
         }
+    }
+
+    /// Set a custom websocket configuration for all agents in this scenario.
+    pub fn with_websocket_config(mut self, config: Arc<WebsocketConfig>) -> Self {
+        self.websocket_config = Some(config);
+        self
     }
 
     /// Set the default number of agents that should be spawned for this scenario.
@@ -238,6 +248,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
             run_id,
+            websocket_config: self.websocket_config,
         })
     }
 }
