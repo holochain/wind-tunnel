@@ -46,7 +46,7 @@ fn should_fetch_happ() {
         .ensure_happs_available()
         .expect("failed to fetch happ");
 
-    let fetched_happ_path = happ_target_dir.join("dino-adventure.happ");
+    let fetched_happ_path = happ_target_dir.join("dino-adventure/dino-adventure.happ");
     assert!(
         fetched_happ_path.exists(),
         "fetched happ file does not exist"
@@ -60,8 +60,8 @@ fn should_refetch_if_hash_mismatch() {
     let happ_target_dir = tempdir.path().join("happs");
 
     // Create happs directory and a corrupted file
-    std::fs::create_dir_all(&happ_target_dir).expect("failed to create happs dir");
-    let file_path = happ_target_dir.join("dino-adventure.happ");
+    let file_path = happ_target_dir.join("dino-adventure/dino-adventure.happ");
+    std::fs::create_dir_all(file_path.parent().unwrap()).expect("failed to create happs dir");
     std::fs::write(&file_path, b"corrupted data").expect("failed to write test file");
 
     // Create test manifest
