@@ -36,7 +36,7 @@ impl HappFetcher<'_> {
     fn fetch_happ(&self, happ: &FetchRequiredHapp) -> HappBuilderResult {
         let out_path = self
             .happ_target_dir
-            .join(format!("{name}.happ", name = happ.name));
+            .join(format!("{name}/{name}.happ", name = &happ.name));
 
         if out_path.exists()
             && let Ok(existing_sha256) = Self::sha256_file(&out_path)
@@ -54,12 +54,19 @@ impl HappFetcher<'_> {
         // get the response body as bytes
         let mut body = response.into_body();
 
+        let cleanup_happ_and_dir = || {
+            // Try to cleanup the hApp file but ignore errors
+            std::fs::remove_file(&out_path).ok();
+            // Try to remove the output directory but ignore errors
+            std::fs::remove_dir(out_path.parent().unwrap()).ok();
+        };
+
+        std::fs::create_dir_all(out_path.parent().expect("no hApp download directory"))?;
         let mut writer = std::fs::File::create(&out_path).context("failed to create happ file")?;
         if let Err(err) =
             std::io::copy(&mut body.as_reader(), &mut writer).context("failed to write happ file")
         {
-            // cleanup partial file
-            std::fs::remove_file(&out_path).ok();
+            cleanup_happ_and_dir();
             return Err(err);
         }
 
@@ -67,8 +74,7 @@ impl HappFetcher<'_> {
         let downloaded_sha256 =
             Self::sha256_file(&out_path).context("failed to compute sha256 of downloaded happ")?;
         if downloaded_sha256 != happ.sha256 {
-            // cleanup invalid file
-            std::fs::remove_file(&out_path).ok();
+            cleanup_happ_and_dir();
             anyhow::bail!(
                 "sha256 mismatch for downloaded happ: expected {}, got {}",
                 happ.sha256,
