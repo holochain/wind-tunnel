@@ -4,28 +4,9 @@ use crate::{
 };
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::UnitMap;
-use std::{collections::BTreeMap, str::FromStr, thread, time::Duration};
+use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
-// pub fn agent_behaviour(
-//     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-// ) -> HookResult {
-//     if ctx.get().cell_id().agent_pubkey() == &ctx.runner_context().get().progenitor_agent_pubkey() {
-//         // check if agent is progenitor
-//         log::info!(
-//             "Progenitor agent {} initializing network",
-//             ctx.get().cell_id().agent_pubkey()
-//         );
-//         return crate::behaviour::initiate_network::agent_behaviour(ctx);
-//     } else {
-//         // else continue with spend behaviour
-//         log::info!(
-//             "Agent {} continuing with spend behaviour",
-//             ctx.get().cell_id().agent_pubkey()
-//         );
-//         agent_behaviour_spend(ctx)
-//     }
-// }
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
@@ -68,14 +49,14 @@ pub fn agent_behaviour(
     // check incoming transactions and accept them so that you can have more to spend
     let actionable_transactions = ctx.unyt_get_actionable_transactions()?;
     // accept incoming invoices too?
-    if !actionable_transactions.spend_actionable.is_empty() {
+    if !actionable_transactions.commitment_actionable.is_empty() {
         log::info!(
             "Agent {} | accepting {} transactions",
             ctx.get().cell_id().agent_pubkey(),
-            actionable_transactions.spend_actionable.len()
+            actionable_transactions.commitment_actionable.len()
         );
     }
-    for transaction in actionable_transactions.spend_actionable {
+    for transaction in actionable_transactions.commitment_actionable {
         let _ = ctx.unyt_accept_transaction(AcceptTx {
             address: transaction.id.clone().into(),
             service_network_definition: None,
@@ -86,13 +67,13 @@ pub fn agent_behaviour(
     // get ledger and calculate how much you can spend in this round
     let ledger = ctx.unyt_get_ledger()?;
     let balance = ledger.balance.get_base_unyt();
-    let fees = ledger.fees;
+    let fees = ledger.fees_owed;
     let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
-    let spendable_amount = ((balance - fees)? + credit_limit.get_base_unyt())?;
+    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
 
     // test 4
     // collect agents and start transacting
-    if spendable_amount > ZFuel::from_str("0")? {
+    if spendable_amount > ZFuel::zero() {
         log::info!(
             "Agent {} | spendable amount: {}",
             ctx.get().cell_id().agent_pubkey(),

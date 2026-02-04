@@ -1,15 +1,17 @@
 use crate::{handle_scenario_setup::ScenarioValues, unyt_agent::UnytAgentExt};
+use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
+    PermissionSpace, UnitIndexMap,
     entries::{
-        AgreementDefInput, CodeTemplate, DataFetchInstruction, EARole, ExecutionEngine,
-        ExecutorRules, GlobalDefinition, InputRules, Instruction, ProvidedBy, RoleQualification,
-        SmartAgreement, SystemSAVEDAgreements, TransactionFeeCompute,
+        AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
+        DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, GlobalDefinition, InputRules,
+        Instruction, LaneDefinition, ProvidedBy, RoleQualification, SmartAgreement,
+        SystemRAVEAgreements, TransactionFeeCompute,
     },
-    ActionHashB64, Timestamp,
 };
-use serde_json::{json, Value};
-use std::{str::FromStr, thread, time::Duration};
+use serde_json::json;
+use std::{thread, time::Duration};
 use zfuel::fuel::ZFuel;
 
 /// This behavior is where the progenitor is meant to initialize the network
@@ -19,10 +21,8 @@ pub fn agent_behaviour(
 ) -> HookResult {
     // check if network is initialized, if not initialize it
     if !ctx.is_network_initialized() {
-        log::info!(
-            "Progenitor agent {} initializing network",
-            ctx.get().cell_id().agent_pubkey()
-        );
+        let progenitor_key = ctx.get().cell_id().agent_pubkey().clone();
+        log::info!("Progenitor agent {} initializing network", &progenitor_key);
         // create system code templates
         let (credit_limit_smart_agreement, fee_transfer_smart_agreement) = create_agreements(ctx)?;
         //  set global configuration
@@ -30,18 +30,34 @@ pub fn agent_behaviour(
         let days = 30; // if test run longger than this days this will need to be updated
         let expiration_date = (timestamp + Duration::from_secs(days * 24 * 60 * 60))?;
         ctx.unyt_initialize_global_definition(GlobalDefinition {
-            effective_start_date: timestamp,
-            expiration_date,
-            system_saved_agreements: SystemSAVEDAgreements {
-                compute_credit_limit: credit_limit_smart_agreement.into(),
+            lane_def: LaneDefinition {
+                effective_start_date: timestamp,
+                expiration_date,
+                special_agents: CommonSpecialAgents {
+                    bridging_agent: AddressBook {
+                        pub_key: progenitor_key.into(),
+                        address_book_data: json!({}),
+                    },
+                    ops_accounts: vec![],
+                    service_infrastructure_account: None,
+                },
+                rave_agreements: CommonRAVEAgreements {
+                    bridging_agreement: None,
+                    credit_limit_adjustment: credit_limit_smart_agreement.clone(),
+                    proof_of_service: fee_transfer_smart_agreement.clone(),
+                },
+                additional_special_agents: vec![],
+                additional_rave_agreements: vec![],
+                service_units: UnitIndexMap::new(),
+            },
+            system_rave_agreements: SystemRAVEAgreements {
+                compute_credit_limit: credit_limit_smart_agreement,
                 compute_transaction_fee: TransactionFeeCompute {
-                    agreement: fee_transfer_smart_agreement.into(),
-                    fee_trigger: ZFuel::from_str("100").unwrap(),
+                    agreement: fee_transfer_smart_agreement,
+                    fee_trigger: ZFuel::new_with_default_precision(100),
                     fee_percentage: 0,
                 },
             },
-            additional_special_agents: vec![],
-            additional_saved_agreements: vec![],
         })?;
         log::info!("Network should be initialized now");
     } else {
@@ -118,6 +134,7 @@ fn create_agreements(
         one_time_run: false,
         aggregate_execution: false,
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
     // creating the smart agreement for credit limit
     let credit_limit_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
@@ -134,6 +151,7 @@ fn create_agreements(
         roles: vec![],
         executor_rules: ExecutorRules::Any,
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
 
     let fee_transfer_hash = ctx.unyt_create_code_template(CodeTemplate {
@@ -242,6 +260,7 @@ fn create_agreements(
         one_time_run: false,
         aggregate_execution: true,
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
     let fee_transfer_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
         title: "collect fee v0.1".to_string(),
@@ -267,6 +286,7 @@ fn create_agreements(
             ctx.get().cell_id().agent_pubkey().clone().into(),
         ),
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
     Ok((credit_limit_smart_agreement, fee_transfer_smart_agreement))
 }

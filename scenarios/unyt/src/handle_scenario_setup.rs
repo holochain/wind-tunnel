@@ -1,5 +1,5 @@
+use holochain_types::prelude::{ActionHashB64, AgentPubKeyB64};
 use holochain_wind_tunnel_runner::prelude::*;
-use rave_engine::types::{ActionHashB64, AgentPubKeyB64};
 use tokio::time::Instant;
 
 #[derive(Debug, Default)]
@@ -19,9 +19,9 @@ pub struct ScenarioValues {
 
 impl UserValuesConstraint for ScenarioValues {}
 
-pub fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
+pub fn setup(_ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
     log::info!("Setting up unyt scenario");
-    configure_app_ws_url(ctx)?;
+    // TODO: Just remove the setup I guess?
     log::info!("Unyt scenario setup complete");
     Ok(())
 }
