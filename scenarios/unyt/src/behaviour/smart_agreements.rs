@@ -2,44 +2,26 @@ use crate::{
     handle_scenario_setup::ScenarioValues,
     unyt_agent::{CreateParkedSpendInput, SAVEDExecuteInputs, UnytAgentExt},
 };
+use holochain_types::prelude::ActionHashB64;
 use holochain_wind_tunnel_runner::prelude::*;
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use rave_engine::types::{
+    PermissionSpace, TransactionDetails, UnitMap,
     entries::{
-        AgreementDefInput, CodeTemplate, DataFetchInstruction, ExecutionEngine, ExecutorRules,
-        InputRules, Instruction, RoleQualification, SmartAgreement,
+        AgreementDefInput, CodeTemplate, DataFetchInstruction, EARole, ExecutionEngine,
+        ExecutorRules, InputRules, Instruction, ProvidedBy, RoleQualification, SmartAgreement,
     },
-    ActionHashB64, TransactionDetails,
-};
-use rave_engine::types::{
-    entries::{EARole, ProvidedBy},
-    UnitMap,
 };
 use serde_json::json;
-use std::{collections::BTreeMap, str::FromStr, thread, time::Duration};
+use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
 fn env_number_of_links_processed() -> usize {
-    match std::env::var("NUMBER_OF_LINKS_TO_PROCESS")
+    std::env::var("NUMBER_OF_LINKS_TO_PROCESS")
         .unwrap_or("10".to_string())
         .parse::<usize>()
-    {
-        Ok(number) => number,
-        Err(_) => 10,
-    }
+        .unwrap_or(10)
 }
-
-// pub fn agent_behaviour(
-//     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-// ) -> HookResult {
-//     // check if agent is progenitor
-//     if ctx.get().cell_id().agent_pubkey() == &ctx.runner_context().get().progenitor_agent_pubkey() {
-//         return crate::behaviour::initiate_network::agent_behaviour(ctx);
-//     } else {
-//         // else continue with smart agreements behaviour
-//         agent_behaviour_smart_agreements(ctx)
-//     }
-// }
 
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
@@ -89,8 +71,12 @@ pub fn agent_behaviour(
     for request in requests {
         // select number of links and pass only NUMBER_OF_LINKS_PROCESSED links
         // Check the
-        if let TransactionDetails::GroupedParked { transactions, .. } = request.details {
-            let links = transactions;
+        if let TransactionDetails::GroupedParked {
+            attached_transactions,
+            ..
+        } = request.details
+        {
+            let links = attached_transactions;
             let ea_id = request.id;
             log::info!("Executing saved: {:?}", links);
             let _ = ctx.unyt_execute_saved(SAVEDExecuteInputs {
@@ -106,15 +92,15 @@ pub fn agent_behaviour(
     // get ledger and calculate how much you can spend in this round
     let ledger = ctx.unyt_get_ledger()?;
     let balance = ledger.balance.get_base_unyt();
-    let fees = ledger.fees;
+    let fees = ledger.fees_owed;
     let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
-    let spendable_amount = ((balance - fees)? + credit_limit.get_base_unyt())?;
+    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
     // from the spend amount lets just use 75 % of it so that we have fees accounted for
     let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
 
     // test 4
     // collect agents and start transacting
-    if spendable_amount > ZFuel::from_str("0")? {
+    if spendable_amount > ZFuel::zero() {
         ctx.collect_agents()?;
 
         // get the smart agreement hash
@@ -138,7 +124,7 @@ pub fn agent_behaviour(
             for i in 0..number_of_links_processed {
                 let agent = &participating_agents[i % participating_agents.len()];
                 // create a parked link spending transaction
-                let _ = ctx.unyt_create_parked_spend(CreateParkedSpendInput {
+                ctx.unyt_create_parked_spend(CreateParkedSpendInput {
                     ea_id: smart_agreement_hash.clone().into(),
                     executor: ctx
                         .get()
@@ -171,22 +157,19 @@ pub fn agent_behaviour(
 fn generate_smart_agreement(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> Result<Option<ActionHashB64>, anyhow::Error> {
-    match ctx.get().scenario_values.smart_agreement_hash.clone() {
-        Some(smart_agreement_hash) => {
-            log::trace!(
-                "Smart agreement already created for agent {}",
-                ctx.get().cell_id().agent_pubkey()
-            );
-            return Ok(Some(smart_agreement_hash));
-        }
-        None => {}
+    if let Some(smart_agreement_hash) = ctx.get().scenario_values.smart_agreement_hash.clone() {
+        log::trace!(
+            "Smart agreement already created for agent {}",
+            ctx.get().cell_id().agent_pubkey()
+        );
+        return Ok(Some(smart_agreement_hash));
     }
     // Choose a random executor?
     let executor_pubkey = match ctx
         .get()
         .scenario_values
         .participating_agents
-        .choose(&mut rand::thread_rng())
+        .choose(&mut rand::rng())
     {
         Some(executor_pubkey) => executor_pubkey.clone(),
         None => return Ok(None),
@@ -294,6 +277,7 @@ fn generate_smart_agreement(
         one_time_run: false,
         aggregate_execution: true,
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
 
     // creating the smart agreement for credit limit
@@ -322,10 +306,11 @@ fn generate_smart_agreement(
             description: "The spender role".to_string(),
             qualification: RoleQualification::Authorized(vec![agent_pubkey.clone().into()]),
         }],
-        executor_rules: ExecutorRules::AuthorizedExecutor(executor_pubkey.clone().into()),
+        executor_rules: ExecutorRules::AuthorizedExecutor(executor_pubkey.clone()),
         tags: vec![],
+        permissions: PermissionSpace::Default,
     })?;
-    ctx.get_mut().scenario_values.executor_pubkey = Some(executor_pubkey.clone());
+    ctx.get_mut().scenario_values.executor_pubkey = Some(executor_pubkey);
     ctx.get_mut().scenario_values.smart_agreement_hash = Some(smart_agreement_hash.clone());
     Ok(Some(smart_agreement_hash))
 }

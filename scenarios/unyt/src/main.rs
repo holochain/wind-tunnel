@@ -30,14 +30,16 @@ fn main() -> WindTunnelResult<()> {
         reporter.add_custom(
             ReportMetric::new("ledger_state")
                 .with_field("ledger_balance", ledger.balance.get_base_unyt().to_string())
-                .with_field("ledger_fees", ledger.fees.to_string())
+                .with_field("ledger_fees", ledger.fees_owed.to_string())
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
         let actuable_tx = ctx
             .unyt_get_actionable_transactions()
             .unwrap_or(Actionable {
-                invoice_actionable: vec![],
-                spend_actionable: vec![],
+                proposal_actionable: vec![],
+                commitment_actionable: vec![],
+                accept_actionable: vec![],
+                reject_actionable: vec![],
             });
         let completed_tx = ctx.unyt_get_completed_transactions().unwrap_or(Completed {
             accept: vec![],
@@ -48,8 +50,13 @@ fn main() -> WindTunnelResult<()> {
         let executed_agreements = ctx.unyt_get_all_my_executed_saveds().unwrap_or(vec![]);
         reporter.add_custom(
             ReportMetric::new("actionable_transactions")
-                .with_field("invoices", actuable_tx.invoice_actionable.len() as u64)
-                .with_field("spends", actuable_tx.spend_actionable.len() as u64)
+                .with_field("proposals", actuable_tx.proposal_actionable.len() as u64)
+                .with_field(
+                    "commitments",
+                    actuable_tx.commitment_actionable.len() as u64,
+                )
+                .with_field("accepts", actuable_tx.accept_actionable.len() as u64)
+                .with_field("rejects", actuable_tx.reject_actionable.len() as u64)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
         reporter.add_custom(

@@ -3,14 +3,13 @@ use holochain_serialized_bytes::prelude::*;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};
 use rave_engine::types::{
+    Actionable, Completed, Ledger, PermissionSpace, Transaction, UnitMap,
     entries::{
-        code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
-        GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt, SAVED,
+        AgreementDefInput, CodeTemplateExt, ExecutionEngine, GlobalDefinition, GlobalDefinitionExt,
+        RAVE, SmartAgreement, SmartAgreementExt, code_template::CodeTemplate,
     },
-    Actionable, Completed, Ledger, Transaction, UnitMap,
 };
 use serde_json::Value;
-use zfuel::fuel::ZFuel;
 
 // todo: move to rave_engine
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
@@ -83,7 +82,7 @@ pub trait UnytAgentExt {
     fn unyt_execute_saved(
         &mut self,
         inputs: SAVEDExecuteInputs,
-    ) -> Result<(SAVED, ActionHash), anyhow::Error>;
+    ) -> Result<(RAVE, ActionHash), anyhow::Error>;
     fn unyt_get_requests_to_execute_agreements(
         &mut self,
     ) -> Result<Vec<Transaction>, anyhow::Error>;
@@ -98,7 +97,7 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
     }
 
     fn is_network_initialized(&mut self) -> bool {
-        if let Err(_) = self.unyt_get_current_global_definition() {
+        if self.unyt_get_current_global_definition().is_err() {
             return false;
         }
         // check if there are any code templates in the lib
@@ -107,26 +106,22 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
                 return false;
             }
             // check if any titles in code templates start with "__system_credit_limit_computation" if not return false
-            let found = code_templates.iter().find(|template| {
-                template
-                    .title
-                    .starts_with("__system_credit_limit_computation")
-            });
-            match found {
-                Some(code_template) => {
+            code_templates
+                .iter()
+                .find(|template| {
+                    template
+                        .title
+                        .starts_with("__system_credit_limit_computation")
+                })
+                .is_some_and(|code_template| {
                     // check if the code template has a smart agreement
-                    if let Err(_) = self.unyt_get_smart_agreements_for_code_template(
+                    self.unyt_get_smart_agreements_for_code_template(
                         code_template.id.clone().into(),
-                    ) {
-                        return false;
-                    } else {
-                        true
-                    }
-                }
-                None => return false,
-            }
+                    )
+                    .is_ok()
+                })
         } else {
-            return false;
+            false
         }
     }
     fn collect_agents(&mut self) -> Result<(), anyhow::Error> {
@@ -140,16 +135,14 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
                 .collect::<Vec<_>>();
 
             // remove yourself from the list
-            unique_agents
-                .retain(|agent| agent != &self.get().cell_id().agent_pubkey().clone().into());
+            let self_key: AgentPubKeyB64 = self.get().cell_id().agent_pubkey().clone().into();
+            unique_agents.retain(|agent| agent != &self_key);
             // remove progenitor from the list
             if let Ok(progenitor_key) = DurableObject::new().get_progenitor_key(self) {
-                unique_agents.retain(|agent| agent != &progenitor_key.clone().into());
+                let progenitor_b64: AgentPubKeyB64 = progenitor_key.into();
+                unique_agents.retain(|agent| agent != &progenitor_b64);
             }
-            self.get_mut().scenario_values.participating_agents = unique_agents
-                .into_iter()
-                .map(|agent| agent.into())
-                .collect();
+            self.get_mut().scenario_values.participating_agents = unique_agents;
         }
         Ok(())
     }
@@ -179,6 +172,7 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
             aggregate_execution: false,
             one_time_run: false,
             tags: vec![],
+            permissions: PermissionSpace::Default,
         };
         self.call_zome_alliance("create_code_template", code_template)
     }
@@ -260,7 +254,7 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
     fn unyt_execute_saved(
         &mut self,
         inputs: SAVEDExecuteInputs,
-    ) -> Result<(SAVED, ActionHash), anyhow::Error> {
+    ) -> Result<(RAVE, ActionHash), anyhow::Error> {
         self.call_zome_alliance("execute_saved", inputs)
     }
 
