@@ -1,24 +1,21 @@
-use crate::HappBuilderResult;
 use crate::manifest::{FetchRequiredHapp, Sha256Hash};
+use crate::{HappBuilderResult, HappManagerOptions};
 use anyhow::Context;
 use sha2::Sha256;
 use std::path::Path;
 use std::time::Duration;
 
 pub struct HappFetcher<'a> {
-    /// Directory to fetch happs into
-    pub happ_target_dir: &'a Path,
+    /// The options for configuring the hApp manager and details from the manifest
+    options: &'a HappManagerOptions,
     /// Happs to fetch
     pub happs: &'a [FetchRequiredHapp],
 }
 
 impl<'a> HappFetcher<'a> {
     /// Create a new [`HappFetcher`]
-    pub fn new(happ_target_dir: &'a Path, happs: &'a [FetchRequiredHapp]) -> Self {
-        Self {
-            happ_target_dir,
-            happs,
-        }
+    pub fn new(options: &'a HappManagerOptions, happs: &'a [FetchRequiredHapp]) -> Self {
+        Self { options, happs }
     }
 }
 
@@ -35,8 +32,10 @@ impl HappFetcher<'_> {
     /// Fetch a single happ and save it to the target directory
     fn fetch_happ(&self, happ: &FetchRequiredHapp) -> HappBuilderResult {
         let out_path = self
+            .options
             .happ_target_dir
-            .join(format!("{name}/{name}.happ", name = &happ.name));
+            .join(&self.options.package_name)
+            .join(format!("{name}.happ", name = &happ.name));
 
         if out_path.exists()
             && let Ok(existing_sha256) = Self::sha256_file(&out_path)
