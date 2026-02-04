@@ -9,7 +9,7 @@ use unyt_agent::UnytAgentExt;
 mod durable_object;
 
 fn main() -> WindTunnelResult<()> {
-    log::info!("Starting unyt scenario");
+    log::info!("Starting Unyt Chain Transaction scenario");
     let builder = ScenarioDefinitionBuilder::<
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
