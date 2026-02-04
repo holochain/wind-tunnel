@@ -75,9 +75,11 @@ function generate_run_summary() {
 
     local wind_tunnel_version
     wind_tunnel_version=$(cargo metadata --no-deps --format-version 1 | jq -r ".packages[0].version")
+    echo "Retrieved wind tunnel version: $wind_tunnel_version"
 
     local holochain_build_info
     holochain_build_info=$(holochain_build_info)
+    echo "Retrieved holochain build info: $holochain_build_info"
 
     local scenario_name
     local alloc_id
