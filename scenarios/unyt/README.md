@@ -54,9 +54,9 @@ Additionally, all zome calls are automatically logged with timing and performanc
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt -- --connection-string ws://localhost:8888 --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 300
+RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt -- --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 300
 ```
 
 ```bash
-RUST_LOG=info NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt -- --connection-string ws://localhost:8888 --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
+RUST_LOG=info NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
 ```
