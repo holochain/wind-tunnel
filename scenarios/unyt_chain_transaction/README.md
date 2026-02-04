@@ -1,8 +1,8 @@
-## unyt
+## Unyt Chain Transaction
 
 ### Description
 
-This scenario tests the performance of a unyt chain transaction system using a distributed credit ledger. The scenario simulates a financial network where agents can spend credits and create transaction chains that propagate through the network like unytes.
+This scenario tests the performance of a Unyt chain transaction system using a distributed credit ledger. The scenario simulates a financial network where agents can spend credits and create transaction chains that propagate through the network like unytes.
 
 There are three roles:
 
@@ -54,9 +54,9 @@ Additionally, all zome calls are automatically logged with timing and performanc
 You can run the scenario locally with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt -- --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 300
+RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 300
 ```
 
 ```bash
-RUST_LOG=info NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
+RUST_LOG=info NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
 ```

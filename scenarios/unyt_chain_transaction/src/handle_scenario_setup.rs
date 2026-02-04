@@ -20,8 +20,8 @@ pub struct ScenarioValues {
 impl UserValuesConstraint for ScenarioValues {}
 
 pub fn setup(_ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    log::info!("Setting up unyt scenario");
+    log::info!("Setting up Unyt Chain Transaction scenario");
     // TODO: Just remove the setup I guess?
-    log::info!("Unyt scenario setup complete");
+    log::info!("Unyt Chain Transaction scenario setup complete");
     Ok(())
 }
