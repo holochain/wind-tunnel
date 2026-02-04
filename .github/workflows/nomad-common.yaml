@@ -295,6 +295,7 @@ jobs:
           NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           RUN_SUMMARY_PATH: ./run_summary.jsonl
+          HOLOCHAIN_BIN_URL: ${{ inputs.holochain-bin-url }}
         run: |
           nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
           cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
