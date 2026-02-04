@@ -292,6 +292,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - unyt_chain_transaction
+        run: |
+          nix run .#rust-smoke-test -- --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 5 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test
