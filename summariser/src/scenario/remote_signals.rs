@@ -6,13 +6,17 @@ use crate::{
     aggregator::HostMetricsAggregator,
     analyze::{counter_stats, standard_timing_stats},
     model::{CounterStats, StandardTimingsStats, SummaryOutput},
-    query,
+    query::{
+        self,
+        holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics},
+    },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct RemoteSignalsSummary {
     remote_signal_round_trip: StandardTimingsStats,
     remote_signal_timeout: Option<CounterStats>,
+    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_remote_signals(
@@ -52,7 +56,7 @@ pub(crate) async fn summarize_remote_signals(
     };
 
     SummaryOutput::new(
-        summary,
+        summary.clone(),
         RemoteSignalsSummary {
             remote_signal_round_trip: standard_timing_stats(
                 remote_signal_round_trip_frame,
@@ -62,6 +66,7 @@ pub(crate) async fn summarize_remote_signals(
             )
             .context("Send timing stats")?,
             remote_signal_timeout,
+            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
         },
         host_metrics,
     )

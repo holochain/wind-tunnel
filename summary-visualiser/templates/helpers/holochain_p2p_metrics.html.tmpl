@@ -1,0 +1,147 @@
+{{ with .request_roundtrip_duration }}
+    {{ if (index . "get") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'get'"
+            "description" "The time spent sending a get request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .get)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "get_links") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'get_links'"
+            "description" "The time spent sending a get_links request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .get_links)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "count_links") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'count_links'"
+            "description" "The time spent sending a count_links request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .count_links)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "get_agent_activity") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'get_agent_activity'"
+            "description" "The time spent sending a get_agent_activity request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .get_agent_activity)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "must_get_agent_activity") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'must_get_agent_activity'"
+            "description" "The time spent sending a must_get_agent_activity request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .must_get_agent_activity)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "send_validation_receipts") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'send_validation_receipts'"
+            "description" "The time spent sending a send_validation_receipts request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .send_validation_receipts)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "call_remote") }}
+        {{ template "scenario_metric" (dict
+            "name" "Request roundtrip duration: 'call_remote'"
+            "description" "The time spent sending a call_remote request and awaiting its response"
+            "content" (tmpl.Exec "timing_and_trend" .call_remote)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with .handle_incoming_request_duration }}
+    {{ if (index . "response") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming response duration"
+            "description" "The time spent handling an incoming response message of any type"
+            "content" (tmpl.Exec "timing_and_trend" .response)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "call_remote") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'call_remote'"
+            "description" "The time spent handling an incoming call_remote request"
+            "content" (tmpl.Exec "timing_and_trend" .call_remote)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "get") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'get'"
+            "description" "The time spent handling an incoming get request"
+            "content" (tmpl.Exec "timing_and_trend" .get)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "get_links") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'get_links'"
+            "description" "The time spent handling an incoming get_links request"
+            "content" (tmpl.Exec "timing_and_trend" .get_links)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "count_links") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'count_links'"
+            "description" "The time spent handling an incoming count_links request"
+            "content" (tmpl.Exec "timing_and_trend" .count_links)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "get_agent_activity") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'get_agent_activity'"
+            "description" "The time spent handling an incoming get_agent_activity request"
+            "content" (tmpl.Exec "timing_and_trend" .get_agent_activity)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "must_get_agent_activity") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'must_get_agent_activity'"
+            "description" "The time spent handling an incoming must_get_agent_activity request"
+            "content" (tmpl.Exec "timing_and_trend" .must_get_agent_activity)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "send_validation_receipts") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'send_validation_receipts'"
+            "description" "The time spent handling an incoming send_validation_receipts request"
+            "content" (tmpl.Exec "timing_and_trend" .send_validation_receipts)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "remote_signal") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'remote_signal'"
+            "description" "The time spent handling an incoming remote_signal request"
+            "content" (tmpl.Exec "timing_and_trend" .remote_signal)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "publish_counter_sign") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'publish_counter_sign'"
+            "description" "The time spent handling an incoming publish_counter_sign request"
+            "content" (tmpl.Exec "timing_and_trend" .publish_counter_sign)
+        ) }}
+    {{ end }}
+
+    {{ if (index . "countersigning_session_negotiation") }}
+        {{ template "scenario_metric" (dict
+            "name" "Handle incoming request duration: 'countersigning_session_negotiation'"
+            "description" "The time spent handling an incoming countersigning_session_negotiation request"
+            "content" (tmpl.Exec "timing_and_trend" .countersigning_session_negotiation)
+        ) }}
+    {{ end }}
+{{ end }}

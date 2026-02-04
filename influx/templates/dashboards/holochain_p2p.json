@@ -1,0 +1,1696 @@
+[
+  {
+    "apiVersion": "influxdata.com/v2alpha1",
+    "kind": "Dashboard",
+    "metadata": {
+      "name": "recursing-jemison-ebe001"
+    },
+    "spec": {
+      "charts": [
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'get'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"get\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'count_links'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"count_links\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 4
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'must_get_agent_activity'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"must_get_agent_activity\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'call_remote'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"call_remote\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 12
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming response",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"response\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 16
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'get'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"get\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 20
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'count_links'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"count_links\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 24
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'must_get_agent_activity'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"must_get_agent_activity\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 28
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'remote_signal'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"remote_signal\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "yCol": "_value",
+          "yPos": 32
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'get_links'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"get_links\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value"
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'get_agent_activity'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"get_agent_activity\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 4
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Request roundtrip duration: 'send_validation_receipts'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n |> filter(fn: (r) => r[\"error\"] == \"false\")\n |> filter(fn: (r) => r[\"tag\"] == \"send_validation_receipts\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 8
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'call_remote'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"call_remote\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 12
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'get_links'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"get_links\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 16
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'get_agent_activity'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"get_agent_activity\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 20
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'send_validation_receipts'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"send_validation_receipts\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 24
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'publish_counter_sign'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"publish_counter_sign\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 28
+        },
+        {
+          "axes": [
+            {
+              "base": "10",
+              "name": "x",
+              "scale": "linear"
+            },
+            {
+              "base": "10",
+              "name": "y",
+              "scale": "linear",
+              "suffix": "s"
+            }
+          ],
+          "colorizeRows": true,
+          "colors": [
+            {
+              "id": "uEYYVeB5_9MATRcsMAYBj",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#FFFFFF"
+            },
+            {
+              "id": "OySh2K9xEEJ8vKAEPoiLI",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#E69F00"
+            },
+            {
+              "id": "OpasJ-ETjzm47DNwVpuQn",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#56B4E9"
+            },
+            {
+              "id": "IRO4wiX9YFLdeyQlHDSk4",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#009E73"
+            },
+            {
+              "id": "voRLRMU4K5p1-FPoKkU5X",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#F0E442"
+            },
+            {
+              "id": "sgdWJDab-MkeNbAcJu-bD",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#0072B2"
+            },
+            {
+              "id": "XPgm35mEgQr9l4NO_NZ44",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#D55E00"
+            },
+            {
+              "id": "68Pahxu2xmhCn_QX4PWOU",
+              "name": "Color Blind Friendly - Light",
+              "type": "scale",
+              "hex": "#CC79A7"
+            }
+          ],
+          "geom": "line",
+          "height": 4,
+          "hoverDimension": "auto",
+          "kind": "Xy",
+          "legendColorizeRows": true,
+          "legendOpacity": 1,
+          "legendOrientationThreshold": 100000000,
+          "name": "Handle incoming request duration: 'countersigning_session_negotiation'",
+          "opacity": 1,
+          "orientationThreshold": 100000000,
+          "position": "overlaid",
+          "queries": [
+            {
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hc.holochain_p2p.handle_request.duration.s\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"message_type\"] == \"countersigning_session_negotiation\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+            }
+          ],
+          "staticLegend": {
+            "colorizeRows": true,
+            "opacity": 1,
+            "orientationThreshold": 100000000,
+            "widthRatio": 1
+          },
+          "width": 6,
+          "widthRatio": 1,
+          "xCol": "_time",
+          "xPos": 6,
+          "yCol": "_value",
+          "yPos": 32
+        }
+      ],
+      "description": "Generic charts for Holochain P2P metrics.",
+      "name": "Holochain P2P"
+    }
+  }
+]

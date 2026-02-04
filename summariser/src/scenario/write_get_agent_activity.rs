@@ -1,6 +1,7 @@
 use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::counter_stats;
 use crate::model::{CounterStats, PartitionedTimingStats, SummaryOutput};
+use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
@@ -13,6 +14,7 @@ struct WriteGetAgentActivitySummary {
     highest_observed_action_seq: CounterStats,
     get_agent_activity_full_zome_calls: PartitionedTimingStats,
     error_count: usize,
+    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_write_get_agent_activity(
@@ -55,7 +57,8 @@ pub(crate) async fn summarize_write_get_agent_activity(
                 &["agent"],
             )
             .context("Timing stats for zome call get_agent_activity_full")?,
-            error_count: query::zome_call_error_count(client, &summary).await?,
+            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
         },
         host_metrics,
     )
