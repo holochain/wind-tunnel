@@ -132,7 +132,7 @@
                 pkgs.tomlq
                 pkgs.getopt
                 pkgs.jq
-                unfreeUnstablePkgs.nomad
+                unfreeUnstablePkgs.nomad_1_11
                 inputs'.holonix.packages.hn-introspect
               ];
 
@@ -386,7 +386,7 @@
             name = "validate-all-nomad-jobs";
             runtimeInputs = [
               pkgs.gomplate
-              unfreeUnstablePkgs.nomad
+              unfreeUnstablePkgs.nomad_1_11
               pkgs.getopt
             ];
             text = ''
