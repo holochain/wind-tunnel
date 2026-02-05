@@ -242,6 +242,7 @@ where
             // get user clients
             let mut user_clients = HashMap::default();
             for (id, config) in ws_client_configs {
+                log::info!("Creating app websocket client for user id: {id}");
                 let user_client = AppWebsocket::connect_with_config(
                     app_ws_url,
                     config,
@@ -251,6 +252,7 @@ where
                     reporter.clone(),
                 )
                 .await?;
+                log::info!("Created app websocket client for user id: {id}");
                 user_clients.insert(id, user_client);
             }
 
