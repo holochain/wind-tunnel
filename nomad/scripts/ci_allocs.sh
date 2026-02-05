@@ -110,7 +110,7 @@ function generate_run_summary() {
                 peer_count: $peer_count,
                 peer_end_count: $peer_count,
                 env: {},
-                holochain_build_info: $holochain_build_info,
+                build_info: { info_type: "holochain", info: $holochain_build_info },
                 wind_tunnel_version: $wind_tunnel_version
               }
         ' >> "$run_summary_file"
