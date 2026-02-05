@@ -232,7 +232,7 @@ where
             let signer: Arc<dyn AgentSigner + Send + Sync> = signer.into();
             let app_client = AppWebsocket::connect(
                 app_ws_url,
-                issued.token.clone(),
+                issued.token,
                 signer.clone(),
                 None,
                 reporter.clone(),
@@ -243,10 +243,17 @@ where
             let mut user_clients = HashMap::default();
             for (id, config) in ws_client_configs {
                 log::info!("Creating app websocket client for user id: {id}");
+                let issued = client
+                    .issue_app_auth_token(installed_app_id.clone().into())
+                    .await
+                    .map_err(|e| {
+                        anyhow::anyhow!("Could not issue auth token for app client: {e:?}")
+                    })?;
+
                 let user_client = AppWebsocket::connect_with_config(
                     app_ws_url,
                     config,
-                    issued.token.clone(),
+                    issued.token,
                     signer.clone(),
                     None,
                     reporter.clone(),
