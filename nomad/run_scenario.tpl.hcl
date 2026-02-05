@@ -159,20 +159,18 @@ job "{{ (ds "vars").scenario_name }}" {
             hook = "poststop"
           }
 
+          secret "job_secrets" {
+            provider = "nomad"
+            path     = "nomad/jobs"
+          }
+
           env {
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
             RUN_ID               = "${var.run_id != null ? var.run_id : ""}"
             RUN_SUMMARY_PATH     = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
             INFLUX_HOST          = "https://ifdb.holochain.org"
             INFLUX_BUCKET        = "windtunnel"
-          }
-
-          template {
-            destination = "${NOMAD_SECRETS_DIR}/secrets.env"
-            env         = true
-            data        = <<EOT
-            INFLUX_TOKEN={{ "{{ with nomadVar \"nomad/jobs\" }}{{ .INFLUX_WINDTUNNEL_BUCKET_TOKEN }}{{ end }}" }}
-            EOT
+            INFLUX_TOKEN         = secret.job_secrets.INFLUX_WINDTUNNEL_BUCKET_TOKEN
           }
 
           driver = "raw_exec"
