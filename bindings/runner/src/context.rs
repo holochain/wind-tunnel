@@ -53,7 +53,7 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
     pub fn app_websocket_client(&self, id: &'static str) -> anyhow::Result<AppWebsocket> {
         self.app_websocket_clients.get(id)
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("app_user_client with id '{id}' is not set, did you forget to call `install_app_for_user` in your agent_setup?"))
+            .ok_or_else(|| anyhow::anyhow!("app websocket client with id '{id}' is not set, did you forget to call `install_app_for_user` in your agent_setup?"))
     }
 
     /// Get the `admin_ws_url` that was configured during agent setup.
