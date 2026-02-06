@@ -119,7 +119,7 @@ async fn first_call() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn full_arc_create_validated_zero_arc_read() -> anyhow::Result<()> {
-    run_snapshot_test!("a119f2ce61e8b256db290c0cbaec04f0c33e739a84a427aecfcef00043e5ec83");
+    run_snapshot_test!("eb95d897bf31bcf697168b8e556c4d601b637059dbf2e848e3debdd3639b0039");
     Ok(())
 }
 
@@ -131,13 +131,13 @@ async fn local_signals() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn mixed_arc_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("d874c654d75fdc83f5f7c0d7eb2d6be8cfcaf2cc0f5abbc281ad939397351727");
+    run_snapshot_test!("00353e31f856e1a19a2408f217d7f1f34e0417e1087909c2a524dea6c5292876");
     Ok(())
 }
 
 #[tokio::test]
 async fn mixed_arc_must_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("c965934f5262aa6a6442a7d3a23306c8497ee785d416d8269650be33db67911c");
+    run_snapshot_test!("1105215e2f54db25edcc0e8cc45d0cc1ac5f3933a77c697375599c948477a938");
     Ok(())
 }
 
@@ -209,19 +209,19 @@ async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn zero_arc_create_data() -> anyhow::Result<()> {
-    run_snapshot_test!("c90e09f59fccb19cacaff231094f9fa49d3da999d6fa7c169328c1030ed1537d");
+    run_snapshot_test!("52a7fd7068b14a8b64ed436515c89f41cdb0fef4885f88143bfc00c4df51b8a3");
     Ok(())
 }
 
 #[tokio::test]
 async fn zero_arc_create_data_validated() -> anyhow::Result<()> {
-    run_snapshot_test!("52a0ce7a16521345d301ed0750d079b8513ad48d3f49524ceb725ae0770cd9bc");
+    run_snapshot_test!("df98bec92a3f70fe30e9fb23871784f13a6f2979c3e19885227ca971e8b827cd");
     Ok(())
 }
 
 #[tokio::test]
 async fn zero_arc_create_and_read() -> anyhow::Result<()> {
-    run_snapshot_test!("94d299900c09e3ae81800bfce0f497a9d12f98a7a4fd6fd4083793335bc18c88");
+    run_snapshot_test!("fe64cf7275e429e3c0af337bd5e3ef7ae84d1e3c5feea9569757dfe30e729155");
     Ok(())
 }
 

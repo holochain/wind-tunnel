@@ -464,12 +464,8 @@ Once the external conductor is running, you will need to set the
 WebSocket address of the admin interface of the running conductor, which, in
 the case above, would be `ws://localhost:8888`.
 
-To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `WT_METRICS_DIR` (set by the Nix shell).
-For example:
-
-```bash
-export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
-```
+Holochain will always output metrics in the `WT_METRICS_DIR` directory, which must be set. The name of the metrics file will be:
+`holochain-{run_id}-{agent_name}.influx`.
 
 #### Running scenarios
 
