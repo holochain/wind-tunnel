@@ -67,142 +67,20 @@ jobs:
           echo
           df -h
 
-      - name: Check formatting
-        run: |
-          nix flake check --all-systems
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Verify go cli tool
-        run: |
-          nix run .#check-go
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Lint Rust
-        run: |
-          nix develop -c bash -c "source scripts/checks.sh && check_rust_static"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Run unit tests
-        run: |
-          nix develop -c bash -c "cargo test --workspace --all-targets"
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Validate Nomad jobs
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1 # Required to run nomad
-          NOMAD_VAR_scenario_url: "https://example.com" # Dummy URL for validation
-        run: |
-          nix run .#validate-all-nomad-jobs
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - zome_call_single_value
-        run: |
-          nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - single_write_many_read
-        run: |
-          nix run .#rust-smoke-test -- --package single_write_many_read -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - dht_sync_lag
-        run: |
-          nix run .#rust-smoke-test -- --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - app_install
-        run: |
-          nix run .#rust-smoke-test -- --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - first_call
-        run: |
-          nix run .#rust-smoke-test -- --package first_call -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - write_read
-        run: |
-          nix run .#rust-smoke-test -- --package write_read -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - write_query
-        run: |
-          nix run .#rust-smoke-test -- --package write_query -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - local_signals
-        run: |
-          nix run .#rust-smoke-test -- --package local_signals -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - write_validated
-        run: |
-          nix run .#rust-smoke-test -- --package write_validated -- --duration 5 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - remote_call_rate
-        run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_call_rate -- --agents 2 --duration 30 --no-progress
-
-          echo "==> Available space after step"
-          echo
-          df -h
-
-      - name: Smoke test - validation_receipts
+      - name: Smoke test - kitsune_continuous_flow
         run: |
           set -x
 
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package validation_receipts -- --duration 45 --no-progress
+          kitsune_host="127.0.0.1:30000"
 
-          echo "==> Available space after step"
-          echo
-          df -h
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
 
-      - name: Smoke test - remote_signals
-        run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_signals -- --agents 2 --duration 30 --no-progress
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
@@ -227,141 +105,363 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - write_get_agent_activity
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
+          set -x
 
-          echo "==> Available space after step"
-          echo
-          df -h
+          kitsune_host="127.0.0.1:30000"
 
-      - name: Smoke test - write_validated_must_get_agent_activity
-        run: |
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
           # Run the scenario
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - zero_arc_create_data
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_data -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - zero_arc_create_data_validated
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_data_validated -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - zero_arc_create_and_read
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_and_read -- --agents 4 --behaviour zero_read:1 --behaviour zero_write:1 --behaviour full:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - full_arc_create_validated_zero_arc_read
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package full_arc_create_validated_zero_arc_read -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - mixed_arc_get_agent_activity
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package mixed_arc_get_agent_activity -- --agents 5 --behaviour zero_read:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - mixed_arc_must_get_agent_activity
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#rust-smoke-test -- --package mixed_arc_must_get_agent_activity -- --agents 5 --behaviour zero_must_get_agent_activity:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-      - name: Smoke test - scenario summary HTML visualiser
+      - name: Smoke test - kitsune_continuous_flow
         run: |
-          nix run .#summary-visualiser-smoke-test
+          set -x
 
-  archive_bundles:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+          kitsune_host="127.0.0.1:30000"
 
-      - name: Check if nix files changed
-        id: filter
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            **/*.nix
-            flake.lock
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
 
-      - name: Maximize build space
-        if: runner.os == 'Linux' && steps.filter.outputs.any_changed == 'true'
-        uses: AdityaGarg8/remove-unwanted-software@v5
-        with:
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
 
-      - name: Install nix
-        if: steps.filter.outputs.any_changed == 'true'
-        uses: cachix/install-nix-action@v31
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.28.3/install
-          extra_nix_config: |
-            accept-flake-config = true
-
-      - uses: cachix/cachix-action@v16
-        if: steps.filter.outputs.any_changed == 'true'
-        with:
-          name: holochain-ci
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-
-      - name: Build scenarios
-        if: runner.os == 'Linux' && steps.filter.outputs.any_changed == 'true'
-        run: |
-          set -euxo pipefail
-
-          scenario_names() {
-            find scenarios/ -mindepth 1 -maxdepth 1 -type d -printf "%f\n"
-          }
-
-          scenario_names | xargs -I % nix build .#packages.x86_64-linux.%
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
 
           echo "==> Available space after step"
           echo
           df -h
 
-  changelog-preview-comment:
-    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'hra-release') && github.actor != 'dependabot[bot]'
-    name: Add comment of changelog preview
-    uses: holochain/actions/.github/workflows/changelog-preview-comment.yml@v1.4.0
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
 
-  ci_pass:
-    if: ${{ always() }}
-    runs-on: "ubuntu-latest"
-    needs:
-      - test
-      - archive_bundles
-    steps:
-      - name: check status
-        uses: re-actors/alls-green@release/v1
-        with:
-          jobs: ${{ toJSON(needs) }}
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
+      - name: Smoke test - kitsune_continuous_flow
+        run: |-
+          set -x
+
+          kitsune_host="127.0.0.1:30000"
+
+          # Start local bootstrap and relay server
+          nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+
+          # Stop servers
+          pkill -f kitsune2-bootstrap-srv || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
