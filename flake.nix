@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -133,7 +133,7 @@
                 pkgs.tomlq
                 pkgs.getopt
                 pkgs.jq
-                unfreePkgs.nomad
+                unfreePkgs.nomad_1_11
                 inputs'.holonix.packages.hn-introspect
               ];
 
@@ -387,7 +387,7 @@
             name = "validate-all-nomad-jobs";
             runtimeInputs = [
               pkgs.gomplate
-              unfreePkgs.nomad
+              unfreePkgs.nomad_1_11
               pkgs.getopt
             ];
             text = ''
