@@ -43,6 +43,12 @@ job "{{ (ds "vars").scenario_name }}" {
     distinct_property = "${attr.unique.hostname}"
   }
 
+  constraint {
+    attribute = "${attr.nomad.version}"
+    operator  = "version"
+    value     = ">= 1.11.0"
+  }
+
   dynamic "group" {
     for_each = [{{- $assignments := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- range $aIdx, $assignment := $assignments -}}{{- $nodes := (index $assignment "nodes" | default 1) -}}{{- range $nodeIdx := math.Seq 0 (sub $nodes 1) -}}{{- if or (gt $aIdx 0) (gt $nodeIdx 0) -}},{{- end -}}{{ merge $assignment (dict "nodeIndex" $nodeIdx) | toJSON }}{{- end -}}{{- end -}}{{- if eq (len $assignments) 0 -}}{{ dict "behaviour" "default" | toJSON }}{{- end -}}]
     labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value.behaviour}-${lookup(group.value, "nodeIndex", 0)}"]
