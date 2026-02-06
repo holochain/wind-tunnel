@@ -15,10 +15,6 @@
       url = "github:holochain/holonix?ref=main-0.6";
     };
 
-    kitsune2 = {
-      url = "github:holochain/kitsune2?ref=main";
-    };
-
     crane = {
       url = "github:ipetkov/crane";
     };
@@ -112,7 +108,8 @@
               customHolochain
               inputs'.holonix.packages.lair-keystore
               inputs'.holonix.packages.hc
-              inputs'.kitsune2.packages.bootstrap-srv
+              inputs'.holonix.packages.bootstrap-srv
+              pkgs.cargo-nextest
             ];
           in
           {
@@ -159,7 +156,7 @@
                 pkgs.cmake
                 pkgs.perl
                 pkgs.rustPlatform.bindgenHook
-                inputs'.kitsune2.packages.bootstrap-srv
+                inputs'.holonix.packages.bootstrap-srv
               ];
             };
           };
