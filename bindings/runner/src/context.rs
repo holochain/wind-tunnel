@@ -19,6 +19,7 @@ pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues
     pub(crate) installed_app_id: Option<String>,
     pub(crate) cell_id: Option<CellId>,
     pub(crate) app_client: Option<AppWebsocket>,
+    pub(crate) app_websocket_clients: HashMap<&'static str, AppWebsocket>,
     pub(crate) app_ws_url: Option<SocketAddr>,
     pub(crate) admin_ws_url: Option<SocketAddr>,
     pub(crate) holochain_config: Option<HolochainConfigBuilder>,
@@ -46,6 +47,13 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
         self.app_client.clone().expect(
             "app_client is not set, did you forget to call `install_app` in your agent_setup?",
         )
+    }
+
+    /// Get the [`AppWebsocket`] with the given id that was configured during agent setup.
+    pub fn app_websocket_client(&self, id: &'static str) -> anyhow::Result<AppWebsocket> {
+        self.app_websocket_clients.get(id)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("app websocket client with id '{id}' is not set, did you forget to call `install_app_for_user` in your agent_setup?"))
     }
 
     /// Get the `admin_ws_url` that was configured during agent setup.

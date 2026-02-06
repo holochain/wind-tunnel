@@ -158,6 +158,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         let setup_agent_fn = definition.setup_agent_fn;
         let agent_behaviour_fn = definition.agent_behaviour.get(assigned_behaviour).cloned();
         let teardown_agent_fn = definition.teardown_agent_fn;
+        let app_websocket_clients = definition.app_websocket_clients.clone();
 
         let agents_run_to_completion = agents_run_to_completion.clone();
 
@@ -180,7 +181,9 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                         assigned_behaviour.clone(),
                         runner_context,
                         delegated_shutdown_listener,
-                    );
+                    )
+                        .with_app_websocket_clients(app_websocket_clients);
+
                     if let Some(Err(e)) = setup_agent_fn.map(|f| f(&mut context)) {
                         log::error!("Agent setup failed for agent {agent_name}: {e:?}");
 
@@ -190,6 +193,8 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
                         return;
                     }
+
+                    log::info!("Agent {agent_name} starting behaviour [{assigned_behaviour}]");
 
                     // TODO implement warmup
                     let mut behaviour_ran_to_complete = true;
