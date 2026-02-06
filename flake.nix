@@ -38,7 +38,7 @@
         rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
-        cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
+        cargoExtraArgs = "--no-default-features --features transport-iroh,wasmer_sys,sqlite-encrypted,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
 
