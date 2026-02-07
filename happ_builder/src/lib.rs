@@ -106,11 +106,7 @@ impl HappManager {
         .build_happs()?;
 
         // fetch
-        HappFetcher::new(
-            &self.options.happ_target_dir,
-            &metadata.fetch_required_happ(),
-        )
-        .fetch_all()?;
+        HappFetcher::new(&self.options, &metadata.fetch_required_happ()).fetch_all()?;
 
         Ok(())
     }
