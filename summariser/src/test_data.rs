@@ -101,11 +101,14 @@ fn open_output_path(
         .join(stage)
         .join(file_name);
 
-    match std::fs::OpenOptions::new()
-        .create_new(!overwrite)
-        .write(true)
-        .open(path)
-    {
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true);
+    if overwrite {
+        opts.create(true); // create or open for overwrite
+    } else {
+        opts.create_new(true); // create new, fail if exists
+    }
+    match opts.open(path) {
         Ok(f) => {
             // Truncate the file if we're overwriting
             if overwrite {

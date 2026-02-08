@@ -16,12 +16,7 @@ Fields:
         {{ $key := (index .key 0) }}
         {{ template "scenario_metric_content_item" (dict
             "name" (print $key.value "-" $key.key)
-            "content" (tmpl.Exec "min_max_mean_std" (dict
-                "min" .gauge_stats.min
-                "max" .gauge_stats.max
-                "mean" .gauge_stats.mean
-                "std" .gauge_stats.std
-            ))
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
         ) }}
     {{ end }}
 {{ end }}

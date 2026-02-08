@@ -1,6 +1,6 @@
 use crate::frame::LoadError;
 use crate::model::{
-    CounterStats, GaugeStats, PartitionGaugeStats, PartitionKey, PartitionRateStats,
+    CounterStats, GaugeStats, GaugeTrend, PartitionGaugeStats, PartitionKey, PartitionRateStats,
     PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
     StandardRateStats, StandardTimingsStats, TimingTrend,
 };
@@ -260,35 +260,95 @@ pub(crate) fn standard_rate(
     })
 }
 
+/// Look up the value at a given percentile from a pre-sorted Float64 series.
+///
+/// `p` is in the range `0.0..=1.0`. Uses nearest-rank indexing clamped to valid
+/// bounds. Returns `0.0` for an empty series.
+fn sorted_percentile(sorted: &ChunkedArray<Float64Type>, p: f64) -> f64 {
+    let len = sorted.len();
+    if len == 0 {
+        return 0.0;
+    }
+    let idx = ((len as f64 * p) as usize).min(len - 1);
+    sorted.get(idx).unwrap_or(0.0)
+}
+
 /// Get the [`GaugeStats`] for a frame and the given column calculating:
 ///
-/// - Count
 /// - Arithmetic mean
-/// - Min
-/// - Max
 /// - Std deviation
-pub(crate) fn gauge_stats(frame: DataFrame, column: &str) -> anyhow::Result<GaugeStats> {
+/// - p5 / p95 (90% operating range)
+/// - Windowed mean trend
+pub(crate) fn gauge_stats(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+) -> anyhow::Result<GaugeStats> {
+    gauge_stats_dp(frame, column, window_duration, 2)
+}
+
+/// Like [`gauge_stats`] but rounds all output values to `dp` decimal places instead of 2.
+///
+/// Use this for metrics whose values are naturally very small (e.g. PSI percentages that
+/// routinely sit below 0.01) where 2 dp would always produce 0.00.
+pub(crate) fn gauge_stats_dp(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+    dp: u32,
+) -> anyhow::Result<GaugeStats> {
     let select = frame
         .lazy()
-        .select([col("time"), col(column)])
+        .select([col("time"), col(column).cast(DataType::Float64)])
         .filter(col("time").is_not_null())
         .filter(col(column).is_not_null())
         .collect()?;
 
     let series = select.column(column)?.as_materialized_series();
 
-    let count = series.len();
-    let mean = series.mean().context("Calculate average")?;
-    let min = series.min().context("Get min")?.unwrap_or(0.0);
-    let max = series.max().context("Get max")?.unwrap_or(0.0);
+    let mean = series.mean().context("Mean")?;
     let std = series.std(0).context("Std")?;
 
+    // Percentile range instead of raw min/max — robust to single-sample spikes
+    let sorted = series.f64()?.sort(false);
+    let p5 = sorted_percentile(&sorted, 0.05);
+    let p95 = sorted_percentile(&sorted, 0.95);
+
+    // Windowed mean trend — shows how the gauge evolves over time
+    let trend = select
+        .lazy()
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).mean().alias("mean")])
+        .collect()
+        .context("Windowed mean")?
+        .column("mean")?
+        .f64()?
+        .iter()
+        .filter_map(|v| v.map(|v| round_to_n_dp(v, dp)))
+        .collect_vec();
+
     Ok(GaugeStats {
-        count,
-        max,
-        mean: round_to_n_dp(mean, 2),
-        min,
-        std: round_to_n_dp(std, 2),
+        mean: round_to_n_dp(mean, dp),
+        std: round_to_n_dp(std, dp),
+        p5: round_to_n_dp(p5, dp),
+        p95: round_to_n_dp(p95, dp),
+        trend: GaugeTrend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
     })
 }
 
@@ -298,6 +358,7 @@ pub(crate) fn partitioned_gauge_stats(
     frame: DataFrame,
     column: &str,
     partition_by: &[&str],
+    window_duration: &str,
 ) -> anyhow::Result<PartitionedGaugeStats> {
     let mut select_cols = vec![col("time"), col(column)];
     select_cols.extend(partition_by.iter().map(|&s| col(s)));
@@ -336,7 +397,7 @@ pub(crate) fn partitioned_gauge_stats(
             .collect()
             .context("filter by partition")?;
 
-        let gauge_stats = gauge_stats(filtered, column)?;
+        let gauge_stats = gauge_stats(filtered, column, window_duration)?;
 
         partitions.push(PartitionGaugeStats { key, gauge_stats });
     }
@@ -347,12 +408,15 @@ pub(crate) fn partitioned_gauge_stats(
 
 /// Get the [`CounterStats`] for a frame and the given column calculating:
 ///
-/// - start value
-/// - end value
-/// - delta (end - start)
-/// - rate
-pub(crate) fn counter_stats(frame: DataFrame, column: &str) -> anyhow::Result<CounterStats> {
-    let select = frame
+/// - Total count (last - first)
+/// - Instantaneous rate distribution (mean, std, p5, p95, peak) via vectorized diff
+/// - Windowed rate trend
+pub(crate) fn counter_stats(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+) -> anyhow::Result<CounterStats> {
+    let counter_by_time = frame
         .lazy()
         .select([col("time"), col(column)])
         .filter(col("time").is_not_null())
@@ -363,41 +427,138 @@ pub(crate) fn counter_stats(frame: DataFrame, column: &str) -> anyhow::Result<Co
         )
         .collect()?;
 
-    let times = select.column("time")?.as_materialized_series();
-    let series = select
+    let times = counter_by_time.column("time")?.as_materialized_series();
+    let series = counter_by_time
         .column(column)?
         .as_materialized_series()
         .i64()
         .context("Get series as i64")?;
 
-    // get the window duration
-    let times = times.datetime().context("Get times")?;
-    let window_duration = times
-        .max()
+    // Measurement duration from timestamps
+    let times_dt = times.datetime().context("Get times")?;
+    let measurement_duration_ns = times_dt
+        .last()
         .context("Get max time")?
-        .checked_sub(times.min().context("Get min time")?)
+        .checked_sub(times_dt.first().context("Get min time")?)
         .context("Get window duration")?;
-    let window_duration = std::time::Duration::from_nanos(window_duration as u64);
-    log::debug!("Window duration: {window_duration:?}",);
+    let measurement_duration = std::time::Duration::from_nanos(measurement_duration_ns as u64);
+    log::debug!("Measurement duration: {measurement_duration:?}");
 
-    // get first element
-    let min = series.first().context("Get first")? as u64;
-    let max = series.last().context("Get last")? as u64;
-    let delta = max
-        .checked_sub(min)
-        .ok_or(anyhow::anyhow!("Counter underflow: min {min} > max {max}",))?;
-    let rate = if delta == 0 || select.height() < 2 {
-        0.0
+    // Total count: last - first
+    let first = series.first().context("Get first")? as u64;
+    let last = series.last().context("Get last")? as u64;
+    let count = last.checked_sub(first).ok_or(anyhow::anyhow!(
+        "Counter underflow: first {first} > last {last}"
+    ))?;
+
+    if count == 0 || counter_by_time.height() < 2 {
+        return Ok(CounterStats {
+            count,
+            measurement_duration,
+            ..Default::default()
+        });
+    }
+
+    // Compute instantaneous rates from consecutive samples
+    let times = counter_by_time
+        .column("time")?
+        .as_materialized_series()
+        .datetime()
+        .context("time as datetime")?;
+    let values = counter_by_time
+        .column(column)?
+        .as_materialized_series()
+        .i64()
+        .context("values as i64")?;
+
+    let mut rate_timestamps: Vec<i64> = Vec::new();
+    let mut rate_values: Vec<f64> = Vec::new();
+
+    for i in 1..counter_by_time.height() {
+        let (Some(t_prev), Some(t_curr)) = (times.get(i - 1), times.get(i)) else {
+            continue;
+        };
+        let dt_ns = t_curr - t_prev;
+        if dt_ns <= 0 {
+            continue;
+        }
+        let (Some(v_prev), Some(v_curr)) = (values.get(i - 1), values.get(i)) else {
+            continue;
+        };
+        let delta = v_curr - v_prev;
+        if delta < 0 {
+            continue; // skip counter resets
+        }
+        let dt_secs = dt_ns as f64 / 1_000_000_000.0;
+        rate_timestamps.push(t_curr);
+        rate_values.push(delta as f64 / dt_secs);
+    }
+
+    let (mean, std, p5, p95, peak) = if rate_values.is_empty() {
+        (0.0, 0.0, 0.0, 0.0, 0.0)
     } else {
-        (delta as f64) / window_duration.as_secs_f64()
+        let rate_series = Series::new("rate".into(), &rate_values);
+        let mean = rate_series.mean().unwrap_or(0.0);
+        let std = rate_series.std(0).unwrap_or(0.0);
+
+        let sorted = rate_series.f64()?.sort(false);
+        (
+            mean,
+            std,
+            sorted_percentile(&sorted, 0.05),
+            sorted_percentile(&sorted, 0.95),
+            sorted_percentile(&sorted, 1.0),
+        )
+    };
+
+    // Windowed rate trend — build a DataFrame and use group_by_dynamic
+    let trend = if rate_timestamps.is_empty() {
+        Vec::new()
+    } else {
+        let time_series = Series::new("time".into(), &rate_timestamps)
+            .cast(&DataType::Datetime(TimeUnit::Nanoseconds, None))?;
+        let rate_series = Series::new("rate".into(), &rate_values);
+        let rate_frame =
+            DataFrame::new(vec![time_series.into_column(), rate_series.into_column()])?;
+
+        rate_frame
+            .lazy()
+            .sort(
+                ["time"],
+                SortMultipleOptions::default().with_maintain_order(true),
+            )
+            .group_by_dynamic(
+                col("time"),
+                [],
+                DynamicGroupOptions {
+                    every: Duration::parse(window_duration),
+                    period: Duration::parse(window_duration),
+                    offset: Duration::parse("0s"),
+                    ..Default::default()
+                },
+            )
+            .agg([col("rate").mean().alias("mean")])
+            .collect()
+            .context("Windowed rate mean")?
+            .column("mean")?
+            .f64()?
+            .iter()
+            .filter_map(|v| v.map(|v| round_to_n_dp(v, 2)))
+            .collect_vec()
     };
 
     Ok(CounterStats {
-        start: min,
-        end: max,
-        delta,
-        rate_per_second: round_to_n_dp(rate, 2),
-        measurement_duration: window_duration,
+        count,
+        measurement_duration,
+        mean_rate_per_second: round_to_n_dp(mean, 2),
+        std_rate_per_second: round_to_n_dp(std, 2),
+        p5_rate_per_second: round_to_n_dp(p5, 2),
+        p95_rate_per_second: round_to_n_dp(p95, 2),
+        peak_rate_per_second: round_to_n_dp(peak, 2),
+        rate_trend: GaugeTrend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
     })
 }
 
@@ -466,4 +627,72 @@ pub fn bound_pct(value: f64) -> f64 {
 pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
     let places = 10.0_f64.powi(n as i32);
     (value * places).round() / places
+}
+
+/// Return the mean of a single column in a [`DataFrame`], or 0.0 if the column
+/// is missing or empty.
+pub fn column_mean(df: &DataFrame, column: &str) -> f64 {
+    df.column(column)
+        .ok()
+        .and_then(|c| c.as_materialized_series().mean())
+        .unwrap_or(0.0)
+}
+
+/// Calculate percentiles (p50, p95, p99) from a DataFrame column.
+///
+/// The column is cast to Float64 to handle integer-typed columns from InfluxDB.
+pub(crate) fn percentiles(df: &DataFrame, column: &str) -> anyhow::Result<(f64, f64, f64)> {
+    let series = df.column(column)?.cast(&DataType::Float64)?;
+    let sorted = series.f64()?.sort(false);
+
+    let count = sorted.len();
+    if count == 0 {
+        log::info!("No data points found for percentile calculation");
+        return Ok((0.0, 0.0, 0.0));
+    }
+
+    Ok((
+        sorted_percentile(&sorted, 0.50),
+        sorted_percentile(&sorted, 0.95),
+        sorted_percentile(&sorted, 0.99),
+    ))
+}
+
+/// Detect if values are trending upward (potential leak/growth)
+///
+/// Compute the growth rate of `column` in units-per-second by fitting a
+/// least-squares line to the sample values.
+///
+/// Uses the row index as the x-axis (evenly spaced samples) and
+/// `slope = cov(x, y) / var(x)` to get the gradient, then converts from
+/// per-sample to per-second via `duration_secs / n`.
+pub(crate) fn growth_rate(df: &DataFrame, column: &str, duration_secs: f64) -> anyhow::Result<f64> {
+    let values = df.column(column)?.cast(&DataType::Float64)?.f64()?.clone();
+    let n = values.len();
+
+    if n < 2 || duration_secs == 0.0 {
+        return Ok(0.0);
+    }
+
+    let nf = n as f64;
+    // For x_i = 0..n-1:  mean = (n-1)/2,  var = (n²-1)/12
+    let x_mean = (nf - 1.0) / 2.0;
+    let x_var = (nf * nf - 1.0) / 12.0;
+
+    let y_mean = values.mean().unwrap_or(0.0);
+
+    // cov(x, y) = mean((x - x̄)(y - ȳ)) = mean(x·y) - x̄·ȳ
+    let mean_xy = values
+        .iter()
+        .enumerate()
+        .map(|(i, v)| i as f64 * v.unwrap_or(0.0))
+        .sum::<f64>()
+        / nf;
+    let cov_xy = mean_xy - x_mean * y_mean;
+
+    // slope per sample → slope per second
+    let slope_per_sample = cov_xy / x_var;
+    let secs_per_sample = duration_secs / nf;
+
+    Ok(slope_per_sample / secs_per_sample)
 }

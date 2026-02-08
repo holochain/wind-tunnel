@@ -9,11 +9,12 @@ use crate::model::{CounterStats, GaugeStats, StandardTimingsStats};
 use crate::partition::{Partition, partition_by_tags};
 use crate::{
     frame::LoadError,
-    query::host_metrics::{HostMetricField, Values as _},
+    query::host_metrics::{HostMetricMeasurement, InfluxSourced as _},
 };
 use anyhow::Context;
 use chrono::DateTime;
 use influxdb::ReadQuery;
+use itertools::Itertools;
 use polars::frame::DataFrame;
 use wind_tunnel_summary_model::RunSummary;
 
@@ -141,7 +142,15 @@ pub async fn query_custom_data(
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
-        return crate::frame::parse_time_column(super::test_data::load_query_result(&q)?);
+        return crate::frame::parse_time_column(super::test_data::load_query_result(&q).map_err(
+            |_| {
+                log::error!("Failed to load test data query result for query: {q:?}");
+                LoadError::NoSeriesInResult {
+                    table: metric.to_string(),
+                    result: serde_json::Value::Null,
+                }
+            },
+        )?);
     }
 
     let res = client.json_query(q.clone()).await?;
@@ -300,9 +309,10 @@ pub async fn query_counter(
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
+    window_duration: &str,
 ) -> anyhow::Result<CounterStats> {
     let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    counter_stats(frame, "value")
+    counter_stats(frame, "value", window_duration)
 }
 
 /// Query and partition the measurement with the filter tag, then partition the data by `partitioning_tags`.
@@ -313,6 +323,7 @@ pub async fn query_and_partition_counter(
     measurement: &str,
     partitioning_tags: &[&str],
     filter_tag: Option<(&str, &str)>,
+    window_duration: &str,
 ) -> anyhow::Result<BTreeMap<String, CounterStats>> {
     if partitioning_tags.is_empty() {
         return Err(anyhow::anyhow!(
@@ -326,7 +337,8 @@ pub async fn query_and_partition_counter(
     parts
         .into_iter()
         .map(|(tag_combination, frame)| {
-            counter_stats(frame, "value").map(|analysis| (tag_combination, analysis))
+            counter_stats(frame, "value", window_duration)
+                .map(|analysis| (tag_combination, analysis))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()
 }
@@ -337,9 +349,10 @@ pub async fn query_gauge(
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
+    window_duration: &str,
 ) -> anyhow::Result<GaugeStats> {
     let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    gauge_stats(frame, "value")
+    gauge_stats(frame, "value", window_duration)
 }
 
 /// Query the measurement with the filter tag, then partition the data by `partitioning_tags`
@@ -350,6 +363,7 @@ pub async fn query_and_partition_gauge(
     measurement: &str,
     partitioning_tags: &[&str],
     filter_tag: Option<(&str, &str)>,
+    window_duration: &str,
 ) -> anyhow::Result<BTreeMap<String, GaugeStats>> {
     if partitioning_tags.is_empty() {
         return Err(anyhow::anyhow!(
@@ -363,16 +377,16 @@ pub async fn query_and_partition_gauge(
     parts
         .into_iter()
         .map(|(tag_combination, frame)| {
-            gauge_stats(frame, "value").map(|analysis| (tag_combination, analysis))
+            gauge_stats(frame, "value", window_duration).map(|analysis| (tag_combination, analysis))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()
 }
 
-/// Query [`DataFrame`] for the given [`HostMetricField`].
+/// Query [`DataFrame`] for the given [`HostMetricMeasurement`].
 pub async fn query_host_metrics(
     client: &influxdb::Client,
     summary: &RunSummary,
-    field: HostMetricField,
+    measurement: HostMetricMeasurement,
 ) -> anyhow::Result<DataFrame> {
     let select_filter = if let Some(run_duration) = summary.run_duration {
         host_metrics::SelectFilter::TimeInterval {
@@ -384,8 +398,10 @@ pub async fn query_host_metrics(
         host_metrics::SelectFilter::RunId(summary.run_id.clone())
     };
 
-    let query = ReadQuery::new(host_metrics_query(field, &select_filter).context("Select query")?);
-    log::debug!("Querying field {field}: {query:?}");
+    let query = ReadQuery::new(
+        build_host_metrics_query(measurement.clone(), &select_filter).context("Select query")?,
+    );
+    log::debug!("Querying field {measurement:?}: {query:?}");
 
     #[cfg(feature = "query_test_data")]
     if cfg!(feature = "query_test_data") {
@@ -393,9 +409,9 @@ pub async fn query_host_metrics(
     }
 
     let res = client.json_query(query.clone()).await?;
-    let frame =
-        crate::frame::load_from_response(field.measurement(), res).context("Empty query result")?;
-    log::trace!("Loaded frame for {field}: {frame:?}");
+    let frame = crate::frame::load_from_response(measurement.measurement(), res)
+        .context("Empty query result")?;
+    log::trace!("Loaded frame for {measurement:?}: {frame:?}");
 
     #[cfg(feature = "test_data")]
     let frame = {
@@ -407,22 +423,38 @@ pub async fn query_host_metrics(
     Ok(frame)
 }
 
-/// Get SELECT query for a [`host_metrics::HostMetricField`].
+/// Build a SELECT query for a [`host_metrics::HostMetricMeasurement`].
 ///
-/// Given a [`host_metrics::HostMetricField`], it returns the select statement for the field and the relative timestamp
-fn host_metrics_query(
-    field: host_metrics::HostMetricField,
+/// Given a [`host_metrics::HostMetricMeasurement`], it returns the select statement for the field and the relative timestamp
+fn build_host_metrics_query(
+    measurement: HostMetricMeasurement,
     filter: &host_metrics::SelectFilter,
 ) -> anyhow::Result<String> {
-    let values = field.values().join(",");
+    // Quote all identifiers to avoid collisions with InfluxQL reserved words
+    // (e.g. `name` in diskio). InfluxDB returns column names unquoted in the
+    // response regardless of quoting in the query.
+    let values = measurement
+        .select()
+        .iter()
+        .map(|v| format!("\"{v}\""))
+        .join(",");
+
+    let mut filter_tags = measurement
+        .filter_tags()
+        .iter()
+        .map(|(k, v)| format!(r#""{k}" = '{v}'"#))
+        .join(" AND ");
+    if !filter_tags.is_empty() {
+        filter_tags += " AND ";
+    }
 
     match filter {
         host_metrics::SelectFilter::RunId(run_id) => Ok(format!(
             r#"SELECT {values},time
             FROM "windtunnel"."autogen"."{table}"
-            WHERE run_id = '{run_id}'
+            WHERE {filter_tags}run_id = '{run_id}'
     "#,
-            table = field.measurement()
+            table = measurement.measurement(),
         )),
         host_metrics::SelectFilter::TimeInterval {
             started_at,
@@ -441,9 +473,9 @@ fn host_metrics_query(
             Ok(format!(
                 r#"SELECT {values},time
                 FROM "windtunnel"."autogen"."{table}"
-                WHERE run_id = '{run_id}' AND time >= '{start_datetime}' AND time <= '{end_datetime}'
+                WHERE {filter_tags}run_id = '{run_id}' AND time >= '{start_datetime}' AND time <= '{end_datetime}'
                 "#,
-                table = field.measurement()
+                table = measurement.measurement()
             ))
         }
     }
@@ -454,19 +486,20 @@ mod tests {
 
     use std::time::Duration;
 
-    use crate::query::host_metrics::{HostMetricField, NetField, SelectFilter};
+    use crate::query::host_metrics::{HostMetricMeasurement, NetFieldSet, SelectFilter};
 
     use super::*;
 
     #[test]
     fn test_should_get_query_with_run_id_filter() {
-        let field = HostMetricField::Net(NetField::BytesRecv);
+        let field = HostMetricMeasurement::Net(NetFieldSet::Default);
 
-        let query = host_metrics_query(field, &SelectFilter::RunId("test_run_id".to_string()))
-            .expect("Failed to build query");
+        let query =
+            build_host_metrics_query(field, &SelectFilter::RunId("test_run_id".to_string()))
+                .expect("Failed to build query");
         assert_eq!(
             query,
-            r#"SELECT interface,bytes_recv,time
+            r#"SELECT "host","interface","bytes_recv","bytes_sent","packets_recv","packets_sent",time
             FROM "windtunnel"."autogen"."net"
             WHERE run_id = 'test_run_id'
     "#,
@@ -475,9 +508,9 @@ mod tests {
 
     #[test]
     fn test_should_get_query_with_time_filter() {
-        let field = HostMetricField::Net(NetField::BytesRecv);
+        let field = HostMetricMeasurement::Net(NetFieldSet::Default);
 
-        let query = host_metrics_query(
+        let query = build_host_metrics_query(
             field,
             &SelectFilter::TimeInterval {
                 started_at: 1756301266, // 2025-08-27 01:27:46
@@ -489,7 +522,7 @@ mod tests {
 
         assert_eq!(
             query,
-            r#"SELECT interface,bytes_recv,time
+            r#"SELECT "host","interface","bytes_recv","bytes_sent","packets_recv","packets_sent",time
                 FROM "windtunnel"."autogen"."net"
                 WHERE run_id = 'test_run_id' AND time >= '2025-08-27T13:27:46+00:00' AND time <= '2025-08-27T13:32:46+00:00'
                 "#,

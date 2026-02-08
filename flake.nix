@@ -72,7 +72,10 @@
             hooks = {
               nixpkgs-fmt.enable = true;
               statix.enable = true;
-              shellcheck.enable = true;
+              shellcheck = {
+                enable = true;
+                args = [ "-x" ];
+              };
               rustfmt = {
                 enable = true;
                 packageOverrides.cargo = config.rustHelper.rust;

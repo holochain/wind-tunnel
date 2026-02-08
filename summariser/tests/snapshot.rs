@@ -95,133 +95,133 @@ fn ensure_summary_output_fingerprints_accurate() {
 
 #[tokio::test]
 async fn app_install_minimal() -> anyhow::Result<()> {
-    run_snapshot_test!("8468d686b75c702a7c523c4da615b817c09d20d5ead54f2806513b756652055a");
+    run_snapshot_test!("8c1297e90c9ec664ec04a0d05d6c19af7481b22af40984591ce0d9469a5953a1");
     Ok(())
 }
 
 #[tokio::test]
 async fn app_install_large() -> anyhow::Result<()> {
-    run_snapshot_test!("52bd6609472c523e0561f09d7daecaac880d348f71241f6fabf71d28795e79ec");
+    run_snapshot_test!("534e3e768c95de8a61cde145cc84c32ed7d1f3e9e6f1a72747a7e03b89ed3bae");
     Ok(())
 }
 
 #[tokio::test]
 async fn dht_sync_lag() -> anyhow::Result<()> {
-    run_snapshot_test!("3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51");
+    run_snapshot_test!("0c97cc426147debdd0ff2c7bfdeec11c73b24c8201fb0f4e1fca2ee146774e3b");
     Ok(())
 }
 
 #[tokio::test]
 async fn first_call() -> anyhow::Result<()> {
-    run_snapshot_test!("608026f5fcbb4e5e87cba8d616ae379c20a7c8930138d36f11ddde5134e4e730");
+    run_snapshot_test!("bfff96e7068c6a7b58d48724a776768f06e6fca4679d38ea463c574628edc347");
     Ok(())
 }
 
 #[tokio::test]
 async fn full_arc_create_validated_zero_arc_read() -> anyhow::Result<()> {
-    run_snapshot_test!("a119f2ce61e8b256db290c0cbaec04f0c33e739a84a427aecfcef00043e5ec83");
+    run_snapshot_test!("5a298210eab56da8b40e261ac0f85ec2a8243d3ac026b1b09b3dc6640e728743");
     Ok(())
 }
 
 #[tokio::test]
 async fn local_signals() -> anyhow::Result<()> {
-    run_snapshot_test!("1fd6a6042bf4d93742d9fe912adac0c896d133f8cccb90758db60fefd09a7060");
-    Ok(())
-}
-
-#[tokio::test]
-async fn mixed_arc_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("d874c654d75fdc83f5f7c0d7eb2d6be8cfcaf2cc0f5abbc281ad939397351727");
-    Ok(())
-}
-
-#[tokio::test]
-async fn mixed_arc_must_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("c965934f5262aa6a6442a7d3a23306c8497ee785d416d8269650be33db67911c");
-    Ok(())
-}
-
-#[tokio::test]
-async fn remote_call_rate() -> anyhow::Result<()> {
-    run_snapshot_test!("f92e98962b23bfe104373a735dd9af8eb363e347a0c528902d4a2aaa8351cd74");
-    Ok(())
-}
-
-#[tokio::test]
-async fn remote_signals() -> anyhow::Result<()> {
-    run_snapshot_test!("0de4481dc8dc20a39d5ec3b1eb02bd819ec5cb455fbabcf45f4be7784de4471a");
-    Ok(())
-}
-
-#[tokio::test]
-async fn single_write_many_read() -> anyhow::Result<()> {
-    run_snapshot_test!("53072be05686ee83ae234f248d2791e0576cdc05065954975b89549571613a97");
+    run_snapshot_test!("252e222d376aaea0d14f4999a97efa27c8371303e7133c408aa2208c8b76f577");
     Ok(())
 }
 
 #[tokio::test]
 async fn two_party_countersigning() -> anyhow::Result<()> {
-    run_snapshot_test!("3cdc5a29d42fbe93e971508e7cd8856367465e047c870b60283ed86a5bf5687c");
+    run_snapshot_test!("4a3fd866e9466e8b6ef5a9f022009d275b559fd360bd4547fbff100941059252");
+    Ok(())
+}
+
+#[tokio::test]
+async fn mixed_arc_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("65dfd11cf1bdd5554d6db6f231f8e67d601ecceda6644c89172897668630e903");
+    Ok(())
+}
+
+#[tokio::test]
+async fn mixed_arc_must_get_agent_activity() -> anyhow::Result<()> {
+    run_snapshot_test!("31e5966739534d11f1de7b43b7bafcd72c519ab4fe7e5d17492c89648131fa5d");
+    Ok(())
+}
+
+#[tokio::test]
+async fn remote_call_rate() -> anyhow::Result<()> {
+    run_snapshot_test!("32f40bfc9ea4993f23f6e411ee690d0b5054142787b970eeb5214f3786bba9be");
+    Ok(())
+}
+
+#[tokio::test]
+async fn remote_signals() -> anyhow::Result<()> {
+    run_snapshot_test!("12206e3db385a10a86c24324b1b9419b7592c31c22cf12800ca4da459d74990e");
+    Ok(())
+}
+
+#[tokio::test]
+async fn single_write_many_read() -> anyhow::Result<()> {
+    run_snapshot_test!("2a1ef5165c7c4a0b58ed7865bb6130ca816ed26eb931edd85a4ca650715a52f9");
     Ok(())
 }
 
 #[tokio::test]
 async fn validation_receipts() -> anyhow::Result<()> {
-    run_snapshot_test!("7ec48e9c40fde50ceb5fccc5cfdcaabd69eebd148eb9c3590fda2e2419152f70");
+    run_snapshot_test!("d8e2bf9989e959ca9116ef9f3d6ec6a6912e0eb042e4a90b2d520c1ed9dd199b");
     Ok(())
 }
 
 #[tokio::test]
 async fn write_query() -> anyhow::Result<()> {
-    run_snapshot_test!("d785bb3d4bdb5e2ae9405c5e1899cb49c9a6fbe34e8baa8e6df8819dee5c7233");
+    run_snapshot_test!("e0cfb2ee2b09c8a9de9a0af951101154372403f6046540062f7ddf73fd6cbc26");
     Ok(())
 }
 
 #[tokio::test]
 async fn write_read() -> anyhow::Result<()> {
-    run_snapshot_test!("2beac84ddff6d46234ece3c1227d9c19ef1d1bc0e78e4c0aac2e0e4eacf6ef1c");
+    run_snapshot_test!("283f11e10b610015d93fa8df25dee38b2cfbf69723ca7e45327df7fab0dfffc2");
     Ok(())
 }
 
 #[tokio::test]
 async fn write_validated() -> anyhow::Result<()> {
-    run_snapshot_test!("5d3ab06e123d1245b15c348d1512b7dd0f6feff44f0b0a3b79b1b72ca3e4b2b7");
+    run_snapshot_test!("41da0e6566122eeb699af670ea3505e42d882ef5f960edae52fb8c1d56ca1b03");
     Ok(())
 }
 
 #[tokio::test]
 async fn zome_call_single_value() -> anyhow::Result<()> {
-    run_snapshot_test!("4e74c47aa5158bbdc0c010fdc44de565c8b6592e472026f0bca9464d69e1e99b");
+    run_snapshot_test!("9d35fd5d9ce8ea81dda778a57c119fc43e7ddd801e86ea2647f1bde10093bfa3");
     Ok(())
 }
 
 #[tokio::test]
 async fn write_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("80fc1af2a7172fe34aee5ff222cfd2e8a09b7190f05722fd508c3d24199ddee7");
+    run_snapshot_test!("a89bb3a78861fbd7f52638571c24c17f9f931107447f0ba71c77b17cbddc9f4c");
     Ok(())
 }
 
 #[tokio::test]
 async fn write_validated_must_get_agent_activity() -> anyhow::Result<()> {
-    run_snapshot_test!("990319bade877974d16c6f7cfd0a1ec734062cab66677dc6b2695ef2ae98792c");
+    run_snapshot_test!("1e10b15f872e7ddb4f1d42d64f0a0afd2aebb34f350636f54fbd53e38f81f332");
     Ok(())
 }
 
 #[tokio::test]
 async fn zero_arc_create_data() -> anyhow::Result<()> {
-    run_snapshot_test!("c90e09f59fccb19cacaff231094f9fa49d3da999d6fa7c169328c1030ed1537d");
+    run_snapshot_test!("df98bec92a3f70fe30e9fb23871784f13a6f2979c3e19885227ca971e8b827cd");
     Ok(())
 }
 
 #[tokio::test]
 async fn zero_arc_create_data_validated() -> anyhow::Result<()> {
-    run_snapshot_test!("52a0ce7a16521345d301ed0750d079b8513ad48d3f49524ceb725ae0770cd9bc");
+    run_snapshot_test!("fe64cf7275e429e3c0af337bd5e3ef7ae84d1e3c5feea9569757dfe30e729155");
     Ok(())
 }
 
 #[tokio::test]
 async fn zero_arc_create_and_read() -> anyhow::Result<()> {
-    run_snapshot_test!("94d299900c09e3ae81800bfce0f497a9d12f98a7a4fd6fd4083793335bc18c88");
+    run_snapshot_test!("52a7fd7068b14a8b64ed436515c89f41cdb0fef4885f88143bfc00c4df51b8a3");
     Ok(())
 }
 
