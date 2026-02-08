@@ -80,8 +80,8 @@ pub(crate) async fn summarize_full_arc_create_validated_zero_arc_read(
             .context("Timing stats for sync lag")?,
         sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
             .context("Rate stats for sync lag")?,
-        retrieval_errors: gauge_stats(retrieval_errors, "value")?,
-        open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
+        retrieval_errors: gauge_stats(retrieval_errors, "value", "10s")?,
+        open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"], "10s")
             .context("Open connections")?,
         app_validation_workflow_duration: query_workflow_duration(
             &client,

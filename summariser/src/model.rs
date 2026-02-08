@@ -7,7 +7,11 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 pub use self::holochain_metrics::{HolochainDatabaseKind, HolochainWorkflowKind};
-pub use self::host_metrics::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
+pub use self::host_metrics::{
+    AnomalyStatus, Bottleneck, CpuMetrics, DiskMetrics, DiskSpace, DiskThroughput, HostAnomalies,
+    HostMetrics, MemMetrics, NetMetrics, OomRisk, PrimaryNetStats, ProcessMetrics, PsiMetrics,
+    PsiResource, PsiStall, ResourcePressure, Severity, SystemLoadMetrics,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SummaryOutput {
@@ -33,7 +37,7 @@ impl SummaryOutput {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimingTrend {
     pub trend: Vec<f64>,
     pub window_duration: String,
@@ -56,14 +60,26 @@ pub struct StandardRateStats {
     pub window_duration: String,
 }
 
-/// GaugeStats statistics
+/// Gauge statistics
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GaugeStats {
-    pub count: usize,
-    pub max: f64,
     pub mean: f64,
-    pub min: f64,
     pub std: f64,
+    /// 5th percentile (lower bound of the 90% operating range)
+    pub p5: f64,
+    /// 95th percentile (upper bound of the 90% operating range)
+    pub p95: f64,
+    /// Windowed mean trend over time
+    pub trend: GaugeTrend,
+}
+
+/// Windowed mean trend for a gauge metric
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+pub struct GaugeTrend {
+    /// Windowed mean values over time
+    pub trend: Vec<f64>,
+    /// Duration of each window (e.g. "10s", "60s")
+    pub window_duration: String,
 }
 
 /// GaugeStats for a specific partition
@@ -82,12 +98,8 @@ pub struct PartitionedGaugeStats {
 /// Stats which increment during time
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CounterStats {
-    /// initial value
-    pub start: u64,
-    /// value at the end of the measurement
-    pub end: u64,
-    /// end - start
-    pub delta: u64,
+    /// The difference between the first and last observed value of the counter during the measurement period
+    pub count: u64,
     /// Duration of the measurement
     pub measurement_duration: Duration,
     /// Growth rate per second

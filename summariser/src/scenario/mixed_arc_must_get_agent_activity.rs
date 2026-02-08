@@ -108,7 +108,7 @@ pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
             &["agent"],
         )
         .context("Partitioned timing stats for retrieval errors")?,
-        open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"])
+        open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"], "10s")
             .context("Open connections")?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,
