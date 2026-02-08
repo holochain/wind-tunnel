@@ -1,33 +1,42 @@
 {{/*
-Render a min ≤ (mean ± std) ≤ max summary.
-Fields:
+Render a range summary: either p5 ≤ (mean ± std) ≤ p95 for GaugeStats,
+or min ≤ (mean ± std) ≤ max for RatioStats.
 
-* `min` (scalar): The minimum value.
-* `mean` (scalar): The mean value.
-* `std` (scalar): The standard deviation value.
-* `max` (scalar): The maximum value.
-* `unit` (string, optional): The unit of measurement to display alongside all values.
+GaugeStats fields: `p5`, `mean`, `std`, `p95`, `trend` (optional)
+RatioStats fields: `min`, `mean`, `std`, `max`
+Common optional: `unit` (string)
 
-Corresponding Rust type: `holochain_metrics::GaugeStats`
+Corresponding Rust types: `GaugeStats` or `RatioStats`
 */}}
-<span class="min-max-mean-std">
+<div class="min-max-mean-std">
+    {{/* Detect which type we have by checking for the "p5" key.
+         We use `ne nil` because the value itself may be 0.0 (falsy). */}}
+    {{ $is_gauge := ne (index . "p5") nil }}
+    {{ $low_label := test.Ternary "p5 " "min " $is_gauge }}
+    {{ $high_label := test.Ternary " p95" " max" $is_gauge }}
+    {{ $low := test.Ternary (index . "p5") (index . "min") $is_gauge }}
+    {{ $high := test.Ternary (index . "p95") (index . "max") $is_gauge }}
+
     <span class="min-max-mean-std-min">
         {{ template "scalar" (dict
-            "label" "min "
-            "value" .min
+            "label" $low_label
+            "value" $low
             "unit" (index . "unit")
         ) }}
     </span>
-    {{ $min_mean_symbol := test.Ternary "lt" "le" (lt .min .mean) }}
-    <span class="divider divider-{{ $min_mean_symbol }}">&{{ $min_mean_symbol }};</span>
+    {{ $lo_mean_symbol := test.Ternary "lt" "le" (lt $low .mean) }}
+    <span class="divider divider-{{ $lo_mean_symbol }}">&{{ $lo_mean_symbol }};</span>
     {{ template "mean_std" . }}
-    {{ $mean_max_symbol := test.Ternary "lt" "le" (lt .mean .max) }}
-    <span class="divider divider-{{ $mean_max_symbol }}">&{{ $mean_max_symbol }};</span>
+    {{ $mean_hi_symbol := test.Ternary "lt" "le" (lt .mean $high) }}
+    <span class="divider divider-{{ $mean_hi_symbol }}">&{{ $mean_hi_symbol }};</span>
     <span class="min-max-mean-std-max">
         {{ template "scalar" (dict
-            "label" " max"
-            "value" .max
+            "label" $high_label
+            "value" $high
             "unit" (index . "unit")
         ) }}
     </span>
-</span>
+    {{ with (index . "trend") }}
+        {{ template "trend_graph" (dict "data" .trend "mean" 0 "window_duration" .window_duration) }}
+    {{ end }}
+</div>

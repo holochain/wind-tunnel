@@ -1,46 +1,37 @@
 {{/*
-Render a change between two scalar values, including percent change and rate of change.
-Fields:
+Render counter stats: total count, rate distribution, and rate trend.
+Fields (from CounterStats):
 
-* `start` (scalar): The starting value.
-* `end` (scalar): The ending value.
-* `delta` (scalar): The difference between end and start.
-* `measurement_duration`: A duration object representing the time between the two measurements.
-   Contains `secs` and `nanos` fields.
-   Corresponding Rust type: `std::time::Duration`
-* `rate_per_second` (scalar): The rate of change per second.
-* `unit` (string, optional): The unit of measurement.
-  This will be displayed alongside the start, end, and rate_per_second values.
+* `count` (scalar): Total increment over the measurement period.
+* `measurement_duration`: A duration object with `secs` and `nanos` fields.
+* `mean_rate_per_second` (scalar): Mean instantaneous rate per second.
+* `std_rate_per_second` (scalar): Standard deviation of instantaneous rate.
+* `p5_rate_per_second` (scalar): 5th percentile rate per second.
+* `p95_rate_per_second` (scalar): 95th percentile rate per second.
+* `peak_rate_per_second` (scalar): Peak instantaneous rate per second.
+* `rate_trend`: Object with `trend` (array of floats) and `window_duration` (string).
+* `unit` (string, optional): The unit of measurement (added by caller).
 
-Corresponding Rust type: `holochain_metrics::CounterStats` with the `unit` field added on.
+Corresponding Rust type: `holochain_summariser::model::CounterStats` with the `unit` field added on.
 */}}
-<span class="delta">
-    <span class="delta-start-end">
-        <span class="delta-start">
-            {{- template "scalar" (dict "value" .start "unit" (index . "unit")) -}}
-        </span>
-        {{ if (lt .start .end) }}
-            <span class="divider delta-dir delta-dir-up">&#x2B06;</span>
-        {{ else if (gt .start .end) }}
-            <span class="divider delta-dir delta-dir-down">&#x2B07;</span>
-        {{ end }}
-        {{ if (ne .start .end) }}
-            <span class="delta-end">
-                {{- template "scalar" (dict "value" .end "unit" (index . "unit")) -}}
-            </span>
-        {{ end }}
+<div class="delta">
+    <span class="delta-count">
+        {{- template "scalar" (dict "label" "total" "value" .count "unit" (index . "unit")) -}}
+        <span class="delta-measurement-duration">over {{ math.Add .measurement_duration.secs (math.Div .measurement_duration.nanos 1000000000) }}s</span>
     </span>
 
-    {{ if (and .start .end (ne .start .end)) }}
-        {{/* Start and end must be non-zero and not equal to each other for a percent change to make sense */}}
-        <span class="delta-change">
-            <span class="delta-percent-change">change:
-                {{ template "scalar" (dict
-                    "value" (math.Mul (math.Div .delta .start) 100)
-                    "unit" "%"
-                ) -}}
-            </span>
-            <span class="delta-measurement-duration">over {{ math.Add .measurement_duration.secs (math.Div .measurement_duration.nanos 1000000000) }}s ({{- template "scalar" (dict "value" .rate_per_second "unit" (index . "unit")) -}}/s)</span>
+    {{ if .mean_rate_per_second }}
+        <span class="delta-rate">
+            {{ template "scalar" (dict "label" "mean rate" "value" .mean_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
+            {{ template "scalar" (dict "label" "std" "value" .std_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
+        </span>
+        <span class="delta-rate-range">
+            {{ template "scalar" (dict "label" "p5" "value" .p5_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
+            {{ template "scalar" (dict "label" "p95" "value" .p95_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
+            {{ template "scalar" (dict "label" "peak" "value" .peak_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
         </span>
     {{ end }}
-</span>
+</div>
+{{ with .rate_trend }}
+    {{ template "trend_graph" (dict "data" .trend "mean" 0 "window_duration" .window_duration) }}
+{{ end }}

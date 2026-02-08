@@ -28,7 +28,7 @@ pub async fn query_wasm_usage(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> anyhow::Result<Option<CounterStats>> {
-    match query_counter(client, summary, "hc.ribosome.wasm.usage", None).await {
+    match query_counter(client, summary, "hc.ribosome.wasm.usage", None, "10s").await {
         Ok(res) => Ok(Some(res)),
         Err(e) => match e.downcast_ref::<LoadError>() {
             Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
@@ -48,6 +48,7 @@ pub async fn query_wasm_usage_by_fn(
         "hc.ribosome.wasm.usage",
         &["zome", "fn"],
         None,
+        "10s",
     )
     .await
     {
@@ -130,6 +131,7 @@ pub async fn query_database_utilization(
         summary,
         "hc.db.pool.utilization",
         Some(("kind", kind.to_string().as_str())),
+        "10s",
     )
     .await
     {
@@ -154,6 +156,7 @@ pub async fn query_database_utilization_by_id(
         "hc.db.pool.utilization",
         &["id"],
         Some(("kind", kind.to_string().as_str())),
+        "10s",
     )
     .await
     {

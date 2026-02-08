@@ -41,7 +41,7 @@ pub(crate) async fn summarize_write_get_agent_activity(
             .collect()?;
 
     Ok(WriteGetAgentActivitySummary {
-        highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value")
+        highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value", "10s")
             .context("Highest observed action seq stats")?,
         get_agent_activity_full_zome_calls: partitioned_timing_stats(
             get_agent_activity_full_zome_calls,

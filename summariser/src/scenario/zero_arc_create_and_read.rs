@@ -59,7 +59,7 @@ pub(crate) async fn summarize_zero_arc_create_and_read(
             .context("Timing stats for sync lag")?,
         sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
             .context("Rate stats for sync lag")?,
-        open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
+        open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"], "10s")
             .context("Open connections")?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,

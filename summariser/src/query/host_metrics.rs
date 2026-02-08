@@ -1,185 +1,393 @@
-use std::{fmt, time::Duration};
+use std::time::Duration;
+use strum::VariantNames;
+use strum_macros::EnumString;
 
-pub const TAG_INTERFACE: &str = "interface";
-
-/// A trait to return values to select for a type.
-pub trait Values {
-    /// Get the values to select for this type.
-    fn values(&self) -> &[&'static str];
-}
-
-/// A trait to return the column name for a type.
-pub trait Column {
-    /// Get the column name for this type.
-    fn column(&self) -> &'static str;
-}
-
-/// Host metric field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum HostMetricField {
-    Cpu(CpuField),
-    Mem(MemField),
-    Net(NetField),
-}
-
-impl fmt::Display for HostMetricField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{measurement}.{column}",
-            measurement = self.measurement(),
-            column = self.column()
-        )
+/// A trait to describe how to source table data from InfluxDB for a type.
+pub trait InfluxSourced {
+    /// A list of key-value tag pairs to filter by when sourcing data for this type.
+    ///
+    /// Note that tags are indexed in InfluxDB, where fields are not. Please check the docs before
+    /// adding tags to this list and consider filtering locally if you need to work with
+    /// non-indexed values.
+    fn filter_tags(&self) -> Vec<(&str, String)> {
+        Vec::with_capacity(0)
     }
+
+    /// A list of fields or tags to select for this type.
+    ///
+    /// These will become the columns in the resulting table.
+    fn select(&self) -> &[&str];
 }
 
-impl Values for HostMetricField {
-    fn values(&self) -> &[&'static str] {
-        match self {
-            HostMetricField::Cpu(f) => f.values(),
-            HostMetricField::Mem(f) => f.values(),
-            HostMetricField::Net(f) => f.values(),
-        }
-    }
+/// Host metric measurement.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum HostMetricMeasurement {
+    /// Telegraf CPU metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/cpu/
+    Cpu(CpuFieldSet),
+    /// Telegraf Memory metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/mem/
+    Mem(MemFieldSet),
+    /// Telegraf Network metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/net/
+    Net(NetFieldSet),
+    /// Telegraf Disk metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/disk/
+    Disk(DiskFieldSet),
+    /// Telegraf Disk IO metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/diskio/
+    DiskIo(DiskIoFieldSet),
+    /// Telegraf System metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/system/
+    System(SystemFieldSet),
+    /// Linux Pressure Stall Information metrics -> https://docs.influxdata.com/telegraf/v1/input-plugins/kernel
+    Pressure(PressureFieldSet),
+    /// Process metrics sourced from telegraf's `inputs.procstat` plugin -> https://docs.influxdata.com/telegraf/v1/input-plugins/procstat/
+    Procstat(ProcstatFieldSet),
 }
 
-impl Column for HostMetricField {
-    fn column(&self) -> &'static str {
-        match self {
-            HostMetricField::Cpu(f) => f.column(),
-            HostMetricField::Mem(f) => f.column(),
-            HostMetricField::Net(f) => f.column(),
-        }
-    }
-}
-
-impl HostMetricField {
-    /// Get the measurement name for this field category to be used as the table name
+impl HostMetricMeasurement {
+    /// Get the measurement name for this measurement category.
+    ///
+    /// This value can be used as a table name in InfluxDB queries.
     pub fn measurement(&self) -> &'static str {
         match self {
-            HostMetricField::Cpu(_) => "cpu",
-            HostMetricField::Mem(_) => "mem",
-            HostMetricField::Net(_) => "net",
+            HostMetricMeasurement::Cpu(_) => "cpu",
+            HostMetricMeasurement::Mem(_) => "mem",
+            HostMetricMeasurement::Net(_) => "net",
+            HostMetricMeasurement::Disk(_) => "disk",
+            HostMetricMeasurement::DiskIo(_) => "diskio",
+            HostMetricMeasurement::System(_) => "system",
+            HostMetricMeasurement::Pressure(_) => "pressure",
+            HostMetricMeasurement::Procstat(_) => "procstat",
+        }
+    }
+}
+
+impl InfluxSourced for HostMetricMeasurement {
+    fn filter_tags(&self) -> Vec<(&str, String)> {
+        match self {
+            HostMetricMeasurement::Cpu(f) => f.filter_tags(),
+            HostMetricMeasurement::Mem(f) => f.filter_tags(),
+            HostMetricMeasurement::Net(f) => f.filter_tags(),
+            HostMetricMeasurement::Disk(f) => f.filter_tags(),
+            HostMetricMeasurement::DiskIo(f) => f.filter_tags(),
+            HostMetricMeasurement::System(f) => f.filter_tags(),
+            HostMetricMeasurement::Pressure(f) => f.filter_tags(),
+            HostMetricMeasurement::Procstat(f) => f.filter_tags(),
+        }
+    }
+
+    fn select(&self) -> &[&str] {
+        match self {
+            HostMetricMeasurement::Cpu(f) => f.select(),
+            HostMetricMeasurement::Mem(f) => f.select(),
+            HostMetricMeasurement::Net(f) => f.select(),
+            HostMetricMeasurement::Disk(f) => f.select(),
+            HostMetricMeasurement::DiskIo(f) => f.select(),
+            HostMetricMeasurement::System(f) => f.select(),
+            HostMetricMeasurement::Pressure(f) => f.select(),
+            HostMetricMeasurement::Procstat(f) => f.select(),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CpuFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
 pub enum CpuField {
+    Host,
     UsageUser,
     UsageSystem,
 }
 
-impl Values for CpuField {
-    fn values(&self) -> &[&'static str] {
+impl InfluxSourced for CpuFieldSet {
+    fn filter_tags(&self) -> Vec<(&str, String)> {
         match self {
-            CpuField::UsageUser => &["usage_user"],
-            CpuField::UsageSystem => &["usage_system"],
+            CpuFieldSet::Default => vec![("cpu", "cpu-total".to_string())],
         }
     }
-}
 
-impl Column for CpuField {
-    fn column(&self) -> &'static str {
+    fn select(&self) -> &[&str] {
         match self {
-            CpuField::UsageUser => "usage_user",
-            CpuField::UsageSystem => "usage_system",
+            CpuFieldSet::Default => CpuField::VARIANTS,
         }
-    }
-}
-
-impl fmt::Display for CpuField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.column())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MemFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
 pub enum MemField {
-    Active,
-    Available,
+    Host,
+    UsedPercent,
     AvailablePercent,
-    Free,
-    Inactive,
+    Used,
+    Total,
+    Available,
     SwapFree,
     SwapTotal,
-    Total,
-    Used,
-    UsedPercent,
 }
 
-impl Values for MemField {
-    fn values(&self) -> &[&'static str] {
+impl InfluxSourced for MemFieldSet {
+    fn select(&self) -> &[&str] {
         match self {
-            MemField::Active => &["active"],
-            MemField::Available => &["available"],
-            MemField::AvailablePercent => &["available_percent"],
-            MemField::Free => &["free"],
-            MemField::Inactive => &["inactive"],
-            MemField::SwapFree => &["swap_free"],
-            MemField::SwapTotal => &["swap_total"],
-            MemField::Total => &["total"],
-            MemField::Used => &["used"],
-            MemField::UsedPercent => &["used_percent"],
+            MemFieldSet::Default => MemField::VARIANTS,
         }
-    }
-}
-
-impl Column for MemField {
-    fn column(&self) -> &'static str {
-        match self {
-            MemField::Active => "active",
-            MemField::Available => "available",
-            MemField::AvailablePercent => "available_percent",
-            MemField::Free => "free",
-            MemField::Inactive => "inactive",
-            MemField::SwapFree => "swap_free",
-            MemField::SwapTotal => "swap_total",
-            MemField::Total => "total",
-            MemField::Used => "used",
-            MemField::UsedPercent => "used_percent",
-        }
-    }
-}
-
-impl fmt::Display for MemField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.column())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NetFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
 pub enum NetField {
+    Host,
+    Interface,
     BytesRecv,
     BytesSent,
     PacketsRecv,
     PacketsSent,
 }
 
-impl fmt::Display for NetField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.column())
-    }
-}
-
-impl Column for NetField {
-    fn column(&self) -> &'static str {
+impl InfluxSourced for NetFieldSet {
+    fn select(&self) -> &[&str] {
         match self {
-            NetField::BytesRecv => "bytes_recv",
-            NetField::BytesSent => "bytes_sent",
-            NetField::PacketsRecv => "packets_recv",
-            NetField::PacketsSent => "packets_sent",
+            NetFieldSet::Default => NetField::VARIANTS,
         }
     }
 }
 
-impl Values for NetField {
-    fn values(&self) -> &[&'static str] {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DiskFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum DiskField {
+    Host,
+    Path,
+    UsedPercent,
+}
+
+impl InfluxSourced for DiskFieldSet {
+    fn select(&self) -> &[&str] {
         match self {
-            NetField::BytesRecv => &[TAG_INTERFACE, "bytes_recv"],
-            NetField::BytesSent => &[TAG_INTERFACE, "bytes_sent"],
-            NetField::PacketsRecv => &[TAG_INTERFACE, "packets_recv"],
-            NetField::PacketsSent => &[TAG_INTERFACE, "packets_sent"],
+            DiskFieldSet::Default => DiskField::VARIANTS,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DiskIoFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum DiskIoField {
+    Host,
+    Path,
+    Name,
+    ReadBytes,
+    WriteBytes,
+}
+
+impl InfluxSourced for DiskIoFieldSet {
+    fn select(&self) -> &[&str] {
+        match self {
+            DiskIoFieldSet::Default => DiskIoField::VARIANTS,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SystemFieldSet {
+    Default,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum SystemField {
+    Host,
+    Load1,
+    Load5,
+    Load15,
+    NCpus,
+}
+
+impl InfluxSourced for SystemFieldSet {
+    fn select(&self) -> &[&str] {
+        match self {
+            SystemFieldSet::Default => SystemField::VARIANTS,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PressureFieldSet {
+    CpuSome,
+    MemSome,
+    MemFull,
+    IoSome,
+    IoFull,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    strum_macros::Display,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum PressureField {
+    Avg10,
+    Avg60,
+    Avg300,
+}
+
+impl InfluxSourced for PressureFieldSet {
+    fn filter_tags(&self) -> Vec<(&str, String)> {
+        match self {
+            PressureFieldSet::CpuSome => vec![
+                ("resource", "cpu".to_string()),
+                ("type", "some".to_string()),
+            ],
+            PressureFieldSet::MemSome => vec![
+                ("resource", "memory".to_string()),
+                ("type", "some".to_string()),
+            ],
+            PressureFieldSet::MemFull => vec![
+                ("resource", "memory".to_string()),
+                ("type", "full".to_string()),
+            ],
+            PressureFieldSet::IoSome => {
+                vec![("resource", "io".to_string()), ("type", "some".to_string())]
+            }
+            PressureFieldSet::IoFull => {
+                vec![("resource", "io".to_string()), ("type", "full".to_string())]
+            }
+        }
+    }
+
+    fn select(&self) -> &[&str] {
+        // All pressure variants use the same fields: avg10, avg60, avg300
+        PressureField::VARIANTS
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ProcstatFieldSet {
+    Default { pattern: String },
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumString,
+    strum_macros::VariantNames,
+    strum_macros::AsRefStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum ProcstatField {
+    /// Hostname tag — used for per-host cpu_usage normalization
+    Host,
+    /// CPU usage percentage for the process (unbounded: 100% per core)
+    CpuUsage,
+    /// Proportional set size in bytes
+    MemoryPss,
+    /// Number of threads
+    NumThreads,
+    /// Number of open file descriptors
+    NumFds,
+}
+
+impl InfluxSourced for ProcstatFieldSet {
+    fn filter_tags(&self) -> Vec<(&str, String)> {
+        match self {
+            ProcstatFieldSet::Default { pattern } => vec![("pattern", pattern.clone())],
+        }
+    }
+
+    fn select(&self) -> &[&str] {
+        match self {
+            ProcstatFieldSet::Default { .. } => ProcstatField::VARIANTS,
         }
     }
 }

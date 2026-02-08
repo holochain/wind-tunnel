@@ -70,6 +70,7 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
         write_validated_must_get_agent_activity_chain_len: counter_stats(
             write_validated_must_get_agent_activity_chain_len,
             "value",
+            "10s",
         )
         .context("Write write_validated_must_get_agent_activity_chain_len stats")?,
         chain_batch_delay_timing: partitioned_timing_stats(

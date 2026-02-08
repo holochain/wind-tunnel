@@ -46,7 +46,7 @@ pub(crate) async fn summarize_remote_signals(
     let remote_signal_timeout = if remote_signal_timeout.is_empty() {
         None
     } else {
-        Some(counter_stats(remote_signal_timeout, "value").context("Timeout stats")?)
+        Some(counter_stats(remote_signal_timeout, "value", "10s").context("Timeout stats")?)
     };
 
     Ok(RemoteSignalsSummary {
