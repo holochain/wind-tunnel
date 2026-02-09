@@ -1,3 +1,4 @@
+use crate::aggregator::HostMetricsAggregator;
 use crate::model::SummaryOutput;
 use anyhow::Context;
 use futures::FutureExt;
@@ -16,6 +17,24 @@ pub mod scenario;
 #[cfg(any(feature = "test_data", feature = "query_test_data"))]
 pub mod test_data;
 
+macro_rules! execute_report_with_host_metrics {
+    ($client:ident, $summary:ident, $report_host_metrics:ident, $report_fn:ident) => {
+        async move {
+            let (host_metrics, scenario) = futures::join!(
+                $report_host_metrics($client.clone(), $summary.clone()),
+                $report_fn($client.clone(), $summary.clone())
+            );
+
+            SummaryOutput::new(
+                $summary,
+                scenario.context(stringify!($report_fn))?,
+                host_metrics,
+            )
+        }
+        .boxed()
+    };
+}
+
 pub fn execute_report_for_run_summary(
     client: influxdb::Client,
     summary: RunSummary,
@@ -23,175 +42,140 @@ pub fn execute_report_for_run_summary(
     let name = &summary.scenario_name;
 
     let client = client.clone();
+
+    let report_host_metrics = |client, summary| async move {
+        HostMetricsAggregator::new(&client, &summary)
+            .try_aggregate()
+            .await
+    };
+
     match name.as_str() {
-        "app_install" => Some(
-            async move {
-                summarize_app_install(client.clone(), summary.clone())
-                    .await
-                    .context("App install summary")
-            }
-            .boxed(),
-        ),
-        "dht_sync_lag" => Some(
-            async move {
-                summarize_dht_sync_lag(client.clone(), summary.clone())
-                    .await
-                    .context("DHT sync lag summary")
-            }
-            .boxed(),
-        ),
-        "first_call" => Some(
-            async move {
-                summarize_first_call(client.clone(), summary.clone())
-                    .await
-                    .context("First call summary")
-            }
-            .boxed(),
-        ),
-        "full_arc_create_validated_zero_arc_read" => Some(
-            async move {
-                summarize_full_arc_create_validated_zero_arc_read(client.clone(), summary.clone())
-                    .await
-                    .context("Full arc create validated zero arc read summary")
-            }
-            .boxed(),
-        ),
-        "local_signals" => Some(
-            async move {
-                summarize_local_signals(client.clone(), summary.clone())
-                    .await
-                    .context("Local signals summary")
-            }
-            .boxed(),
-        ),
-        "mixed_arc_get_agent_activity" => Some(
-            async move {
-                summarize_mixed_arc_get_agent_activity(client.clone(), summary.clone())
-                    .await
-                    .context("Mixed arc get agent activity summary")
-            }
-            .boxed(),
-        ),
-        "mixed_arc_must_get_agent_activity" => Some(
-            async move {
-                summarize_mixed_arc_must_get_agent_activity(client.clone(), summary.clone())
-                    .await
-                    .context("mixed_arc_must_get_agent_activity summary")
-            }
-            .boxed(),
-        ),
-        "remote_call_rate" => Some(
-            async move {
-                summarize_remote_call_rate(client.clone(), summary.clone())
-                    .await
-                    .context("Remote call rate summary")
-            }
-            .boxed(),
-        ),
-        "remote_signals" => Some(
-            async move {
-                summarize_remote_signals(client.clone(), summary.clone())
-                    .await
-                    .context("Remote signals rate summary")
-            }
-            .boxed(),
-        ),
-        "single_write_many_read" => Some(
-            async move {
-                summarize_single_write_many_read(client.clone(), summary.clone())
-                    .await
-                    .context("Single write many read summary")
-            }
-            .boxed(),
-        ),
-        "two_party_countersigning" => Some(
-            async move {
-                summarize_countersigning_two_party(client.clone(), summary.clone())
-                    .await
-                    .context("Countersigning, two party, summary")
-            }
-            .boxed(),
-        ),
-        "validation_receipts" => Some(
-            async move {
-                summarize_validation_receipts(client.clone(), summary.clone())
-                    .await
-                    .context("Validation receipts summary")
-            }
-            .boxed(),
-        ),
-        "write_query" => Some(
-            async move {
-                summarize_write_query(client.clone(), summary.clone())
-                    .await
-                    .context("Write query summary")
-            }
-            .boxed(),
-        ),
-        "write_read" => Some(
-            async move {
-                summarize_write_read(client.clone(), summary.clone())
-                    .await
-                    .context("Write read summary")
-            }
-            .boxed(),
-        ),
-        "write_validated" => Some(
-            async move {
-                summarize_write_validated(client.clone(), summary.clone())
-                    .await
-                    .context("Write validated summary")
-            }
-            .boxed(),
-        ),
-        "zome_call_single_value" => Some(
-            async move {
-                summarize_zome_call_single_value(client.clone(), summary.clone())
-                    .await
-                    .context("Zome call single value summary")
-            }
-            .boxed(),
-        ),
-        "write_get_agent_activity" => Some(
-            async move {
-                summarize_write_get_agent_activity(client.clone(), summary.clone())
-                    .await
-                    .context("Agent activity summary")
-            }
-            .boxed(),
-        ),
-        "write_validated_must_get_agent_activity" => Some(
-            async move {
-                summarize_write_validated_must_get_agent_activity(client.clone(), summary.clone())
-                    .await
-                    .context("Write validated must_get_agent_activity summary")
-            }
-            .boxed(),
-        ),
-        "zero_arc_create_data" => Some(
-            async move {
-                summarize_zero_arc_create_data(client.clone(), summary.clone())
-                    .await
-                    .context("Zero arc create data summary")
-            }
-            .boxed(),
-        ),
-        "zero_arc_create_data_validated" => Some(
-            async move {
-                summarize_zero_arc_create_data_validated(client.clone(), summary.clone())
-                    .await
-                    .context("Zero arc create data validated summary")
-            }
-            .boxed(),
-        ),
-        "zero_arc_create_and_read" => Some(
-            async move {
-                summarize_zero_arc_create_and_read(client.clone(), summary.clone())
-                    .await
-                    .context("Zero arc create and read summary")
-            }
-            .boxed(),
-        ),
+        "app_install" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_app_install
+        )),
+        "dht_sync_lag" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_dht_sync_lag
+        )),
+        "first_call" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_first_call
+        )),
+        "full_arc_create_validated_zero_arc_read" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_full_arc_create_validated_zero_arc_read
+        )),
+        "local_signals" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_local_signals
+        )),
+        "mixed_arc_get_agent_activity" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_mixed_arc_get_agent_activity
+        )),
+        "mixed_arc_must_get_agent_activity" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_mixed_arc_must_get_agent_activity
+        )),
+        "remote_call_rate" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_remote_call_rate
+        )),
+        "remote_signals" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_remote_signals
+        )),
+        "single_write_many_read" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_single_write_many_read
+        )),
+        "two_party_countersigning" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_countersigning_two_party
+        )),
+        "validation_receipts" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_validation_receipts
+        )),
+        "write_query" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_write_query
+        )),
+        "write_read" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_write_read
+        )),
+        "write_validated" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_write_validated
+        )),
+        "zome_call_single_value" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_zome_call_single_value
+        )),
+        "write_get_agent_activity" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_write_get_agent_activity
+        )),
+        "write_validated_must_get_agent_activity" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_write_validated_must_get_agent_activity
+        )),
+        "zero_arc_create_data" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_zero_arc_create_data
+        )),
+        "zero_arc_create_data_validated" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_zero_arc_create_data_validated
+        )),
+        "zero_arc_create_and_read" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            report_host_metrics,
+            summarize_zero_arc_create_and_read
+        )),
         _ => {
             log::warn!("No report for scenario: {name}");
             None

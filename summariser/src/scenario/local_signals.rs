@@ -1,6 +1,5 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{round_to_n_dp, standard_timing_stats};
-use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::model::StandardTimingsStats;
 use crate::query;
 use anyhow::Context;
 use polars::frame::DataFrame;
@@ -8,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct LocalSignalsSummary {
+pub(crate) struct LocalSignalsSummary {
     send: StandardTimingsStats,
     recv: StandardTimingsStats,
     success_ratio: RatioStats,
@@ -17,7 +16,7 @@ struct LocalSignalsSummary {
 pub(crate) async fn summarize_local_signals(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<LocalSignalsSummary> {
     assert_eq!(summary.scenario_name, "local_signals");
 
     let send_frame =
@@ -39,21 +38,13 @@ pub(crate) async fn summarize_local_signals(
     .await
     .context("Load success ratio")?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary,
-        LocalSignalsSummary {
-            send: standard_timing_stats(send_frame, "value", "10s", None)
-                .context("Send timing stats")?,
-            recv: standard_timing_stats(recv_frame, "value", "10s", None)
-                .context("Recv timing stats")?,
-            success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
-        },
-        host_metrics,
-    )
+    Ok(LocalSignalsSummary {
+        send: standard_timing_stats(send_frame, "value", "10s", None)
+            .context("Send timing stats")?,
+        recv: standard_timing_stats(recv_frame, "value", "10s", None)
+            .context("Recv timing stats")?,
+        success_ratio: ratio_stats(success_ratio, "value").context("Success ratio stats")?,
+    })
 }
 
 pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<RatioStats> {

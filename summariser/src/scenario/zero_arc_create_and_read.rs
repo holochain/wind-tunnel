@@ -1,8 +1,5 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_gauge_stats, partitioned_rate_stats, partitioned_timing_stats};
-use crate::model::{
-    PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats, SummaryOutput,
-};
+use crate::model::{PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats};
 use crate::query;
 use crate::query::holochain_p2p_metrics::{
     HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
@@ -13,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct ZeroArcCreateAndReadSummary {
+pub(crate) struct ZeroArcCreateAndReadSummary {
     // Scenario metrics
     create_rate: PartitionedRateStats,
     sync_lag_timing: PartitionedTimingStats,
@@ -26,7 +23,7 @@ struct ZeroArcCreateAndReadSummary {
 pub(crate) async fn summarize_zero_arc_create_and_read(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<ZeroArcCreateAndReadSummary> {
     assert_eq!(summary.scenario_name, "zero_arc_create_and_read");
 
     let create_zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
@@ -55,25 +52,16 @@ pub(crate) async fn summarize_zero_arc_create_and_read(
     .await
     .context("Load open connections data")?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary.clone(),
-        ZeroArcCreateAndReadSummary {
-            create_rate: partitioned_rate_stats(create_zome_calls, "value", "10s", &["agent"])
-                .context("Rate stats for create")?,
-            sync_lag_timing: partitioned_timing_stats(sync_lag.clone(), "value", "10s", &["agent"])
-                .context("Timing stats for sync lag")?,
-            sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
-                .context("Rate stats for sync lag")?,
-            open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
-                .context("Open connections")?,
-            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-            holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary)
-                .await?,
-        },
-        host_metrics,
-    )
+    Ok(ZeroArcCreateAndReadSummary {
+        create_rate: partitioned_rate_stats(create_zome_calls, "value", "10s", &["agent"])
+            .context("Rate stats for create")?,
+        sync_lag_timing: partitioned_timing_stats(sync_lag.clone(), "value", "10s", &["agent"])
+            .context("Timing stats for sync lag")?,
+        sync_lag_rate: partitioned_rate_stats(sync_lag, "value", "10s", &["agent"])
+            .context("Rate stats for sync lag")?,
+        open_connections: partitioned_gauge_stats(open_connections, "value", &["arc"])
+            .context("Open connections")?,
+        error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+        holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,
+    })
 }
