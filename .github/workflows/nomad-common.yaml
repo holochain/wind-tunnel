@@ -130,7 +130,7 @@ jobs:
         run: |
           echo "Waiting for $REQUIRED_NODES node(s) to be free"
           while true; do
-              count=$(nix run --impure --inputs-from . nixpkgs#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
+              count=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
               if (( ${count:-0} >= $REQUIRED_NODES )); then
                   break
               else
@@ -154,7 +154,7 @@ jobs:
           set -exuo pipefail
           JOB_NAME="${{ matrix.job-name }}"
           nomad_rc=0
-          nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+          nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
           if [ "$nomad_rc" -ne 0 ]; then
               echo "Nomad job submission failed with exit code $nomad_rc"
               echo "$nomad_output"
