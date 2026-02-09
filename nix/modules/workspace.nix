@@ -15,7 +15,7 @@ let
     version = "0.1.0";
 
     src = pkgs.lib.cleanSourceWith {
-      src = ./../..;
+      src = ../..;
       filter = includeFilesFilter;
     };
     strictDeps = true;
