@@ -1,6 +1,6 @@
 # Helper module to discover all scenarios and build packages for each.
 
-{ config, self', inputs', system, pkgs, lib, ... }:
+{ config, lib, ... }:
 let
   scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name)) (builtins.attrNames (builtins.readDir ../../scenarios));
 
