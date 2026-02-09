@@ -1,11 +1,9 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{
     counter_stats, partitioned_gauge_stats, partitioned_rate_stats,
     partitioned_timing_stats_allow_empty,
 };
 use crate::model::{
     CounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
-    SummaryOutput,
 };
 use crate::query::holochain_p2p_metrics::{
     HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
@@ -18,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct MixedArcMustGetAgentActivitySummary {
+pub(crate) struct MixedArcMustGetAgentActivitySummary {
     retrieved_chain_len: CounterStats,
     chain_batch_delay_timing: PartitionedTimingStats,
     chain_batch_delay_rate: PartitionedRateStats,
@@ -32,7 +30,7 @@ struct MixedArcMustGetAgentActivitySummary {
 pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<MixedArcMustGetAgentActivitySummary> {
     assert_eq!(summary.scenario_name, "mixed_arc_must_get_agent_activity");
 
     let retrieved_chain_len = query::query_custom_data(
@@ -79,49 +77,40 @@ pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
     .await
     .context("Load open connections data")?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary.clone(),
-        MixedArcMustGetAgentActivitySummary {
-            retrieved_chain_len: counter_stats(retrieved_chain_len, "value")
-                .context("Highest observed chain len stats")?,
-            chain_batch_delay_timing: partitioned_timing_stats(
-                chain_batch_delay.clone(),
-                "value",
-                "10s",
-                &["must_get_agent_activity_agent"],
-            )
-            .context("Timing stats for chain batch delay")?,
-            chain_batch_delay_rate: partitioned_rate_stats(
-                chain_batch_delay,
-                "value",
-                "10s",
-                &["must_get_agent_activity_agent"],
-            )
-            .context("Rate stats for chain batch delay")?,
-            create_validated_sample_entry_zome_calls: partitioned_timing_stats(
-                create_validated_sample_entry_zome_calls,
-                "value",
-                "10s",
-                &["agent"],
-            )
-            .context("Timing stats for zome call create_validated_sample_entry")?,
-            retrieval_errors: partitioned_timing_stats_allow_empty(
-                retrieval_errors_frame_result,
-                "value",
-                "10s",
-                &["agent"],
-            )
-            .context("Partitioned timing stats for retrieval errors")?,
-            open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"])
-                .context("Open connections")?,
-            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-            holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary)
-                .await?,
-        },
-        host_metrics,
-    )
+    Ok(MixedArcMustGetAgentActivitySummary {
+        retrieved_chain_len: counter_stats(retrieved_chain_len, "value")
+            .context("Highest observed chain len stats")?,
+        chain_batch_delay_timing: partitioned_timing_stats(
+            chain_batch_delay.clone(),
+            "value",
+            "10s",
+            &["must_get_agent_activity_agent"],
+        )
+        .context("Timing stats for chain batch delay")?,
+        chain_batch_delay_rate: partitioned_rate_stats(
+            chain_batch_delay,
+            "value",
+            "10s",
+            &["must_get_agent_activity_agent"],
+        )
+        .context("Rate stats for chain batch delay")?,
+        create_validated_sample_entry_zome_calls: partitioned_timing_stats(
+            create_validated_sample_entry_zome_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Timing stats for zome call create_validated_sample_entry")?,
+        retrieval_errors: partitioned_timing_stats_allow_empty(
+            retrieval_errors_frame_result,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Partitioned timing stats for retrieval errors")?,
+        open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"])
+            .context("Open connections")?,
+        error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+        holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,
+    })
 }

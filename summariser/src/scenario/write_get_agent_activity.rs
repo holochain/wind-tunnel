@@ -1,6 +1,5 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::counter_stats;
-use crate::model::{CounterStats, PartitionedTimingStats, SummaryOutput};
+use crate::model::{CounterStats, PartitionedTimingStats};
 use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
@@ -10,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct WriteGetAgentActivitySummary {
+pub(crate) struct WriteGetAgentActivitySummary {
     highest_observed_action_seq: CounterStats,
     get_agent_activity_full_zome_calls: PartitionedTimingStats,
     error_count: usize,
@@ -20,7 +19,7 @@ struct WriteGetAgentActivitySummary {
 pub(crate) async fn summarize_write_get_agent_activity(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<WriteGetAgentActivitySummary> {
     assert_eq!(summary.scenario_name, "write_get_agent_activity");
 
     let highest_observed_action_seq = query::query_custom_data(
@@ -41,25 +40,17 @@ pub(crate) async fn summarize_write_get_agent_activity(
             .filter(col("fn_name").eq(lit("get_agent_activity_full")))
             .collect()?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary.clone(),
-        WriteGetAgentActivitySummary {
-            highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value")
-                .context("Highest observed action seq stats")?,
-            get_agent_activity_full_zome_calls: partitioned_timing_stats(
-                get_agent_activity_full_zome_calls,
-                "value",
-                "10s",
-                &["agent"],
-            )
-            .context("Timing stats for zome call get_agent_activity_full")?,
-            error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
-        },
-        host_metrics,
-    )
+    Ok(WriteGetAgentActivitySummary {
+        highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value")
+            .context("Highest observed action seq stats")?,
+        get_agent_activity_full_zome_calls: partitioned_timing_stats(
+            get_agent_activity_full_zome_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Timing stats for zome call get_agent_activity_full")?,
+        error_count: query::zome_call_error_count(client.clone(), &summary).await?,
+        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
+    })
 }

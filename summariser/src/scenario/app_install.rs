@@ -1,13 +1,12 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::standard_timing_stats;
-use crate::model::{StandardTimingsStats, SummaryOutput};
+use crate::model::StandardTimingsStats;
 use crate::query;
 use anyhow::Context;
 use serde::Serialize;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize)]
-struct AppInstallSummary {
+pub(crate) struct AppInstallSummary {
     first_install_time: f64,
     install_app_timing: StandardTimingsStats,
 }
@@ -15,7 +14,7 @@ struct AppInstallSummary {
 pub(crate) async fn summarize_app_install(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<AppInstallSummary> {
     assert_eq!(summary.scenario_name, "app_install");
 
     let frame = query::query_instrument_data(client.clone(), &summary, "admin_install_app")
@@ -28,17 +27,9 @@ pub(crate) async fn summarize_app_install(
         .context("First")?
         .try_extract::<f64>()?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary,
-        AppInstallSummary {
-            first_install_time: first,
-            install_app_timing: standard_timing_stats(frame, "value", "10s", Some(1))
-                .context("Standard timing stats")?,
-        },
-        host_metrics,
-    )
+    Ok(AppInstallSummary {
+        first_install_time: first,
+        install_app_timing: standard_timing_stats(frame, "value", "10s", Some(1))
+            .context("Standard timing stats")?,
+    })
 }

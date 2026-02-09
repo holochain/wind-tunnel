@@ -1,8 +1,6 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
-    SummaryOutput,
 };
 use crate::query;
 use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
@@ -12,7 +10,7 @@ use std::ops::Sub;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TwoPartyCountersigningSummary {
+pub(crate) struct TwoPartyCountersigningSummary {
     accepted_timing: PartitionedTimingStats,
     accepted_success_rate: PartitionedRateStats,
     accepted_failure_rate: PartitionedRateStats,
@@ -25,7 +23,7 @@ struct TwoPartyCountersigningSummary {
 pub(crate) async fn summarize_countersigning_two_party(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<TwoPartyCountersigningSummary> {
     assert_eq!(summary.scenario_name, "two_party_countersigning");
 
     let accepted_timing = query::query_custom_data(
@@ -94,30 +92,17 @@ pub(crate) async fn summarize_countersigning_two_party(
 
     let initiated_failures = initiated - initiated_success.clone();
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary.clone(),
-        TwoPartyCountersigningSummary {
-            accepted_timing: partitioned_timing_stats(accepted_timing, "value", "10s", &["agent"])
-                .context("Accepted duration timing")?,
-            accepted_success_rate: accepted_success,
-            accepted_failure_rate: accepted_failures,
-            initiated_timing: partitioned_timing_stats(
-                initiated_timing,
-                "value",
-                "10s",
-                &["agent"],
-            )
+    Ok(TwoPartyCountersigningSummary {
+        accepted_timing: partitioned_timing_stats(accepted_timing, "value", "10s", &["agent"])
+            .context("Accepted duration timing")?,
+        accepted_success_rate: accepted_success,
+        accepted_failure_rate: accepted_failures,
+        initiated_timing: partitioned_timing_stats(initiated_timing, "value", "10s", &["agent"])
             .context("Initiated duration timing")?,
-            initiated_success_rate: initiated_success,
-            initiated_failure_rate: initiated_failures,
-            holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
-        },
-        host_metrics,
-    )
+        initiated_success_rate: initiated_success,
+        initiated_failure_rate: initiated_failures,
+        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
+    })
 }
 
 impl Sub for PartitionedRateStats {
