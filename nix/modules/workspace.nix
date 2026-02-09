@@ -11,17 +11,11 @@ let
   includeFilesFilter = path: type: (craneLib.filterCargoSources path type) || (nonCargoBuildFiles path type);
 
   commonArgs = {
-    pname = "workspace";
-    version = "0.1.0";
-
     src = pkgs.lib.cleanSourceWith {
       src = ../..;
       filter = includeFilesFilter;
     };
     strictDeps = true;
-
-    cargoExtraArgs = "--locked --workspace";
-    SKIP_HAPP_BUILD = "1";
 
     buildInputs = with pkgs; [
       # Some Holochain crates link against openssl
@@ -40,16 +34,21 @@ let
   };
 
   cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
-    pname = "${commonArgs.pname}-deps";
+    pname = "workspace"; # This derivation is actually named `workspace-deps` due to the `pnameSuffix`
   });
 
   workspace = craneLib.buildPackage (commonArgs // {
+    pname = "workspace";
     inherit cargoArtifacts;
+    cargoExtraArgs = "--locked --workspace";
+    SKIP_HAPP_BUILD = "1";
   });
 
   workspace_clippy = craneLib.cargoClippy (commonArgs // {
+    pname = "workspace"; # This derivation is actually named `workspace-clippy` due to the `pnameSuffix`
     inherit cargoArtifacts;
-    cargoClippyExtraArgs = "--all-targets --all-features -- --deny warnings";
+    SKIP_HAPP_BUILD = "1";
+    cargoClippyExtraArgs = "--workspace --all-targets --all-features -- --deny warnings";
   });
 in
 {
