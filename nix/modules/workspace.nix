@@ -32,7 +32,6 @@ let
     nativeBuildInputs = with pkgs; [
       # To build openssl-sys
       perl
-      pkg-config
     ];
 
     # Tests on CI are run in a separate step. Unit tests for kitsune involve WebRTC, which
