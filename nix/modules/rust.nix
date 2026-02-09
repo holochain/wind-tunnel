@@ -1,7 +1,7 @@
 # Module to configure Rust and Crane for use in other modules.
 
 { crane, nixpkgs, rust-overlay }:
-{ config, self', inputs', system, pkgs, lib, ... }:
+{ system, lib, ... }:
 let
   rustPkgs = import nixpkgs {
     inherit system;

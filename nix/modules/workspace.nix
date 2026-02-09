@@ -1,4 +1,4 @@
-{ config, self', inputs', system, pkgs, lib, ... }:
+{ config, system, pkgs, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
 
