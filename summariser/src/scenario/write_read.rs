@@ -1,6 +1,5 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
-use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardRateStats, StandardTimingsStats};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
@@ -9,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct WriteQuerySummary {
+pub(crate) struct WriteQuerySummary {
     write_timing: StandardTimingsStats,
     write_rate: StandardRateStats,
     read_timing: StandardTimingsStats,
@@ -20,7 +19,7 @@ struct WriteQuerySummary {
 pub(crate) async fn summarize_write_read(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<WriteQuerySummary> {
     assert_eq!(summary.scenario_name, "write_read");
 
     let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
@@ -39,23 +38,15 @@ pub(crate) async fn summarize_write_read(
         .filter(col("fn_name").eq(lit("get_sample_entry")))
         .collect()?;
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary.clone(),
-        WriteQuerySummary {
-            write_timing: standard_timing_stats(create_zome_calls.clone(), "value", "10s", None)
-                .context("Write timing stats")?,
-            write_rate: standard_rate(create_zome_calls, "value", "10s").context("Write rate")?,
-            read_timing: standard_timing_stats(get_zome_calls.clone(), "value", "10s", None)
-                .context("Read timing stats")?,
-            read_rate: standard_rate(get_zome_calls, "value", "10s").context("Read rate")?,
-            errors: zome_call_error_count(client.clone(), &summary)
-                .await
-                .context("Load zome call error data")?,
-        },
-        host_metrics,
-    )
+    Ok(WriteQuerySummary {
+        write_timing: standard_timing_stats(create_zome_calls.clone(), "value", "10s", None)
+            .context("Write timing stats")?,
+        write_rate: standard_rate(create_zome_calls, "value", "10s").context("Write rate")?,
+        read_timing: standard_timing_stats(get_zome_calls.clone(), "value", "10s", None)
+            .context("Read timing stats")?,
+        read_rate: standard_rate(get_zome_calls, "value", "10s").context("Read rate")?,
+        errors: zome_call_error_count(client.clone(), &summary)
+            .await
+            .context("Load zome call error data")?,
+    })
 }
