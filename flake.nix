@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
 
+    nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     git-hooks = {
@@ -25,7 +27,7 @@
     };
   };
 
-  outputs = inputs@{ flake-parts, git-hooks, crane, rust-overlay, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs@{ flake-parts, git-hooks, crane, rust-overlay, nixpkgs, nixpkgsUnstable, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [
       git-hooks.flakeModule
     ];
@@ -34,7 +36,7 @@
 
     perSystem = { inputs', pkgs, lib, system, config, ... }:
       let
-        unfreePkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
+        unfreeUnstablePkgs = import nixpkgsUnstable { inherit system; config.allowUnfree = true; };
         rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
 
         # Enable unstable and non-default features that Wind Tunnel tests.
@@ -130,7 +132,7 @@
                 pkgs.tomlq
                 pkgs.getopt
                 pkgs.jq
-                unfreePkgs.nomad
+                unfreeUnstablePkgs.nomad
                 inputs'.holonix.packages.hn-introspect
               ];
 
@@ -384,7 +386,7 @@
             name = "validate-all-nomad-jobs";
             runtimeInputs = [
               pkgs.gomplate
-              unfreePkgs.nomad
+              unfreeUnstablePkgs.nomad
               pkgs.getopt
             ];
             text = ''
