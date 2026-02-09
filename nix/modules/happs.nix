@@ -1,6 +1,6 @@
 # Module for building hApps and DNAs from the requirements specified in the metadata section of a Cargo.toml
 
-{ config, self', inputs', system, pkgs, lib, ... }:
+{ config, self', inputs', pkgs, lib, ... }:
 
 let
   inherit (config.rustHelper) craneLib;

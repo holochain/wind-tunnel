@@ -1,6 +1,6 @@
 # Module to build scenarios and their required hApps into a single derivation
 
-{ config, self', inputs', system, pkgs, lib, ... }:
+{ config, system, pkgs, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
 
