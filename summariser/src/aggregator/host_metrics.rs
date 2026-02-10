@@ -4,7 +4,7 @@ use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::prelude::{IntoLazy, col, lit};
 use wind_tunnel_summary_model::RunSummary;
 
-use crate::analyze::{counter_stats, standard_timing_stats};
+use crate::analyze::{counter_rate_stats, standard_timing_stats};
 use crate::model::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
 use crate::query::host_metrics::{
     self as host_metrics_query, Column as _, CpuField, HostMetricField, NetField, TAG_INTERFACE,
@@ -161,28 +161,28 @@ impl HostMetricsAggregator<'_> {
             .query_and_aggregate(
                 HostMetricField::Net(NetField::BytesRecv),
                 TAG_INTERFACE,
-                counter_stats,
+                |frame, column| counter_rate_stats(frame, column, "10s"),
             )
             .await?;
         let bytes_sent = self
             .query_and_aggregate(
                 HostMetricField::Net(NetField::BytesSent),
                 TAG_INTERFACE,
-                counter_stats,
+                |frame, column| counter_rate_stats(frame, column, "10s"),
             )
             .await?;
         let packets_recv = self
             .query_and_aggregate(
                 HostMetricField::Net(NetField::PacketsRecv),
                 TAG_INTERFACE,
-                counter_stats,
+                |frame, column| counter_rate_stats(frame, column, "10s"),
             )
             .await?;
         let packets_sent = self
             .query_and_aggregate(
                 HostMetricField::Net(NetField::PacketsSent),
                 TAG_INTERFACE,
-                counter_stats,
+                |frame, column| counter_rate_stats(frame, column, "10s"),
             )
             .await?;
 

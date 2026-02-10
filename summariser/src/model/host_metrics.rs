@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::model::{CounterStats, StandardTimingsStats};
+use crate::model::{CounterRateStats, StandardTimingsStats};
 
 /// Host metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -40,8 +40,8 @@ pub struct MemMetrics {
 /// Network metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NetMetrics {
-    pub bytes_recv: BTreeMap<String, CounterStats>,
-    pub bytes_sent: BTreeMap<String, CounterStats>,
-    pub packets_recv: BTreeMap<String, CounterStats>,
-    pub packets_sent: BTreeMap<String, CounterStats>,
+    pub bytes_recv: BTreeMap<String, CounterRateStats>,
+    pub bytes_sent: BTreeMap<String, CounterRateStats>,
+    pub packets_recv: BTreeMap<String, CounterRateStats>,
+    pub packets_sent: BTreeMap<String, CounterRateStats>,
 }
