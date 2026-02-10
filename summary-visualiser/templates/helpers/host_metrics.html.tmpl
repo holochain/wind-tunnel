@@ -8,10 +8,10 @@ This template displays system-level performance metrics collected during the sce
 {{ define "network_interfaces" }}
     {{ $unit := .unit }}
     {{ range $interface, $data := .interfaces }}
-        {{ if gt $data.mean 0.0 }}
+        {{ if gt $data.end 0 }}
             {{ template "scenario_metric_content_item" (dict
                 "name" $interface
-                "content" (tmpl.Exec "rate_and_trend" (merge (dict "unit" $unit) $data))
+                "content" (tmpl.Exec "trend_and_delta" (merge (dict "unit" $unit) $data))
             ) }}
         {{ end }}
     {{ end }}
@@ -98,24 +98,24 @@ This template displays system-level performance metrics collected during the sce
     {{ template "scenario_metric" (dict
         "name" "Network bytes received"
         "description" "Rate of bytes received over a network interface."
-        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B/s" "interfaces" .bytes_recv))
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B" "interfaces" .bytes_recv))
     ) }}
         
     {{ template "scenario_metric" (dict
         "name" "Network bytes sent"
         "description" "Rate of bytes sent over a network interface."
-        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B/s" "interfaces" .bytes_sent))
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B" "interfaces" .bytes_sent))
     ) }}
 
     {{ template "scenario_metric" (dict
         "name" "Network packets received"
         "description" "Rate of packets received over a network interface."
-        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets/s" "interfaces" .packets_recv))
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets" "interfaces" .packets_recv))
     ) }}
 
     {{ template "scenario_metric" (dict
         "name" "Network packets sent"
         "description" "Rate of packets sent over a network interface."
-        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets/s" "interfaces" .packets_sent))
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets" "interfaces" .packets_sent))
     ) }}
 {{ end }}
