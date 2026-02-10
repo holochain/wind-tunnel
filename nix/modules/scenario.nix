@@ -4,6 +4,26 @@
 let
   inherit (config.rustHelper) craneLib findCrateVersion;
   inherit (config.workspace) commonArgs cargoArtifacts;
+  fetchHappsForScenario = scenarioName:
+    let
+      # Get the TOML object from the Cargo.toml file for the passed scenario
+      cargoToml = lib.importTOML ../../scenarios/${scenarioName}/Cargo.toml;
+      # If there are hApps to fetch then return a list of them, otherwise return an empty list
+      hAppsToFetch = lib.lists.toList (lib.attrsets.attrByPath [ "package" "metadata" "fetch-required-happ" ] [ ] cargoToml);
+      # Convert the passed hApp into a source to be fetched from a URL
+      hAppSource = hApp: builtins.fetchurl { inherit (hApp) name url sha256; };
+      # Create a derivation that stores all of the fetched hApps
+      allFetchedHApps = pkgs.stdenv.mkDerivation {
+        name = "${scenarioName}-fetched-hApps";
+        dontUnpack = true;
+        installPhase = ''
+          mkdir -p $out
+          ${lib.strings.concatMapStringsSep "\n" (hApp: "cp ${hAppSource hApp} $out/${hApp.name}.happ") hAppsToFetch}
+        '';
+      };
+    in
+    # If there are hApps to fetch then return a derivation with them all in, else return `null`
+    if hAppsToFetch != [ ] then allFetchedHApps else null;
 
   mkPackage = { name }: craneLib.buildPackage (commonArgs // {
     pname = name;
@@ -19,8 +39,17 @@ let
       inputs'.holonix.packages.hc
     ];
 
+    preBuild =
+      let
+        fetchedHapps = fetchHappsForScenario name;
+      in
+      if fetchedHapps != null then ''
+        mkdir -p happs/${name}
+        cp ${fetchedHapps}/*.happ happs/${name}
+      '' else "";
+
     postInstall = ''
-      # Copy the hApps built via the Rust build script
+      # Copy the hApps built via the Rust build script and fetched in preBuild
       if [ -d "happs/${name}" ]; then
           mkdir -p $out/happs
           cp happs/${name}/*.happ $out/happs
