@@ -4,6 +4,28 @@
 let
   inherit (config.rustHelper) craneLib;
 
+  fetchHapps = cargoTomlPath:
+    let
+      # Get the TOML object from the Cargo.toml file at the passed path
+      cargoToml = lib.importTOML cargoTomlPath;
+      # If there are hApps to fetch then return a list of them, otherwise return an empty list
+      happsToFetch = lib.lists.toList (lib.attrsets.attrByPath [ "package" "metadata" "fetch-required-happ" ] [ ] cargoToml);
+      # Fetch the hApps from their URLs and create a derivation for each
+      happDerivation = happ: pkgs.stdenv.mkDerivation {
+        inherit (happ) name;
+        dontUnpack = true;
+        src = builtins.fetchurl {
+          inherit (happ) name url sha256;
+        };
+        installPhase = ''
+          mkdir -p $out
+          cp $src $out/${happ.name}.happ
+        '';
+      };
+    in
+    # Get and return the paths to each of the hApps in their derivation above
+    lib.lists.forEach happsToFetch (happ: "${happDerivation happ}/${happ.name}.happ");
+
   mkPackage = { name }: craneLib.buildPackage (config.workspace.commonArgs // {
     pname = name;
     version = config.rustHelper.findCrateVersion ../../scenarios/${name}/Cargo.toml;
@@ -19,6 +41,16 @@ let
       # Required to build/package DNAs and hApps
       inputs'.holonix.packages.hc
     ];
+
+    preBuild =
+      let
+        cargoTomlPath = ../../scenarios/${name}/Cargo.toml;
+        fetchedHappsPaths = fetchHapps cargoTomlPath;
+      in
+      if fetchedHappsPaths != [ ] then ''
+        mkdir -p happs/${name}
+        cp ${lib.strings.join " " fetchedHappsPaths} happs/${name}
+      '' else "";
 
     postInstall = ''
       # Copy the hApps built via the Rust build script
