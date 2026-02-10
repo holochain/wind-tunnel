@@ -3,28 +3,26 @@
 { config, inputs', system, pkgs, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
-
-  fetchHapps = cargoTomlPath:
+  fetchHappsForScenario = scenarioName:
     let
-      # Get the TOML object from the Cargo.toml file at the passed path
-      cargoToml = lib.importTOML cargoTomlPath;
+      # Get the TOML object from the Cargo.toml file for the passed scenario
+      cargoToml = lib.importTOML ../../scenarios/${scenarioName}/Cargo.toml;
       # If there are hApps to fetch then return a list of them, otherwise return an empty list
-      happsToFetch = lib.lists.toList (lib.attrsets.attrByPath [ "package" "metadata" "fetch-required-happ" ] [ ] cargoToml);
-      # Fetch the hApps from their URLs and create a derivation for each
-      happDerivation = happ: pkgs.stdenv.mkDerivation {
-        inherit (happ) name;
+      hAppsToFetch = lib.lists.toList (lib.attrsets.attrByPath [ "package" "metadata" "fetch-required-happ" ] [ ] cargoToml);
+      # Convert the passed hApp into a source to be fetched from a URL
+      hAppSource = hApp: builtins.fetchurl { inherit (hApp) name url sha256; };
+      # Create a derivation that stores all of the fetched hApps
+      allFetchedHApps = pkgs.stdenv.mkDerivation {
+        name = "${scenarioName}-fetched-hApps";
         dontUnpack = true;
-        src = builtins.fetchurl {
-          inherit (happ) name url sha256;
-        };
         installPhase = ''
           mkdir -p $out
-          cp $src $out/${happ.name}.happ
+          ${lib.strings.concatMapStringsSep "\n" (hApp: "cp ${hAppSource hApp} $out/${hApp.name}.happ") hAppsToFetch}
         '';
       };
     in
-    # Get and return the paths to each of the hApps in their derivation above
-    lib.lists.forEach happsToFetch (happ: "${happDerivation happ}/${happ.name}.happ");
+    # If there are hApps to fetch then return a derivation with them all in, else return `null`
+    if hAppsToFetch != [ ] then allFetchedHApps else null;
 
   mkPackage = { name }: craneLib.buildPackage (config.workspace.commonArgs // {
     pname = name;
@@ -44,16 +42,15 @@ let
 
     preBuild =
       let
-        cargoTomlPath = ../../scenarios/${name}/Cargo.toml;
-        fetchedHappsPaths = fetchHapps cargoTomlPath;
+        fetchedHapps = fetchHappsForScenario name;
       in
-      if fetchedHappsPaths != [ ] then ''
+      if fetchedHapps != null then ''
         mkdir -p happs/${name}
-        cp ${lib.strings.join " " fetchedHappsPaths} happs/${name}
+        cp ${fetchedHapps}/*.happ happs/${name}
       '' else "";
 
     postInstall = ''
-      # Copy the hApps built via the Rust build script
+      # Copy the hApps built via the Rust build script and fetched in preBuild
       mkdir -p $out/happs
       if [ -d "happs/${name}" ]; then
           cp happs/${name}/*.happ $out/happs
