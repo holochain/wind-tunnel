@@ -4,7 +4,7 @@ use polars::frame::{DataFrame, UniqueKeepStrategy};
 use polars::prelude::{IntoLazy, col, lit};
 use wind_tunnel_summary_model::RunSummary;
 
-use crate::analyze::{counter_stats, gauge_stats};
+use crate::analyze::{counter_stats, standard_timing_stats};
 use crate::model::{CpuMetrics, HostMetrics, MemMetrics, NetMetrics};
 use crate::query::host_metrics::{
     self as host_metrics_query, Column as _, CpuField, HostMetricField, NetField, TAG_INTERFACE,
@@ -58,10 +58,16 @@ impl HostMetricsAggregator<'_> {
         log::debug!("Aggregating CPU metrics");
         // get cpu metrics
         let usage_system = self
-            .query_and_analyze(HostMetricField::Cpu(CpuField::UsageSystem), gauge_stats)
+            .query_and_analyze(
+                HostMetricField::Cpu(CpuField::UsageSystem),
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
+            )
             .await?;
         let usage_user = self
-            .query_and_analyze(HostMetricField::Cpu(CpuField::UsageUser), gauge_stats)
+            .query_and_analyze(
+                HostMetricField::Cpu(CpuField::UsageUser),
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
+            )
             .await?;
 
         Ok(CpuMetrics {
@@ -76,61 +82,61 @@ impl HostMetricsAggregator<'_> {
         let active = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Active),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let available = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Available),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let available_percent = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::AvailablePercent),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let free = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Free),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let inactive = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Inactive),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let swap_free = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::SwapFree),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let swap_total = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::SwapTotal),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let total = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Total),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let used = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::Used),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
         let used_percent = self
             .query_and_analyze(
                 HostMetricField::Mem(host_metrics_query::MemField::UsedPercent),
-                gauge_stats,
+                |frame, column| standard_timing_stats(frame, column, "10s", None),
             )
             .await?;
 
@@ -199,16 +205,15 @@ impl HostMetricsAggregator<'_> {
     ) -> anyhow::Result<T>
     where
         F: Fn(DataFrame, &str) -> anyhow::Result<T>,
-        T: Default,
     {
         let data = query_host_metrics(self.client, self.summary, field).await?;
-        Ok(match collect_stats(data, field.column()) {
-            Ok(stats) => stats,
+        match collect_stats(data, field.column()) {
+            Ok(stats) => Ok(stats),
             Err(e) => {
                 log::warn!("Failed to collect stats for {field}: {e}");
-                T::default()
+                Err(e)
             }
-        })
+        }
     }
 
     /// Query the [`DataFrame`] for the given [`HostMetricField`] and aggregate them by `tag` into a [`HashMap`] where the key
@@ -224,7 +229,6 @@ impl HostMetricsAggregator<'_> {
     ) -> anyhow::Result<BTreeMap<String, T>>
     where
         F: Fn(DataFrame, &str) -> anyhow::Result<T>,
-        T: Default,
     {
         let data = query_host_metrics(self.client, self.summary, field).await?;
 
@@ -232,17 +236,15 @@ impl HostMetricsAggregator<'_> {
             .aggregate_data_frame_by_tag(data, tag)
             .await?
             .into_iter()
-            .map(|(tag_value, frame)| {
-                let stats = match collect_stats(frame, field.column()) {
-                    Ok(stats) => stats,
+            .flat_map(
+                |(tag_value, frame)| match collect_stats(frame, field.column()) {
+                    Ok(stats) => Some((tag_value, stats)),
                     Err(e) => {
                         log::warn!("Failed to collect stats for {field} ({tag}={tag_value}): {e}");
-                        T::default()
+                        None
                     }
-                };
-
-                (tag_value, stats)
-            })
+                },
+            )
             .collect::<BTreeMap<_, _>>())
     }
 
