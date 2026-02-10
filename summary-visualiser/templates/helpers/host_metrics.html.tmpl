@@ -1,0 +1,394 @@
+{{/*
+Render host metrics including CPU, memory, network, disk, system load, pressure, and process statistics.
+
+This template displays system-level performance metrics collected during the scenario run.
+*/}}
+
+{{/* host_metrics template */}}
+
+<div class="scenario-subsection">
+    <div class="scenario-subsection-title">Host Metrics</div>
+</div>
+
+{{ with .cpu }}
+    {{ template "scenario_metric" (dict
+        "name" "User CPU usage"
+        "description" "CPU usage by user space"
+        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .usage_user_mean) "unit" "%"))
+    ) }}
+{{ end }}
+
+{{ with .network }}
+    {{ with .primary }}
+        {{ template "scenario_metric" (dict
+            "name" "Network receive rate (primary)"
+            "description" "Rate of bytes received on primary network interface"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B/s") .recv_rate))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Network send rate (primary)"
+            "description" "Rate of bytes sent on primary network interface"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B/s") .send_rate))
+        ) }}
+
+        {{ with .bytes_recv }}
+            {{ template "scenario_metric" (dict
+                "name" "Total bytes received"
+                "description" "Total bytes received on primary network interface"
+                "content" (print
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "count"
+                        "content" (tmpl.Exec "scalar" (dict "value" .count "unit" "B"))
+                    ))
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "mean"
+                        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .mean_rate_per_second) "unit" "B/s"))
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .bytes_sent }}
+            {{ template "scenario_metric" (dict
+                "name" "Total bytes sent"
+                "description" "Total bytes sent on primary network interface"
+                "content" (print
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "count"
+                        "content" (tmpl.Exec "scalar" (dict "value" .count "unit" "B"))
+                    ))
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "mean"
+                        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .mean_rate_per_second) "unit" "B/s"))
+                    ))
+                )
+            ) }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+
+{{ with .anomalies }}
+    {{ template "scenario_metric" (dict
+        "name" "CPU spike anomaly"
+        "description" "CPU spike anomaly was detected"
+        "content" (tmpl.Exec "anomaly" .cpu_spike)
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory leak anomaly"
+        "description" "Memory leak anomaly was detected"
+        "content" (tmpl.Exec "anomaly" .memory_leak)
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Disk full anomaly"
+        "description" "Disk full anomaly was detected"
+        "content" (tmpl.Exec "anomaly" .disk_full)
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Swap thrashing anomaly"
+        "description" "Swap thrashing anomaly was detected"
+        "content" (tmpl.Exec "anomaly" .swap_thrashing)
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "System overload anomaly"
+        "description" "System overload anomaly was detected"
+        "content" (tmpl.Exec "anomaly" .system_overload)
+    ) }}
+{{ end }}
+
+<details class="scenario-subsection-hidden">
+    <summary>    
+        <div class="scenario-subsection">
+
+            <div class="scenario-subsection-title">Additional Host Metrics</div>
+            <div>
+                <div class="scenario-subsection-button">
+                    Hidden by default. Click to toggle visibility.
+                </div>
+            </div>
+        </div>
+    </summary>
+
+    {{ with .cpu }}
+        {{ template "scenario_metric" (dict
+            "name" "CPU usage"
+            "description" "Total CPU usage and kernel CPU usage"
+            "content" (print
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "Total"
+                    "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .total_usage))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "System"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .usage_system_mean) "unit" "%"))
+                ))
+            )
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "CPU percentiles"
+            "description" "CPU usage percentiles"
+            "content" (print
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "p50"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .p50) "unit" "%"))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "p95"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .p95) "unit" "%"))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "p99"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .p99) "unit" "%"))
+                ))
+            )
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "CPU usage above 80%"
+            "description" "Number of hosts above 80% CPU and mean time spent above threshold for those hosts"
+            "content" (print
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "count"
+                    "content" (tmpl.Exec "scalar" (dict "value" .hosts_above_80_percent "unit" " hosts"))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "mean time"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .mean_time_above_80_percent_s) "unit" "s"))
+                ))
+            )
+        ) }}
+    {{ end }}
+
+    {{ with .memory }}
+        {{ template "scenario_metric" (dict
+            "name" "Memory used percentage"
+            "description" "Percentage of memory used"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .used_percent))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Memory available percentage"
+            "description" "Percentage of available memory"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .available_percent))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Max host memory used"
+            "description" "Maximum memory usage percentage across all hosts"
+            "content" (tmpl.Exec "scalar" (dict "label" "max" "value" (printf "%.2f" .max_host_used_percent) "unit" "%"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Max host swap used percentage"
+            "description" "Maximum swap space usage percentage across all hosts"
+            "content" (tmpl.Exec "scalar" (dict "label" "max" "value" (printf "%.2f" .swap_used_percent) "unit" "%"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Memory growth rate"
+            "description" "Rate of memory growth over time"
+            "content" (tmpl.Exec "scalar" (dict "label" "growth" "value" (printf "%.2f" .growth_rate_mb_per_sec) "unit" "MB/s"))
+        ) }}
+    {{ end }}
+
+    {{ with .disk }}
+        {{ with .io_throughput_mbps }}
+            {{ template "scenario_metric" (dict
+                "name" "Disk read throughput"
+                "description" "Disk read throughput in MB/s"
+                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .read) "unit" "MB/s"))
+            ) }}
+
+            {{ template "scenario_metric" (dict
+                "name" "Disk write throughput"
+                "description" "Disk write throughput in MB/s"
+                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .write) "unit" "MB/s"))
+            ) }}
+        {{ end }}
+
+        {{ with .space_utilization }}
+            {{- $mount_content := "" -}}
+            {{- range $mount, $data := . -}}
+                {{- $mount_content = print $mount_content (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" (printf "Mount Point <code>%s</code>" $mount)
+                    "content" (tmpl.Exec "scalar" (dict "unit" "hosts" "value" (printf "%d/%d" $data.hosts_at_risk $data.host_count)))
+                )) -}}
+            {{- end }}
+            {{ template "scenario_metric" (dict
+                "name" "Disk space utilization risk"
+                "description" "Number of hosts nearing disk space capacity by mount point"
+                "content" $mount_content
+            ) }}
+        {{ end }}
+    {{ end }}
+
+    {{ with .system_load }}
+        {{ template "scenario_metric" (dict
+            "name" "System load average"
+            "description" "System load averages over 1, 5, and 15 minutes. This is an unnormalised value not divided by number of CPUs, so it is only meaningful if all machines have the same core count."
+            "content" (print
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "1 min"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .load_1min)))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "5 min"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .load_5min)))
+                ))
+                (tmpl.Exec "scenario_metric_content_item" (dict
+                    "name" "15 min"
+                    "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .load_15min)))
+                ))
+            )
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "CPU overloaded hosts"
+            "description" "Percentage of hosts that experienced CPU overload"
+            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .overloaded_percent) "unit" "%"))
+        ) }}
+    {{ end }}
+
+    {{ with .pressure }}
+        {{ with .cpu }}
+            {{ template "scenario_metric" (dict
+                "name" "CPU pressure"
+                "description" "CPU pressure over 10, 60, and 300 second averages"
+                "content" (print
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "10 second average"
+                        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                    ))
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "60 second average"
+                        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg60_mean) "unit" "%"))
+                    ))
+                    (tmpl.Exec "scenario_metric_content_item" (dict
+                        "name" "300 second average"
+                        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg300_mean) "unit" "%"))
+                    ))
+                )
+            ) }}
+        {{ end }}
+
+        {{ with .memory }}
+            {{ with .some }}
+                {{ template "scenario_metric" (dict
+                    "name" "Memory pressure some"
+                    "description" "Memory pressure (some tasks stalled) over 10, 60, and 300 second averages"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "10 second average"
+                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "60 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg60_mean) "unit" "%"))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "300 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg300_mean) "unit" "%"))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+
+            {{ with .full }}
+                {{ template "scenario_metric" (dict
+                    "name" "Memory pressure full"
+                    "description" "Memory pressure (all tasks stalled) over 10, 60, and 300 second averages"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "10 second average"
+                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "60 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg60_mean) "unit" "%"))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "300 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg300_mean) "unit" "%"))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+        {{ end }}
+
+        {{ with .io }}
+            {{ with .some }}
+                {{ template "scenario_metric" (dict
+                    "name" "I/O pressure some"
+                    "description" "I/O pressure (some tasks stalled) over 10, 60 and 300 second averages"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "10 second average"
+                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "60 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg60_mean) "unit" "%"))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "300 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg300_mean) "unit" "%"))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+
+            {{ with .full }}
+                {{ template "scenario_metric" (dict
+                    "name" "I/O pressure full"
+                    "description" "I/O pressure (all tasks stalled) over 10, 60 and 300 second averages"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "10 second average"
+                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "60 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg60_mean) "unit" "%"))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "300 second average"
+                            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.4f" .avg300_mean) "unit" "%"))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+
+    {{ with .holochain_process }}
+        {{ template "scenario_metric" (dict
+            "name" "Holochain process CPU usage"
+            "description" "CPU usage by Holochain process"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .cpu_usage))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Holochain process memory (PSS)"
+            "description" "Proportional Set Size memory of Holochain process"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .memory_pss))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Holochain process threads"
+            "description" "Number of threads in Holochain process"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" " threads") .num_threads))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Holochain process file descriptors"
+            "description" "Number of file descriptors used by Holochain process"
+            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" " file descriptors") .num_fds))
+        ) }}
+    {{ end }}
+</details>
