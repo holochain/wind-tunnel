@@ -59,6 +59,8 @@ pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
     let mut in_file = open_input_path("2_query_results", &filename)
         .with_context(|| format!("For query: {query:?}, filename: {filename}"))?;
 
+    log::debug!("Opened query test data file: {}", filename.clone());
+
     in_file.set_modified(std::time::SystemTime::now())?;
 
     polars::io::json::JsonReader::new(&mut in_file)
