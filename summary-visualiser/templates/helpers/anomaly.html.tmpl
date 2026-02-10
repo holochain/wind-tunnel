@@ -1,0 +1,9 @@
+{{ if eq .type "NotDetected" }}
+    {{ template "alert" (dict "style" "good" "value" .type) }}
+{{ else }}
+    {{ template "alert" (dict "style" "bad" "value" .type) }}
+{{ end }}
+
+{{ if eq .type "Detected" }}
+    <p><b>{{ .severity }}</b> {{ .description }}</p>
+{{ end }}
