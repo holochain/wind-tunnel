@@ -1,11 +1,6 @@
-{ config, system, pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
-
-  opensslStatic =
-    if system == "x86_64-darwin"
-    then pkgs.openssl # pkgsStatic is considered a cross build and this is not yet supported
-    else pkgs.pkgsStatic.openssl;
 
   nonCargoBuildFiles = path: _type: builtins.match ".*(conductor-config.yaml|conductor-config-ci.yaml|summariser/test_data/.*.json)$" path != null;
   includeFilesFilter = path: type: (craneLib.filterCargoSources path type) || (nonCargoBuildFiles path type);
@@ -16,12 +11,6 @@ let
       filter = includeFilesFilter;
     };
     strictDeps = true;
-
-    buildInputs = with pkgs; [
-      # Some Holochain crates link against openssl
-      openssl
-      opensslStatic
-    ];
 
     nativeBuildInputs = with pkgs; [
       # To build openssl-sys
