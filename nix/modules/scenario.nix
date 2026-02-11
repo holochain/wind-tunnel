@@ -4,26 +4,6 @@
 let
   inherit (config.rustHelper) craneLib findCrateVersion;
   inherit (config.workspace) commonArgs cargoArtifacts;
-  fetchHappsForScenario = scenarioName:
-    let
-      # Get the TOML object from the Cargo.toml file for the passed scenario
-      cargoToml = lib.importTOML ../../scenarios/${scenarioName}/Cargo.toml;
-      # If there are hApps to fetch then return a list of them, otherwise return an empty list
-      hAppsToFetch = lib.lists.toList (lib.attrsets.attrByPath [ "package" "metadata" "fetch-required-happ" ] [ ] cargoToml);
-      # Convert the passed hApp into a source to be fetched from a URL
-      hAppSource = hApp: builtins.fetchurl { inherit (hApp) name url sha256; };
-      # Create a derivation that stores all of the fetched hApps
-      allFetchedHApps = pkgs.stdenv.mkDerivation {
-        name = "${scenarioName}-fetched-hApps";
-        dontUnpack = true;
-        installPhase = ''
-          mkdir -p $out
-          ${lib.strings.concatMapStringsSep "\n" (hApp: "cp ${hAppSource hApp} $out/${hApp.name}.happ") hAppsToFetch}
-        '';
-      };
-    in
-    # If there are hApps to fetch then return a derivation with them all in, else return `null`
-    if hAppsToFetch != [ ] then allFetchedHApps else null;
 
   mkPackage = { name }: craneLib.buildPackage (commonArgs // {
     pname = name;
@@ -40,13 +20,15 @@ let
     ];
 
     preBuild =
-      let
-        fetchedHapps = fetchHappsForScenario name;
-      in
-      if fetchedHapps != null then ''
-        mkdir -p happs/${name}
-        cp ${fetchedHapps}/*.happ happs/${name}
-      '' else "";
+      (pkgs.callPackage ./fetch_happs.nix { scenarioName = name; })
+        # If there are no hApps to fetch then preBuild becomes:
+        ""
+        # If there are hApps to fetch then this function is called with the path to the hApps
+        # and preBuild becomes the filled in string
+        (path: ''
+          mkdir -p happs/${name}
+          cp ${path}/*.happ happs/${name}
+        '');
 
     postInstall = ''
       # Copy the hApps built via the Rust build script and fetched in preBuild
