@@ -2,7 +2,7 @@ use crate::ToSocketAddr;
 use crate::error::handle_api_err;
 use anyhow::Result;
 use holo_hash::DnaHash;
-use holochain_client::{AgentSigner, AppWebsocket, ZomeCallTarget};
+use holochain_client::{AgentSigner, AppWebsocket, CallZomeOptions, ZomeCallTarget};
 use holochain_conductor_api::{AppAuthenticationToken, AppInfo};
 use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload};
 use holochain_types::prelude::{
@@ -66,9 +66,10 @@ impl AppWebsocketInstrumented {
         zome_name: impl Into<ZomeName> + Clone,
         fn_name: impl Into<FunctionName> + Clone,
         payload: ExternIO,
+        options: CallZomeOptions,
     ) -> anyhow::Result<ExternIO> {
         self.inner
-            .call_zome(target, zome_name.into(), fn_name.into(), payload)
+            .call_zome_with_options(target, zome_name.into(), fn_name.into(), payload, options)
             .await
             .map_err(handle_api_err)
     }
@@ -130,6 +131,7 @@ fn pre_call_zome(
     zome_name: &(impl Into<ZomeName> + Clone),
     fn_name: &(impl Into<FunctionName> + Clone),
     _payload: &ExternIO,
+    _options: &CallZomeOptions,
 ) {
     let zome_name: ZomeName = zome_name.clone().into();
     let fn_name: FunctionName = fn_name.clone().into();

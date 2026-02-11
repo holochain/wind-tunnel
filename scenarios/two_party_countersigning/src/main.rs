@@ -108,6 +108,7 @@ fn agent_behaviour_initiate(
                             "countersigning",
                             "list_participants",
                             ExternIO::encode(()).context("Failed to encode empty payload")?,
+                            Default::default(),
                         )
                         .await
                         .context("Failed to list participants")?;
@@ -144,6 +145,7 @@ fn agent_behaviour_initiate(
                             "start_two_party",
                             ExternIO::encode(agent_pub_key.clone())
                                 .context("Failed to encode agent pub key")?,
+                            Default::default(),
                         )
                         .await
                         .with_context(|| {
@@ -424,6 +426,7 @@ async fn run_accepted_session(
             "accept_two_party",
             ExternIO::encode(request.preflight_request)
                 .context("Failed to encode preflight request")?,
+            Default::default(),
         )
         .await?;
 
@@ -464,6 +467,7 @@ async fn complete_session(
                     participate_preflight_response.clone(),
                 ])
                 .context("Failed to encode preflight responses")?,
+                Default::default(),
             )
             .await
             .context("Failed to commit countersigned entry");
