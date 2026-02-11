@@ -14,8 +14,8 @@ pub mod prelude {
     // need to be re-exported here to avoid confusion from depending on this client wrapper and
     // the original client crate
     pub use holochain_client::{
-        AgentSigner, AuthorizeSigningCredentialsPayload, ClientAgentSigner, EnableAppResponse,
-        SigningCredentials, ZomeCallTarget,
+        AgentSigner, AuthorizeSigningCredentialsPayload, CallZomeOptions, ClientAgentSigner,
+        EnableAppResponse, SigningCredentials, ZomeCallTarget,
     };
 }
 

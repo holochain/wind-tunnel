@@ -2,6 +2,7 @@ use crate::bin_path::{WT_HOLOCHAIN_PATH_ENV, holochain_path};
 use crate::build_info::holochain_build_info;
 use crate::context::HolochainAgentContext;
 use crate::holochain_runner::{HolochainConfig, HolochainRunner};
+use crate::prelude::CallZomeOptions;
 use crate::runner_context::HolochainRunnerContext;
 use anyhow::Context;
 use holochain_client_instrumented::ToSocketAddr;
@@ -552,22 +553,45 @@ where
 
 /// Calls a zome function on the cell specified in `ctx.get().cell_id()`.
 ///
+/// This is equivalent to calling [`call_zome_with_options`] with default options,
+/// so it will use the default timeout and other default settings for the call.
+pub fn call_zome<I, O, SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    zome_name: &str,
+    fn_name: &str,
+    payload: I,
+) -> anyhow::Result<O>
+where
+    O: std::fmt::Debug + serde::de::DeserializeOwned,
+    I: serde::Serialize + std::fmt::Debug,
+    SV: UserValuesConstraint,
+{
+    call_zome_with_options(ctx, zome_name, fn_name, payload, CallZomeOptions::default())
+}
+
+/// Calls a zome function on the cell specified in `ctx.get().cell_id()`.
+/// This is equivalent to [`call_zome`] but with the addition of being able to specify [`CallZomeOptions`] for the call.
+///
 /// Requires:
-/// - The [HolochainAgentContext] to have a valid `cell_id`. Consider calling [install_app] in your setup before using this function.
-/// - The [HolochainAgentContext] to have a valid `app_agent_client`. Consider calling [install_app] in your setup before using this function.
+///
+/// - The [`HolochainAgentContext`] to have a valid `cell_id`. Consider calling [`install_app`] in your setup before using this function.
+/// - The [`HolochainAgentContext`] to have a valid `app_agent_client`. Consider calling [`install_app`] in your setup before using this function.
 ///
 /// Call this function as follows:
+///
 /// ```rust
+/// use std::time::Duration;
 /// use holochain_types::prelude::ActionHash;
-/// use holochain_wind_tunnel_runner::prelude::{call_zome, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+/// use holochain_wind_tunnel_runner::prelude::{call_zome_with_options, HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult, CallZomeOptions};
 ///
 /// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
 ///     // Return type determined by why you assign the result to
-///     let action_hash: ActionHash = call_zome(
+///     let action_hash: ActionHash = call_zome_with_options(
 ///         ctx,
 ///         "crud", // zome name
 ///         "create_sample_entry", // function name
-///         "this is a test entry value" // payload
+///         "this is a test entry value", // payload
+///         CallZomeOptions::new().with_timeout(Duration::from_secs(30)) // example option, set a timeout of 30s for this call
 ///     )?;
 ///
 ///     Ok(())
@@ -579,11 +603,12 @@ where
 /// - Tries to serialize the input payload.
 /// - Calls the zome function using the `app_agent_client`.
 /// - Tries to deserialize and return the response.
-pub fn call_zome<I, O, SV>(
+pub fn call_zome_with_options<I, O, SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     zome_name: &str,
     fn_name: &str,
     payload: I,
+    options: CallZomeOptions,
 ) -> anyhow::Result<O>
 where
     O: std::fmt::Debug + serde::de::DeserializeOwned,
@@ -599,6 +624,7 @@ where
                 zome_name,
                 fn_name,
                 ExternIO::encode(payload).context("Encoding failure")?,
+                options,
             )
             .await?;
 
