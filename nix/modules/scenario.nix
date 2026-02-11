@@ -1,6 +1,6 @@
-# Module to build scenarios and their required hApps into a single derivation
+# Module to build scenarios, including their required hApps, into a single derivation
 
-{ config, system, pkgs, lib, ... }:
+{ config, inputs', system, pkgs, lib, ... }:
 let
   inherit (config.rustHelper) craneLib;
 
@@ -10,8 +10,23 @@ let
 
     inherit (config.workspace) cargoArtifacts;
 
-    cargoExtraArgs = "-p ${name}";
-    SKIP_HAPP_BUILD = "1";
+    cargoExtraArgs = "--locked -p ${name}";
+
+    nativeBuildInputs = with pkgs; [
+      # To build openssl-sys
+      perl
+
+      # Required to build/package DNAs and hApps
+      inputs'.holonix.packages.hc
+    ];
+
+    postInstall = ''
+      # Copy the hApps built via the Rust build script
+      mkdir -p $out/happs
+      if [ -d "happs/${name}" ]; then
+          cp happs/${name}/*.happ $out/happs
+      fi
+    '';
 
     # When built from an x86_64-linux system, modify the executable to specify the standard linux
     # system path for `ld` as its interpreter.
@@ -36,7 +51,6 @@ in
     mkScenario = { name }:
       let
         scenarioBinary = mkPackage { inherit name; };
-        scenarioHapps = config.happHelper.mkHapps { configToml = ../../scenarios/${name}/Cargo.toml; };
       in
       pkgs.stdenv.mkDerivation {
         pname = name;
@@ -45,7 +59,7 @@ in
         # No sources to copy, everything comes from the build inputs
         unpackPhase = "true";
 
-        buildInputs = [ scenarioBinary scenarioHapps pkgs.zip ];
+        buildInputs = [ scenarioBinary pkgs.zip ];
 
         # To tell `nix run` which binary to run. It gets it right anyway because there is only one binary but
         # it prints an annoying warning message.
@@ -57,8 +71,11 @@ in
           mkdir -p $out/bin
           cp "${scenarioBinary}/bin/${name}" $out/bin/
 
-          mkdir -p $out/happs
-          cp ${scenarioHapps}/.happ-build ${scenarioHapps}/*.happ $out/happs
+          # Copy the hApps from the scenario
+          if [ -d "${scenarioBinary}/happs" ]; then
+              mkdir -p $out/happs
+              cp ${scenarioBinary}/happs/*.happ $out/happs
+          fi
 
           cd $out && zip -r ${name}.zip bin happs
         '';
