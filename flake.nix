@@ -53,13 +53,10 @@
       in
       {
         imports = [
-          ./nix/modules/happs.nix
           rustMod
           ./nix/modules/scenario.nix
           ./nix/modules/scenarios.nix
           ./nix/modules/workspace.nix
-          ./nix/modules/zome.nix
-          ./nix/modules/zomes.nix
         ];
 
         _module.args.pkgs = import nixpkgs {
