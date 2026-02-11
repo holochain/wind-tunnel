@@ -33,12 +33,10 @@ pub(crate) fn standard_timing_stats(
                 .and(col(column).lt_eq(lit(mean + std)))
                 .alias("within_std"),
             col(column)
-                .round(2, RoundMode::default())
                 .gt_eq(lit(mean - 2.0 * std))
                 .and(col(column).lt_eq(lit(mean + 2.0 * std)))
                 .alias("within_2std"),
             col(column)
-                .round(2, RoundMode::default())
                 .gt_eq(lit(mean - 3.0 * std))
                 .and(col(column).lt_eq(lit(mean + 3.0 * std)))
                 .alias("within_3std"),
