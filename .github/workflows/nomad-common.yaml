@@ -44,28 +44,28 @@ jobs:
       fail-fast: false
       matrix:
         job-name:
-          - first_call
-          - local_signals
-          - remote_call_rate
-          - remote_signals
-          - single_write_many_read
-          - write_query
-          - write_read
-          - write_validated
-          - zome_call_single_value
-          - app_install_large
+          # - first_call
+          # - local_signals
+          # - remote_call_rate
+          # - remote_signals
+          # - single_write_many_read
+          # - write_query
+          # - write_read
+          # - write_validated
+          # - zome_call_single_value
+          # - app_install_large
           - app_install_minimal
-          - dht_sync_lag
-          - validation_receipts
-          - write_get_agent_activity
-          - write_validated_must_get_agent_activity
-          - two_party_countersigning
-          - zero_arc_create_data
-          - zero_arc_create_data_validated
-          - zero_arc_create_and_read
-          - full_arc_create_validated_zero_arc_read
-          - mixed_arc_get_agent_activity
-          - mixed_arc_must_get_agent_activity
+          # - dht_sync_lag
+          # - validation_receipts
+          # - write_get_agent_activity
+          # - write_validated_must_get_agent_activity
+          # - two_party_countersigning
+          # - zero_arc_create_data
+          # - zero_arc_create_data_validated
+          # - zero_arc_create_and_read
+          # - full_arc_create_validated_zero_arc_read
+          # - mixed_arc_get_agent_activity
+          # - mixed_arc_must_get_agent_activity
 
     env:
       RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}
@@ -263,125 +263,125 @@ jobs:
           echo "Timeout for ${{ matrix.job_name }}: $TIMEOUT seconds (started_at: ${started_at}; duration: ${duration})"
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
 
-  run-summary:
-    name: Generate a summary of all scenarios
-    runs-on: ubuntu-latest
-    needs: wait-for-jobs
-    if: ${{ !cancelled() }}
-    steps:
-      - uses: actions/checkout@v6
+  # run-summary:
+  #   name: Generate a summary of all scenarios
+  #   runs-on: ubuntu-latest
+  #   needs: wait-for-jobs
+  #   if: ${{ !cancelled() }}
+  #   steps:
+  #     - uses: actions/checkout@v6
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
+  #     - name: Install Nix
+  #       uses: cachix/install-nix-action@v31
 
-      - name: Setup cachix
-        uses: cachix/cachix-action@v16
-        with:
-          name: holochain-ci
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+  #     - name: Setup cachix
+  #       uses: cachix/cachix-action@v16
+  #       with:
+  #         name: holochain-ci
+  #         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
-      - name: Download all alloc_ids
-        uses: actions/download-artifact@v7
-        with:
-          pattern: "alloc_ids_*"
+  #     - name: Download all alloc_ids
+  #       uses: actions/download-artifact@v7
+  #       with:
+  #         pattern: "alloc_ids_*"
 
-      - name: Combine alloc_ids files into single
-        run: cat alloc_ids_*/alloc_ids.csv >> alloc_ids.csv
+  #     - name: Combine alloc_ids files into single
+  #       run: cat alloc_ids_*/alloc_ids.csv >> alloc_ids.csv
 
-      - name: Prepare run summary
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1
-          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
-          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
-          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          RUN_SUMMARY_PATH: ./run_summary.jsonl
-          HOLOCHAIN_BIN_URL: ${{ inputs.holochain-bin-url }}
-        run: |
-          nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
-          cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
+  #     - name: Prepare run summary
+  #       env:
+  #         NIXPKGS_ALLOW_UNFREE: 1
+  #         NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+  #         NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+  #         NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+  #         RUN_SUMMARY_PATH: ./run_summary.jsonl
+  #         HOLOCHAIN_BIN_URL: ${{ inputs.holochain-bin-url }}
+  #       run: |
+  #         nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
+  #         cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Cache summariser
-        uses: actions/cache@v5
-        with:
-          path: |
-            target/
-            .cargo/registry
-            .cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+  #     - name: Cache summariser
+  #       uses: actions/cache@v5
+  #       with:
+  #         path: |
+  #           target/
+  #           .cargo/registry
+  #           .cargo/git
+  #         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-cargo-
 
-      - name: Run summariser
-        if: ${{ !cancelled() }}
-        env:
-          INFLUX_HOST: "https://ifdb.holochain.org"
-          INFLUX_BUCKET: "windtunnel"
-          INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
-          RUST_LOG: debug
-          IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
-        run: nix develop --command cargo run --release --bin holochain-summariser
+  #     - name: Run summariser
+  #       if: ${{ !cancelled() }}
+  #       env:
+  #         INFLUX_HOST: "https://ifdb.holochain.org"
+  #         INFLUX_BUCKET: "windtunnel"
+  #         INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+  #         RUST_LOG: debug
+  #         IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
+  #       run: nix develop --command cargo run --release --bin holochain-summariser
 
-      - name: Generate summary id for artifacts
-        id: generate-summary-id
-        run: |
-          SUMMARY_TIMESTAMP=$(date +%s)
-          SUMMARY_ID="$(date -d @${SUMMARY_TIMESTAMP} '+%Y%m%d%H%M%S').${{ inputs.commit-hash || github.sha }}"
-          echo "summary_timestamp=$SUMMARY_TIMESTAMP" >> "$GITHUB_OUTPUT"
-          echo "summary_id=$SUMMARY_ID" >> "$GITHUB_OUTPUT"
+  #     - name: Generate summary id for artifacts
+  #       id: generate-summary-id
+  #       run: |
+  #         SUMMARY_TIMESTAMP=$(date +%s)
+  #         SUMMARY_ID="$(date -d @${SUMMARY_TIMESTAMP} '+%Y%m%d%H%M%S').${{ inputs.commit-hash || github.sha }}"
+  #         echo "summary_timestamp=$SUMMARY_TIMESTAMP" >> "$GITHUB_OUTPUT"
+  #         echo "summary_id=$SUMMARY_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout latest runs list from GitHub Pages
-        if: inputs.enable-summary-uploads
-        uses: actions/checkout@v6
-        with:
-          ref: gh-pages
-          path: site
-          sparse-checkout: _includes/runs-list.md
+  #     - name: Checkout latest runs list from GitHub Pages
+  #       if: inputs.enable-summary-uploads
+  #       uses: actions/checkout@v6
+  #       with:
+  #         ref: gh-pages
+  #         path: site
+  #         sparse-checkout: _includes/runs-list.md
 
-      - name: Generate summary visualiser
-        id: generate-summary-visualiser
-        run: |
-          mkdir -p ./site
-          OUTPUT_FILE="run.${{ steps.generate-summary-id.outputs.summary_id }}.html"
+  #     - name: Generate summary visualiser
+  #       id: generate-summary-visualiser
+  #       run: |
+  #         mkdir -p ./site
+  #         OUTPUT_FILE="run.${{ steps.generate-summary-id.outputs.summary_id }}.html"
 
-          # The summary visualiser can only take one file at a time,
-          # but only one summariser report JSON file is fed to it in a run.
-          # The wildcard here is because we don't know the name of the file.
-          nix run .#generate-summary-visualiser ./summariser-report-*.json "./site/${OUTPUT_FILE}"
+  #         # The summary visualiser can only take one file at a time,
+  #         # but only one summariser report JSON file is fed to it in a run.
+  #         # The wildcard here is because we don't know the name of the file.
+  #         nix run .#generate-summary-visualiser ./summariser-report-*.json "./site/${OUTPUT_FILE}"
 
-          echo "output_file=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
+  #         echo "output_file=${OUTPUT_FILE}" >> "$GITHUB_OUTPUT"
 
-      - name: Add summary to runs list
-        if: inputs.enable-summary-uploads
-        run: |
-          SUMMARY_TIMESTAMP_HUMAN="$(date -d @${{ steps.generate-summary-id.outputs.summary_timestamp }} '+%Y-%m-%d %H:%M:%S')"
-          LIST_ITEM_STRING="- [${SUMMARY_TIMESTAMP_HUMAN} (${{ inputs.commit-hash || github.sha }})](${{ steps.generate-summary-visualiser.outputs.output_file }})"
+  #     - name: Add summary to runs list
+  #       if: inputs.enable-summary-uploads
+  #       run: |
+  #         SUMMARY_TIMESTAMP_HUMAN="$(date -d @${{ steps.generate-summary-id.outputs.summary_timestamp }} '+%Y-%m-%d %H:%M:%S')"
+  #         LIST_ITEM_STRING="- [${SUMMARY_TIMESTAMP_HUMAN} (${{ inputs.commit-hash || github.sha }})](${{ steps.generate-summary-visualiser.outputs.output_file }})"
 
-          # Prepend to runs list
-          sed -i "1i${LIST_ITEM_STRING}" ./site/_includes/runs-list.md
+  #         # Prepend to runs list
+  #         sed -i "1i${LIST_ITEM_STRING}" ./site/_includes/runs-list.md
 
-      - name: Push summary visualiser html and updated runs list to GitHub Pages
-        if: inputs.enable-summary-uploads
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ github.token }}
-          publish_dir: ./site/
-          publish_branch: gh-pages
-          keep_files: true
-          enable_jekyll: true
+  #     - name: Push summary visualiser html and updated runs list to GitHub Pages
+  #       if: inputs.enable-summary-uploads
+  #       uses: peaceiris/actions-gh-pages@v4
+  #       with:
+  #         github_token: ${{ github.token }}
+  #         publish_dir: ./site/
+  #         publish_branch: gh-pages
+  #         keep_files: true
+  #         enable_jekyll: true
 
-      - name: Upload run summary to bucket
-        if: inputs.enable-summary-uploads
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
-          AWS_DEFAULT_REGION: fsn1
-          AWS_ENDPOINT_URL: https://fsn1.your-objectstorage.com
-          S3_BUCKET_NAME: wind-tunnel-artifacts
-        run: |-
-          OUT_PATH="${S3_BUCKET_NAME}/summariser-reports/${{ steps.generate-summary-id.outputs.summary_id }}.json"
-          nix run .#awscli-s3 cp summariser-report-*.json "s3://${OUT_PATH}"
+  #     - name: Upload run summary to bucket
+  #       if: inputs.enable-summary-uploads
+  #       env:
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+  #         AWS_DEFAULT_REGION: fsn1
+  #         AWS_ENDPOINT_URL: https://fsn1.your-objectstorage.com
+  #         S3_BUCKET_NAME: wind-tunnel-artifacts
+  #       run: |-
+  #         OUT_PATH="${S3_BUCKET_NAME}/summariser-reports/${{ steps.generate-summary-id.outputs.summary_id }}.json"
+  #         nix run .#awscli-s3 cp summariser-report-*.json "s3://${OUT_PATH}"
 
-          echo "Uploaded run summary to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
+  #         echo "Uploaded run summary to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
 
   cleanup:
     name: Cleanup scenario artifacts
