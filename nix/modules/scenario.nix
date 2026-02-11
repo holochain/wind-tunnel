@@ -1,17 +1,31 @@
-# Module to build scenarios and their required hApps into a single derivation
+# Module to build scenarios, including their required hApps, into a single derivation
 
-{ config, system, pkgs, lib, ... }:
+{ config, inputs', system, pkgs, lib, ... }:
 let
-  inherit (config.rustHelper) craneLib;
+  inherit (config.rustHelper) craneLib findCrateVersion;
+  inherit (config.workspace) commonArgs cargoArtifacts;
 
-  mkPackage = { name }: craneLib.buildPackage (config.workspace.commonArgs // {
+  mkPackage = { name }: craneLib.buildPackage (commonArgs // {
     pname = name;
-    version = config.rustHelper.findCrateVersion ../../scenarios/${name}/Cargo.toml;
+    version = findCrateVersion ../../scenarios/${name}/Cargo.toml;
 
-    inherit (config.workspace) cargoArtifacts;
+    inherit cargoArtifacts;
 
-    cargoExtraArgs = "-p ${name}";
-    SKIP_HAPP_BUILD = "1";
+    cargoExtraArgs = "--locked -p ${name}";
+
+    # Copy dependencies from commonArgs as `//` doesn't deep copy
+    nativeBuildInputs = commonArgs.nativeBuildInputs ++ [
+      # Required to build/package DNAs and hApps
+      inputs'.holonix.packages.hc
+    ];
+
+    postInstall = ''
+      # Copy the hApps built via the Rust build script
+      if [ -d "happs/${name}" ]; then
+          mkdir -p $out/happs
+          cp happs/${name}/*.happ $out/happs
+      fi
+    '';
 
     # When built from an x86_64-linux system, modify the executable to specify the standard linux
     # system path for `ld` as its interpreter.
@@ -36,7 +50,6 @@ in
     mkScenario = { name }:
       let
         scenarioBinary = mkPackage { inherit name; };
-        scenarioHapps = config.happHelper.mkHapps { configToml = ../../scenarios/${name}/Cargo.toml; };
       in
       pkgs.stdenv.mkDerivation {
         pname = name;
@@ -45,7 +58,7 @@ in
         # No sources to copy, everything comes from the build inputs
         unpackPhase = "true";
 
-        buildInputs = [ scenarioBinary scenarioHapps pkgs.zip ];
+        buildInputs = [ scenarioBinary pkgs.zip ];
 
         # To tell `nix run` which binary to run. It gets it right anyway because there is only one binary but
         # it prints an annoying warning message.
@@ -54,12 +67,17 @@ in
         };
 
         postInstall = ''
+          # Copy the scenario binary
           mkdir -p $out/bin
           cp "${scenarioBinary}/bin/${name}" $out/bin/
 
+          # Copy the required hApps for the scenario
           mkdir -p $out/happs
-          cp ${scenarioHapps}/.happ-build ${scenarioHapps}/*.happ $out/happs
+          if [ -d "${scenarioBinary}/happs" ]; then
+              cp ${scenarioBinary}/happs/*.happ $out/happs
+          fi
 
+          # Zip scenario binary and all required hApps
           cd $out && zip -r ${name}.zip bin happs
         '';
       };
