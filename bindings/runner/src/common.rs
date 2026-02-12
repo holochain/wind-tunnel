@@ -18,6 +18,7 @@ use kitsune2_api::{AgentInfoSigned, DhtArc};
 use kitsune2_core::Ed25519Verifier;
 use rand::rng;
 use rand::seq::SliceRandom;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -174,6 +175,20 @@ pub fn install_app<SV>(
 where
     SV: UserValuesConstraint,
 {
+    install_app_custom(ctx, app_path, role_name, None, None)
+}
+
+/// Allows, fine-grained app installation which gives you more control over what is installed.
+pub fn install_app_custom<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    app_path: PathBuf,
+    role_name: &RoleName,
+    agent_pubkey: Option<AgentPubKey>,
+    roles_settings: Option<HashMap<String, RoleSettings>>,
+) -> WindTunnelResult<()>
+where
+    SV: UserValuesConstraint,
+{
     let admin_ws_url = ctx.get().admin_ws_url();
     let app_ws_url = ctx.get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
@@ -187,17 +202,26 @@ where
             log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
             let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
-            let key = client.generate_agent_pub_key().await?;
-            log::debug!("Generated agent pub key: {key}");
+            let key = match agent_pubkey {
+                Some(key) => {
+                    log::debug!("Using provided agent pub key: {:}", key);
+                    key
+                }
+                None => {
+                    let key = client.generate_agent_pub_key().await?;
+                    log::debug!("Generated agent pub key: {:}", key);
+                    key
+                }
+            };
 
             let content = std::fs::read(app_path)?;
-
+            log::debug!("Installing app with source");
             let app_info = client
                 .install_app(InstallAppPayload {
                     source: AppBundleSource::Bytes(bytes::Bytes::from(content)),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
-                    roles_settings: None,
+                    roles_settings,
                     network_seed: Some(run_id),
                     ignore_genesis_failure: false,
                 })
