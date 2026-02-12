@@ -1,5 +1,5 @@
 use holochain_client_instrumented::prelude::AppWebsocket;
-use holochain_types::prelude::CellId;
+use holochain_types::prelude::{CellId, RoleName};
 use std::fmt::Debug;
 use std::{collections::HashMap, net::SocketAddr};
 use wind_tunnel_runner::prelude::UserValuesConstraint;
@@ -17,6 +17,8 @@ impl UserValuesConstraint for DefaultScenarioValues {}
 #[derive(Default, Debug)]
 pub struct HolochainAgentContext<T: UserValuesConstraint = DefaultScenarioValues> {
     pub(crate) installed_app_id: Option<String>,
+    /// The RoleName for the cell in the `cell_id` field
+    pub(crate) cell_role_name: Option<RoleName>,
     pub(crate) cell_id: Option<CellId>,
     pub(crate) app_client: Option<AppWebsocket>,
     pub(crate) app_ws_url: Option<SocketAddr>,
@@ -39,6 +41,13 @@ impl<T: UserValuesConstraint> HolochainAgentContext<T> {
         self.cell_id
             .clone()
             .expect("cell_id is not set, did you forget to call `install_app` in your agent_setup?")
+    }
+
+    /// Get the `cell_role_name` that was configured during agent setup.
+    pub fn cell_role_name(&self) -> RoleName {
+        self.cell_role_name.clone().expect(
+            "cell_role_name is not set, did you forget to call `install_app` in your agent_setup?",
+        )
     }
 
     /// Get the `app_client` that was configured during agent setup.
