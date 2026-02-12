@@ -1,4 +1,4 @@
-use super::handle_scenario_setup::ScenarioValues;
+use super::ScenarioValues;
 use crate::durable_object::DurableObject;
 use crate::unyt_agent::UnytAgentExt;
 use anyhow::Context;

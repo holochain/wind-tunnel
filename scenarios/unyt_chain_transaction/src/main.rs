@@ -1,12 +1,25 @@
 mod behaviour;
-mod handle_agent_setup;
-mod handle_scenario_setup;
-use handle_scenario_setup::ScenarioValues;
-use holochain_wind_tunnel_runner::prelude::*;
-mod unyt_agent;
-use rave_engine::types::{Actionable, Completed};
-use unyt_agent::UnytAgentExt;
 mod durable_object;
+mod handle_agent_setup;
+mod unyt_agent;
+
+use holochain_types::prelude::*;
+use holochain_wind_tunnel_runner::prelude::*;
+use rave_engine::types::{Actionable, Completed};
+use tokio::time::Instant;
+use unyt_agent::UnytAgentExt;
+
+#[derive(Debug, Default)]
+pub struct ScenarioValues {
+    pub session_start_time: Option<Instant>,
+    pub network_initialized: bool,
+    pub participating_agents: Vec<AgentPubKeyB64>,
+    pub executor_pubkey: Option<AgentPubKeyB64>,
+    pub smart_agreement_hash: Option<ActionHashB64>,
+    pub progenitor_agent_pubkey: Option<AgentPubKeyB64>,
+}
+
+impl UserValuesConstraint for ScenarioValues {}
 
 fn main() -> WindTunnelResult<()> {
     log::info!("Starting Unyt Chain Transaction scenario");
@@ -14,7 +27,6 @@ fn main() -> WindTunnelResult<()> {
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
-    .use_setup(handle_scenario_setup::setup)
     .use_agent_setup(handle_agent_setup::agent_setup)
     .use_named_agent_behaviour("initiate", behaviour::initiate_network::agent_behaviour)
     .use_named_agent_behaviour("spend", behaviour::spend::agent_behaviour)

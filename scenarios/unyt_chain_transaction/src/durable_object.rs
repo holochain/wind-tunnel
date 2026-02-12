@@ -1,9 +1,10 @@
-use super::handle_scenario_setup::ScenarioValues;
 use anyhow::Context;
 use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+use crate::ScenarioValues;
 
 // DurableObject struct and related functionality
 #[derive(Debug, Clone)]

@@ -1,4 +1,4 @@
-use crate::{durable_object::DurableObject, handle_scenario_setup::ScenarioValues};
+use crate::{ScenarioValues, durable_object::DurableObject};
 use holochain_serialized_bytes::prelude::*;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};

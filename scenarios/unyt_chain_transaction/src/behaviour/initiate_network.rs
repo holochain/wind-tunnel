@@ -1,4 +1,4 @@
-use crate::{handle_scenario_setup::ScenarioValues, unyt_agent::UnytAgentExt};
+use crate::{ScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{

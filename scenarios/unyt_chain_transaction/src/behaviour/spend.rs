@@ -1,5 +1,5 @@
 use crate::{
-    handle_scenario_setup::ScenarioValues,
+    ScenarioValues,
     unyt_agent::{AcceptTx, SpendInput, UnytAgentExt},
 };
 use holochain_wind_tunnel_runner::prelude::*;
