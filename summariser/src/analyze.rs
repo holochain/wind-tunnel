@@ -1021,3 +1021,175 @@ pub(crate) fn delivery_ratio(sent_count: u64, recv: &PartitionedCounterStats) ->
         0.0
     }
 }
+
+/// Compute the difference between two counter DataFrames, summed for all metrics.
+///
+/// This assumes that the two counters will have data from different times
+///
+/// This function:
+/// 1. Concatenates both DataFrames with counter1 values as positive and counter2 values as negative
+/// 2. Groups by time and sums to get net change at each time point
+/// 3. Computes cumulative sum to get running total at each time
+/// 4. Computes statistics on this running total over time
+///
+/// # Arguments
+/// * `counter1` - First counter DataFrame (e.g., startups)
+/// * `counter2` - Second counter DataFrame (e.g., shutdowns)
+/// * `value_column` - Column name in counter1 and counter2 containing the counter values
+/// * `sum_partition_by_column` - Column name that sum values should be calculated for (e.g., agent identifiers)
+/// * `window_duration` - Duration for windowed aggregation (e.g., "10s")
+///
+/// The value of `sum_partition_by_column` must convert to a &str.
+pub(crate) fn running_conductors_stats(
+    startups_counter: DataFrame,
+    shutdowns_counter: DataFrame,
+    agent_column: &str,
+    window_duration: &str,
+) -> anyhow::Result<GaugeStats> {
+    // Construct a dataframe a full join of startups_counter and shutdowns_counter on the time field, then:
+    // - Sort by agent_column, then time
+    // - Forward-fill all null values in value with the same agent_column
+    // - Forward-fill all null values in value_right with the same agent_column
+    // - Set any remaining null values to 0.0 (i.e. any null values before any counter values are recorded)
+    //
+    // This gives us a startup and shutdown count for every agent, at every time that a data point was recorded.
+    let agent_column_right = format!("{agent_column}_right");
+
+    let counters_merged = startups_counter
+        .clone()
+        .lazy()
+        .join(
+            shutdowns_counter.clone().lazy(),
+            [col("time")],
+            [col("time")],
+            JoinArgs::new(JoinType::Full),
+        )
+        .with_column(coalesce(&[col("time"), col("time_right")]).alias("time"))
+        .with_column(
+            coalesce(&[col(agent_column), col(agent_column_right.clone())]).alias(agent_column),
+        )
+        .drop(["time_right", agent_column_right.as_str()])
+        .sort([agent_column, "time"], Default::default())
+        .with_column(
+            col("value_right")
+                .fill_null_with_strategy(FillNullStrategy::Forward(None))
+                .over([col(agent_column)])
+                .fill_null(lit(0.0)),
+        )
+        .with_column(
+            col("value")
+                .fill_null_with_strategy(FillNullStrategy::Forward(None))
+                .over([col(agent_column)])
+                .fill_null(lit(0.0)),
+        )
+        .with_column((col("value") - col("value_right")).alias("running"))
+        .collect()?;
+
+    // Get unique agents as strings
+    let unique_agents_series = counters_merged
+        .clone()
+        .column(agent_column)?
+        .as_materialized_series()
+        .unique()?;
+    let unique_agents_strs = unique_agents_series
+        .str()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    // Create a base dataframe with just time
+    let mut result = counters_merged
+        .clone()
+        .lazy()
+        .select([col("time")])
+        .unique(None, UniqueKeepStrategy::First)
+        .sort(["time"], Default::default())
+        .collect()?;
+
+    // Join each unqiue sum_partition_by_column data as a separate column
+    for agent in unique_agents_strs.clone() {
+        let agent_data = counters_merged
+            .clone()
+            .lazy()
+            .filter(col(agent_column).eq(lit(agent)))
+            .select([col("time"), col("running").alias(agent)])
+            .collect()?;
+
+        result = result
+            .lazy()
+            .join(
+                agent_data.lazy(),
+                [col("time")],
+                [col("time")],
+                JoinArgs::new(JoinType::Left),
+            )
+            .with_column(
+                col(agent)
+                    .fill_null_with_strategy(FillNullStrategy::Forward(None))
+                    .fill_null(lit(0.0)),
+            )
+            .collect()?;
+    }
+
+    // Add sum column across all agent columns
+    let sum_expr = unique_agents_strs
+        .iter()
+        .map(|agent| col(*agent))
+        .reduce(|acc, c| acc + c)
+        .unwrap_or(lit(0.0));
+
+    // Calculate the delta between sum of startups and sum of shutdowns
+    result = result
+        .lazy()
+        .with_column(sum_expr.alias("delta"))
+        .drop(unique_agents_strs)
+        .collect()?;
+
+    let series = result.column("delta")?.as_materialized_series();
+
+    // Compute statistics on the running total
+    let mean = series.mean().context("Mean")?;
+    let std = series.std(0).context("Std")?;
+
+    // Percentile range
+    let sorted = series.f64()?.sort(false);
+    let p5 = sorted_percentile(&sorted, 0.05);
+    let p95 = sorted_percentile(&sorted, 0.95);
+
+    // Windowed trend
+    let trend = result
+        .lazy()
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col("delta").mean().alias("mean")])
+        .collect()
+        .context("Windowed mean")?
+        .column("mean")?
+        .f64()?
+        .iter()
+        .filter_map(|v| v.map(|v| round_to_n_dp(v, 2)))
+        .collect_vec();
+
+    Ok(GaugeStats {
+        mean: round_to_n_dp(mean, 2),
+        std: round_to_n_dp(std, 2),
+        p5: round_to_n_dp(p5, 2),
+        p95: round_to_n_dp(p95, 2),
+        trend: Float64Trend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
+    })
+}
