@@ -85,12 +85,7 @@ pub(crate) fn standard_timing_stats(
                 ..Default::default()
             },
         )
-        .agg([col(column)
-            .slice(1, u32::MAX)
-            .reverse()
-            .slice(1, u32::MAX)
-            .mean()
-            .alias("mean")])
+        .agg([col(column).mean().alias("mean")])
         .collect()
         .context("Windowed mean")?
         .column("mean")?
