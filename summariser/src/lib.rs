@@ -160,6 +160,14 @@ pub fn execute_report_for_run_summary(
             }
             .boxed(),
         ),
+        "write_get_agent_activity_volatile" => Some(
+            async move {
+                summarize_write_get_agent_activity_volatile(client.clone(), summary.clone())
+                    .await
+                    .context("Write get agent activity volatile summary")
+            }
+            .boxed(),
+        ),
         "write_validated_must_get_agent_activity" => Some(
             async move {
                 summarize_write_validated_must_get_agent_activity(client.clone(), summary.clone())
