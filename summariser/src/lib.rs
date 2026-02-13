@@ -138,6 +138,11 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_write_get_agent_activity
         )),
+        "write_get_agent_activity_volatile" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            summarize_write_get_agent_activity_volatile
+        )),
         "write_validated_must_get_agent_activity" => Some(execute_report_with_host_metrics!(
             client,
             summary,
