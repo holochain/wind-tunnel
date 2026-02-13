@@ -236,6 +236,7 @@ where
         .context("Failed to install app")?;
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
+    ctx.get_mut().cell_role_name = Some(role_name.clone());
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
 
