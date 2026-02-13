@@ -156,6 +156,9 @@ fn agent_behaviour_must_get_agent_activity(
                 log::debug!(
                     "Could not get chain top for batch {next_batch_num} for agent {write_peer}: {err}",
                 );
+                // Sleep briefly to avoid busy looping while the data is not found.
+                std::thread::sleep(std::time::Duration::from_millis(100));
+
                 // The next batch may not yet have been created by the writing peer.
                 return Ok(());
             }
