@@ -172,6 +172,9 @@ fn agent_behaviour_must_get_agent_activity(
                         batch_chain_top
                     }
                     Err(_) => {
+                        // Sleep briefly to avoid busy looping while the data is not found.
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+
                         // The next batch may not yet have been created by the writing peer.
                         return Ok(());
                     }
