@@ -16,12 +16,13 @@ Corresponding Rust types: `GaugeStats` or `RatioStats`
     {{ $high_label := test.Ternary " p95" " max" $is_gauge }}
     {{ $low := test.Ternary (index . "p5") (index . "min") $is_gauge }}
     {{ $high := test.Ternary (index . "p95") (index . "max") $is_gauge }}
+    {{ $unit := (index . "unit") }}
 
     <span class="min-max-mean-std-min">
         {{ template "scalar" (dict
             "label" $low_label
             "value" $low
-            "unit" (index . "unit")
+            "unit" $unit
         ) }}
     </span>
     {{ $lo_mean_symbol := test.Ternary "lt" "le" (lt $low .mean) }}
@@ -33,10 +34,10 @@ Corresponding Rust types: `GaugeStats` or `RatioStats`
         {{ template "scalar" (dict
             "label" $high_label
             "value" $high
-            "unit" (index . "unit")
+            "unit" $unit
         ) }}
     </span>
     {{ with (index . "trend") }}
-        {{ template "trend_graph" (dict "data" .trend "mean" 0 "window_duration" .window_duration) }}
+        {{ template "trend_graph" (dict "data" .trend "mean" 0 "window_duration" .window_duration "unit" $unit) }}
     {{ end }}
 </div>

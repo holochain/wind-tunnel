@@ -1,0 +1,10 @@
+{{/*
+Render a PartitionedGaugeStats value
+*/}}
+
+{{ range .partitions }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" (tmpl.Exec "composite_key" .key)
+        "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+    ) }}
+{{ end }}
