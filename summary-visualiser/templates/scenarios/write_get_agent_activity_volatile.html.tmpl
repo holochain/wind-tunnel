@@ -1,0 +1,47 @@
+{{ define "write_get_agent_activity_volatile_description" }}
+<p>A scenario where <b><code>write</code></b> peers write entries, while <b><code>get_agent_activity_volatile</code></b> peers each query a single <code>write</code> agent's activity with <code>get_agent_activity</code> but shutdown and restart their conductors at semi random intervals.</p>
+
+<p>Before a target <code>write</code> peer and the requesting <code>get_agent_activity_volatile</code> peer are in sync, this will measure the <code>get_agent_activity</code> call performance over a network. Once a <code>write</code> peer reaches sync with a <code>get_agent_activity</code> peer, the <code>write</code> peer will publish their actions and entries, and so the <code>get_agent_activity</code> calls will likely have most of the data they need locally. At that point this measures the database query performance and code paths through host functions.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Write/<code>get_agent_activity_volatile</code>"
+    "description" (tmpl.Exec "write_get_agent_activity_volatile_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Highest observed <code>action_seq</code>"
+            "description" "The change in the highest action index on the <code>write</code> peer's source chain."
+            "content" (tmpl.Exec "delta" .highest_observed_action_seq)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "<code>get_agent_activity_full</code> zome call timing"
+            "description" "The time taken to call the zome function that retrieves information on a <code>write</code> peer's source chain."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .get_agent_activity_full_zome_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Startups"
+            "description" "The number of conductor startups by <code>get_agent_activity_volatile</code> peers."
+            "content" (tmpl.Exec "scalar" (dict "value" .startups.end "label" "Total" "unit" "startups"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Shutdowns"
+            "description" "The number of conductor shutdowns by <code>get_agent_activity_volatile</code> peers."
+            "content" (tmpl.Exec "scalar" (dict "value" .shutdowns.end "label" "Total" "unit" "shutdowns"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
+        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
+    {{ end }}
+</div>
