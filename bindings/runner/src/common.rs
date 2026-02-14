@@ -236,6 +236,7 @@ where
         .context("Failed to install app")?;
 
     ctx.get_mut().installed_app_id = Some(installed_app_id);
+    ctx.get_mut().cell_role_name = Some(role_name.clone());
     ctx.get_mut().cell_id = Some(cell_id);
     ctx.get_mut().app_client = Some(app_client);
 
@@ -773,27 +774,22 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
         .holochain_config_mut()
         .with_conductor_root_path(&conductor_root_path)
         .with_admin_port(admin_port)
-        .with_agent_name(agent_name);
+        .with_agent_name(agent_name)
+        .with_metrics_path(&holochain_metrics_path);
 
     let config = ctx.get_mut().take_holochain_config().build()?;
 
-    ctx.get_mut().holochain_runner =
-        match ctx
-            .runner_context()
-            .executor()
-            .execute_in_place(start_holochain_conductor(
-                config,
-                &conductor_root_path,
-                &holochain_metrics_path,
-            )) {
-            Ok(runner) => Some(runner),
-            Err(err) => {
-                log::error!("Failed to start Holochain conductor: {err}");
-                // force stop conductor if we failed to start it and return error
-                ctx.runner_context().force_stop_scenario();
-                return Err(err);
-            }
-        };
+    ctx.get_mut().holochain_runner = match ctx.runner_context().executor().execute_in_place(
+        create_and_start_holochain_conductor(config, &conductor_root_path),
+    ) {
+        Ok(runner) => Some(runner),
+        Err(err) => {
+            log::error!("Failed to start Holochain conductor: {err}");
+            // force stop conductor if we failed to start it and return error
+            ctx.runner_context().force_stop_scenario();
+            return Err(err);
+        }
+    };
 
     ctx.get_mut().admin_ws_url = Some(
         format!("ws://127.0.0.1:{admin_port}")
@@ -810,12 +806,18 @@ pub fn run_holochain_conductor<SV: UserValuesConstraint>(
 ///
 /// If starting the conductor fails, attempts to clean up the conductor root directory.
 /// Returns [`HolochainRunner`] on success.
-async fn start_holochain_conductor(
+async fn create_and_start_holochain_conductor(
     config: HolochainConfig,
     conductor_root_path: &Path,
-    holochain_metrics_path: &Path,
 ) -> anyhow::Result<HolochainRunner> {
-    let mut err = match HolochainRunner::run(&config, holochain_metrics_path).await {
+    let mut err = match async {
+        let mut runner = HolochainRunner::create(&config)?;
+        log::info!("Created runner {runner:?}");
+        runner.run().await?;
+        anyhow::Ok(runner)
+    }
+    .await
+    {
         Ok(runner) => return Ok(runner),
         Err(err) => err,
     };
@@ -882,4 +884,78 @@ pub fn conductor_build_info(
         info: serde_json::to_value(holochain_build_info)?,
     };
     Ok(Some(build_info))
+}
+
+/// Stops the Holochain conductor if one is running.
+///
+/// This function will take the `holochain_runner` from the context and drop it, which will
+/// gracefully shut down the conductor process and clean up its directories.
+///
+/// If no conductor is running this function does nothing.
+/// If using an external conductor via connection-string, this function does nothing.
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, stop_holochain_conductor, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     stop_holochain_conductor(ctx)?;
+///     Ok(())
+/// }
+/// ```
+pub fn stop_holochain_conductor<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
+    if let Some(mut runner) = ctx.get_mut().holochain_runner.take() {
+        log::info!("Stopping Holochain conductor");
+        runner.shutdown();
+        log::info!("Holochain conductor stopped");
+
+        ctx.get_mut().holochain_runner = Some(runner);
+    } else {
+        log::debug!("No Holochain conductor is running, so nothing to stop");
+    }
+
+    Ok(())
+}
+
+/// Starts an already created Holochain conductor with the same configuration and installed apps.
+///
+/// If no conductor was created, this function does nothing.
+/// If using an external conductor via connection-string, this function does nothing.
+pub fn start_holochain_conductor<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
+    log::info!(
+        "Restarting Holochain conductor {:?}",
+        ctx.get().holochain_runner
+    );
+    if let Some(mut runner) = ctx.get_mut().holochain_runner.take() {
+        log::info!("Restarting Holochain conductor");
+
+        if let Err(err) = ctx
+            .runner_context()
+            .executor()
+            .execute_in_place(runner.run())
+        {
+            log::error!("Failed to restart Holochain conductor: {err}");
+
+            // force stop conductor if we failed to restart it and return error
+            ctx.runner_context().force_stop_scenario();
+            return Err(err);
+        }
+        log::info!("Holochain conductor restarted");
+
+        ctx.get_mut().holochain_runner = Some(runner);
+
+        configure_admin_ws_url(ctx)?;
+        configure_app_ws_url(ctx)?;
+        use_installed_app(ctx, &ctx.get().cell_role_name())?;
+    } else {
+        log::debug!(
+            "No Holochain runner in context, did you forget to call create_and_start_holochain_conductor?"
+        );
+    }
+
+    Ok(())
 }
