@@ -41,13 +41,14 @@ function get_status() {
     echo "$client_status"
 }
 
+# See https://developer.hashicorp.com/nomad/commands/job/status#running
 function is_running() {
     local status="$1"
     case "$status" in
-      complete|failed|lost|stopped|dead|unknown)
-        return 1 ;;  # not running
+      running)
+        return 0 ;;  # still running
       *)
-        return 0 ;;  # still running (e.g., pending, running)
+        return 1 ;;  # not running
     esac
 }
 
@@ -114,18 +115,16 @@ function wait_for_job() {
             continue
         fi
 
-        # Job has completed
+        # Job has completed at this point, either successfully or failed.
         if is_run_success "$status"; then
-            break
+            echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
+            return 0
+        else
+            echo "Scenario $scenario_name ($alloc_id) finished with status=$status after $ELAPSED_SECS seconds."
+            print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
+            return 1
         fi
-
-        echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $ELAPSED_SECS seconds."
-        print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
-        exit 1
     done
-    echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
-
-    return 0
 }
 
 
@@ -148,13 +147,26 @@ SCENARIO_NAME="$1"
 
 shift # Remove the first argument (scenario name)
 
+# Count total number of allocations and track failures
+TOTAL_ALLOCATIONS=$#
+FAILED_ALLOCATIONS=0
+
 # Process each allocation ID passed as arguments
 while [[ $# -gt 0 ]]; do
     # Get next allocation ID from arguments
     alloc_id="$1"
-    wait_for_job "$SCENARIO_NAME" "$alloc_id"
+
+    if ! wait_for_job "$SCENARIO_NAME" "$alloc_id"; then
+        FAILED_ALLOCATIONS=$((FAILED_ALLOCATIONS + 1))
+    fi
 
     shift # Remove the processed allocation ID
 done
+
+# If all allocations failed, exit with error
+if [[ $FAILED_ALLOCATIONS -eq $TOTAL_ALLOCATIONS ]]; then
+    echo "Error: All $TOTAL_ALLOCATIONS allocation(s) failed." >&2
+    exit 1
+fi
 
 exit 0
