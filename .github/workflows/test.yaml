@@ -235,6 +235,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - write_get_agent_activity_volatile
+        run: |
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity_volatile -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - write_validated_must_get_agent_activity
         run: |
           # Run the scenario
