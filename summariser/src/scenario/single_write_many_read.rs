@@ -1,7 +1,6 @@
-use crate::aggregator::HostMetricsAggregator;
 use crate::analyze::{standard_rate, standard_timing_stats};
 use crate::frame::LoadError;
-use crate::model::{StandardRateStats, StandardTimingsStats, SummaryOutput};
+use crate::model::{StandardRateStats, StandardTimingsStats};
 use crate::query;
 use anyhow::Context;
 use polars::prelude::*;
@@ -9,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct SingleWriteManyReadSummary {
+pub(crate) struct SingleWriteManyReadSummary {
     read_call: StandardTimingsStats,
     rate_10s: StandardRateStats,
     error_count: usize,
@@ -18,7 +17,7 @@ struct SingleWriteManyReadSummary {
 pub(crate) async fn summarize_single_write_many_read(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<SummaryOutput> {
+) -> anyhow::Result<SingleWriteManyReadSummary> {
     assert_eq!(summary.scenario_name, "single_write_many_read");
 
     let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
@@ -42,17 +41,9 @@ pub(crate) async fn summarize_single_write_many_read(
             },
         };
 
-    let host_metrics = HostMetricsAggregator::new(&client, &summary)
-        .try_aggregate()
-        .await;
-
-    SummaryOutput::new(
-        summary,
-        SingleWriteManyReadSummary {
-            read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
-            rate_10s: standard_rate(zome_calls, "value", "10s")?,
-            error_count,
-        },
-        host_metrics,
-    )
+    Ok(SingleWriteManyReadSummary {
+        read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
+        rate_10s: standard_rate(zome_calls, "value", "10s")?,
+        error_count,
+    })
 }

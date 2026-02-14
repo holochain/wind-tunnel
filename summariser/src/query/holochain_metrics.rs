@@ -130,6 +130,7 @@ pub async fn query_database_utilization(
         summary,
         "hc.db.pool.utilization",
         Some(("kind", kind.to_string().as_str())),
+        "10s",
     )
     .await
     {
@@ -154,6 +155,7 @@ pub async fn query_database_utilization_by_id(
         "hc.db.pool.utilization",
         &["id"],
         Some(("kind", kind.to_string().as_str())),
+        "10s",
     )
     .await
     {
