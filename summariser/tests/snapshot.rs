@@ -14,13 +14,6 @@ macro_rules! run_snapshot_test {
             std::fs::File::open(run_summary.path()).context("Failed to load run summary")?,
         )?;
 
-        let expected = find_test_data_file($summary_fingerprint, "3_summary_outputs")
-            .context("Summary output not found")?;
-        let expected = serde_json::from_reader::<_, SummaryOutput>(
-            std::fs::File::open(expected.path())
-                .context("Failed to load expected summary output")?,
-        )?;
-
         let output = execute_report_for_run_summary(
             influxdb::Client::new("http://never-connect", "test"),
             run_summary,
@@ -32,6 +25,13 @@ macro_rules! run_snapshot_test {
         if option_env!("UPDATE_SNAPSHOTS") == Some("1") {
             holochain_summariser::test_data::insert_summary_output(&output, true)?;
         } else {
+            let expected = find_test_data_file($summary_fingerprint, "3_summary_outputs")
+                .context("Summary output not found")?;
+            let expected = serde_json::from_reader::<_, SummaryOutput>(
+                std::fs::File::open(expected.path())
+                    .context("Failed to load expected summary output")?,
+            )?;
+
             pretty_assertions::assert_eq!(expected, output, "Snapshot mismatch, run with `UPDATE_SNAPSHOTS=1 cargo test --test snapshot` to update");
         }
     };
@@ -107,7 +107,7 @@ async fn app_install_large() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn dht_sync_lag() -> anyhow::Result<()> {
-    run_snapshot_test!("3a1e33ccf661bd873966c539d4d227e703e1496fb54bb999f7be30a3dd493e51");
+    run_snapshot_test!("283cadd811028b6cc9b89332b7e158d3bac20b92fe9d0f1e58c9851cfde74531");
     Ok(())
 }
 

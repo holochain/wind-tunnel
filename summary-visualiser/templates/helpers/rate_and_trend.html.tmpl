@@ -3,7 +3,7 @@ Render a rate and trend metric.
 Corresponding Rust type: `holochain_metrics::StandardRateStats`
 with an optional string `unit` field that will default to `"/s"`.
 */}}
-{{ $unit := default "/s" (index . "unit") }}
+{{ $unit := (index . "unit") }}
 {{ template "mean" (dict
     "mean" .mean
     "unit" $unit

@@ -94,6 +94,26 @@ pub struct CounterStats {
     pub rate_per_second: f64,
 }
 
+/// Stats which increment during time
+/// Includes the rate of growth for each time window
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CounterRateStats {
+    /// initial value
+    pub start: u64,
+    /// value at the end of the measurement
+    pub end: u64,
+    /// end - start
+    pub delta: u64,
+    /// Duration of the measurement
+    pub measurement_duration: Duration,
+    /// Rate of growth between windows
+    pub trend: Vec<u32>,
+    /// Mean of growth between windows
+    pub trend_mean: f64,
+    /// Duration of a window
+    pub window_duration: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PartitionKey {
     pub key: String,

@@ -1,0 +1,121 @@
+{{/*
+Render host metrics including CPU, memory, and network statistics.
+
+This template displays system-level performance metrics collected during the scenario run.
+*/}}
+
+{{/* network interface metrics */}}
+{{ define "network_interfaces" }}
+    {{ $unit := .unit }}
+    {{ range $interface, $data := .interfaces }}
+        {{ if gt $data.end 0 }}
+            {{ template "scenario_metric_content_item" (dict
+                "name" $interface
+                "content" (tmpl.Exec "trend_and_delta" (merge (dict "unit" $unit) $data))
+            ) }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{/* host_metrics template */}}
+{{ with .cpu }}
+    {{ template "scenario_metric" (dict
+        "name" "User CPU used"
+        "description" "Percentage of CPU used by user space"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .usage_user))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "System CPU used"
+        "description" "Percentage of CPU used by kernel"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .usage_system))
+    ) }}
+{{ end }}
+
+{{ with .memory }}
+    {{ template "scenario_metric" (dict
+        "name" "Share of memory used"
+        "description" "Percentage of memory used"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .used_percent))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Share of memory available"
+        "description" "Percentage of available memory"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .available_percent))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory used"
+        "description" "Actively used memory"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .used))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory available"
+        "description" "Available memory for new allocations"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .available))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory free"
+        "description" "Completely unused memory"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .free))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory total"
+        "description" "Total system memory"
+        "content" (tmpl.Exec "mean_std" (merge (dict "unit" "B") .total))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory active"
+        "description" "Currently active memory"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .active))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Memory inactive"
+        "description" "Inactive memory that can be reclaimed"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .inactive))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Swap free"
+        "description" "Free swap space"
+        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .swap_free))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Swap total"
+        "description" "Total swap space"
+        "content" (tmpl.Exec "mean_std" (merge (dict "unit" "B") .swap_total))
+    ) }}
+{{ end }}
+
+{{ with .network }}
+    {{ template "scenario_metric" (dict
+        "name" "Network bytes received"
+        "description" "Rate of bytes received over a network interface."
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B" "interfaces" .bytes_recv))
+    ) }}
+        
+    {{ template "scenario_metric" (dict
+        "name" "Network bytes sent"
+        "description" "Rate of bytes sent over a network interface."
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "B" "interfaces" .bytes_sent))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Network packets received"
+        "description" "Rate of packets received over a network interface."
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets" "interfaces" .packets_recv))
+    ) }}
+
+    {{ template "scenario_metric" (dict
+        "name" "Network packets sent"
+        "description" "Rate of packets sent over a network interface."
+        "content" (tmpl.Exec "network_interfaces" (dict "unit" "Packets" "interfaces" .packets_sent))
+    ) }}
+{{ end }}

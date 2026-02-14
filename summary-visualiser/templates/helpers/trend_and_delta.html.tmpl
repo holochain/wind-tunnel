@@ -1,0 +1,17 @@
+{{/*
+Render a trend and delta metric.
+Corresponding Rust type: `holochain_metrics::CounterRateStats`
+with an optional string `unit` field that will default to `"/s"`.
+*/}}
+{{ $unit := default "/s" (index . "unit") }}
+{{ template "scalar" (dict
+    "label" "Total"
+    "value" .delta
+    "unit" $unit
+) }}
+{{ template "trend_graph" (dict
+    "mean" .trend_mean
+    "data" .trend
+    "unit" $unit
+    "window_duration" .window_duration
+) }}

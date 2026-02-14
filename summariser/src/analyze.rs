@@ -1,8 +1,8 @@
 use crate::frame::LoadError;
 use crate::model::{
-    CounterStats, GaugeStats, PartitionGaugeStats, PartitionKey, PartitionRateStats,
-    PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
-    StandardRateStats, StandardTimingsStats, TimingTrend,
+    CounterRateStats, CounterStats, GaugeStats, PartitionGaugeStats, PartitionKey,
+    PartitionRateStats, PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats,
+    PartitionedTimingStats, StandardRateStats, StandardTimingsStats, TimingTrend,
 };
 use anyhow::Context;
 use itertools::Itertools;
@@ -263,6 +263,89 @@ pub(crate) fn standard_rate(
     Ok(StandardRateStats {
         mean: round_to_n_dp(mean, 2),
         trend,
+        window_duration: window_duration.to_string(),
+    })
+}
+
+/// Calculates [`crate::model::CounterRateStats`] for the given DataFrame.
+///
+/// This is the same as [`crate::model::CounterStats`], with the following additional fields:
+/// - trend: A list of values which are the increase in the counter for windows of `window_duration`.
+/// - window_duration: The duration of each trend window.
+pub(crate) fn counter_rate_stats(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+) -> anyhow::Result<CounterRateStats> {
+    // Group by window and take the last (max) value per window
+    let windowed = frame
+        .clone()
+        .lazy()
+        .select([col("time"), col(column)])
+        .filter(col("time").is_not_null())
+        .filter(col(column).is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).last().alias("value")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    // Calculate delta between consecutive windows
+    // Slice to drop first and last windows as they may be incomplete
+    let trend: Vec<u32> = if windowed.height() <= 2 {
+        Vec::with_capacity(0)
+    } else {
+        let values = windowed.column("value")?.i64()?;
+
+        // Calculate deltas between consecutive windows
+        let mut deltas = Vec::new();
+        for i in 1..values.len() {
+            if let (Some(prev), Some(curr)) = (values.get(i - 1), values.get(i))
+                && curr >= prev
+            {
+                deltas.push((curr - prev) as u32);
+            }
+        }
+
+        // Slice to drop the first and last because they're likely to be partially filled windows.
+        if deltas.len() <= 2 {
+            Vec::new()
+        } else {
+            deltas[1..deltas.len() - 1].to_vec()
+        }
+    };
+
+    // Calculate mean from the trend
+    let trend_mean = if trend.is_empty() {
+        0.0
+    } else {
+        trend.iter().map(|&v| v as f64).sum::<f64>() / trend.len() as f64
+    };
+
+    let counter_stats = counter_stats(frame, column)?;
+
+    Ok(CounterRateStats {
+        measurement_duration: counter_stats.measurement_duration,
+        start: counter_stats.start,
+        end: counter_stats.end,
+        delta: counter_stats.delta,
+        trend,
+        trend_mean,
         window_duration: window_duration.to_string(),
     })
 }

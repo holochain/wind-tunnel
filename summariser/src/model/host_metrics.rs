@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::model::{CounterStats, GaugeStats};
+use crate::model::{CounterRateStats, StandardTimingsStats};
 
 /// Host metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -18,30 +18,30 @@ pub struct HostMetrics {
 /// CPU metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CpuMetrics {
-    pub usage_user: GaugeStats,
-    pub usage_system: GaugeStats,
+    pub usage_user: StandardTimingsStats,
+    pub usage_system: StandardTimingsStats,
 }
 
 /// RAM metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MemMetrics {
-    pub active: GaugeStats,
-    pub available: GaugeStats,
-    pub available_percent: GaugeStats,
-    pub free: GaugeStats,
-    pub inactive: GaugeStats,
-    pub swap_free: GaugeStats,
-    pub swap_total: GaugeStats,
-    pub total: GaugeStats,
-    pub used: GaugeStats,
-    pub used_percent: GaugeStats,
+    pub active: StandardTimingsStats,
+    pub available: StandardTimingsStats,
+    pub available_percent: StandardTimingsStats,
+    pub free: StandardTimingsStats,
+    pub inactive: StandardTimingsStats,
+    pub swap_free: StandardTimingsStats,
+    pub swap_total: StandardTimingsStats,
+    pub total: StandardTimingsStats,
+    pub used: StandardTimingsStats,
+    pub used_percent: StandardTimingsStats,
 }
 
 /// Network metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NetMetrics {
-    pub bytes_recv: BTreeMap<String, CounterStats>,
-    pub bytes_sent: BTreeMap<String, CounterStats>,
-    pub packets_recv: BTreeMap<String, CounterStats>,
-    pub packets_sent: BTreeMap<String, CounterStats>,
+    pub bytes_recv: BTreeMap<String, CounterRateStats>,
+    pub bytes_sent: BTreeMap<String, CounterRateStats>,
+    pub packets_recv: BTreeMap<String, CounterRateStats>,
+    pub packets_sent: BTreeMap<String, CounterRateStats>,
 }
