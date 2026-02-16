@@ -110,6 +110,16 @@ jobs:
           echo
           df -h
 
+      - name: Test influx scripts
+        env:
+          WIND_TUNNEL_SKIP_CLEAN_PROMPT: 1
+        run: |
+          nix run .#check-influx-setup-script
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - zome_call_single_value
         run: |
           nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress
