@@ -397,6 +397,70 @@
               ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/canonical
             '';
           };
+          check-influx-setup-script = pkgs.writeShellApplication {
+            name = "check-influx-setup-script";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.influxdb2-cli
+              pkgs.influxdb2-server
+              pkgs.tomlq
+            ];
+            text = ''
+              set -euo pipefail
+
+              if [ "''${WIND_TUNNEL_SKIP_CLEAN_PROMPT:-}" != "1" ]; then
+                echo "This will remove ./influx/influx.toml and ./influx/.influxdbv2/"
+                read -r -p "Proceed? [y/N] " answer
+                if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+                  echo "Aborted."
+                  exit 1
+                fi
+              fi
+              rm -rf ./influx/influx.toml ./influx/.influxdbv2/
+
+              # shellcheck disable=SC1091
+              source ./scripts/influx.sh
+              influxd &
+              influxd_pid=$!
+              trap 'kill "$influxd_pid" 2>/dev/null || true' EXIT
+
+              # Poll until influxd is ready, timeout after 30s
+              ready=false
+              for i in $(seq 1 30); do
+                  echo "Checking if InfluxDB is ready... (attempt $i/30)"
+                  if influx ping --host http://localhost:8087 2>/dev/null; then
+                    ready=true
+                    break
+                  fi
+                  sleep 1
+              done
+              if [ "$ready" != "true" ]; then
+                echo "ERROR: InfluxDB did not become ready within 30 seconds" >&2
+                exit 1
+              fi
+
+              configure_influx
+              use_influx
+
+              for var in INFLUX_TOKEN INFLUX_HOST INFLUX_BUCKET; do
+                if [ -z "''${!var:-}" ]; then
+                  echo "ERROR: $var is not set after use_influx"
+                  kill $influxd_pid
+                  exit 1
+                fi
+              done
+
+              # Verify the bucket is reachable via the influx CLI
+              if ! influx bucket list --host "$INFLUX_HOST" --token "$INFLUX_TOKEN" --org holo --name "$INFLUX_BUCKET" >/dev/null; then
+                echo "ERROR: failed to list bucket '$INFLUX_BUCKET' via influx CLI"
+                kill $influxd_pid
+                exit 1
+              fi
+              echo "Influx CLI check passed: bucket '$INFLUX_BUCKET' is accessible"
+
+              kill $influxd_pid
+            '';
+          };
           generate-summary-visualiser = pkgs.writeShellApplication {
             name = "generate-summary-visualiser";
             runtimeInputs = [
