@@ -24,21 +24,25 @@ pub(crate) fn standard_timing_stats(
     let mean = value_series.mean().context("Mean")?;
     let std = value_series.std(0).context("Std")?;
 
+    // Add a small epsilon to boundaries so that values sitting exactly at mean ± N*std
+    // are not excluded by floating-point rounding differences across architectures.
+    let eps = std * 1e-10_f64 + f64::EPSILON;
+
     let out = frame
         .clone()
         .lazy()
         .select([
             col(column)
-                .gt_eq(lit(mean - std))
-                .and(col(column).lt_eq(lit(mean + std)))
+                .gt_eq(lit(mean - std - eps))
+                .and(col(column).lt_eq(lit(mean + std + eps)))
                 .alias("within_std"),
             col(column)
-                .gt_eq(lit(mean - 2.0 * std))
-                .and(col(column).lt_eq(lit(mean + 2.0 * std)))
+                .gt_eq(lit(mean - 2.0 * std - eps))
+                .and(col(column).lt_eq(lit(mean + 2.0 * std + eps)))
                 .alias("within_2std"),
             col(column)
-                .gt_eq(lit(mean - 3.0 * std))
-                .and(col(column).lt_eq(lit(mean + 3.0 * std)))
+                .gt_eq(lit(mean - 3.0 * std - eps))
+                .and(col(column).lt_eq(lit(mean + 3.0 * std + eps)))
                 .alias("within_3std"),
         ])
         .collect()?;
