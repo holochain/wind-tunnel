@@ -104,7 +104,15 @@ fn ensure_summary_output_fingerprints_accurate() {
     {
         let entry = entry.unwrap();
         if entry.file_type().is_file() {
-            let summary_output = load_summary_output(entry.path().into()).unwrap();
+            let summary_output = load_summary_output(entry.path().into())
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "Failed to load summary output from {:?}: {}",
+                        entry.path(),
+                        e
+                    )
+                })
+                .unwrap();
 
             std::fs::rename(
                 entry.path(),

@@ -1,4 +1,4 @@
-use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
+use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats, round_to_n_dp};
 use crate::model::{
     PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
 };
@@ -57,7 +57,16 @@ pub(crate) async fn summarize_countersigning_two_party(
     let accepted_success = partitioned_rate_stats(accepted_success, "value", "10s", &["agent"])
         .context("Accepted success rate")?;
 
-    let accepted_failures = accepted - accepted_success.clone();
+    let mut accepted_failures = accepted - accepted_success.clone();
+    accepted_failures.mean = round_to_n_dp(accepted_failures.mean, 2);
+    accepted_failures.rates = accepted_failures
+        .rates
+        .into_iter()
+        .map(|mut r| {
+            r.summary_rate.mean = round_to_n_dp(r.summary_rate.mean, 2);
+            r
+        })
+        .collect::<Vec<_>>();
 
     let initiated_timing = query::query_custom_data(
         client.clone(),
