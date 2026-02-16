@@ -1,5 +1,6 @@
 use anyhow::Context;
 use holochain_summariser::{execute_report_for_run_summary, model::SummaryOutput};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 use wind_tunnel_summary_model::load_run_summary;
@@ -32,9 +33,34 @@ macro_rules! run_snapshot_test {
                     .context("Failed to load expected summary output")?,
             )?;
 
-            pretty_assertions::assert_eq!(expected, output, "Snapshot mismatch, run with `UPDATE_SNAPSHOTS=1 cargo test --test snapshot` to update");
+            // Normalize scenario_metrics JSON key ordering so diffs are readable.
+            // serde_json::Value PartialEq is order-independent, but pretty_assertions
+            // diffs the Debug output which renders keys in insertion order.
+            let mut expected_norm = expected.clone();
+            expected_norm.scenario_metrics = normalize_json(&expected_norm.scenario_metrics);
+            let mut output_norm = output.clone();
+            output_norm.scenario_metrics = normalize_json(&output_norm.scenario_metrics);
+
+            pretty_assertions::assert_eq!(expected_norm, output_norm, "Snapshot mismatch, run with `UPDATE_SNAPSHOTS=1 cargo test --test snapshot` to update");
         }
     };
+}
+
+/// Recursively sort JSON object keys so that Debug output is deterministic.
+fn normalize_json(v: &serde_json::Value) -> serde_json::Value {
+    match v {
+        serde_json::Value::Object(map) => {
+            let sorted: BTreeMap<String, serde_json::Value> = map
+                .iter()
+                .map(|(k, v)| (k.clone(), normalize_json(v)))
+                .collect();
+            serde_json::to_value(sorted).unwrap()
+        }
+        serde_json::Value::Array(arr) => {
+            serde_json::Value::Array(arr.iter().map(normalize_json).collect())
+        }
+        other => other.clone(),
+    }
 }
 
 #[test]
