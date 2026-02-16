@@ -81,8 +81,8 @@ jobs:
           JOB_VARS_FILE="${{ inputs.nomad-job-variant-directory }}/vars/${{ matrix.job-name }}.json"
           NOMAD_VAR_DURATION="$(jq -e -r '.duration' "$JOB_VARS_FILE")"
           NOMAD_VAR_SCENARIO_NAME="$(jq -e -r '.scenario_name' "$JOB_VARS_FILE")"
-          # Parse required nodes count from length of 'behaviours' list, or else default to 1.
-          REQUIRED_NODES="$(jq -e -r '.behaviours // 1 | length' "$JOB_VARS_FILE")"
+          # Parse required nodes count by summing the 'nodes' field of each assignment (defaulting to 1 per entry), or else default to 1 if no assignments.
+          REQUIRED_NODES="$(jq -e -r 'if .assignments then [.assignments[] | .nodes // 1] | add else 1 end' "$JOB_VARS_FILE")"
 
           echo "duration=$NOMAD_VAR_DURATION" >> "$GITHUB_OUTPUT"
           echo "scenario_name=$NOMAD_VAR_SCENARIO_NAME" >> "$GITHUB_OUTPUT"
