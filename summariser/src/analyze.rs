@@ -234,20 +234,15 @@ pub(crate) fn standard_rate(
         )
         .collect()?;
 
+    let trend: Vec<u32> = rate
+        .column("count")?
+        .u32()?
+        .iter()
+        .map(|v| v.unwrap_or(0))
+        .collect();
+
     // Slice to drop the first and last because they're likely to be partially filled windows.
     // What we really want is the average rate when the system is under load for the complete window.
-
-    let trend: Vec<u32> = if rate.height() <= 2 {
-        Vec::with_capacity(0)
-    } else {
-        rate.column("count")?
-            .slice(1, rate.height() - 2)
-            .u32()?
-            .iter()
-            .map(|v| v.unwrap_or(0))
-            .collect()
-    };
-
     let mean = if rate.height() <= 2 {
         0.0
     } else {
