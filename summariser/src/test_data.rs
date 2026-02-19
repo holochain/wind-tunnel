@@ -49,8 +49,6 @@ pub fn insert_query_result(query: &ReadQuery, frame: &mut DataFrame) -> anyhow::
     Ok(())
 }
 
-// TODO should provide some way to detect which files are no longer being used as the test data is
-//      updated. We need to be deleting data that is no longer needed.
 #[cfg(feature = "query_test_data")]
 pub fn load_query_result(query: &ReadQuery) -> anyhow::Result<DataFrame> {
     use polars::io::SerReader;
