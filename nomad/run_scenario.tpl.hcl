@@ -59,6 +59,11 @@ job "{{ (ds "vars").scenario_name }}" {
         mode = "fail"
       }
 
+      reschedule {
+        attempts  = 0
+        unlimited = false
+      }
+
       dynamic "task" {
         // Only run host metrics collector if `var.reporter` is set to `influx-file`.
         for_each = var.reporter == "influx-file" ? [var.reporter] : []
