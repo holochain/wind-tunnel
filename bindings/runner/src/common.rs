@@ -19,6 +19,7 @@ use kitsune2_api::{AgentInfoSigned, DhtArc};
 use kitsune2_core::Ed25519Verifier;
 use rand::rng;
 use rand::seq::SliceRandom;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -175,6 +176,99 @@ pub fn install_app<SV>(
 where
     SV: UserValuesConstraint,
 {
+    install_app_custom(ctx, app_path, role_name, None, None)
+}
+
+/// Allows, fine-grained app installation which gives you more control over what is installed.
+///
+/// For an opinionated version that is fine for most use-cases, use [`install_app`].
+///
+/// The reasons to use this function instead of [`install_app`] are:
+/// 1. To set the agent key to use when creating Cells for the installed app instead of generating
+///    a new random agent key.
+/// 2. To override the [`RoleSettings`] of the roles in the installed app. This allows the
+///    modifying of the DNA properties of the underlining hApp to install.
+///
+/// The [`RoleName`] you provide is used to find the cell ID within the installed app that you want
+/// to call during your scenario.
+///
+/// Requires:
+/// - The [`HolochainRunnerContext`] must have a valid `app_ws_url`. Consider calling
+///   [`start_conductor_and_configure_urls`] in your setup before using this function.
+///
+/// # Examples
+///
+/// Call this function as follows:
+/// ```rust
+/// use holochain_types::prelude::*;
+/// use holochain_wind_tunnel_runner::{happ_path, prelude::*};
+/// use std::{collections::HashMap, path::Path};
+///
+/// fn agent_setup(
+///     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
+/// ) -> HookResult {
+///     start_conductor_and_configure_urls(ctx)?;
+///
+///     let admin_ws_url = ctx.get().admin_ws_url();
+///     let reporter = ctx.runner_context().reporter();
+///     let some_agent_pubkey = ctx
+///         .runner_context()
+///         .executor()
+///         .execute_in_place(async move {
+///             let admin_client = AdminWebsocket::connect(admin_ws_url, None, reporter).await?;
+///             let agent_pubkey = admin_client.generate_agent_pub_key().await?;
+///             Ok(agent_pubkey)
+///         })?;
+///     let dna_properties =
+///         serde_yaml::from_str(&format!("some_agent_pubkey: {some_agent_pubkey}"))?;
+///     let role_settings = HashMap::from([(
+///         "some_role".to_string(),
+///         RoleSettings::Provisioned {
+///             membrane_proof: None,
+///             modifiers: Some(DnaModifiersOpt {
+///                 network_seed: None,
+///                 properties: Some(YamlProperties::new(dna_properties)),
+///             }),
+///         },
+///     )]);
+///
+///     install_app_custom(
+///         ctx,
+///         happ_path!("happ_name"),
+///         &"some_role".to_string(),
+///         Some(some_agent_pubkey),
+///         Some(role_settings),
+///     )?;
+///     Ok(())
+/// }
+/// ```
+///
+/// After calling this function you will be able to use the `installed_app_id`, `cell_id` and `app_agent_client` in your agent hooks:
+/// ```rust
+/// use holochain_wind_tunnel_runner::prelude::{
+///     AgentContext, HolochainAgentContext, HolochainRunnerContext, HookResult,
+/// };
+///
+/// fn agent_behaviour(
+///     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>,
+/// ) -> HookResult {
+///     let installed_app_id = ctx.get().installed_app_id()?;
+///     let cell_id = ctx.get().cell_id();
+///     let app_agent_client = ctx.get().app_client();
+///
+///     Ok(())
+/// }
+/// ```
+pub fn install_app_custom<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    app_path: PathBuf,
+    role_name: &RoleName,
+    agent_pubkey: Option<AgentPubKey>,
+    roles_settings: Option<HashMap<String, RoleSettings>>,
+) -> WindTunnelResult<()>
+where
+    SV: UserValuesConstraint,
+{
     let admin_ws_url = ctx.get().admin_ws_url();
     let app_ws_url = ctx.get().app_ws_url();
     let installed_app_id = installed_app_id_for_agent(ctx);
@@ -188,17 +282,25 @@ where
             log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
             let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
 
-            let key = client.generate_agent_pub_key().await?;
-            log::debug!("Generated agent pub key: {key}");
+            let key = match agent_pubkey {
+                Some(key) => {
+                    log::debug!("Using provided agent pub key: {:}", key);
+                    key
+                }
+                None => {
+                    let key = client.generate_agent_pub_key().await?;
+                    log::debug!("Generated agent pub key: {:}", key);
+                    key
+                }
+            };
 
             let content = std::fs::read(app_path)?;
-
             let app_info = client
                 .install_app(InstallAppPayload {
                     source: AppBundleSource::Bytes(bytes::Bytes::from(content)),
                     agent_key: Some(key),
                     installed_app_id: Some(installed_app_id.clone()),
-                    roles_settings: None,
+                    roles_settings,
                     network_seed: Some(run_id),
                     ignore_genesis_failure: false,
                 })
