@@ -1,7 +1,7 @@
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 fn agent_setup(
@@ -32,7 +32,10 @@ fn agent_behaviour(
         }
     })?;
 
-    let start = Instant::now();
+    let send_start = Instant::now();
+    // Set after the zome call completes. The guard only emits `signal_batch_recv` when this is
+    // Some; if the zome call never returns (e.g. shutdown mid-run) no metric is written.
+    let recv_start: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
 
     // Create a guard that will write recv metrics on drop (even on early exit)
     let reporter = ctx.runner_context().reporter().clone();
@@ -40,13 +43,19 @@ fn agent_behaviour(
         write_fn: Box::new({
             let reporter = reporter.clone();
             let received_count = received_count.clone();
+            let recv_start = recv_start.clone();
             move || {
-                let recv_elapsed_s = start.elapsed().as_secs_f64();
                 let count = received_count.load(std::sync::atomic::Ordering::Acquire);
 
-                let metric =
-                    ReportMetric::new("signal_batch_recv").with_field("value", recv_elapsed_s);
-                reporter.clone().add_custom(metric);
+                // Only emit recv metric if the zome call completed and recv_start was set.
+                // If it wasn't set (interrupted before the call returned), there is no
+                // meaningful drain time to report.
+                if let Some(recv_start_instant) = *recv_start.lock().unwrap() {
+                    let recv_elapsed_s = recv_start_instant.elapsed().as_secs_f64();
+                    let metric =
+                        ReportMetric::new("signal_batch_recv").with_field("value", recv_elapsed_s);
+                    reporter.clone().add_custom(metric);
+                }
 
                 let metric = ReportMetric::new("signal_success_ratio")
                     .with_field("value", count as f32 / 10_000.0);
@@ -56,7 +65,9 @@ fn agent_behaviour(
     };
 
     call_zome::<_, (), _>(ctx, "signal", "emit_10k_signals", ())?;
-    let send_elapsed_s = start.elapsed().as_secs_f64();
+    let send_elapsed_s = send_start.elapsed().as_secs_f64();
+    // Start the recv timer now — signals emitted during the zome call are not included.
+    *recv_start.lock().unwrap() = Some(Instant::now());
 
     // Write send metric immediately after zome call
     let metric = ReportMetric::new("signal_batch_send").with_field("value", send_elapsed_s);

@@ -1,8 +1,7 @@
-use crate::analyze::counter_stats;
-use crate::model::{CounterStats, PartitionedTimingStats};
+use crate::analyze::{chain_head_stats, partitioned_timing_stats};
+use crate::model::{ChainHeadStats, PartitionedTimingStats};
+use crate::query;
 use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
-use crate::{analyze, query};
-use analyze::partitioned_timing_stats;
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -10,9 +9,18 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct WriteGetAgentActivitySummary {
-    highest_observed_action_seq: CounterStats,
+    /// Maximum highest-observed action sequence per write agent, aggregated across all reading agents.
+    ///
+    /// For each write agent, the maximum action sequence seen by any reader is taken (collapsing
+    /// the reader dimension). The resulting per-write-agent maxima are then summarised with
+    /// `mean_max` and `max` across all write agents. Captures how far readers tracked writers'
+    /// chains during the run.
+    highest_observed_action_seq: ChainHeadStats,
+    /// Duration of `get_agent_activity_full` zome calls per agent (seconds)
     get_agent_activity_full_zome_calls: PartitionedTimingStats,
+    /// Number of zome call errors observed during the run
     error_count: usize,
+    /// Holochain p2p network metrics for the run
     holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
@@ -22,14 +30,14 @@ pub(crate) async fn summarize_write_get_agent_activity(
 ) -> anyhow::Result<WriteGetAgentActivitySummary> {
     assert_eq!(summary.scenario_name, "write_get_agent_activity");
 
-    let highest_observed_action_seq = query::query_custom_data(
+    let highest_observed_action_seq_frame = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.write_get_agent_activity_highest_observed_action_seq",
-        &["write_agent", "get_agent_activity_agent"],
+        "wt.custom.highest_observed_action_seq",
+        &["write_agent", "agent"],
     )
     .await
-    .context("Load write_get_agent_activity_highest_observed_action_seq data")?;
+    .context("Load highest_observed_action_seq data")?;
 
     let get_agent_activity_full_zome_calls =
         query::query_zome_call_instrument_data(client.clone(), &summary)
@@ -41,8 +49,13 @@ pub(crate) async fn summarize_write_get_agent_activity(
             .collect()?;
 
     Ok(WriteGetAgentActivitySummary {
-        highest_observed_action_seq: counter_stats(highest_observed_action_seq, "value", "10s")
-            .context("Highest observed action seq stats")?,
+        highest_observed_action_seq: chain_head_stats(
+            highest_observed_action_seq_frame,
+            "value",
+            "write_agent",
+            "10s",
+        )
+        .context("Chain head stats for highest_observed_action_seq")?,
         get_agent_activity_full_zome_calls: partitioned_timing_stats(
             get_agent_activity_full_zome_calls,
             "value",

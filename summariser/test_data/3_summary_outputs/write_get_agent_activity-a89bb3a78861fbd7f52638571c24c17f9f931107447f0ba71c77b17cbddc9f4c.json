@@ -31,110 +31,37 @@
     }
   },
   "scenario_metrics": {
+    "error_count": 0,
+    "get_agent_activity_full_zome_calls": {
+      "max_mean": 0.0,
+      "mean": 0.0,
+      "mean_std_dev": 0.0,
+      "min_mean": 0.0,
+      "trend": [],
+      "window_duration": "10s"
+    },
     "highest_observed_action_seq": {
-      "count": 1842,
-      "measurement_duration": {
-        "secs": 33,
-        "nanos": 585981757
-      },
-      "mean_rate_per_second": 56.59,
-      "std_rate_per_second": 22.49,
-      "p5_rate_per_second": 29.8,
-      "p95_rate_per_second": 100.66,
-      "peak_rate_per_second": 126.03,
-      "rate_trend": {
+      "max": 3672.0,
+      "mean_max": 3672.0,
+      "trend": {
         "trend": [
-          68.41,
-          58.49,
-          54.19,
-          49.02
+          2089.0,
+          2666.0,
+          3201.0,
+          3672.0
         ],
         "window_duration": "10s"
-      }
-    },
-    "get_agent_activity_full_zome_calls": {
-      "mean": null,
-      "mean_std_dev": null,
-      "timings": []
-    },
-    "error_count": 0,
-    "holochain_p2p_metrics": {
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.0004,
-          "std": 0.000156,
-          "within_std": 0.9265,
-          "within_2std": 0.9706,
-          "within_3std": 0.9706,
-          "trend": {
-            "trend": [
-              0.000304,
-              0.000329,
-              0.000436,
-              0.000406,
-              0.000386
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_agent_activity": {
-          "mean": 0.020116,
-          "std": 0.005031,
-          "within_std": 0.6717,
-          "within_2std": 0.972,
-          "within_3std": 0.9968,
-          "trend": {
-            "trend": [
-              0.015248,
-              0.017112,
-              0.02161,
-              0.026452
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.014028,
-          "std": 0.062926,
-          "within_std": 0.9957,
-          "within_2std": 0.9963,
-          "within_3std": 0.9963,
-          "trend": {
-            "trend": [
-              0.002883,
-              0.342446,
-              0.008505,
-              0.011417,
-              0.015956
-            ],
-            "window_duration": "10s"
-          }
-        }
       },
+      "write_agent_count": 1
+    },
+    "holochain_p2p_metrics": {
       "handle_incoming_request_duration": {
-        "response": {
-          "mean": 6e-6,
-          "std": 6e-6,
-          "within_std": 0.9878,
-          "within_2std": 0.9976,
-          "within_3std": 0.9986,
-          "trend": {
-            "trend": [
-              4e-6,
-              6e-6,
-              6e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
         "get": {
           "mean": 0.00022,
+          "p50": 0.000182,
+          "p95": 0.00041,
+          "p99": 0.001028,
           "std": 0.000133,
-          "within_std": 0.8824,
-          "within_2std": 0.9706,
-          "within_3std": 0.9853,
           "trend": {
             "trend": [
               0.000161,
@@ -148,10 +75,10 @@
         },
         "get_agent_activity": {
           "mean": 0.019445,
+          "p50": 0.018749,
+          "p95": 0.028119,
+          "p99": 0.031911,
           "std": 0.004955,
-          "within_std": 0.6725,
-          "within_2std": 0.972,
-          "within_3std": 0.9968,
           "trend": {
             "trend": [
               0.014635,
@@ -162,12 +89,29 @@
             "window_duration": "10s"
           }
         },
+        "response": {
+          "mean": 6e-6,
+          "p50": 6e-6,
+          "p95": 9e-6,
+          "p99": 0.000013,
+          "std": 6e-6,
+          "trend": {
+            "trend": [
+              4e-6,
+              6e-6,
+              6e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
         "send_validation_receipts": {
           "mean": 0.01379,
+          "p50": 0.008467,
+          "p95": 0.024983,
+          "p99": 0.03971,
           "std": 0.062863,
-          "within_std": 0.9957,
-          "within_2std": 0.9963,
-          "within_3std": 0.9963,
           "trend": {
             "trend": [
               0.002718,
@@ -175,6 +119,58 @@
               0.008277,
               0.011186,
               0.015707
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.0004,
+          "p50": 0.000367,
+          "p95": 0.000665,
+          "p99": 0.00123,
+          "std": 0.000156,
+          "trend": {
+            "trend": [
+              0.000304,
+              0.000329,
+              0.000436,
+              0.000406,
+              0.000386
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_agent_activity": {
+          "mean": 0.020116,
+          "p50": 0.019376,
+          "p95": 0.028988,
+          "p99": 0.032648,
+          "std": 0.005031,
+          "trend": {
+            "trend": [
+              0.015248,
+              0.017112,
+              0.02161,
+              0.026452
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.014028,
+          "p50": 0.008714,
+          "p95": 0.025248,
+          "p99": 0.039962,
+          "std": 0.062926,
+          "trend": {
+            "trend": [
+              0.002883,
+              0.342446,
+              0.008505,
+              0.011417,
+              0.015956
             ],
             "window_duration": "10s"
           }

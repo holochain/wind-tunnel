@@ -144,7 +144,7 @@ pub async fn query_custom_data(
     if cfg!(feature = "query_test_data") {
         return crate::frame::parse_time_column(super::test_data::load_query_result(&q).map_err(
             |_| {
-                log::error!("Failed to load test data query result for query: {q:?}");
+                log::debug!("Failed to load test data query result for query: {q:?}");
                 LoadError::NoSeriesInResult {
                     table: metric.to_string(),
                     result: serde_json::Value::Null,
@@ -228,7 +228,7 @@ pub async fn query_metrics(
             // If we cannot load the test data file, we return a NoSeriesInResult error,
             // so that callers behave the same as receiving empty results from an influxdb query.
             super::test_data::load_query_result(&q).map_err(|_| {
-                log::error!("Failed to load test data query result for query: {q:?}");
+                log::debug!("Failed to load test data query result for query: {q:?}");
 
                 LoadError::NoSeriesInResult {
                     table: measurement.to_string(),
@@ -274,33 +274,6 @@ pub async fn query_count(
 ) -> anyhow::Result<usize> {
     let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
     Ok(frame.height())
-}
-
-/// Query the measurement with the filter tag, then partition the data by `partitioning_tags`.
-/// and run [`standard_timing_stats()`] on each partition.
-pub async fn query_and_partition_duration(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    partitioning_tags: &[&str],
-    filter_tag: Option<(&str, &str)>,
-) -> anyhow::Result<BTreeMap<String, StandardTimingsStats>> {
-    if partitioning_tags.is_empty() {
-        return Err(anyhow::anyhow!(
-            "Cannot partition metric {measurement} without partitioning tags"
-        ));
-    }
-    let data = query_metrics(client, summary, measurement, partitioning_tags, filter_tag).await?;
-    let Partition::Partitioned(parts) = partition_by_tags(data, partitioning_tags)? else {
-        return Err(anyhow::anyhow!("No partitions found for {measurement}"));
-    };
-    parts
-        .into_iter()
-        .map(|(tag_combination, frame)| {
-            standard_timing_stats(frame, "value", "10s", None)
-                .map(|analysis| (tag_combination, analysis))
-        })
-        .collect::<Result<BTreeMap<_, _>, _>>()
 }
 
 /// Query the measurement with the filter tag and run `counter_stats()`.
@@ -353,33 +326,6 @@ pub async fn query_gauge(
 ) -> anyhow::Result<GaugeStats> {
     let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
     gauge_stats(frame, "value", window_duration)
-}
-
-/// Query the measurement with the filter tag, then partition the data by `partitioning_tags`
-/// and run `gauge_stats()` on each partition.
-pub async fn query_and_partition_gauge(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    partitioning_tags: &[&str],
-    filter_tag: Option<(&str, &str)>,
-    window_duration: &str,
-) -> anyhow::Result<BTreeMap<String, GaugeStats>> {
-    if partitioning_tags.is_empty() {
-        return Err(anyhow::anyhow!(
-            "Cannot partition metric {measurement} without partitioning tags"
-        ));
-    }
-    let data = query_metrics(client, summary, measurement, partitioning_tags, filter_tag).await?;
-    let Partition::Partitioned(parts) = partition_by_tags(data, partitioning_tags)? else {
-        return Err(anyhow::anyhow!("No partitions found for {measurement}"));
-    };
-    parts
-        .into_iter()
-        .map(|(tag_combination, frame)| {
-            gauge_stats(frame, "value", window_duration).map(|analysis| (tag_combination, analysis))
-        })
-        .collect::<Result<BTreeMap<_, _>, _>>()
 }
 
 /// Query [`DataFrame`] for the given [`HostMetricMeasurement`].

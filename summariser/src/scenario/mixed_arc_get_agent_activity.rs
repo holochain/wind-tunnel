@@ -1,11 +1,15 @@
-use crate::analyze::{partitioned_gauge_stats, partitioned_rate_stats};
-use crate::frame::LoadError;
-use crate::model::{PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats};
+use crate::analyze::{
+    chain_head_stats, partitioned_counter_stats_allow_empty, partitioned_gauge_stats,
+    partitioned_rate_stats, partitioned_timing_stats,
+};
+use crate::model::{
+    ChainHeadStats, PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats,
+    PartitionedTimingStats,
+};
+use crate::query;
 use crate::query::holochain_p2p_metrics::{
     HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
 };
-use crate::{analyze, query};
-use analyze::partitioned_timing_stats;
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -13,14 +17,30 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct MixedArcGetAgentActivitySummary {
-    entry_created_count: PartitionedTimingStats,
-    highest_observed_action_seq: PartitionedRateStats,
+    /// Total entries created by write agents, partitioned by agent and behaviour
+    entry_created_count: PartitionedCounterStats,
+    /// Maximum highest-observed action sequence per write agent, aggregated across all reading agents.
+    ///
+    /// For each write agent, the maximum action sequence seen by any reader is taken (collapsing
+    /// the reader dimension). The resulting per-write-agent maxima are then summarised with
+    /// `mean_max` and `max` across all write agents. Captures how far readers tracked writers'
+    /// chains during the run.
+    highest_observed_action_seq: ChainHeadStats,
+    /// Distribution of wall-clock delay between a new chain head being published and observed
+    /// by a reading agent (seconds); includes DHT propagation time by a reading agent (seconds);
+    /// includes DHT propagation time and any clock skew between writer and reading agent.
     chain_head_delay_timing: PartitionedTimingStats,
+    /// Rate at which new chain head observations are recorded per agent (observations per window)
     chain_head_delay_rate: PartitionedRateStats,
+    /// Duration of `get_agent_activity_full` zome calls per agent (seconds)
     get_agent_activity_full_zome_calls: PartitionedTimingStats,
-    retrieval_errors: PartitionedTimingStats,
+    /// Cumulative count of retrieval errors per agent; empty if no errors occurred
+    retrieval_errors: PartitionedCounterStats,
+    /// Distribution of open DHT connection counts, partitioned by network arc behaviour
     open_connections: PartitionedGaugeStats,
+    /// Number of zome call errors observed during the run
     error_count: usize,
+    /// Holochain p2p network metrics including operation counts for the run
     holochain_p2p_metrics: HolochainP2pMetricsWithCounts,
 }
 
@@ -30,23 +50,22 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
 ) -> anyhow::Result<MixedArcGetAgentActivitySummary> {
     assert_eq!(summary.scenario_name, "mixed_arc_get_agent_activity");
 
-    let entry_created_count = query::query_custom_data(
+    let entry_created_count_result = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.mixed_arc_get_agent_activity_entry_created_count",
+        "wt.custom.entry_created_count",
         &["agent", "behaviour"],
     )
-    .await
-    .context("Load mixed_arc_get_agent_activity_entry_created_count data")?;
+    .await;
 
-    let highest_observed_action_seq = query::query_custom_data(
+    let highest_observed_action_seq_frame = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.mixed_arc_get_agent_activity_highest_observed_action_seq",
-        &["write_agent", "get_agent_activity_agent"],
+        "wt.custom.highest_observed_action_seq",
+        &["write_agent", "agent"],
     )
     .await
-    .context("Load mixed_arc_get_agent_activity_highest_observed_action_seq data")?;
+    .context("Load highest_observed_action_seq data")?;
 
     let get_agent_activity_full_zome_calls =
         query::query_zome_call_instrument_data(client.clone(), &summary)
@@ -59,59 +78,44 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
     let chain_head_delay = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.mixed_arc_get_agent_activity_new_chain_head_delay",
+        "wt.custom.chain_head_delay",
         &["agent"],
     )
     .await
     .context("Load chain head delay data")?;
 
-    let retrieval_errors_count = match query::query_custom_data(
+    let retrieval_errors_frame_result = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.mixed_arc_get_agent_activity_retrieval_error_count",
+        "wt.custom.retrieval_error_count",
         &["agent"],
     )
-    .await
-    .context("Load retrieval errors data")
-    {
-        Ok(df) => partitioned_timing_stats(df, "value", "10s", &["agent"])?,
-        Err(e) => {
-            if let Some(LoadError::NoSeriesInResult { .. }) = e.downcast_ref::<LoadError>() {
-                // It is expected that there often is no error at all so if we find no series, return an empty count
-                PartitionedTimingStats {
-                    mean: 0.0,
-                    mean_std_dev: 0.0,
-                    timings: vec![],
-                }
-            } else {
-                return Err(e);
-            }
-        }
-    };
+    .await;
 
     let open_connections = query::query_custom_data(
         client.clone(),
         &summary,
-        "wt.custom.mixed_arc_get_agent_activity_open_connections",
+        "wt.custom.open_connections",
         &["behaviour"],
     )
     .await
     .context("Load open connections data")?;
 
     Ok(MixedArcGetAgentActivitySummary {
-        entry_created_count: partitioned_timing_stats(
-            entry_created_count,
+        entry_created_count: partitioned_counter_stats_allow_empty(
+            entry_created_count_result,
             "value",
             "10s",
             &["agent", "behaviour"],
-        )?,
-        highest_observed_action_seq: partitioned_rate_stats(
-            highest_observed_action_seq,
-            "value",
-            "10s",
-            &["write_agent", "get_agent_activity_agent"],
         )
-        .context("Highest observed action seq stats")?,
+        .context("Counter stats for entry created count")?,
+        highest_observed_action_seq: chain_head_stats(
+            highest_observed_action_seq_frame,
+            "value",
+            "write_agent",
+            "10s",
+        )
+        .context("Chain head stats for highest_observed_action_seq")?,
         chain_head_delay_timing: partitioned_timing_stats(
             chain_head_delay.clone(),
             "value",
@@ -128,7 +132,13 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
             &["agent"],
         )
         .context("Timing stats for zome call get_agent_activity_full")?,
-        retrieval_errors: retrieval_errors_count,
+        retrieval_errors: partitioned_counter_stats_allow_empty(
+            retrieval_errors_frame_result,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Counter stats for retrieval errors")?,
         open_connections: partitioned_gauge_stats(open_connections, "value", &["behaviour"], "10s")
             .context("Open connections")?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,

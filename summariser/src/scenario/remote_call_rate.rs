@@ -8,9 +8,14 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct RemoteCallRateSummary {
+    /// Distribution of time to dispatch (initiate) a remote call per agent (seconds)
     dispatch_timing: PartitionedTimingStats,
+    /// Distribution of total round-trip durations for remote calls per agent (seconds);
+    /// includes dispatch time plus remote execution and response time
     round_trip_timing: PartitionedTimingStats,
+    /// Number of zome call errors observed during the run
     error_count: usize,
+    /// Holochain p2p network metrics for the run
     holochain_p2p_metrics: HolochainP2pMetrics,
 }
 

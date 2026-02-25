@@ -53,7 +53,7 @@ fn agent_behaviour_zero(
 
     // Report number of timed entries created
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("zero_arc_create_data_validated_entry_created_count")
+    let metric = ReportMetric::new("entry_created_count")
         .with_tag("agent", agent_pub_key)
         .with_tag("arc", "zero")
         .with_field("value", ctx.get().scenario_values.sent_actions_count);
@@ -67,7 +67,7 @@ fn agent_behaviour_zero(
         .executor()
         .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-    let metric = ReportMetric::new("zero_arc_create_data_validated_open_connections")
+    let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "zero")
         .with_field("value", network_stats.connections.len() as u32);
     ctx.runner_context().reporter().clone().add_custom(metric);
@@ -99,7 +99,7 @@ fn agent_behaviour_full(
             .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
             .unwrap();
 
-        let metric = ReportMetric::new("zero_arc_create_data_validated_sync_lag");
+        let metric = ReportMetric::new("sync_lag");
         let now_us = metric
             .timestamp
             .clone()
@@ -121,7 +121,7 @@ fn agent_behaviour_full(
             .insert(new_record.action_address().clone());
     }
 
-    let metric = ReportMetric::new("zero_arc_create_data_validated_recv_count")
+    let metric = ReportMetric::new("recv_count")
         .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
     reporter_handle.add_custom(metric);
@@ -133,7 +133,7 @@ fn agent_behaviour_full(
         .executor()
         .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-    let metric = ReportMetric::new("zero_arc_create_data_validated_open_connections")
+    let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "full")
         .with_field("value", network_stats.connections.len() as u32);
     ctx.runner_context().reporter().clone().add_custom(metric);

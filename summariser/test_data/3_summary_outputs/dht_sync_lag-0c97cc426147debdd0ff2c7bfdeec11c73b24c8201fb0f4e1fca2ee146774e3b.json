@@ -31,83 +31,45 @@
     }
   },
   "scenario_metrics": {
-    "create_rate": {
-      "mean": 0.0,
-      "rates": [
-        {
-          "key": [
-            {
-              "key": "agent",
-              "value": "uhCAkUfGW_QX79TuRNFrAiSqOVIRR239KD1RZpDyYH9gH5NchaeAR"
-            }
-          ],
-          "summary_rate": {
-            "mean": 0.0,
-            "trend": [
-              983,
-              8
-            ],
-            "window_duration": "10s"
-          }
-        }
-      ]
+    "app_validation_workflow_duration": {
+      "mean": 0.00877,
+      "p50": 0.001431,
+      "p95": 0.00895,
+      "p99": 0.011799,
+      "std": 0.20765,
+      "trend": {
+        "trend": [
+          0.000588,
+          0.004154,
+          8.536912,
+          0.015239,
+          0.002441,
+          0.002629
+        ],
+        "window_duration": "10s"
+      }
     },
-    "sync_lag_timing": {
-      "mean": 31.411158,
-      "mean_std_dev": 2.052546,
-      "timings": [
-        {
-          "key": [
-            {
-              "key": "agent",
-              "value": "uhCAkQuP_z1mP3ob-IJkIPImCaSkq4bXpbhhTGLvun0gOIV5lml2j"
-            }
-          ],
-          "summary_timing": {
-            "mean": 31.411158,
-            "std": 2.052546,
-            "within_std": 0.5724,
-            "within_2std": 1.0,
-            "within_3std": 1.0,
-            "trend": {
-              "trend": [
-                28.120339,
-                31.806438
-              ],
-              "window_duration": "10s"
-            }
-          }
-        }
-      ]
+    "authored_db_connection_use_time": {
+      "mean": 0.000112,
+      "p50": 0.000046,
+      "p95": 0.000458,
+      "p99": 0.001476,
+      "std": 0.000239,
+      "trend": {
+        "trend": [
+          0.000111,
+          0.000112
+        ],
+        "window_duration": "10s"
+      }
     },
-    "sync_lag_rate": {
-      "mean": 0.0,
-      "rates": [
-        {
-          "key": [
-            {
-              "key": "agent",
-              "value": "uhCAkQuP_z1mP3ob-IJkIPImCaSkq4bXpbhhTGLvun0gOIV5lml2j"
-            }
-          ],
-          "summary_rate": {
-            "mean": 0.0,
-            "trend": [
-              83,
-              691
-            ],
-            "window_duration": "10s"
-          }
-        }
-      ]
-    },
-    "error_count": 0,
+    "authored_db_utilization": null,
     "cascade_duration": {
       "mean": 0.000133,
+      "p50": 0.000124,
+      "p95": 0.000201,
+      "p99": 0.00025,
       "std": 0.000038,
-      "within_std": 0.8106,
-      "within_2std": 0.9606,
-      "within_3std": 0.9882,
       "trend": {
         "trend": [
           0.000124,
@@ -116,78 +78,181 @@
         "window_duration": "10s"
       }
     },
-    "wasm_usage_total": {
-      "count": 0,
-      "measurement_duration": {
-        "secs": 4,
-        "nanos": 938288765
-      },
-      "mean_rate_per_second": 0.0,
-      "std_rate_per_second": 0.0,
-      "p5_rate_per_second": 0.0,
-      "p95_rate_per_second": 0.0,
-      "peak_rate_per_second": 0.0,
-      "rate_trend": {
-        "trend": [],
-        "window_duration": ""
+    "conductor_db_connection_use_time": {
+      "mean": 0.000037,
+      "p50": 0.000034,
+      "p95": 0.000053,
+      "p99": 0.00007,
+      "std": 0.000013,
+      "trend": {
+        "trend": [
+          0.000047,
+          0.000037,
+          0.000038
+        ],
+        "window_duration": "10s"
       }
     },
-    "wasm_usage_by_fn": {
-      "zome=timed,fn=created_timed_entry": {
-        "count": 0,
-        "measurement_duration": {
-          "secs": 4,
-          "nanos": 28544547
+    "conductor_db_utilization": {
+      "mean": 0.0,
+      "p5": 0.0,
+      "p95": 0.0,
+      "std": 0.0,
+      "trend": {
+        "trend": [
+          0.0
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "countersigning_workflow_duration": null,
+    "create_rate": {
+      "max_mean": 0.0,
+      "mean": 0.0,
+      "min_mean": 0.0,
+      "trend": [
+        983.0,
+        8.0
+      ],
+      "window_duration": "10s"
+    },
+    "delivery_ratio": 0.0,
+    "dht_db_connection_use_time": {
+      "mean": 0.000042,
+      "p50": 0.000016,
+      "p95": 0.000123,
+      "p99": 0.000499,
+      "std": 0.000077,
+      "trend": {
+        "trend": [
+          0.000014,
+          0.000088
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "dht_db_utilization": {
+      "mean": 0.05,
+      "p5": 0.0,
+      "p95": 0.09,
+      "std": 0.05,
+      "trend": {
+        "trend": [
+          0.05
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "error_count": 0,
+    "holochain_p2p_metrics": {
+      "handle_incoming_request_duration": {
+        "get": {
+          "mean": 0.000234,
+          "p50": 0.000205,
+          "p95": 0.000406,
+          "p99": 0.000486,
+          "std": 0.000088,
+          "trend": {
+            "trend": [
+              0.000215,
+              0.000233,
+              0.000247
+            ],
+            "window_duration": "10s"
+          }
         },
-        "mean_rate_per_second": 0.0,
-        "std_rate_per_second": 0.0,
-        "p5_rate_per_second": 0.0,
-        "p95_rate_per_second": 0.0,
-        "peak_rate_per_second": 0.0,
-        "rate_trend": {
-          "trend": [],
-          "window_duration": ""
+        "response": {
+          "mean": 6e-6,
+          "p50": 6e-6,
+          "p95": 9e-6,
+          "p99": 0.000012,
+          "std": 2e-6,
+          "trend": {
+            "trend": [
+              3e-6,
+              6e-6,
+              6e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.018887,
+          "p50": 0.012706,
+          "p95": 0.034871,
+          "p99": 0.085269,
+          "std": 0.062508,
+          "trend": {
+            "trend": [
+              0.003969,
+              0.256339,
+              0.014893,
+              0.013346,
+              0.018063
+            ],
+            "window_duration": "10s"
+          }
         }
       },
-      "zome=timed,fn=get_timed_entries_local": {
-        "count": 0,
-        "measurement_duration": {
-          "secs": 4,
-          "nanos": 16471389
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000458,
+          "p50": 0.000422,
+          "p95": 0.000736,
+          "p99": 0.000909,
+          "std": 0.000169,
+          "trend": {
+            "trend": [
+              0.000424,
+              0.000452,
+              0.000486
+            ],
+            "window_duration": "10s"
+          }
         },
-        "mean_rate_per_second": 0.0,
-        "std_rate_per_second": 0.0,
-        "p5_rate_per_second": 0.0,
-        "p95_rate_per_second": 0.0,
-        "peak_rate_per_second": 0.0,
-        "rate_trend": {
-          "trend": [],
-          "window_duration": ""
+        "send_validation_receipts": {
+          "mean": 0.019213,
+          "p50": 0.013047,
+          "p95": 0.035148,
+          "p99": 0.085934,
+          "std": 0.06264,
+          "trend": {
+            "trend": [
+              0.004136,
+              0.257266,
+              0.015212,
+              0.01366,
+              0.018385
+            ],
+            "window_duration": "10s"
+          }
         }
-      },
-      "zome=timed_integrity,fn=entry_defs": {
-        "count": 0,
-        "measurement_duration": {
-          "secs": 4,
-          "nanos": 938288765
-        },
-        "mean_rate_per_second": 0.0,
-        "std_rate_per_second": 0.0,
-        "p5_rate_per_second": 0.0,
-        "p95_rate_per_second": 0.0,
-        "peak_rate_per_second": 0.0,
-        "rate_trend": {
-          "trend": [],
-          "window_duration": ""
-        }
+      }
+    },
+    "integrate_dht_ops_workflow_duration": {
+      "mean": 0.001103,
+      "p50": 0.000462,
+      "p95": 0.005958,
+      "p99": 0.011633,
+      "std": 0.002251,
+      "trend": {
+        "trend": [
+          0.000397,
+          0.000936,
+          0.001477,
+          0.001034
+        ],
+        "window_duration": "10s"
       }
     },
     "post_commit_duration": {
       "mean": 0.000055,
+      "p50": 0.000051,
+      "p95": 0.00008,
+      "p99": 0.000121,
       "std": 0.000019,
-      "within_std": 0.8857,
-      "within_2std": 0.9768,
-      "within_3std": 0.9864,
       "trend": {
         "trend": [
           0.000049,
@@ -202,10 +267,10 @@
     },
     "publish_dht_ops_workflow_duration": {
       "mean": 0.023667,
+      "p50": 0.017068,
+      "p95": 0.059396,
+      "p99": 0.068675,
       "std": 0.018946,
-      "within_std": 0.6351,
-      "within_2std": 0.9668,
-      "within_3std": 0.9996,
       "trend": {
         "trend": [
           0.000772,
@@ -219,74 +284,53 @@
         "window_duration": "10s"
       }
     },
-    "integrate_dht_ops_workflow_duration": {
-      "mean": 0.001103,
-      "std": 0.002251,
-      "within_std": 0.9078,
-      "within_2std": 0.9468,
-      "within_3std": 0.9644,
-      "trend": {
-        "trend": [
-          0.000397,
-          0.000936,
-          0.001477,
-          0.001034
-        ],
-        "window_duration": "10s"
-      }
+    "recv_count": {
+      "max_per_partition": 0,
+      "mean_count": 0,
+      "min_per_partition": 0,
+      "partition_count": 0,
+      "partitions_above_zero": 0,
+      "total_count": 0,
+      "trend": [],
+      "window_duration": "10s"
     },
-    "countersigning_workflow_duration": {
-      "agent=AgentPubKey(uhCAkQuP_z1mP3ob-IJkIPImCaSkq4bXpbhhTGLvun0gOIV5lml2j)": {
-        "mean": 0.000448,
-        "std": 0.0,
-        "within_std": 1.0,
-        "within_2std": 1.0,
-        "within_3std": 1.0,
-        "trend": {
-          "trend": [
-            0.000448
-          ],
-          "window_duration": "10s"
-        }
-      },
-      "agent=AgentPubKey(uhCAkUfGW_QX79TuRNFrAiSqOVIRR239KD1RZpDyYH9gH5NchaeAR)": {
-        "mean": 0.000296,
-        "std": 0.0,
-        "within_std": 1.0,
-        "within_2std": 1.0,
-        "within_3std": 1.0,
-        "trend": {
-          "trend": [
-            0.000296
-          ],
-          "window_duration": "10s"
-        }
-      }
+    "sent_count": {
+      "max_per_partition": 0,
+      "mean_count": 0,
+      "min_per_partition": 0,
+      "partition_count": 0,
+      "partitions_above_zero": 0,
+      "total_count": 0,
+      "trend": [],
+      "window_duration": "10s"
     },
-    "app_validation_workflow_duration": {
-      "mean": 0.00877,
-      "std": 0.20765,
-      "within_std": 0.9987,
-      "within_2std": 0.9987,
-      "within_3std": 0.9987,
-      "trend": {
-        "trend": [
-          0.000588,
-          0.004154,
-          8.536912,
-          0.015239,
-          0.002441,
-          0.002629
-        ],
-        "window_duration": "10s"
-      }
+    "sync_lag_rate": {
+      "max_mean": 0.0,
+      "mean": 0.0,
+      "min_mean": 0.0,
+      "trend": [
+        83.0,
+        691.0
+      ],
+      "window_duration": "10s"
+    },
+    "sync_lag_timing": {
+      "max_mean": 31.411158,
+      "mean": 31.411158,
+      "mean_std_dev": 2.052546,
+      "min_mean": 31.411158,
+      "trend": [
+        28.120339,
+        31.806438
+      ],
+      "window_duration": "10s"
     },
     "system_validation_workflow_duration": {
       "mean": 0.0085,
+      "p50": 0.002188,
+      "p95": 0.019052,
+      "p99": 0.030264,
       "std": 0.170857,
-      "within_std": 0.9991,
-      "within_2std": 0.9994,
-      "within_3std": 0.9997,
       "trend": {
         "trend": [
           0.000505,
@@ -302,10 +346,10 @@
     },
     "validation_receipt_workflow_duration": {
       "mean": 0.013098,
+      "p50": 0.005537,
+      "p95": 0.034611,
+      "p99": 0.057446,
       "std": 0.134151,
-      "within_std": 0.9976,
-      "within_2std": 0.9978,
-      "within_3std": 0.9978,
       "trend": {
         "trend": [
           0.000344,
@@ -319,173 +363,71 @@
         "window_duration": "10s"
       }
     },
-    "authored_db_utilization": {
-      "id=\\\"_0.dna_hash()\\\"-\\\"_0.agent_pubkey()\\\"": {
-        "mean": 0.05,
-        "std": 0.02,
-        "p5": 0.03,
-        "p95": 0.06,
-        "trend": {
-          "trend": [
-            0.05
-          ],
-          "window_duration": "10s"
-        }
-      }
-    },
-    "authored_db_connection_use_time": {
-      "mean": 0.000112,
-      "std": 0.000239,
-      "within_std": 0.9444,
-      "within_2std": 0.9568,
-      "within_3std": 0.9722,
-      "trend": {
-        "trend": [
-          0.000111,
-          0.000112
-        ],
-        "window_duration": "10s"
-      }
-    },
-    "conductor_db_utilization": {
-      "mean": 0.0,
-      "std": 0.0,
-      "p5": 0.0,
-      "p95": 0.0,
-      "trend": {
-        "trend": [
-          0.0
-        ],
-        "window_duration": "10s"
-      }
-    },
-    "conductor_db_connection_use_time": {
-      "mean": 0.000037,
-      "std": 0.000013,
-      "within_std": 0.9164,
-      "within_2std": 0.9798,
-      "within_3std": 0.9926,
-      "trend": {
-        "trend": [
-          0.000047,
-          0.000037,
-          0.000038
-        ],
-        "window_duration": "10s"
-      }
-    },
-    "dht_db_utilization": {
-      "mean": 0.05,
-      "std": 0.05,
-      "p5": 0.0,
-      "p95": 0.09,
-      "trend": {
-        "trend": [
-          0.05
-        ],
-        "window_duration": "10s"
-      }
-    },
-    "dht_db_connection_use_time": {
-      "mean": 0.000042,
-      "std": 0.000077,
-      "within_std": 0.9468,
-      "within_2std": 0.9712,
-      "within_3std": 0.9768,
-      "trend": {
-        "trend": [
-          0.000014,
-          0.000088
-        ],
-        "window_duration": "10s"
-      }
-    },
-    "holochain_p2p_metrics": {
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000458,
-          "std": 0.000169,
-          "within_std": 0.8496,
-          "within_2std": 0.9646,
-          "within_3std": 0.9912,
-          "trend": {
-            "trend": [
-              0.000424,
-              0.000452,
-              0.000486
-            ],
-            "window_duration": "10s"
-          }
+    "wasm_usage_by_fn": {
+      "zome=timed,fn=created_timed_entry": {
+        "count": 0,
+        "mean_rate_per_second": 0.0,
+        "measurement_duration": {
+          "nanos": 28544547,
+          "secs": 4
         },
-        "send_validation_receipts": {
-          "mean": 0.019213,
-          "std": 0.06264,
-          "within_std": 0.9892,
-          "within_2std": 0.9938,
-          "within_3std": 0.9938,
-          "trend": {
-            "trend": [
-              0.004136,
-              0.257266,
-              0.015212,
-              0.01366,
-              0.018385
-            ],
-            "window_duration": "10s"
-          }
-        }
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        },
+        "std_rate_per_second": 0.0
       },
-      "handle_incoming_request_duration": {
-        "response": {
-          "mean": 6e-6,
-          "std": 2e-6,
-          "within_std": 0.7087,
-          "within_2std": 0.9619,
-          "within_3std": 0.9869,
-          "trend": {
-            "trend": [
-              3e-6,
-              6e-6,
-              6e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          }
+      "zome=timed,fn=get_timed_entries_local": {
+        "count": 0,
+        "mean_rate_per_second": 0.0,
+        "measurement_duration": {
+          "nanos": 16471389,
+          "secs": 4
         },
-        "get": {
-          "mean": 0.000234,
-          "std": 0.000088,
-          "within_std": 0.7257,
-          "within_2std": 0.9558,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              0.000215,
-              0.000233,
-              0.000247
-            ],
-            "window_duration": "10s"
-          }
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
         },
-        "send_validation_receipts": {
-          "mean": 0.018887,
-          "std": 0.062508,
-          "within_std": 0.9892,
-          "within_2std": 0.9938,
-          "within_3std": 0.9938,
-          "trend": {
-            "trend": [
-              0.003969,
-              0.256339,
-              0.014893,
-              0.013346,
-              0.018063
-            ],
-            "window_duration": "10s"
-          }
-        }
+        "std_rate_per_second": 0.0
+      },
+      "zome=timed_integrity,fn=entry_defs": {
+        "count": 0,
+        "mean_rate_per_second": 0.0,
+        "measurement_duration": {
+          "nanos": 938288765,
+          "secs": 4
+        },
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        },
+        "std_rate_per_second": 0.0
       }
+    },
+    "wasm_usage_total": {
+      "count": 0,
+      "mean_rate_per_second": 0.0,
+      "measurement_duration": {
+        "nanos": 938288765,
+        "secs": 4
+      },
+      "p5_rate_per_second": 0.0,
+      "p95_rate_per_second": 0.0,
+      "peak_rate_per_second": 0.0,
+      "rate_trend": {
+        "trend": [],
+        "window_duration": ""
+      },
+      "std_rate_per_second": 0.0
     }
   },
   "host_metrics": {

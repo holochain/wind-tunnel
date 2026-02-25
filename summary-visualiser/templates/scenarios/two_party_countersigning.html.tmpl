@@ -23,10 +23,20 @@
         ) }}
 
         {{ template "scenario_metric" (dict
-            "name" "Session accepted -- failure rate"
-            "description" "The number of accepted sessions that failed per second."
-            "content" (tmpl.Exec "rates_overall_and_per_agent" .accepted_failure_rate)
+            "name" "Session accepted -- success ratio"
+            "description" "Fraction of accepted sessions that completed successfully (0–1)."
+            "content" (tmpl.Exec "scalar" (dict "value" .accepted_success_ratio))
         ) }}
+
+        {{ with .accepted_failure_count }}
+            {{ if gt .total_count 0 }}
+                {{ template "scenario_metric" (dict
+                    "name" "Session accepted -- failures"
+                    "description" "Accepted sessions that failed to complete."
+                    "content" (tmpl.Exec "partitioned_counter_stats" .)
+                ) }}
+            {{ end }}
+        {{ end }}
 
         {{ template "scenario_metric" (dict
             "name" "Session initiated -- timing"
@@ -41,10 +51,20 @@
         ) }}
 
         {{ template "scenario_metric" (dict
-            "name" "Session initiated -- failure rate"
-            "description" "The number of initiated sessions that failed per second."
-            "content" (tmpl.Exec "rates_overall_and_per_agent" .initiated_failure_rate)
+            "name" "Session initiated -- success ratio"
+            "description" "Fraction of initiated sessions that completed successfully (0–1)."
+            "content" (tmpl.Exec "scalar" (dict "value" .initiated_success_ratio))
         ) }}
+
+        {{ with .initiated_failure_count }}
+            {{ if gt .total_count 0 }}
+                {{ template "scenario_metric" (dict
+                    "name" "Session initiated -- failures"
+                    "description" "Initiated sessions that failed to complete."
+                    "content" (tmpl.Exec "partitioned_counter_stats" .)
+                ) }}
+            {{ end }}
+        {{ end }}
 
         {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}

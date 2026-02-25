@@ -5,17 +5,12 @@ use sha3::Digest;
 
 #[cfg(feature = "test_data")]
 pub fn insert_run_summary(summary: &wind_tunnel_summary_model::RunSummary) -> anyhow::Result<()> {
-    let out_file = match open_output_path(
+    let out_file = open_output_path(
         "1_run_summaries",
         &file_name_from_run_summary(summary),
-        false,
-    )? {
-        Some(f) => f,
-        None => {
-            log::info!("Not creating run summary file as it already exists");
-            return Ok(());
-        }
-    };
+        true,
+    )?
+    .expect("Cannot fail to update when overwriting");
 
     log::debug!("Writing run summary to {out_file:?}");
 

@@ -9,8 +9,11 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SingleWriteManyReadSummary {
+    /// Duration of `get_sample_entry` zome calls made by read agents (seconds)
     read_call: StandardTimingsStats,
-    rate_10s: StandardRateStats,
+    /// Rate of `get_sample_entry` zome calls per 10-second window
+    read_rate: StandardRateStats,
+    /// Number of zome call errors observed during the run
     error_count: usize,
 }
 
@@ -43,7 +46,7 @@ pub(crate) async fn summarize_single_write_many_read(
 
     Ok(SingleWriteManyReadSummary {
         read_call: standard_timing_stats(zome_calls.clone(), "value", "10s", None)?,
-        rate_10s: standard_rate(zome_calls, "value", "10s")?,
+        read_rate: standard_rate(zome_calls, "value", "10s")?,
         error_count,
     })
 }

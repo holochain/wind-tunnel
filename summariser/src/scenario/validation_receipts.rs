@@ -9,9 +9,13 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ValidationReceiptsSummary {
+    /// Time for all validation receipts to be collected per agent and op_type (seconds)
     receipts_complete_timing: PartitionedTimingStats,
+    /// Rate at which validation receipt completion events are recorded per agent and op_type (events per window)
     receipts_complete_rate: PartitionedRateStats,
+    /// Number of zome call errors observed during the run
     error_count: usize,
+    /// Holochain p2p network metrics for the run
     holochain_p2p_metrics: HolochainP2pMetrics,
 }
 

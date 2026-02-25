@@ -7,6 +7,10 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct FirstCallSummary {
+    /// First zome call to a newly installed app, in seconds.
+    ///
+    /// Note that the app is uninstalled and re-installed between each call - so that each call is
+    /// supposed to measure a cold start of the WASM and force it to be compiled and loaded.
     zome_call_timing: StandardTimingsStats,
 }
 

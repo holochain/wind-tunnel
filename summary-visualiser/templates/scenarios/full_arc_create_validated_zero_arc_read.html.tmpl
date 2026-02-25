@@ -13,14 +13,55 @@
     "data" .run_summary
 ) }}
 
-{{ define "full_arc_create_validated_zero_arc_read_extra_metrics" }}
+{{ define "full_arc_create_validated_zero_arc_read_open_connections" }}
+    {{ range . }}
+        {{ $key := (index .key 0) }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (print $key.value "-" $key.key)
+            "content" (tmpl.Exec "min_max_mean_std" .gauge_stats)
+        ) }}
+    {{ end }}
+{{ end }}
+
+<div class="scenario-metrics">
     {{ with .scenario_metrics }}
-        {{ with .retrieval_errors }}
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Create rate"
+            "description" "The number of timed entries created by the full-arc node(s) per second."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .create_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Fetch lag timing"
+            "description" "For each entry, the time lag between when it was created by a full-arc node and when a zero-arc node fetched it from the network."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .fetch_lag_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Fetch rate"
+            "description" "The number of entries per second fetched by zero-arc nodes."
+            "content" (tmpl.Exec "rates_overall_and_per_agent" .fetch_rate)
+        ) }}
+
+        {{ with .open_connections.partitions }}
             {{ template "scenario_metric" (dict
-                "name" "Retrieval errors"
-                "description" "Statistics on errors encountered by zero-arc nodes when attempting to retrieve entries created by full-arc nodes."
-                "content" (tmpl.Exec "min_max_mean_std" .)
+                "name" "Open connections"
+                "description" "The number of currently open connections to other conductors."
+                "content" (tmpl.Exec "full_arc_create_validated_zero_arc_read_open_connections" .)
             ) }}
+        {{ end }}
+
+        {{ with .retrieval_errors }}
+            {{ if gt .total_count 0 }}
+                {{ template "scenario_metric" (dict
+                    "name" "Retrieval errors"
+                    "description" "Errors encountered by zero-arc nodes when attempting to retrieve entries created by full-arc nodes."
+                    "content" (tmpl.Exec "partitioned_counter_stats" .)
+                ) }}
+            {{ end }}
         {{ end }}
 
         {{ with .app_validation_workflow_duration }}
@@ -38,11 +79,15 @@
                 "content" (tmpl.Exec "timing_and_trend" .)
             ) }}
         {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The number of errors accumulated across all nodes."
+            "content" (tmpl.Exec "scalar" (dict
+                "value" .error_count
+            ))
+        ) }}
+
+        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
-{{ end }}
-
-{{ template "zero_arc_shared" (merge
-    (dict "extra_metrics" (tmpl.Exec "full_arc_create_validated_zero_arc_read_extra_metrics" .))
-    .
-) }}
-
+</div>

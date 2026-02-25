@@ -79,7 +79,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_entry_created_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.entry_created_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,
@@ -163,7 +163,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_new_chain_head_delay\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.chain_head_delay\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -248,7 +248,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"zero_write\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"zero_write\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -333,7 +333,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"full_write\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"full_write\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -423,7 +423,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_highest_observed_action_seq\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.highest_observed_action_seq\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")"
             }
           ],
           "shade": true,
@@ -594,7 +594,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"zero_read\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"behaviour\"] == \"zero_read\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -680,7 +680,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.mixed_arc_get_agent_activity_retrieval_error_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.retrieval_error_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"mixed_arc_get_agent_activity\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,

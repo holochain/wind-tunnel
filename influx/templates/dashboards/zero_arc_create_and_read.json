@@ -74,7 +74,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.fetch_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -156,7 +156,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_entry_created_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.entry_created_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,
@@ -239,7 +239,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"arc\"] == \"full\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"arc\"] == \"full\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -324,7 +324,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> yield(name: \"max\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.fetch_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> yield(name: \"max\")"
             }
           ],
           "shade": true,
@@ -407,7 +407,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_recv_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.recv_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,
@@ -493,7 +493,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.zero_arc_create_and_read_open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"arc\"] == \"zero\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.open_connections\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"zero_arc_create_and_read\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> filter(fn: (r) => r[\"arc\"] == \"zero\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,

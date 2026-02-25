@@ -9,8 +9,15 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct WriteQuerySummary {
+    /// Duration of `create_sample_entry` zome calls (seconds)
     write_timing: StandardTimingsStats,
+    /// Rate of `create_sample_entry` zome calls per 10-second window
     write_rate: StandardRateStats,
+    /// Duration of `chain_query_count_len` zome calls (seconds)
+    query_timing: StandardTimingsStats,
+    /// Rate of `chain_query_count_len` zome calls per 10-second window
+    query_rate: StandardRateStats,
+    /// Number of zome call errors observed during the run
     errors: usize,
 }
 
@@ -24,16 +31,24 @@ pub(crate) async fn summarize_write_query(
         .await
         .context("Load zome call data")?;
 
-    let zome_calls = zome_calls
+    let create_zome_calls = zome_calls
         .clone()
         .lazy()
         .filter(col("fn_name").eq(lit("create_sample_entry")))
         .collect()?;
 
+    let query_zome_calls = zome_calls
+        .lazy()
+        .filter(col("fn_name").eq(lit("chain_query_count_len")))
+        .collect()?;
+
     Ok(WriteQuerySummary {
-        write_timing: standard_timing_stats(zome_calls.clone(), "value", "10s", None)
+        write_timing: standard_timing_stats(create_zome_calls.clone(), "value", "10s", None)
             .context("Write timing stats")?,
-        write_rate: standard_rate(zome_calls, "value", "10s").context("Write rate")?,
+        write_rate: standard_rate(create_zome_calls, "value", "10s").context("Write rate")?,
+        query_timing: standard_timing_stats(query_zome_calls.clone(), "value", "10s", None)
+            .context("Query timing stats")?,
+        query_rate: standard_rate(query_zome_calls, "value", "10s").context("Query rate")?,
         errors: zome_call_error_count(client, &summary)
             .await
             .context("Load zome call error data")?,

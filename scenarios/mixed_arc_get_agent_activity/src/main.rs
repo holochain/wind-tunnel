@@ -70,7 +70,7 @@ fn record_open_connections_if_necessary(
             .executor()
             .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-        let metric = ReportMetric::new("mixed_arc_get_agent_activity_open_connections")
+        let metric = ReportMetric::new("open_connections")
             .with_tag("behaviour", ctx.assigned_behaviour().to_string())
             .with_field("value", network_stats.connections.len() as u32);
         ctx.runner_context().reporter().clone().add_custom(metric);
@@ -96,7 +96,7 @@ fn agent_behaviour_write(
     ctx.get_mut().scenario_values.entries_created_count += 1;
 
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("mixed_arc_get_agent_activity_entry_created_count")
+    let metric = ReportMetric::new("entry_created_count")
         .with_tag("agent", agent_pub_key)
         .with_tag("behaviour", ctx.assigned_behaviour().to_string())
         .with_field("value", ctx.get().scenario_values.entries_created_count);
@@ -143,18 +143,16 @@ fn agent_behaviour_get_agent_activity(
                         (now as f64 - previous_observed_chain_head.timestamp_micros as f64) / 1e6;
                     let time_delta_per_action_sequence_s = time_delta_s / n_jump as f64;
                     reporter.add_custom(
-                        ReportMetric::new("mixed_arc_get_agent_activity_new_chain_head_delay")
+                        ReportMetric::new("chain_head_delay")
                             .with_tag("agent", agent_pub_key.clone())
                             .with_field("value", time_delta_per_action_sequence_s),
                     );
 
                     reporter.add_custom(
-                        ReportMetric::new(
-                            "mixed_arc_get_agent_activity_highest_observed_action_seq",
-                        )
-                        .with_tag("get_agent_activity_agent", agent_pub_key)
-                        .with_tag("write_agent", write_peer.to_string())
-                        .with_field("value", highest_observed),
+                        ReportMetric::new("highest_observed_action_seq")
+                            .with_tag("agent", agent_pub_key)
+                            .with_tag("write_agent", write_peer.to_string())
+                            .with_field("value", highest_observed),
                     );
 
                     // Set new observed chain head
@@ -165,10 +163,9 @@ fn agent_behaviour_get_agent_activity(
                 }
             } else {
                 ctx.get_mut().scenario_values.retrieval_errors_count += 1;
-                let metric =
-                    ReportMetric::new("mixed_arc_get_agent_activity_retrieval_error_count")
-                        .with_tag("agent", agent_pub_key.clone())
-                        .with_field("value", ctx.get().scenario_values.retrieval_errors_count);
+                let metric = ReportMetric::new("retrieval_error_count")
+                    .with_tag("agent", agent_pub_key.clone())
+                    .with_field("value", ctx.get().scenario_values.retrieval_errors_count);
                 reporter.add_custom(metric);
             }
         }
@@ -195,6 +192,7 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .with_default_duration_s(60)
+    .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("zero_read", agent_behaviour_get_agent_activity)
     .use_named_agent_behaviour("zero_write", agent_behaviour_write)

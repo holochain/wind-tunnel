@@ -1,10 +1,7 @@
 use crate::frame::LoadError;
 use crate::model::{CounterStats, GaugeStats, HolochainWorkflowKind};
 use crate::model::{HolochainDatabaseKind, StandardTimingsStats};
-use crate::query::{
-    query_and_partition_counter, query_and_partition_duration, query_and_partition_gauge,
-    query_counter, query_duration, query_gauge,
-};
+use crate::query::{query_and_partition_counter, query_counter, query_duration, query_gauge};
 use anyhow::Context;
 use std::collections::BTreeMap;
 use wind_tunnel_summary_model::RunSummary;
@@ -96,30 +93,6 @@ pub async fn query_workflow_duration(
     }
 }
 
-/// Query `hc.conductor.workflow.duration` metric for a specific workflow,
-/// partition the results by `agent` and compute stats per partition.
-pub async fn query_workflow_duration_by_agent(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    workflow: HolochainWorkflowKind,
-) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
-    match query_and_partition_duration(
-        client,
-        summary,
-        "hc.conductor.workflow.duration.s",
-        &["agent"],
-        Some(("workflow", workflow.to_string().as_str())),
-    )
-    .await
-    {
-        Ok(res) => Ok(Some(res)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e).context("query workflow duration by agent"),
-        },
-    }
-}
-
 /// Query `hc.db.pool.utilization` metric for a specific database kind and compute its stats.
 pub async fn query_database_utilization(
     client: &influxdb::Client,
@@ -139,31 +112,6 @@ pub async fn query_database_utilization(
         Err(e) => match e.downcast_ref::<LoadError>() {
             Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
             None => Err(e).context("query database utilization"),
-        },
-    }
-}
-
-/// Query `hc.db.pool.utilization` metric for a specific database kind,
-/// partition the results by `id` and compute stats per partition.
-pub async fn query_database_utilization_by_id(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    kind: HolochainDatabaseKind,
-) -> anyhow::Result<Option<BTreeMap<String, GaugeStats>>> {
-    match query_and_partition_gauge(
-        client,
-        summary,
-        "hc.db.pool.utilization",
-        &["id"],
-        Some(("kind", kind.to_string().as_str())),
-        "10s",
-    )
-    .await
-    {
-        Ok(res) => Ok(Some(res)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e).context("query database utilization by id"),
         },
     }
 }

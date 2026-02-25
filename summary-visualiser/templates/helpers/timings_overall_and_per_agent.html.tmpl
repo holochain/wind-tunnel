@@ -1,15 +1,38 @@
 {{/*
-Render a summary of overall timings and per-agent timings.
-Corresponding Rust type: `holochain_metrics::PartitionedTimingStats`
-*/}}
-{{ define "timings_overall_template" }}
-    {{ template "mean_std" (dict "mean" .mean "std" .mean_std_dev (default "s" (index $ "unit"))) }}
-{{ end }}
+Render aggregate timing statistics across partitions.
+Corresponding Rust type: `PartitionedTimingStats`
+Fields: `mean`, `mean_std_dev`, `max_mean`, `min_mean` (seconds), `trend`, `window_duration`
 
-{{ template "overall_and_per_agent" (dict
-    "overall_data" .
-    "overall_template" "timings_overall_template"
-    "per_agent_data" .timings
-    "per_agent_data_key" "summary_timing"
-    "per_agent_template" "timing_and_trend"
-) }}
+Note: `mean_std_dev` is the average of per-partition standard deviations,
+not the std of the combined distribution.
+
+`mean` and `mean_std_dev` are null when no data was collected (empty frame),
+in which case "N/A" is displayed.
+*/}}
+{{ if ne (index . "mean") nil }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Mean"
+        "content" (tmpl.Exec "mean_std" (dict "mean" .mean "std" .mean_std_dev "unit" "s"))
+    ) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Max"
+        "description" "Highest per-partition mean latency"
+        "content" (tmpl.Exec "scalar" (dict "label" "max mean " "value" .max_mean "unit" "s"))
+    ) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Min"
+        "description" "Lowest per-partition mean latency"
+        "content" (tmpl.Exec "scalar" (dict "label" "min mean " "value" .min_mean "unit" "s"))
+    ) }}
+    {{ template "trend_graph" (dict
+        "data" .trend
+        "mean" .mean
+        "window_duration" .window_duration
+        "unit" "s"
+    ) }}
+{{ else }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Mean"
+        "content" "<span class=\"no-data\">N/A</span>"
+    ) }}
+{{ end }}
