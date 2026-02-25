@@ -115,3 +115,8 @@ Go templates and shell scripts — not a Rust crate. Renders the JSON summary ou
 - Where interpreting the meaning of summary statistics requires some care, this must also be documented. For example, the `mean_time_above_80_percent_s` field which is *only* calculated for hosts that spent some amount of time above 80% usage.
 - Common functions for computing summary statistics from data frames should have their behavior and re-usability clearly documented so that they can be appropriately applied.
 - Backwards compatibility is not required to be maintained. If the source data changes, or a change is planned to the output summary statistics, then make the change directly without compatibility in mind.
+- Changes to queries that result in empty values in summary outputs for test data are not acceptable because the tests aren't exercising the code properly in that case. The user must be informed to re-generate test data when this happens.
+
+## Code Hygiene
+
+- Generated Rust and TOML must always be properly formatted, if you're not sure then run `cargo fmt` or `taplo format` on the relevant files.
