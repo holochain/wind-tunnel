@@ -31,6 +31,59 @@
     }
   },
   "scenario_metrics": {
+    "write_validated_must_get_agent_activity_chain_len": {
+      "count": 99,
+      "measurement_duration": {
+        "secs": 33,
+        "nanos": 637196949
+      },
+      "mean_rate_per_second": 4.86,
+      "std_rate_per_second": 3.83,
+      "p5_rate_per_second": 2.16,
+      "p95_rate_per_second": 10.86,
+      "peak_rate_per_second": 10.86,
+      "rate_trend": {
+        "trend": [
+          10.86,
+          7.33,
+          2.17,
+          2.16,
+          2.2
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "chain_batch_delay_timing": {
+      "mean": 2.5379,
+      "mean_std_dev": 4.053545,
+      "timings": [
+        {
+          "key": [
+            {
+              "key": "must_get_agent_activity_agent",
+              "value": "uhCAkLDPLy8kuE0OeVdmLbEHvTR2v2vc30FNQC5PqWYpTPCAmPAsI"
+            }
+          ],
+          "summary_timing": {
+            "mean": 2.5379,
+            "std": 4.053545,
+            "within_std": 0.8,
+            "within_2std": 0.9,
+            "within_3std": 1.0,
+            "trend": {
+              "trend": [
+                10.1025,
+                1.443667,
+                0.1545,
+                0.1925,
+                0.149
+              ],
+              "window_duration": "10s"
+            }
+          }
+        }
+      ]
+    },
     "chain_batch_delay_rate": {
       "mean": 2.33,
       "rates": [
@@ -55,37 +108,6 @@
         }
       ]
     },
-    "chain_batch_delay_timing": {
-      "mean": 2.5379,
-      "mean_std_dev": 4.053545,
-      "timings": [
-        {
-          "key": [
-            {
-              "key": "must_get_agent_activity_agent",
-              "value": "uhCAkLDPLy8kuE0OeVdmLbEHvTR2v2vc30FNQC5PqWYpTPCAmPAsI"
-            }
-          ],
-          "summary_timing": {
-            "mean": 2.5379,
-            "std": 4.053545,
-            "trend": {
-              "trend": [
-                10.1025,
-                1.443667,
-                0.1545,
-                0.1925,
-                0.149
-              ],
-              "window_duration": "10s"
-            },
-            "within_2std": 0.9,
-            "within_3std": 1.0,
-            "within_std": 0.8
-          }
-        }
-      ]
-    },
     "create_validated_sample_entry_zome_calls": {
       "mean": 0.01046,
       "mean_std_dev": 0.000962,
@@ -100,6 +122,9 @@
           "summary_timing": {
             "mean": 0.01046,
             "std": 0.000962,
+            "within_std": 0.6,
+            "within_2std": 0.9,
+            "within_3std": 1.0,
             "trend": {
               "trend": [
                 0.009866,
@@ -109,74 +134,25 @@
                 0.011209
               ],
               "window_duration": "10s"
-            },
-            "within_2std": 0.9,
-            "within_3std": 1.0,
-            "within_std": 0.6
+            }
           }
         }
       ]
     },
+    "retrieval_errors": {
+      "mean": 0.0,
+      "mean_std_dev": 0.0,
+      "timings": []
+    },
     "error_count": 238,
     "holochain_p2p_metrics": {
-      "handle_incoming_request_duration": {
-        "get": {
-          "mean": 0.000123,
-          "std": 0.000042,
-          "trend": {
-            "trend": [
-              0.000209,
-              0.000119,
-              0.000108,
-              0.000098
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.8571,
-          "within_3std": 1.0,
-          "within_std": 0.7857
-        },
-        "response": {
-          "mean": 4e-6,
-          "std": 1e-6,
-          "trend": {
-            "trend": [
-              4e-6,
-              4e-6,
-              4e-6,
-              4e-6,
-              4e-6,
-              4e-6
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.9386,
-          "within_3std": 0.9825,
-          "within_std": 0.7456
-        },
-        "send_validation_receipts": {
-          "mean": 0.000663,
-          "std": 0.001235,
-          "trend": {
-            "trend": [
-              0.00028,
-              0.001115,
-              0.000493,
-              0.000594,
-              0.000557,
-              0.001087
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.97,
-          "within_3std": 0.98,
-          "within_std": 0.9
-        }
-      },
       "request_roundtrip_duration": {
         "get": {
           "mean": 0.000282,
           "std": 0.000049,
+          "within_std": 0.5714,
+          "within_2std": 1.0,
+          "within_3std": 1.0,
           "trend": {
             "trend": [
               0.000361,
@@ -185,14 +161,14 @@
               0.000238
             ],
             "window_duration": "10s"
-          },
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "within_std": 0.5714
+          }
         },
         "send_validation_receipts": {
           "mean": 0.000847,
           "std": 0.001274,
+          "within_std": 0.9,
+          "within_2std": 0.97,
+          "within_3std": 0.98,
           "trend": {
             "trend": [
               0.000454,
@@ -203,39 +179,63 @@
               0.001278
             ],
             "window_duration": "10s"
-          },
+          }
+        }
+      },
+      "handle_incoming_request_duration": {
+        "response": {
+          "mean": 4e-6,
+          "std": 1e-6,
+          "within_std": 0.7456,
+          "within_2std": 0.9386,
+          "within_3std": 0.9825,
+          "trend": {
+            "trend": [
+              4e-6,
+              4e-6,
+              4e-6,
+              4e-6,
+              4e-6,
+              4e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.000123,
+          "std": 0.000042,
+          "within_std": 0.7857,
+          "within_2std": 0.8571,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              0.000209,
+              0.000119,
+              0.000108,
+              0.000098
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.000663,
+          "std": 0.001235,
+          "within_std": 0.9,
           "within_2std": 0.97,
           "within_3std": 0.98,
-          "within_std": 0.9
+          "trend": {
+            "trend": [
+              0.00028,
+              0.001115,
+              0.000493,
+              0.000594,
+              0.000557,
+              0.001087
+            ],
+            "window_duration": "10s"
+          }
         }
       }
-    },
-    "retrieval_errors": {
-      "mean": 0.0,
-      "mean_std_dev": 0.0,
-      "timings": []
-    },
-    "write_validated_must_get_agent_activity_chain_len": {
-      "count": 99,
-      "mean_rate_per_second": 4.86,
-      "measurement_duration": {
-        "nanos": 637196949,
-        "secs": 33
-      },
-      "p5_rate_per_second": 2.16,
-      "p95_rate_per_second": 10.86,
-      "peak_rate_per_second": 10.86,
-      "rate_trend": {
-        "trend": [
-          10.86,
-          7.33,
-          2.17,
-          2.16,
-          2.2
-        ],
-        "window_duration": "10s"
-      },
-      "std_rate_per_second": 3.83
     }
   },
   "host_metrics": {
@@ -523,11 +523,21 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": "NotDetected",
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "cpu_spike": {
+        "type": "NotDetected"
+      },
+      "memory_leak": {
+        "type": "NotDetected"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

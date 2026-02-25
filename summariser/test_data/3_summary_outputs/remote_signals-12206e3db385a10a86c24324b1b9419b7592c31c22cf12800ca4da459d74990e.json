@@ -30,98 +30,12 @@
     }
   },
   "scenario_metrics": {
-    "holochain_p2p_metrics": {
-      "handle_incoming_request_duration": {
-        "get": {
-          "mean": 0.000121,
-          "std": 1e-6,
-          "trend": {
-            "trend": [
-              0.000121
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "within_std": 1.0
-        },
-        "remote_signal": {
-          "mean": 0.001816,
-          "std": 0.002517,
-          "trend": {
-            "trend": [
-              0.001539,
-              0.002051,
-              0.001456
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.9853,
-          "within_3std": 0.9853,
-          "within_std": 0.9853
-        },
-        "response": {
-          "mean": 4e-6,
-          "std": 1e-6,
-          "trend": {
-            "trend": [
-              4e-6,
-              5e-6
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "within_std": 0.6667
-        },
-        "send_validation_receipts": {
-          "mean": 0.000851,
-          "std": 0.000762,
-          "trend": {
-            "trend": [
-              0.000773,
-              0.00132
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.8571,
-          "within_3std": 1.0,
-          "within_std": 0.8571
-        }
-      },
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000291,
-          "std": 0.000025,
-          "trend": {
-            "trend": [
-              0.000291
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "within_std": 1.0
-        },
-        "send_validation_receipts": {
-          "mean": 0.001055,
-          "std": 0.00079,
-          "trend": {
-            "trend": [
-              0.000958,
-              0.001641
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.8571,
-          "within_3std": 1.0,
-          "within_std": 0.8571
-        }
-      }
-    },
     "remote_signal_round_trip": {
       "mean": 0.01889,
       "std": 0.04602,
+      "within_std": 0.9444,
+      "within_2std": 0.9444,
+      "within_3std": 0.9444,
       "trend": {
         "trend": [
           0.103611,
@@ -129,12 +43,98 @@
           0.005005
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9444,
-      "within_3std": 0.9444,
-      "within_std": 0.9444
+      }
     },
-    "remote_signal_timeout": null
+    "remote_signal_timeout": null,
+    "holochain_p2p_metrics": {
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000291,
+          "std": 0.000025,
+          "within_std": 1.0,
+          "within_2std": 1.0,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              0.000291
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.001055,
+          "std": 0.00079,
+          "within_std": 0.8571,
+          "within_2std": 0.8571,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              0.000958,
+              0.001641
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "handle_incoming_request_duration": {
+        "response": {
+          "mean": 4e-6,
+          "std": 1e-6,
+          "within_std": 0.6667,
+          "within_2std": 1.0,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              4e-6,
+              5e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.000121,
+          "std": 1e-6,
+          "within_std": 1.0,
+          "within_2std": 1.0,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              0.000121
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.000851,
+          "std": 0.000762,
+          "within_std": 0.8571,
+          "within_2std": 0.8571,
+          "within_3std": 1.0,
+          "trend": {
+            "trend": [
+              0.000773,
+              0.00132
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "remote_signal": {
+          "mean": 0.001816,
+          "std": 0.002517,
+          "within_std": 0.9853,
+          "within_2std": 0.9853,
+          "within_3std": 0.9853,
+          "trend": {
+            "trend": [
+              0.001539,
+              0.002051,
+              0.001456
+            ],
+            "window_duration": "10s"
+          }
+        }
+      }
+    }
   },
   "host_metrics": {
     "cpu": {
@@ -407,11 +407,21 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": "NotDetected",
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "cpu_spike": {
+        "type": "NotDetected"
+      },
+      "memory_leak": {
+        "type": "NotDetected"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

@@ -34,6 +34,9 @@
     "install_app_timing": {
       "mean": 0.054526,
       "std": 0.023128,
+      "within_std": 0.6781,
+      "within_2std": 0.9914,
+      "within_3std": 0.9914,
       "trend": {
         "trend": [
           0.043642,
@@ -45,10 +48,7 @@
           0.052776
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9914,
-      "within_3std": 0.9914,
-      "within_std": 0.6781
+      }
     }
   },
   "host_metrics": {
@@ -322,16 +322,23 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": {
-        "Detected": {
-          "severity": "Warning",
-          "description": "Memory growing at 15.22 MB/s"
-        }
+      "cpu_spike": {
+        "type": "NotDetected"
       },
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "memory_leak": {
+        "type": "Detected",
+        "severity": "Warning",
+        "description": "Memory growing at 15.22 MB/s"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }
