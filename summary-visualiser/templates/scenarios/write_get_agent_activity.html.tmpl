@@ -13,9 +13,9 @@
 <div class="scenario-metrics">
     {{ with .scenario_metrics }}
         {{ template "scenario_metric" (dict
-            "name" "Highest observed <code>action_seq</code>"
-            "description" "The change in the highest action index on the <code>write</code> peer's source chain."
-            "content" (tmpl.Exec "delta" .highest_observed_action_seq)
+            "name" "Observed chain advancement"
+            "description" "The maximum highest-observed action sequence per write agent, aggregated across all reading agents. The reading dimension is collapsed by taking the maximum observed value for each write agent (any reader successfully tracking that point counts as propagation). Captures how far readers tracked writers&#x2019; chains during the run."
+            "content" (tmpl.Exec "chain_head_stats" .highest_observed_action_seq)
         ) }}
 
         {{ template "scenario_metric" (dict

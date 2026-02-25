@@ -9,10 +9,15 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct WriteQuerySummary {
+    /// Duration of `create_sample_entry` zome calls (seconds)
     write_timing: StandardTimingsStats,
+    /// Rate of `create_sample_entry` zome calls per 10-second window
     write_rate: StandardRateStats,
+    /// Duration of `get_sample_entry` zome calls (seconds)
     read_timing: StandardTimingsStats,
+    /// Rate of `get_sample_entry` zome calls per 10-second window
     read_rate: StandardRateStats,
+    /// Number of zome call errors observed during the run
     errors: usize,
 }
 

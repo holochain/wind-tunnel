@@ -23,6 +23,18 @@
         ) }}
 
         {{ template "scenario_metric" (dict
+            "name" "Query timing"
+            "description" "The time it takes to complete the <code>chain_query_count_len</code> zome call that queries the source chain."
+            "content" (tmpl.Exec "timing_and_trend" .query_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Query rate"
+            "description" "The number of chain queries completed per second."
+            "content" (tmpl.Exec "rate_and_trend" .query_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
             "name" "Error count"
             "description" "The number of errors accumulated during the run."
             "content" (tmpl.Exec "scalar" (dict "value" .errors))

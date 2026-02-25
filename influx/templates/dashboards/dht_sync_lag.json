@@ -85,7 +85,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.dht_sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
             }
           ],
           "shade": true,
@@ -177,7 +177,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.dht_sync_sent_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.sent_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,
@@ -271,7 +271,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.dht_sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> yield(name: \"max\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.sync_lag\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> yield(name: \"max\")"
             }
           ],
           "shade": true,
@@ -364,7 +364,7 @@
           "position": "overlaid",
           "queries": [
             {
-              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.dht_sync_recv_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
+              "query": "from(bucket: \"windtunnel\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"wt.custom.recv_count\")\n  |> filter(fn: (r) => r[\"scenario_name\"] == \"dht_sync_lag\")\n  |> filter(fn: (r) => r[\"run_id\"] == v.RunId)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> increase()\n  |> yield(name: \"increase\")"
             }
           ],
           "shade": true,

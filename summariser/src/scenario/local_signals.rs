@@ -8,8 +8,18 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct LocalSignalsSummary {
+    /// Time to complete a batch emission of 10,000 signals (seconds): duration of the
+    /// `emit_10k_signals` zome call, during which signals are fired by the conductor.
     send: StandardTimingsStats,
+    /// Drain time per batch (seconds): time from the end of the `emit_10k_signals` zome call
+    /// until the client has received all 10,000 signals.
+    ///
+    /// Signals fired during the zome call that arrive before it returns are not counted here —
+    /// they contribute 0 drain time. A high value relative to `send` indicates the conductor is
+    /// queuing or delaying signal delivery.
     recv: StandardTimingsStats,
+    /// Success ratio: Fraction of signals received by the client out of the 10,000 sent, averaged
+    /// across all batches. A value < 1 indicates data loss.
     success_ratio: RatioStats,
 }
 
@@ -48,8 +58,7 @@ pub(crate) async fn summarize_local_signals(
 }
 
 pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<RatioStats> {
-    let value_col = frame.column(column)?.clone();
-    let values_series = value_col.as_materialized_series();
+    let values_series = frame.column(column)?.as_materialized_series().drop_nulls();
 
     let mean = values_series.mean().context("Mean")?;
     let std = values_series.std(0).context("Std")?;
@@ -72,8 +81,12 @@ pub(crate) fn ratio_stats(frame: DataFrame, column: &str) -> anyhow::Result<Rati
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RatioStats {
+    /// Mean of the ratio across all observations
     pub mean: f64,
+    /// Standard deviation of the ratio across observations
     pub std: f64,
+    /// Minimum ratio observed
     pub min: f64,
+    /// Maximum ratio observed
     pub max: f64,
 }

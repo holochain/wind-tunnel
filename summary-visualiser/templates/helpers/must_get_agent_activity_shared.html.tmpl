@@ -9,16 +9,9 @@ This helper doesn't actually output anything -- it just provides some helpers to
 <p>The purpose of this scenario is to measure the time it takes for published agent activity data to be gossiped among authorities and become available to peers that query it via <code>must_get_agent_activity</code>.</p>
 {{ end }}
 
+{{/* Renders retrieval_errors as PartitionedCounterStats */}}
 {{ define "must_get_agent_activity_shared_retrieval_errors" }}
-    {{ range .timings }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (tmpl.Exec "composite_key" .key)
-            "content" (tmpl.Exec "trend_graph" (dict
-                "data" .summary_timing.trend.trend
-                "window_duration" .summary_timing.trend.window_duration
-            ))
-        ) }}
-    {{ end }}
+    {{ template "partitioned_counter_stats" . }}
 {{ end }}
 
 {{ define "must_get_agent_activity_shared_metrics" }}
@@ -26,12 +19,12 @@ This helper doesn't actually output anything -- it just provides some helpers to
         {{ with .scenario_metrics }}
             {{ $retrieved_chain_len_metric := (or
                 (index . "retrieved_chain_len")
-                (index . "write_validated_must_get_agent_activity_chain_len")
+                (index . "chain_len")
             ) }}
             {{ template "scenario_metric" (dict
                 "name" "Highest observed <code>action_seq</code>"
-                "description" "The change in the highest <code>action_seq</code> of a <code>write</code> agent successfully retrieved by a <code>must_get_agent_activity</code> agent. This reflects the DHT's ability to propagate agent activity ops and make them available to querying peers."
-                "content" (tmpl.Exec "delta" $retrieved_chain_len_metric)
+                "description" "The maximum chain length observed per <code>write</code> agent, aggregated across all reading agents. The reading dimension is collapsed by taking the maximum observed value for each write agent (any successful read counts as propagation). This reflects the DHT&#x2019;s ability to propagate agent activity ops and make them available to querying peers."
+                "content" (tmpl.Exec "chain_head_stats" $retrieved_chain_len_metric)
             ) }}
 
             {{ template "scenario_metric" (dict

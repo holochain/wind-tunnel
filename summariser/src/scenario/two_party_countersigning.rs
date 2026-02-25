@@ -1,22 +1,43 @@
-use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats, round_to_n_dp};
-use crate::model::{
-    PartitionRateStats, PartitionedRateStats, PartitionedTimingStats, StandardRateStats,
+use crate::analyze::{
+    partitioned_counter_stats_allow_empty, partitioned_rate_stats, partitioned_timing_stats,
+    round_to_n_dp,
 };
+use crate::model::{PartitionedCounterStats, PartitionedRateStats, PartitionedTimingStats};
 use crate::query;
 use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
-use std::ops::Sub;
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct TwoPartyCountersigningSummary {
+    /// Duration of accepted countersigning sessions per agent (seconds); measures time from
+    /// acceptance until the session completes or fails
     accepted_timing: PartitionedTimingStats,
+    /// Rate of successfully accepted countersigning sessions per agent (sessions per window)
     accepted_success_rate: PartitionedRateStats,
-    accepted_failure_rate: PartitionedRateStats,
+    /// Cumulative count of failed accepted countersigning sessions; from the direct failure
+    /// counter recorded by the scenario
+    accepted_failure_count: PartitionedCounterStats,
+    /// Fraction of accepted sessions that completed successfully (0–1).
+    ///
+    /// Computed as accepted_success_rate.mean / total_accepted_rate.mean.
+    /// Zero if no sessions were accepted.
+    accepted_success_ratio: f64,
+    /// Duration of initiated countersigning sessions per agent (seconds); measures time from
+    /// initiation until the session completes or fails
     initiated_timing: PartitionedTimingStats,
+    /// Rate of successfully initiated countersigning sessions per agent (sessions per window)
     initiated_success_rate: PartitionedRateStats,
-    initiated_failure_rate: PartitionedRateStats,
+    /// Cumulative count of failed initiated countersigning sessions; from the direct failure
+    /// counter recorded by the scenario
+    initiated_failure_count: PartitionedCounterStats,
+    /// Fraction of initiated sessions that completed successfully (0–1).
+    ///
+    /// Computed as initiated_success_rate.mean / total_initiated_rate.mean.
+    /// Zero if no sessions were initiated.
+    initiated_success_ratio: f64,
+    /// Holochain p2p network metrics for the run
     holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
@@ -53,20 +74,17 @@ pub(crate) async fn summarize_countersigning_two_party(
         &["agent"],
     )
     .await
-    .context("Load accepted")?;
+    .context("Load accepted success")?;
     let accepted_success = partitioned_rate_stats(accepted_success, "value", "10s", &["agent"])
         .context("Accepted success rate")?;
 
-    let mut accepted_failures = accepted - accepted_success.clone();
-    accepted_failures.mean = round_to_n_dp(accepted_failures.mean, 2);
-    accepted_failures.rates = accepted_failures
-        .rates
-        .into_iter()
-        .map(|mut r| {
-            r.summary_rate.mean = round_to_n_dp(r.summary_rate.mean, 2);
-            r
-        })
-        .collect::<Vec<_>>();
+    let accepted_failure_result = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.countersigning_session_accepted_failure",
+        &["agent"],
+    )
+    .await;
 
     let initiated_timing = query::query_custom_data(
         client.clone(),
@@ -99,77 +117,50 @@ pub(crate) async fn summarize_countersigning_two_party(
     let initiated_success = partitioned_rate_stats(initiated_success, "value", "10s", &["agent"])
         .context("Initiated success rate")?;
 
-    let initiated_failures = initiated - initiated_success.clone();
+    let initiated_failure_result = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.countersigning_session_initiated_failure",
+        &["agent"],
+    )
+    .await;
+
+    // Clamp to [0, 1]: windowing imprecision can cause the success rate to slightly exceed
+    // the total rate in some windows, so the ratio must be bounded.
+    let accepted_success_ratio = if accepted.mean > 0.0 {
+        round_to_n_dp((accepted_success.mean / accepted.mean).clamp(0.0, 1.0), 4)
+    } else {
+        0.0
+    };
+    let initiated_success_ratio = if initiated.mean > 0.0 {
+        round_to_n_dp((initiated_success.mean / initiated.mean).clamp(0.0, 1.0), 4)
+    } else {
+        0.0
+    };
 
     Ok(TwoPartyCountersigningSummary {
         accepted_timing: partitioned_timing_stats(accepted_timing, "value", "10s", &["agent"])
             .context("Accepted duration timing")?,
         accepted_success_rate: accepted_success,
-        accepted_failure_rate: accepted_failures,
+        accepted_failure_count: partitioned_counter_stats_allow_empty(
+            accepted_failure_result,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Accepted failure count")?,
+        accepted_success_ratio,
         initiated_timing: partitioned_timing_stats(initiated_timing, "value", "10s", &["agent"])
             .context("Initiated duration timing")?,
         initiated_success_rate: initiated_success,
-        initiated_failure_rate: initiated_failures,
+        initiated_failure_count: partitioned_counter_stats_allow_empty(
+            initiated_failure_result,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Initiated failure count")?,
+        initiated_success_ratio,
         holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
-}
-
-impl Sub for PartitionedRateStats {
-    type Output = PartitionedRateStats;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        let mut self_rates = self.rates.clone();
-        let mut rhs_rates = rhs.rates.clone();
-
-        if self_rates.len() != rhs_rates.len() {
-            panic!("PartitionedRateStats must have the same number of rates");
-        }
-
-        self_rates.sort_by_key(|x| x.key.clone());
-        rhs_rates.sort_by_key(|x| x.key.clone());
-
-        PartitionedRateStats {
-            mean: self.mean - rhs.mean,
-            rates: self_rates
-                .into_iter()
-                .zip(rhs_rates)
-                .map(|(l, r)| {
-                    if l.key != r.key {
-                        panic!("PartitionRateStats must have the same key");
-                    }
-
-                    if l.summary_rate.window_duration != r.summary_rate.window_duration {
-                        panic!("PartitionRateStats must have the same window_duration");
-                    }
-
-                    // The windowing won't be perfect because observations will be made at different times.
-                    // Make a best attempt and then adjust the overflow into a nearby window.
-                    let mut trend_diff: Vec<i32> = l
-                        .summary_rate
-                        .trend
-                        .into_iter()
-                        .zip(r.summary_rate.trend)
-                        .map(|(l, r)| l as i32 - r as i32)
-                        .collect();
-
-                    for i in 1..trend_diff.len() {
-                        if trend_diff[i] < 0 {
-                            trend_diff[i - 1] -= trend_diff[i];
-                            trend_diff[i] = 0;
-                        }
-                    }
-
-                    PartitionRateStats {
-                        key: l.key,
-                        summary_rate: StandardRateStats {
-                            // Re-calculate the mean because the difference isn't meaningful
-                            mean: trend_diff.iter().sum::<i32>() as f64 / trend_diff.len() as f64,
-                            trend: trend_diff.into_iter().map(|x| x as u32).collect(),
-                            window_duration: l.summary_rate.window_duration,
-                        },
-                    }
-                })
-                .collect(),
-        }
-    }
 }

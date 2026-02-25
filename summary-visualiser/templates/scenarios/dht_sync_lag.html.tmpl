@@ -63,30 +63,24 @@ Corresponding Rust type: `BTreeMap<String, holochain_metrics::CounterStats>`
     {{ end }}
 {{ end }}
 
-{{/* Same situation here, for the authored DB utilisation.
-We can't just use the `dht_sync_lag_db_connection` helper
-because the authored DB is broken down by agent.
-Corresponding Rust type: `BTreeMap<String, holochain_metrics::GaugeStats>`
+{{/* Render authored DB utilisation as a single GaugeStats.
+Corresponding Rust type: `holochain_metrics::GaugeStats`
 */}}
 {{ define "dht_sync_lag_authored_db_utilization" }}
-    {{ range $name, $value := . }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (print "Utilisation for " $name)
-            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") $value))
-        ) }}
-    {{ end }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Utilisation"
+        "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .))
+    ) }}
 {{ end }}
 
-{{/* And for countersigning agents.
-Corresponding Rust Type: `BTreeMap<String, holochain_metrics::StandardTimingsStats>`
+{{/* Render countersigning workflow duration as a single StandardTimingsStats.
+Corresponding Rust Type: `holochain_metrics::StandardTimingsStats`
 */}}
 {{ define "dht_sync_lag_countersigning_workflow_duration" }}
-    {{ range $agent, $value := .}}
-        {{ template "scenario_metric_content_item" (dict
-            "name" $agent
-            "content" (tmpl.Exec "timing_and_trend" $value)
-        )}}
-    {{ end }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Duration"
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
 {{ end }}
 
 {{/* SCENARIO START */}}

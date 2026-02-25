@@ -30,12 +30,101 @@
     }
   },
   "scenario_metrics": {
+    "holochain_p2p_metrics": {
+      "handle_incoming_request_duration": {
+        "get": {
+          "mean": 0.000121,
+          "p50": 0.000122,
+          "p95": 0.000122,
+          "p99": 0.000122,
+          "std": 1e-6,
+          "trend": {
+            "trend": [
+              0.000121
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "remote_signal": {
+          "mean": 0.001816,
+          "p50": 0.001482,
+          "p95": 0.001912,
+          "p99": 0.02236,
+          "std": 0.002517,
+          "trend": {
+            "trend": [
+              0.001539,
+              0.002051,
+              0.001456
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "response": {
+          "mean": 4e-6,
+          "p50": 4e-6,
+          "p95": 6e-6,
+          "p99": 6e-6,
+          "std": 1e-6,
+          "trend": {
+            "trend": [
+              4e-6,
+              5e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.000851,
+          "p50": 0.000621,
+          "p95": 0.002466,
+          "p99": 0.002466,
+          "std": 0.000762,
+          "trend": {
+            "trend": [
+              0.000773,
+              0.00132
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000291,
+          "p50": 0.000316,
+          "p95": 0.000316,
+          "p99": 0.000316,
+          "std": 0.000025,
+          "trend": {
+            "trend": [
+              0.000291
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.001055,
+          "p50": 0.000821,
+          "p95": 0.002688,
+          "p99": 0.002688,
+          "std": 0.00079,
+          "trend": {
+            "trend": [
+              0.000958,
+              0.001641
+            ],
+            "window_duration": "10s"
+          }
+        }
+      }
+    },
     "remote_signal_round_trip": {
       "mean": 0.01889,
+      "p50": 0.005127,
+      "p95": 0.170859,
+      "p99": 0.233339,
       "std": 0.04602,
-      "within_std": 0.9444,
-      "within_2std": 0.9444,
-      "within_3std": 0.9444,
       "trend": {
         "trend": [
           0.103611,
@@ -46,95 +135,7 @@
       }
     },
     "remote_signal_timeout": null,
-    "holochain_p2p_metrics": {
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000291,
-          "std": 0.000025,
-          "within_std": 1.0,
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              0.000291
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.001055,
-          "std": 0.00079,
-          "within_std": 0.8571,
-          "within_2std": 0.8571,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              0.000958,
-              0.001641
-            ],
-            "window_duration": "10s"
-          }
-        }
-      },
-      "handle_incoming_request_duration": {
-        "response": {
-          "mean": 4e-6,
-          "std": 1e-6,
-          "within_std": 0.6667,
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              4e-6,
-              5e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get": {
-          "mean": 0.000121,
-          "std": 1e-6,
-          "within_std": 1.0,
-          "within_2std": 1.0,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              0.000121
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.000851,
-          "std": 0.000762,
-          "within_std": 0.8571,
-          "within_2std": 0.8571,
-          "within_3std": 1.0,
-          "trend": {
-            "trend": [
-              0.000773,
-              0.00132
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "remote_signal": {
-          "mean": 0.001816,
-          "std": 0.002517,
-          "within_std": 0.9853,
-          "within_2std": 0.9853,
-          "within_3std": 0.9853,
-          "trend": {
-            "trend": [
-              0.001539,
-              0.002051,
-              0.001456
-            ],
-            "window_duration": "10s"
-          }
-        }
-      }
-    }
+    "timeout_rate": 0.0
   },
   "host_metrics": {
     "cpu": {

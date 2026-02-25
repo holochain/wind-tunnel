@@ -38,7 +38,7 @@ fn agent_behaviour_write(
     ctx.get_mut().scenario_values.sent_actions += 1;
 
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("dht_sync_sent_count")
+    let metric = ReportMetric::new("sent_count")
         .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.sent_actions);
     ctx.runner_context().reporter().clone().add_custom(metric);
@@ -70,7 +70,7 @@ fn agent_behaviour_record_lag(
             .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {e}"))?
             .unwrap();
 
-        let metric = ReportMetric::new("dht_sync_lag");
+        let metric = ReportMetric::new("sync_lag");
         let lag_s = (metric
             .timestamp
             .clone()
@@ -91,7 +91,7 @@ fn agent_behaviour_record_lag(
             .insert(new_record.action_address().clone());
     }
 
-    let metric = ReportMetric::new("dht_sync_recv_count")
+    let metric = ReportMetric::new("recv_count")
         .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
     reporter_handle.add_custom(metric);

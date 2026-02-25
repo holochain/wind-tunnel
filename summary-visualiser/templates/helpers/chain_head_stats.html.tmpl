@@ -1,0 +1,37 @@
+{{/*
+Render chain head stats: maximum chain head per write agent, aggregated across write agents.
+
+The reading dimension is collapsed by taking the maximum observed value per write agent,
+so each write agent contributes one value. The write agent dimension is then summarised
+with mean and max.
+
+Fields (from ChainHeadStats):
+
+* `mean_max` (float): Mean of per-write-agent maximum chain head values.
+* `max` (float): Highest chain head value observed for any single write agent.
+* `write_agent_count` (int): Number of distinct write agents observed.
+* `trend` (Float64Trend): Per-window mean of per-write-agent max values over time.
+
+Corresponding Rust type: `holochain_summariser::model::ChainHeadStats`
+*/}}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Mean max (across write agents)"
+    "description" "Mean of the highest chain head value observed per write agent. Each write agent contributes its maximum — the value seen by any reader."
+    "content" (tmpl.Exec "scalar" (dict "value" .mean_max))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Max"
+    "description" "Highest chain head value observed for any single write agent."
+    "content" (tmpl.Exec "scalar" (dict "value" .max))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Write agents observed"
+    "content" (tmpl.Exec "scalar" (dict "value" .write_agent_count))
+) }}
+{{ with .trend }}
+    {{ template "trend_graph" (dict
+        "data" .trend
+        "mean" $.mean_max
+        "window_duration" .window_duration
+    ) }}
+{{ end }}

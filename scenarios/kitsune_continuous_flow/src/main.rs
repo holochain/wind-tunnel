@@ -43,6 +43,7 @@ fn main() -> WindTunnelResult<()> {
         KitsuneScenarioDefinitionBuilder::<KitsuneRunnerContext, KitsuneAgentContext>::new_with_init(
             "kitsune_continuous_flow",
         )?.into_std()
+        .add_capture_env("NUM_MESSAGES")
         .use_agent_setup(agent_setup)
         .use_agent_behaviour(behavior)
         .with_default_duration_s(30);

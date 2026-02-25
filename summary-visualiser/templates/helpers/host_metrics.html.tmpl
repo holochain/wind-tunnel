@@ -23,13 +23,13 @@ This template displays system-level performance metrics collected during the sce
         {{ template "scenario_metric" (dict
             "name" "Network receive rate (primary)"
             "description" "Rate of bytes received on primary network interface"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B/s") .recv_rate))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "B/s") .recv_rate))
         ) }}
 
         {{ template "scenario_metric" (dict
             "name" "Network send rate (primary)"
             "description" "Rate of bytes sent on primary network interface"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B/s") .send_rate))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "B/s") .send_rate))
         ) }}
 
         {{ with .bytes_recv }}
@@ -121,7 +121,7 @@ This template displays system-level performance metrics collected during the sce
             "content" (print
                 (tmpl.Exec "scenario_metric_content_item" (dict
                     "name" "Total"
-                    "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .total_usage))
+                    "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .total_usage))
                 ))
                 (tmpl.Exec "scenario_metric_content_item" (dict
                     "name" "System"
@@ -169,13 +169,13 @@ This template displays system-level performance metrics collected during the sce
         {{ template "scenario_metric" (dict
             "name" "Memory used percentage"
             "description" "Percentage of memory used"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .used_percent))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .used_percent))
         ) }}
 
         {{ template "scenario_metric" (dict
             "name" "Memory available percentage"
             "description" "Percentage of available memory"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .available_percent))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .available_percent))
         ) }}
 
         {{ template "scenario_metric" (dict
@@ -263,7 +263,7 @@ This template displays system-level performance metrics collected during the sce
                 "content" (print
                     (tmpl.Exec "scenario_metric_content_item" (dict
                         "name" "10 second average"
-                        "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                        "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .avg10))
                     ))
                     (tmpl.Exec "scenario_metric_content_item" (dict
                         "name" "60 second average"
@@ -285,7 +285,7 @@ This template displays system-level performance metrics collected during the sce
                     "content" (print
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "10 second average"
-                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .avg10))
                         ))
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "60 second average"
@@ -306,7 +306,7 @@ This template displays system-level performance metrics collected during the sce
                     "content" (print
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "10 second average"
-                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .avg10))
                         ))
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "60 second average"
@@ -329,7 +329,7 @@ This template displays system-level performance metrics collected during the sce
                     "content" (print
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "10 second average"
-                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .avg10))
                         ))
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "60 second average"
@@ -350,7 +350,7 @@ This template displays system-level performance metrics collected during the sce
                     "content" (print
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "10 second average"
-                            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .avg10))
+                            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .avg10))
                         ))
                         (tmpl.Exec "scenario_metric_content_item" (dict
                             "name" "60 second average"
@@ -370,25 +370,25 @@ This template displays system-level performance metrics collected during the sce
         {{ template "scenario_metric" (dict
             "name" "Holochain process CPU usage"
             "description" "CPU usage by Holochain process"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "%") .cpu_usage))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "%") .cpu_usage))
         ) }}
 
         {{ template "scenario_metric" (dict
             "name" "Holochain process memory (PSS)"
             "description" "Proportional Set Size memory of Holochain process"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" "B") .memory_pss))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "B") .memory_pss))
         ) }}
 
         {{ template "scenario_metric" (dict
             "name" "Holochain process threads"
             "description" "Number of threads in Holochain process"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" " threads") .num_threads))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" " threads") .num_threads))
         ) }}
 
         {{ template "scenario_metric" (dict
             "name" "Holochain process file descriptors"
             "description" "Number of file descriptors used by Holochain process"
-            "content" (tmpl.Exec "timing_and_trend" (merge (dict "unit" " file descriptors") .num_fds))
+            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" " file descriptors") .num_fds))
         ) }}
     {{ end }}
 </details>

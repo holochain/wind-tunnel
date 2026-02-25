@@ -12,11 +12,15 @@ pub struct ScenarioValues {
     response_timeout: Duration,
     remote_signal_peers: Vec<AgentPubKey>,
     pending_set: Arc<Mutex<HashSet<TimedMessage>>>,
+    cumulative_timeout_count: u32,
 }
 
 fn env_dur(n: &'static str, d: u64) -> Duration {
     match std::env::var(n) {
-        Ok(n) => Duration::from_millis(n.parse::<u64>().unwrap()),
+        Ok(n) => Duration::from_millis(
+            n.parse::<u64>()
+                .unwrap_or_else(|_| panic!("Duration provided by {n} must be a number")),
+        ),
         _ => Duration::from_millis(d),
     }
 }
@@ -31,6 +35,7 @@ impl Default for ScenarioValues {
             response_timeout,
             remote_signal_peers: Vec::new(),
             pending_set: Arc::new(Mutex::new(HashSet::new())),
+            cumulative_timeout_count: 0,
         }
     }
 }
@@ -117,9 +122,11 @@ fn agent_behaviour(
         }
     });
 
-    while timeout_count > 0 {
-        reporter.add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", 1));
-        timeout_count -= 1;
+    if timeout_count > 0 {
+        ctx.get_mut().scenario_values.cumulative_timeout_count += timeout_count as u32;
+        let cumulative = ctx.get().scenario_values.cumulative_timeout_count;
+        reporter
+            .add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", cumulative));
     }
 
     let new_peers = match next_remote_signal_peer {
@@ -155,6 +162,8 @@ fn main() -> WindTunnelResult<()> {
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
+    .add_capture_env("SIGNAL_INTERVAL_MS")
+    .add_capture_env("RESPONSE_TIMEOUT_MS")
     .use_build_info(conductor_build_info)
     .use_agent_setup(agent_setup)
     .use_agent_behaviour(agent_behaviour)

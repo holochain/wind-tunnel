@@ -9,8 +9,11 @@ use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ZomeCallSingleValueSummary {
+    /// Duration of `get_value` zome calls (seconds)
     call_timing: StandardTimingsStats,
+    /// Rate of `get_value` zome calls per 10-second window
     call_rate: StandardRateStats,
+    /// Number of zome call errors observed during the run
     errors: usize,
 }
 

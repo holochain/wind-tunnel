@@ -1,0 +1,33 @@
+{{/*
+Render aggregate counter statistics across partitions.
+Corresponding Rust type: `PartitionedCounterStats`
+Fields: `total_count`, `partition_count`, `partitions_above_zero`, `mean_count`,
+        `max_per_partition`, `min_per_partition`, `trend`, `window_duration`
+*/}}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Total"
+    "content" (tmpl.Exec "scalar" (dict "value" .total_count))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Agents affected"
+    "content" (tmpl.Exec "scalar" (dict "value" (print .partitions_above_zero " / " .partition_count)))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Mean per agent"
+    "description" "Total count divided by number of partitions, rounded to nearest whole number"
+    "content" (tmpl.Exec "scalar" (dict "value" .mean_count))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Max"
+    "description" "Highest count in any single partition"
+    "content" (tmpl.Exec "scalar" (dict "value" .max_per_partition))
+) }}
+{{ template "scenario_metric_content_item" (dict
+    "name" "Min"
+    "description" "Lowest count in any single partition"
+    "content" (tmpl.Exec "scalar" (dict "value" .min_per_partition))
+) }}
+{{ template "trend_graph" (dict
+    "data" .trend
+    "window_duration" .window_duration
+) }}

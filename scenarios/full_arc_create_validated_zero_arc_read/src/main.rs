@@ -53,7 +53,7 @@ fn record_open_connections_if_necessary(
             .executor()
             .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-        let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_open_connections")
+        let metric = ReportMetric::new("open_connections")
             .with_tag("arc", arc)
             .with_field("value", network_stats.connections.len() as u32);
         ctx.runner_context().reporter().clone().add_custom(metric);
@@ -91,7 +91,7 @@ fn agent_behaviour_zero(
                 .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
                 .unwrap();
 
-            let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_sync_lag");
+            let metric = ReportMetric::new("fetch_lag");
             let now_us = metric
                 .timestamp
                 .clone()
@@ -113,7 +113,7 @@ fn agent_behaviour_zero(
                 .insert(new_record.action_address().clone());
         }
     } else {
-        let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_retrieval_error")
+        let metric = ReportMetric::new("retrieval_error_count")
             .with_tag("agent", agent_pub_key.clone())
             .with_tag("arc", "zero")
             .with_field("value", 1_f64);
@@ -121,7 +121,7 @@ fn agent_behaviour_zero(
     }
 
     // Record the total number of entries successfully gotten so far
-    let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_recv_count")
+    let metric = ReportMetric::new("recv_count")
         .with_tag("agent", agent_pub_key)
         .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
     reporter_handle.add_custom(metric);
@@ -149,7 +149,7 @@ fn agent_behaviour_full(
 
     // Report number of timed entries created
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("full_arc_create_validated_zero_arc_read_entry_created_count")
+    let metric = ReportMetric::new("entry_created_count")
         .with_tag("agent", agent_pub_key)
         .with_tag("arc", "full")
         .with_field("value", ctx.get().scenario_values.sent_actions_count);

@@ -9,6 +9,11 @@ with an optional string `unit` field that will default to `"s"`.
     "std" .std
     "unit" $unit
 ) }}
+<span class="timing-percentiles">
+    {{ template "scalar" (dict "label" "p50" "value" .p50 "unit" $unit) }}
+    {{ template "scalar" (dict "label" "p95" "value" .p95 "unit" $unit) }}
+    {{ template "scalar" (dict "label" "p99" "value" .p99 "unit" $unit) }}
+</span>
 {{ template "trend_graph" (dict
     "data" .trend.trend
     "mean" .mean

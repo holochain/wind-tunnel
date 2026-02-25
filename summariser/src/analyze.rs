@@ -1,8 +1,8 @@
 use crate::frame::LoadError;
 use crate::model::{
-    CounterStats, GaugeStats, GaugeTrend, PartitionGaugeStats, PartitionKey, PartitionRateStats,
-    PartitionTimingStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
-    StandardRateStats, StandardTimingsStats, TimingTrend,
+    ChainHeadStats, CounterStats, Float64Trend, GaugeStats, PartitionGaugeStats, PartitionKey,
+    PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
+    StandardRateStats, StandardTimingsStats,
 };
 use anyhow::Context;
 use itertools::Itertools;
@@ -24,49 +24,11 @@ pub(crate) fn standard_timing_stats(
     let mean = value_series.mean().context("Mean")?;
     let std = value_series.std(0).context("Std")?;
 
-    // Add a small epsilon to boundaries so that values sitting exactly at mean ± N*std
-    // are not excluded by floating-point rounding differences across architectures.
-    let eps = std * 1e-10_f64 + f64::EPSILON;
-
-    let out = frame
-        .clone()
-        .lazy()
-        .select([
-            col(column)
-                .gt_eq(lit(mean - std - eps))
-                .and(col(column).lt_eq(lit(mean + std + eps)))
-                .alias("within_std"),
-            col(column)
-                .gt_eq(lit(mean - 2.0 * std - eps))
-                .and(col(column).lt_eq(lit(mean + 2.0 * std + eps)))
-                .alias("within_2std"),
-            col(column)
-                .gt_eq(lit(mean - 3.0 * std - eps))
-                .and(col(column).lt_eq(lit(mean + 3.0 * std + eps)))
-                .alias("within_3std"),
-        ])
-        .collect()?;
-
-    let count = out
-        .column("within_std")?
-        .as_materialized_series()
-        .sum::<usize>()
-        .context("Within std sum")?;
-    let pct_within_1std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
-
-    let count = out
-        .column("within_2std")?
-        .as_materialized_series()
-        .sum::<usize>()
-        .context("Within 2std sum")?;
-    let pct_within_2std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
-
-    let count = out
-        .column("within_3std")?
-        .as_materialized_series()
-        .sum::<usize>()
-        .context("Within 3std sum")?;
-    let pct_within_3std = bound_pct(count as f64 / frame.column(column)?.len() as f64);
+    let cast_series = value_series.cast(&DataType::Float64)?;
+    let sorted = cast_series.f64()?.sort(false);
+    let p50 = round_to_n_dp(sorted_percentile(&sorted, 0.50), 6);
+    let p95 = round_to_n_dp(sorted_percentile(&sorted, 0.95), 6);
+    let p99 = round_to_n_dp(sorted_percentile(&sorted, 0.99), 6);
 
     let trend = frame
         .clone()
@@ -99,10 +61,10 @@ pub(crate) fn standard_timing_stats(
     Ok(StandardTimingsStats {
         mean: round_to_n_dp(mean, 6),
         std: round_to_n_dp(std, 6),
-        within_std: pct_within_1std,
-        within_2std: pct_within_2std,
-        within_3std: pct_within_3std,
-        trend: TimingTrend {
+        p50,
+        p95,
+        p99,
+        trend: Float64Trend {
             trend,
             window_duration: window_duration.to_string(),
         },
@@ -125,8 +87,24 @@ pub(crate) fn partitioned_timing_stats(
         .unique_stable(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let mut timings = Vec::new();
-    for i in 0..unique.height() {
+    let partition_count = unique.height();
+    if partition_count == 0 {
+        return Ok(PartitionedTimingStats {
+            mean: 0.0,
+            mean_std_dev: 0.0,
+            max_mean: 0.0,
+            min_mean: 0.0,
+            trend: vec![],
+            window_duration: window_duration.to_string(),
+        });
+    }
+
+    let mut sum_mean = 0.0_f64;
+    let mut sum_std = 0.0_f64;
+    let mut max_mean = 0.0_f64;
+    let mut min_mean = f64::MAX;
+
+    for i in 0..partition_count {
         let mut filter_expr = col("time").is_not_null();
         let mut key = Vec::new();
         for c in partition_by {
@@ -142,7 +120,6 @@ pub(crate) fn partitioned_timing_stats(
             });
             filter_expr = filter_expr.and(col(*c).eq(lit(value)));
         }
-        key.sort();
 
         let filtered = frame
             .clone()
@@ -152,60 +129,331 @@ pub(crate) fn partitioned_timing_stats(
             .collect()
             .context("filter by partition")?;
 
-        let summary_timing = standard_timing_stats(filtered, column, window_duration, None)?;
+        let summary_timing = standard_timing_stats(filtered, column, window_duration, None)
+            .with_context(|| format!("Timing stats for {key:?}"))?;
 
-        timings.push(PartitionTimingStats {
-            key,
-            summary_timing,
-        });
+        sum_mean += summary_timing.mean;
+        sum_std += summary_timing.std;
+        if summary_timing.mean > max_mean {
+            max_mean = summary_timing.mean;
+        }
+        if summary_timing.mean < min_mean {
+            min_mean = summary_timing.mean;
+        }
     }
-    timings.sort_by_key(|v| v.key.clone());
 
-    let mean = timings.iter().map(|t| t.summary_timing.mean).sum::<f64>() / timings.len() as f64;
-    let mean_std_dev = round_to_n_dp(
-        timings.iter().map(|t| t.summary_timing.std).sum::<f64>() / timings.len() as f64,
-        6,
-    );
+    let mean = sum_mean / partition_count as f64;
+    let mean_std_dev = round_to_n_dp(sum_std / partition_count as f64, 6);
+
+    // Compute partitioned trend vectorially: per-(window, partition) mean latency,
+    // then averaged across partitions per window.
+    let partition_cols: Vec<Expr> = partition_by.iter().map(|&s| col(s)).collect();
+    let trend_frame = frame
+        .lazy()
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            partition_cols,
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).mean().alias("mean_val")])
+        .group_by([col("time")])
+        .agg([col("mean_val").mean().alias("mean_across")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    let trend: Vec<f64> = trend_frame
+        .column("mean_across")?
+        .f64()?
+        .iter()
+        .map(|v| round_to_n_dp(v.unwrap_or(0.0), 6))
+        .collect();
 
     Ok(PartitionedTimingStats {
         mean: round_to_n_dp(mean, 6),
         mean_std_dev,
-        timings,
+        max_mean: round_to_n_dp(max_mean, 6),
+        min_mean: round_to_n_dp(if min_mean == f64::MAX { 0.0 } else { min_mean }, 6),
+        trend,
+        window_duration: window_duration.to_string(),
     })
 }
 
-/// Calculates [`crate::model::PartitionTimingStats`] for the given DataFrame and
-/// if no series were found in influx, defaults to:
-///
-/// PartitionedTimingStats {
-///     mean: 0.0,
-///     mean_std_dev: 0.0,
-///     timings: vec![],
-/// }
-///
-/// This is useful in cases where no series found is an expected case, for example
-/// for metrics that track errors of which none may occur during a scenario run.
-pub(crate) fn partitioned_timing_stats_allow_empty(
+/// Get the [`PartitionedCounterStats`] for a frame and the given column, partitioned
+/// by tags. Applies [`counter_stats`] per partition, then sums counts across partitions.
+pub(crate) fn partitioned_counter_stats(
+    frame: DataFrame,
+    column: &str,
+    window_duration: &str,
+    partition_by: &[&str],
+) -> anyhow::Result<PartitionedCounterStats> {
+    let mut select_cols = vec![col("time"), col(column)];
+    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+
+    let unique = frame
+        .clone()
+        .lazy()
+        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
+        .unique_stable(None, UniqueKeepStrategy::First)
+        .collect()?;
+
+    let partition_count = unique.height();
+    let mut total_count: u64 = 0;
+    let mut partitions_above_zero: usize = 0;
+    let mut max_per_partition: u64 = 0;
+    let mut min_per_partition: u64 = u64::MAX;
+
+    for i in 0..partition_count {
+        let mut filter_expr = col("time").is_not_null();
+        let mut key = Vec::new();
+        for c in partition_by {
+            let value = unique
+                .column(c)?
+                .get(i)?
+                .get_str()
+                .context("Get string")?
+                .to_string();
+            key.push(PartitionKey {
+                key: c.to_string(),
+                value: value.to_string(),
+            });
+            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
+        }
+
+        let filtered = frame
+            .clone()
+            .lazy()
+            .select(select_cols.clone())
+            .filter(filter_expr)
+            .collect()
+            .context("filter by partition")?;
+
+        let stats = counter_stats(filtered, column, window_duration)
+            .with_context(|| format!("Counter stats for {key:?}"))?;
+
+        total_count += stats.count;
+        if stats.count > 0 {
+            partitions_above_zero += 1;
+        }
+        if stats.count > max_per_partition {
+            max_per_partition = stats.count;
+        }
+        if stats.count < min_per_partition {
+            min_per_partition = stats.count;
+        }
+    }
+
+    // Compute partitioned trend vectorially: delta (last - first) per (window, partition),
+    // clamped to zero for counter resets, then averaged across partitions per window.
+    let partition_cols: Vec<Expr> = partition_by.iter().map(|&s| col(s)).collect();
+    let trend_frame = frame
+        .lazy()
+        .filter(col("time").is_not_null())
+        .filter(col(column).is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            partition_cols,
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([(col(column).last().cast(DataType::Float64)
+            - col(column).first().cast(DataType::Float64))
+        .alias("delta")])
+        .with_column(
+            when(col("delta").lt(lit(0.0_f64)))
+                .then(lit(0.0_f64))
+                .otherwise(col("delta"))
+                .alias("delta"),
+        )
+        .group_by([col("time")])
+        .agg([col("delta").mean().alias("mean_delta")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    let trend: Vec<f64> = trend_frame
+        .column("mean_delta")?
+        .f64()?
+        .iter()
+        .map(|v| round_to_n_dp(v.unwrap_or(0.0), 4))
+        .collect();
+
+    let mean_count = if partition_count == 0 {
+        0
+    } else {
+        (total_count as f64 / partition_count as f64).round() as u64
+    };
+
+    Ok(PartitionedCounterStats {
+        total_count,
+        partition_count,
+        partitions_above_zero,
+        mean_count,
+        max_per_partition,
+        min_per_partition: if min_per_partition == u64::MAX {
+            0
+        } else {
+            min_per_partition
+        },
+        trend,
+        window_duration: window_duration.to_string(),
+    })
+}
+
+/// Like [`partitioned_counter_stats`] but returns an empty result when no series is
+/// found in InfluxDB. Use this for metrics that track errors where zero occurrences
+/// is a valid and expected outcome.
+pub(crate) fn partitioned_counter_stats_allow_empty(
     frame: anyhow::Result<DataFrame>,
     column: &str,
     window_duration: &str,
     partition_by: &[&str],
-) -> anyhow::Result<PartitionedTimingStats> {
+) -> anyhow::Result<PartitionedCounterStats> {
     match frame {
-        Ok(df) => partitioned_timing_stats(df, column, window_duration, partition_by),
+        Ok(df) => partitioned_counter_stats(df, column, window_duration, partition_by),
         Err(e) => {
             if let Some(LoadError::NoSeriesInResult { .. }) = e.downcast_ref::<LoadError>() {
-                // It is expected that there often is no error at all so if we find no series, return an empty count
-                Ok(PartitionedTimingStats {
-                    mean: 0.0,
-                    mean_std_dev: 0.0,
-                    timings: vec![],
+                Ok(PartitionedCounterStats {
+                    total_count: 0,
+                    partition_count: 0,
+                    partitions_above_zero: 0,
+                    mean_count: 0,
+                    max_per_partition: 0,
+                    min_per_partition: 0,
+                    trend: vec![],
+                    window_duration: window_duration.to_string(),
                 })
             } else {
                 Err(e)
             }
         }
     }
+}
+
+/// Compute [`ChainHeadStats`] from a frame containing observations from multiple reading agents
+/// of multiple writing agents' chain heads.
+///
+/// The reading dimension is collapsed by grouping on `writer_tag` and taking the maximum
+/// observed value per writing agent — any successful read by any reader counts as propagation.
+/// The writing dimension is then summarised with mean and max across all writing agents.
+///
+/// A windowed trend is also computed: per time window, take `max(observed_value)` per write
+/// agent, then average those maxes across write agents. This shows how chain advancement
+/// progressed over the run — a flat or slowing trend indicates writing stalled or readers
+/// caught up.
+///
+/// # Use cases
+/// - `chain_len` (must_get_agent_activity scenarios): `writer_tag` = `"write_agent"`
+/// - `highest_observed_action_seq` (get_agent_activity scenarios): `writer_tag` = `"write_agent"`
+pub(crate) fn chain_head_stats(
+    frame: DataFrame,
+    column: &str,
+    writer_tag: &str,
+    window_duration: &str,
+) -> anyhow::Result<ChainHeadStats> {
+    let per_writer = frame
+        .clone()
+        .lazy()
+        .filter(col("time").is_not_null())
+        .group_by([col(writer_tag)])
+        .agg([col(column).cast(DataType::Float64).max().alias("max_val")])
+        .collect()
+        .context("Group by writer and take max")?;
+
+    let write_agent_count = per_writer.height();
+
+    if write_agent_count == 0 {
+        return Ok(ChainHeadStats {
+            mean_max: 0.0,
+            max: 0.0,
+            write_agent_count: 0,
+            trend: Float64Trend {
+                trend: vec![],
+                window_duration: window_duration.to_string(),
+            },
+        });
+    }
+
+    let max_vals = per_writer
+        .column("max_val")
+        .context("Get max_val column")?
+        .f64()
+        .context("Cast max_val to f64")?;
+
+    let mean_max = max_vals.mean().unwrap_or(0.0);
+    let max = max_vals.max().unwrap_or(0.0);
+
+    // Per-window trend: for each window, take max per write_agent then average across agents.
+    let trend_frame = frame
+        .lazy()
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [col(writer_tag)],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column)
+            .cast(DataType::Float64)
+            .max()
+            .alias("writer_max")])
+        .group_by([col("time")])
+        .agg([col("writer_max").mean().alias("mean_writer_max")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()
+        .context("Windowed chain head trend")?;
+
+    let trend: Vec<f64> = trend_frame
+        .column("mean_writer_max")
+        .context("Get mean_writer_max column")?
+        .f64()
+        .context("Cast mean_writer_max to f64")?
+        .iter()
+        .map(|v| round_to_n_dp(v.unwrap_or(0.0), 2))
+        .collect();
+
+    Ok(ChainHeadStats {
+        mean_max: round_to_n_dp(mean_max, 2),
+        max: round_to_n_dp(max, 2),
+        write_agent_count,
+        trend: Float64Trend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
+    })
 }
 
 pub(crate) fn standard_rate(
@@ -349,7 +597,7 @@ pub(crate) fn gauge_stats_dp(
         std: round_to_n_dp(std, dp),
         p5: round_to_n_dp(p5, dp),
         p95: round_to_n_dp(p95, dp),
-        trend: GaugeTrend {
+        trend: Float64Trend {
             trend,
             window_duration: window_duration.to_string(),
         },
@@ -559,7 +807,7 @@ pub(crate) fn counter_stats(
         p5_rate_per_second: round_to_n_dp(p5, 2),
         p95_rate_per_second: round_to_n_dp(p95, 2),
         peak_rate_per_second: round_to_n_dp(peak, 2),
-        rate_trend: GaugeTrend {
+        rate_trend: Float64Trend {
             trend,
             window_duration: window_duration.to_string(),
         },
@@ -582,8 +830,22 @@ pub(crate) fn partitioned_rate_stats(
         .unique_stable(None, UniqueKeepStrategy::First)
         .collect()?;
 
-    let mut rates = Vec::new();
-    for i in 0..unique.height() {
+    let partition_count = unique.height();
+    if partition_count == 0 {
+        return Ok(PartitionedRateStats {
+            mean: 0.0,
+            max_mean: 0.0,
+            min_mean: 0.0,
+            trend: vec![],
+            window_duration: window_duration.to_string(),
+        });
+    }
+
+    let mut sum_mean = 0.0_f64;
+    let mut max_mean = 0.0_f64;
+    let mut min_mean = f64::MAX;
+
+    for i in 0..partition_count {
         let mut filter_expr = col("time").is_not_null();
         let mut key = Vec::new();
         for c in partition_by {
@@ -599,7 +861,6 @@ pub(crate) fn partitioned_rate_stats(
             });
             filter_expr = filter_expr.and(col(*c).eq(lit(value)));
         }
-        key.sort();
 
         let filtered = frame
             .clone()
@@ -612,20 +873,60 @@ pub(crate) fn partitioned_rate_stats(
         let summary_rate = standard_rate(filtered, column, window_duration)
             .with_context(|| format!("Standard rate for {key:?}"))?;
 
-        rates.push(PartitionRateStats { key, summary_rate });
+        sum_mean += summary_rate.mean;
+        if summary_rate.mean > max_mean {
+            max_mean = summary_rate.mean;
+        }
+        if summary_rate.mean < min_mean {
+            min_mean = summary_rate.mean;
+        }
     }
-    rates.sort_by_key(|v| v.key.clone());
 
-    let mean = rates.iter().map(|t| t.summary_rate.mean).sum::<f64>() / rates.len() as f64;
+    // Compute the partitioned trend vectorially: group by (window, partition) to get
+    // per-partition counts per window, then average across partitions per window.
+    // This avoids a per-partition loop and produces a single chronological series
+    // of mean-across-partitions counts per time window.
+    let partition_cols: Vec<Expr> = partition_by.iter().map(|&s| col(s)).collect();
+    let trend_frame = frame
+        .lazy()
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            partition_cols,
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([col(column).count().alias("count")])
+        .group_by([col("time")])
+        .agg([col("count").mean().alias("mean_count")])
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .collect()?;
+
+    let trend: Vec<f64> = trend_frame
+        .column("mean_count")?
+        .f64()?
+        .iter()
+        .map(|v| round_to_n_dp(v.unwrap_or(0.0), 2))
+        .collect();
 
     Ok(PartitionedRateStats {
-        mean: round_to_n_dp(mean, 2),
-        rates,
+        mean: round_to_n_dp(sum_mean / partition_count as f64, 2),
+        max_mean: round_to_n_dp(max_mean, 2),
+        min_mean: round_to_n_dp(if min_mean == f64::MAX { 0.0 } else { min_mean }, 2),
+        trend,
+        window_duration: window_duration.to_string(),
     })
-}
-
-pub fn bound_pct(value: f64) -> f64 {
-    (value.clamp(0.0, 1.0) * 10_000.0).round() / 10_000.0
 }
 
 pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
@@ -699,4 +1000,24 @@ pub(crate) fn growth_rate(df: &DataFrame, column: &str, duration_secs: f64) -> a
     let secs_per_sample = duration_secs / nf;
 
     Ok(slope_per_sample / secs_per_sample)
+}
+
+/// Compute the delivery ratio: the fraction of sent items that were received by each reader.
+///
+/// `sent_count` is the total number of items sent (e.g. entries created).
+/// `recv` is the `PartitionedCounterStats` for receivers — `total_count` is the aggregate
+/// received count and `partition_count` is the number of reading agents.
+///
+/// The formula normalises the received total by both the number of items sent and the number
+/// of receivers (each receiver should see every sent item). Clamped to `[0, 1]` to absorb
+/// windowing imprecision. Returns `0.0` when there are no sent items or no receivers.
+pub(crate) fn delivery_ratio(sent_count: u64, recv: &PartitionedCounterStats) -> f64 {
+    if sent_count > 0 && recv.partition_count > 0 {
+        round_to_n_dp(
+            (recv.total_count as f64 / (sent_count as f64 * recv.partition_count as f64)).min(1.0),
+            4,
+        )
+    } else {
+        0.0
+    }
 }

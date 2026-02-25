@@ -14,16 +14,9 @@
     "data" .run_summary
 ) }}
 
+{{/* Renders retrieval_errors as PartitionedCounterStats */}}
 {{ define "mixed_arc_get_agent_activity_retrieval_errors" }}
-    {{ range .timings }}
-        {{ template "scenario_metric_content_item" (dict
-            "name" (tmpl.Exec "composite_key" .key)
-            "content" (tmpl.Exec "trend_graph" (dict
-                "data" .summary_timing.trend.trend
-                "window_duration" .summary_timing.trend.window_duration
-            ))
-        ) }}
-    {{ end }}
+    {{ template "partitioned_counter_stats" . }}
 {{ end }}
 
 {{ define "mixed_arc_get_agent_activity_open_connections" }}
@@ -40,15 +33,15 @@
         {{ template "scenario_metric" (dict
             "class" "large"
             "name" "Entry created count"
-            "description" "The cumulative number of entries created by write agents over the run, partitioned by agent and behaviour."
-            "content" (tmpl.Exec "timings_overall_and_per_agent" .entry_created_count)
+            "description" "The total number of entries created by write agents over the run, partitioned by agent and behaviour."
+            "content" (tmpl.Exec "partitioned_counter_stats" .entry_created_count)
         ) }}
 
         {{ template "scenario_metric" (dict
             "class" "large"
-            "name" "Highest observed <code>action_seq</code>"
-            "description" "The rate at which zero-arc readers observe new chain heads on the writers' chains via <code>get_agent_activity</code>. This reflects the DHT's ability to propagate agent activity ops and make them available to querying peers."
-            "content" (tmpl.Exec "rates_overall_and_per_agent" .highest_observed_action_seq)
+            "name" "Observed chain advancement"
+            "description" "The maximum highest-observed action sequence per write agent, aggregated across all reading agents. The reading dimension is collapsed by taking the maximum observed value for each write agent (any reader successfully tracking that point counts as propagation). Captures how far readers tracked writers&#x2019; chains during the run."
+            "content" (tmpl.Exec "chain_head_stats" .highest_observed_action_seq)
         ) }}
 
         {{ template "scenario_metric" (dict
@@ -73,7 +66,7 @@
         ) }}
 
         {{ with .retrieval_errors }}
-            {{ if gt .mean 0.0 }}
+            {{ if gt .total_count 0 }}
                 {{ template "scenario_metric" (dict
                     "class" "large"
                     "name" "Retrieval errors"

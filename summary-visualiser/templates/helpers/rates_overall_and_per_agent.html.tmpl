@@ -1,15 +1,36 @@
 {{/*
-Render a summary of overall rates and per-agent rates.
-Corresponding Rust type: `holochain_metrics::PartitionedRateStats`
-*/}}
-{{ define "rates_overall_template" }}
-    {{ template "mean" (dict "mean" . "unit" "/s") }}
-{{ end }}
+Render aggregate rate statistics across partitions.
+Corresponding Rust type: `PartitionedRateStats`
+Fields: `mean`, `max_mean`, `min_mean`, `trend`, `window_duration`
 
-{{ template "overall_and_per_agent" (dict
-    "overall_data" .mean
-    "overall_template" "rates_overall_template"
-    "per_agent_data" .rates
-    "per_agent_data_key" "summary_rate"
-    "per_agent_template" "rate_and_trend"
-) }}
+`mean` is null when no data was collected (empty frame),
+in which case "N/A" is displayed.
+
+The trend shows the mean count per time window averaged across partitions.
+*/}}
+{{ if ne (index . "mean") nil }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Mean"
+        "content" (tmpl.Exec "mean" (dict "mean" .mean "unit" "/s"))
+    ) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Max"
+        "description" "Highest per-partition mean rate"
+        "content" (tmpl.Exec "scalar" (dict "label" "max " "value" .max_mean "unit" "/s"))
+    ) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Min"
+        "description" "Lowest per-partition mean rate"
+        "content" (tmpl.Exec "scalar" (dict "label" "min " "value" .min_mean "unit" "/s"))
+    ) }}
+    {{ template "trend_graph" (dict
+        "data" .trend
+        "mean" .mean
+        "window_duration" .window_duration
+    ) }}
+{{ else }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Mean"
+        "content" "<span class=\"no-data\">N/A</span>"
+    ) }}
+{{ end }}
