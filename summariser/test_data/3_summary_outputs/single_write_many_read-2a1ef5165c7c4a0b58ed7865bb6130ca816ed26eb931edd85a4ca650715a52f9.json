@@ -30,7 +30,20 @@
     }
   },
   "scenario_metrics": {
-    "error_count": 0,
+    "read_call": {
+      "mean": 0.001305,
+      "std": 0.000412,
+      "within_std": 0.9896,
+      "within_2std": 0.9944,
+      "within_3std": 0.9948,
+      "trend": {
+        "trend": [
+          0.001297,
+          0.001314
+        ],
+        "window_duration": "10s"
+      }
+    },
     "rate_10s": {
       "mean": 0.0,
       "trend": [
@@ -39,20 +52,7 @@
       ],
       "window_duration": "10s"
     },
-    "read_call": {
-      "mean": 0.001305,
-      "std": 0.000412,
-      "trend": {
-        "trend": [
-          0.001297,
-          0.001314
-        ],
-        "window_duration": "10s"
-      },
-      "within_2std": 0.9944,
-      "within_3std": 0.9948,
-      "within_std": 0.9896
-    }
+    "error_count": 0
   },
   "host_metrics": {
     "cpu": {
@@ -339,11 +339,21 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": "NotDetected",
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "cpu_spike": {
+        "type": "NotDetected"
+      },
+      "memory_leak": {
+        "type": "NotDetected"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

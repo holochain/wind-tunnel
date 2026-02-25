@@ -30,38 +30,24 @@
     }
   },
   "scenario_metrics": {
-    "errors": 0,
-    "read_rate": {
-      "mean": 236.8,
-      "trend": [
-        119,
-        295,
-        266,
-        241,
-        200,
-        182,
-        72
-      ],
-      "window_duration": "10s"
-    },
-    "read_timing": {
-      "mean": 0.026436,
-      "std": 0.006814,
+    "write_timing": {
+      "mean": 0.015456,
+      "std": 0.006831,
+      "within_std": 0.8502,
+      "within_2std": 0.9731,
+      "within_3std": 0.9949,
       "trend": {
         "trend": [
-          0.019925,
-          0.022645,
-          0.024484,
-          0.027147,
-          0.030069,
-          0.031601,
-          0.034417
+          0.009619,
+          0.011085,
+          0.013056,
+          0.014266,
+          0.019864,
+          0.02314,
+          0.024231
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9847,
-      "within_3std": 0.9927,
-      "within_std": 0.8451
+      }
     },
     "write_rate": {
       "mean": 236.8,
@@ -76,25 +62,39 @@
       ],
       "window_duration": "10s"
     },
-    "write_timing": {
-      "mean": 0.015456,
-      "std": 0.006831,
+    "read_timing": {
+      "mean": 0.026436,
+      "std": 0.006814,
+      "within_std": 0.8451,
+      "within_2std": 0.9847,
+      "within_3std": 0.9927,
       "trend": {
         "trend": [
-          0.009619,
-          0.011085,
-          0.013056,
-          0.014266,
-          0.019864,
-          0.02314,
-          0.024231
+          0.019925,
+          0.022645,
+          0.024484,
+          0.027147,
+          0.030069,
+          0.031601,
+          0.034417
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9731,
-      "within_3std": 0.9949,
-      "within_std": 0.8502
-    }
+      }
+    },
+    "read_rate": {
+      "mean": 236.8,
+      "trend": [
+        119,
+        295,
+        266,
+        241,
+        200,
+        182,
+        72
+      ],
+      "window_duration": "10s"
+    },
+    "errors": 0
   },
   "host_metrics": {
     "cpu": {
@@ -381,16 +381,23 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": {
-        "Detected": {
-          "severity": "Warning",
-          "description": "Memory growing at 1.11 MB/s"
-        }
+      "cpu_spike": {
+        "type": "NotDetected"
       },
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "memory_leak": {
+        "type": "Detected",
+        "severity": "Warning",
+        "description": "Memory growing at 1.11 MB/s"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

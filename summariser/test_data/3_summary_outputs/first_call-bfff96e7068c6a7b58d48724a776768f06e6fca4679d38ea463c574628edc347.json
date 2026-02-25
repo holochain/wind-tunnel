@@ -33,6 +33,9 @@
     "zome_call_timing": {
       "mean": 0.004898,
       "std": 0.001733,
+      "within_std": 0.9741,
+      "within_2std": 0.9741,
+      "within_3std": 0.9741,
       "trend": {
         "trend": [
           0.004636,
@@ -40,10 +43,7 @@
           0.005077
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9741,
-      "within_3std": 0.9741,
-      "within_std": 0.9741
+      }
     }
   },
   "host_metrics": {
@@ -327,16 +327,23 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": {
-        "Detected": {
-          "severity": "Warning",
-          "description": "Memory growing at 20.24 MB/s"
-        }
+      "cpu_spike": {
+        "type": "NotDetected"
       },
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "memory_leak": {
+        "type": "Detected",
+        "severity": "Warning",
+        "description": "Memory growing at 20.24 MB/s"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

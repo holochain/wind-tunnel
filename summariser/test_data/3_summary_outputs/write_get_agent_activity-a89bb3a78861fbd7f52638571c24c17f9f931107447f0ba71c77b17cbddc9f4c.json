@@ -31,19 +31,14 @@
     }
   },
   "scenario_metrics": {
-    "error_count": 0,
-    "get_agent_activity_full_zome_calls": {
-      "mean": null,
-      "mean_std_dev": null,
-      "timings": []
-    },
     "highest_observed_action_seq": {
       "count": 1842,
-      "mean_rate_per_second": 56.59,
       "measurement_duration": {
-        "nanos": 585981757,
-        "secs": 33
+        "secs": 33,
+        "nanos": 585981757
       },
+      "mean_rate_per_second": 56.59,
+      "std_rate_per_second": 22.49,
       "p5_rate_per_second": 29.8,
       "p95_rate_per_second": 100.66,
       "peak_rate_per_second": 126.03,
@@ -55,83 +50,22 @@
           49.02
         ],
         "window_duration": "10s"
-      },
-      "std_rate_per_second": 22.49
+      }
     },
+    "get_agent_activity_full_zome_calls": {
+      "mean": null,
+      "mean_std_dev": null,
+      "timings": []
+    },
+    "error_count": 0,
     "holochain_p2p_metrics": {
-      "handle_incoming_request_duration": {
-        "get": {
-          "mean": 0.00022,
-          "std": 0.000133,
-          "trend": {
-            "trend": [
-              0.000161,
-              0.000174,
-              0.000263,
-              0.000219,
-              0.000203
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.9706,
-          "within_3std": 0.9853,
-          "within_std": 0.8824
-        },
-        "get_agent_activity": {
-          "mean": 0.019445,
-          "std": 0.004955,
-          "trend": {
-            "trend": [
-              0.014635,
-              0.016497,
-              0.020921,
-              0.025671
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.972,
-          "within_3std": 0.9968,
-          "within_std": 0.6725
-        },
-        "response": {
-          "mean": 6e-6,
-          "std": 6e-6,
-          "trend": {
-            "trend": [
-              4e-6,
-              6e-6,
-              6e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.9976,
-          "within_3std": 0.9986,
-          "within_std": 0.9878
-        },
-        "send_validation_receipts": {
-          "mean": 0.01379,
-          "std": 0.062863,
-          "trend": {
-            "trend": [
-              0.002718,
-              0.341749,
-              0.008277,
-              0.011186,
-              0.015707
-            ],
-            "window_duration": "10s"
-          },
-          "within_2std": 0.9963,
-          "within_3std": 0.9963,
-          "within_std": 0.9957
-        }
-      },
       "request_roundtrip_duration": {
         "get": {
           "mean": 0.0004,
           "std": 0.000156,
+          "within_std": 0.9265,
+          "within_2std": 0.9706,
+          "within_3std": 0.9706,
           "trend": {
             "trend": [
               0.000304,
@@ -141,14 +75,14 @@
               0.000386
             ],
             "window_duration": "10s"
-          },
-          "within_2std": 0.9706,
-          "within_3std": 0.9706,
-          "within_std": 0.9265
+          }
         },
         "get_agent_activity": {
           "mean": 0.020116,
           "std": 0.005031,
+          "within_std": 0.6717,
+          "within_2std": 0.972,
+          "within_3std": 0.9968,
           "trend": {
             "trend": [
               0.015248,
@@ -157,14 +91,14 @@
               0.026452
             ],
             "window_duration": "10s"
-          },
-          "within_2std": 0.972,
-          "within_3std": 0.9968,
-          "within_std": 0.6717
+          }
         },
         "send_validation_receipts": {
           "mean": 0.014028,
           "std": 0.062926,
+          "within_std": 0.9957,
+          "within_2std": 0.9963,
+          "within_3std": 0.9963,
           "trend": {
             "trend": [
               0.002883,
@@ -174,10 +108,76 @@
               0.015956
             ],
             "window_duration": "10s"
-          },
+          }
+        }
+      },
+      "handle_incoming_request_duration": {
+        "response": {
+          "mean": 6e-6,
+          "std": 6e-6,
+          "within_std": 0.9878,
+          "within_2std": 0.9976,
+          "within_3std": 0.9986,
+          "trend": {
+            "trend": [
+              4e-6,
+              6e-6,
+              6e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.00022,
+          "std": 0.000133,
+          "within_std": 0.8824,
+          "within_2std": 0.9706,
+          "within_3std": 0.9853,
+          "trend": {
+            "trend": [
+              0.000161,
+              0.000174,
+              0.000263,
+              0.000219,
+              0.000203
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_agent_activity": {
+          "mean": 0.019445,
+          "std": 0.004955,
+          "within_std": 0.6725,
+          "within_2std": 0.972,
+          "within_3std": 0.9968,
+          "trend": {
+            "trend": [
+              0.014635,
+              0.016497,
+              0.020921,
+              0.025671
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.01379,
+          "std": 0.062863,
+          "within_std": 0.9957,
           "within_2std": 0.9963,
           "within_3std": 0.9963,
-          "within_std": 0.9957
+          "trend": {
+            "trend": [
+              0.002718,
+              0.341749,
+              0.008277,
+              0.011186,
+              0.015707
+            ],
+            "window_duration": "10s"
+          }
         }
       }
     }
@@ -467,11 +467,21 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": "NotDetected",
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "cpu_spike": {
+        "type": "NotDetected"
+      },
+      "memory_leak": {
+        "type": "NotDetected"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

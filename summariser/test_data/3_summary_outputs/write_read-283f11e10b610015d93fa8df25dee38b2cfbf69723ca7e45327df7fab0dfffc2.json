@@ -30,34 +30,22 @@
     }
   },
   "scenario_metrics": {
-    "errors": 0,
-    "read_rate": {
-      "mean": 696.0,
-      "trend": [
-        388,
-        923,
-        652,
-        513,
-        24
-      ],
-      "window_duration": "10s"
-    },
-    "read_timing": {
-      "mean": 0.006525,
-      "std": 0.003262,
+    "write_timing": {
+      "mean": 0.006688,
+      "std": 0.00237,
+      "within_std": 0.7784,
+      "within_2std": 0.9564,
+      "within_3std": 0.984,
       "trend": {
         "trend": [
-          0.002421,
-          0.004955,
-          0.007955,
-          0.010293,
-          0.013863
+          0.004617,
+          0.005766,
+          0.007241,
+          0.009053,
+          0.010212
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9872,
-      "within_3std": 0.9968,
-      "within_std": 0.652
+      }
     },
     "write_rate": {
       "mean": 696.33,
@@ -70,23 +58,35 @@
       ],
       "window_duration": "10s"
     },
-    "write_timing": {
-      "mean": 0.006688,
-      "std": 0.00237,
+    "read_timing": {
+      "mean": 0.006525,
+      "std": 0.003262,
+      "within_std": 0.652,
+      "within_2std": 0.9872,
+      "within_3std": 0.9968,
       "trend": {
         "trend": [
-          0.004617,
-          0.005766,
-          0.007241,
-          0.009053,
-          0.010212
+          0.002421,
+          0.004955,
+          0.007955,
+          0.010293,
+          0.013863
         ],
         "window_duration": "10s"
-      },
-      "within_2std": 0.9564,
-      "within_3std": 0.984,
-      "within_std": 0.7784
-    }
+      }
+    },
+    "read_rate": {
+      "mean": 696.0,
+      "trend": [
+        388,
+        923,
+        652,
+        513,
+        24
+      ],
+      "window_duration": "10s"
+    },
+    "errors": 0
   },
   "host_metrics": {
     "cpu": {
@@ -369,16 +369,23 @@
       }
     },
     "anomalies": {
-      "cpu_spike": "NotDetected",
-      "memory_leak": {
-        "Detected": {
-          "severity": "Warning",
-          "description": "Memory growing at 1.12 MB/s"
-        }
+      "cpu_spike": {
+        "type": "NotDetected"
       },
-      "disk_full": "NotDetected",
-      "swap_thrashing": "NotDetected",
-      "system_overload": "NotDetected"
+      "memory_leak": {
+        "type": "Detected",
+        "severity": "Warning",
+        "description": "Memory growing at 1.12 MB/s"
+      },
+      "disk_full": {
+        "type": "NotDetected"
+      },
+      "swap_thrashing": {
+        "type": "NotDetected"
+      },
+      "system_overload": {
+        "type": "NotDetected"
+      }
     }
   }
 }

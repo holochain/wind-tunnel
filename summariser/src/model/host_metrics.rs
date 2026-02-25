@@ -166,6 +166,7 @@ pub struct SystemLoadMetrics {
 
 /// Status of a single anomaly check.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type")]
 pub enum AnomalyStatus {
     NotDetected,
     Detected {
