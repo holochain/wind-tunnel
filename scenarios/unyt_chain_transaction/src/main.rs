@@ -71,7 +71,7 @@ fn main() -> WindTunnelResult<()> {
         while let Ok(History {
             items,
             low_boundary,
-            end_of_chain: false,
+            end_of_chain,
         }) = ctx.unyt_get_history(Pagination {
             high_boundary: current_boundary,
             per_page: 100,
@@ -101,6 +101,9 @@ fn main() -> WindTunnelResult<()> {
                     .with_field("parked_spends", parked_spend)
                     .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
             );
+            if end_of_chain {
+                break;
+            }
         }
 
         log::info!("uninstalling agent {}", ctx.get().cell_id().agent_pubkey());
