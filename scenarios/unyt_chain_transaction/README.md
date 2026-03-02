@@ -42,7 +42,7 @@ The scenario records several custom metrics:
 - `wt.custom.global_definition_propagation_time`: Records the time at which the global definition becomes readable for each agent, helping measure network initialization propagation speed
 - `wt.custom.ledger_state`: Captures the final state of the ledger at scenario teardown for analysis
 - `wt.custom.actionable_transactions`: Records the count of actionable invoices and spends at scenario teardown
-- `wt.custom.completed_transactions`: Records the count of completed transactions, including accepts and spends, at scenario teardown
+- `wt.custom.completed_transactions`: Records the count of completed transactions, including accepts, spends, and RAVE agreement executions, at scenario teardown
 - `wt.custom.parked_spends`: Records the count of parked spends at scenario teardown
 
 Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.

@@ -1,4 +1,11 @@
-use crate::{ScenarioValues, unyt_agent::UnytAgentExt};
+//! Progenitor behaviour that bootstraps the Unyt network.
+//!
+//! The progenitor agent runs [`agent_behaviour`] which creates the
+//! system code templates and smart agreements, then initializes the
+//! global definition. Once the network is up it idles, periodically
+//! logging its ledger.
+
+use crate::{UnytScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
@@ -14,10 +21,18 @@ use serde_json::json;
 use std::{thread, time::Duration};
 use zfuel::fuel::ZFuel;
 
-/// This behavior is where the progenitor is meant to initialize the network
-/// after which it will stay idle for now
-pub fn agent_behaviour(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+/// Progenitor behaviour that initializes the Unyt network.
+///
+/// On the first invocation the agent creates the system code templates
+/// and smart agreements, then calls `initialize_global_definition`.
+/// On subsequent calls the network is already set up, so the agent
+/// logs its ledger and sleeps for 20 seconds.
+///
+/// # Errors
+///
+/// Returns an error if any zome call during initialization fails.
+pub fn agent_behaviour<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> HookResult {
     // check if network is initialized, if not initialize it
     if !ctx.is_network_initialized() {
@@ -81,8 +96,8 @@ pub fn agent_behaviour(
     Ok(())
 }
 
-fn create_agreements(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+fn create_agreements<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> Result<(ActionHashB64, ActionHashB64), anyhow::Error> {
     let credit_limit_hash = ctx.unyt_create_code_template(CodeTemplate {
         version: semver::Version::new(0, 1, 0),
