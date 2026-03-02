@@ -318,6 +318,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - unyt_chain_transaction_zero_arc
+        run: |
+          nix run .#rust-smoke-test -- --package unyt_chain_transaction_zero_arc -- --agents 5 --behaviour initiate:1 --behaviour zero_spend:1 --behaviour zero_smart_agreements:1 --behaviour full_observer:2 --duration 30 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test

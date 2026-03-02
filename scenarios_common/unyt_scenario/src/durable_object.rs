@@ -1,3 +1,10 @@
+//! HTTP client for the Cloudflare Durable Object temporary storage.
+//!
+//! The [`DurableObject`] client lets the progenitor agent publish its
+//! public key so that other agents (potentially running on different
+//! machines) can retrieve it before installing the hApp.
+
+use crate::UnytScenarioValues;
 use anyhow::Context;
 use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::prelude::*;
@@ -5,12 +12,16 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::time::timeout;
 
-use crate::ScenarioValues;
-
-// DurableObject struct and related functionality
+/// HTTP client for sharing the progenitor key via a Durable Object.
+///
+/// The progenitor agent posts its public key after generation; every
+/// other agent polls until the key becomes available, then uses it to
+/// configure DNA properties before installing the hApp.
 #[derive(Debug, Clone)]
 pub struct DurableObject {
+    /// Root URL of the Durable Object worker endpoint.
     pub base_url: String,
+    /// Shared secret sent with POST requests for authentication.
     pub secret: String,
     client: reqwest::Client,
 }
@@ -33,6 +44,7 @@ struct GetResponse {
 }
 
 impl DurableObject {
+    /// Creates a new client with default endpoint and timeouts.
     pub fn new() -> Self {
         Self {
             base_url: "https://durable-object-tmp-storage.joel-ulahanna.workers.dev".to_string(),
@@ -46,6 +58,15 @@ impl DurableObject {
         }
     }
 
+    /// Posts the progenitor key to the Durable Object.
+    ///
+    /// Called once by the progenitor agent so that other agents can
+    /// later retrieve the key via [`Self::get_progenitor_key`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP request fails or the response
+    /// cannot be parsed.
     pub async fn post_progenitor_key(
         &self,
         run_id: &str,
@@ -85,11 +106,21 @@ impl DurableObject {
         Ok(post_response.success)
     }
 
-    pub fn get_progenitor_key(
+    /// Fetches the progenitor key from the Durable Object.
+    ///
+    /// Polls the endpoint every 2 seconds until the key is available
+    /// or a 120-second timeout expires. The result is cached in
+    /// [`UnytScenarioValues`] so subsequent calls return immediately.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the key is not available within the
+    /// timeout, or the HTTP request/parsing fails.
+    pub fn get_progenitor_key<SV: UnytScenarioValues>(
         &self,
-        ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+        ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     ) -> anyhow::Result<AgentPubKey> {
-        if let Some(progenitor_agent_pubkey) = &ctx.get().scenario_values.progenitor_agent_pubkey {
+        if let Some(progenitor_agent_pubkey) = ctx.get().scenario_values.progenitor_agent_pubkey() {
             return Ok(progenitor_agent_pubkey.clone().into());
         }
         // Use the same run_id as used in setup_progenitor
@@ -144,10 +175,17 @@ impl DurableObject {
         let progenitor_pubkey: AgentPubKey = AgentPubKey::try_from(progenitor_key_str)
             .context("Failed to parse progenitor key from DurableObject")?;
 
-        ctx.get_mut().scenario_values.progenitor_agent_pubkey =
-            Some(progenitor_pubkey.clone().into());
+        ctx.get_mut()
+            .scenario_values
+            .set_progenitor_agent_pubkey(progenitor_pubkey.clone().into());
 
         log::debug!("Fetched progenitor agent pubkey: {:?}", progenitor_pubkey);
         Ok(progenitor_pubkey)
+    }
+}
+
+impl Default for DurableObject {
+    fn default() -> Self {
+        Self::new()
     }
 }

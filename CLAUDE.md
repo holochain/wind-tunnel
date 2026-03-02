@@ -72,6 +72,12 @@ Common functionality available for scenarios:
 - Named behaviors allow a scenario to be comprised of multiple agents, behaving differently while interacting with each other.
 - Report which environment variables affect scenario behavior. This *must* be used for any variable that changes the scenario's behavior, otherwise the summariser can't recognize different configurations of the same scenario.
 
+### Shared Scenario Libraries (`scenarios_common/`)
+
+Reusable library crates shared across multiple scenario binaries. Each subdirectory is a Rust library (not a standalone binary) providing common helpers for a family of related scenarios.
+
+- `unyt_scenario` (`wind_tunnel_unyt_scenario`) — shared infrastructure for the Unyt scenarios (`unyt_chain_transaction`, `unyt_chain_transaction_zero_arc`), including network initialization, agent setup, durable object communication, and behaviour logic.
+
 ### Zomes (`zomes/`)
 
 Holochain coordinator/integrity zome pairs. Each zome uses `build = "../../wasm_build.rs"`. Coordinator and integrity zomes are separate Rust projects.
