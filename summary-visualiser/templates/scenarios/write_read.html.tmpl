@@ -36,4 +36,8 @@
             "content" (tmpl.Exec "scalar" (dict "value" .errors))
         ) }}
     {{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
 </div>

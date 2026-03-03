@@ -76,5 +76,9 @@ This helper doesn't actually output anything -- it just provides some helpers to
 
             {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
         {{ end }}
+
+        {{ with .host_metrics }}
+            {{ template "host_metrics" . }}
+        {{ end }}
     </div>
 {{ end }}

@@ -68,4 +68,8 @@ Fields:
 
         {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
 </div>

@@ -16,4 +16,8 @@
             "content" (tmpl.Exec "timing_and_trend" .)
         ) }}
     {{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
 </div>
