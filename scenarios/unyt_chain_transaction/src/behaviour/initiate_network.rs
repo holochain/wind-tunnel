@@ -2,7 +2,7 @@ use crate::{ScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
-    InitializeGlobalDefinition, PermissionSpace, UnitIndexMap,
+    InitializeGlobalDefinition, Oracles, PermissionSpace, UnitIndexMap,
     entries::{
         AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
         DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, GlobalDefinition, InputRules,
@@ -50,6 +50,9 @@ pub fn agent_behaviour(
                     additional_special_agents: vec![],
                     additional_rave_agreements: vec![],
                     service_units: UnitIndexMap::new(),
+                },
+                oracles: Oracles {
+                    pricing_oracle: None,
                 },
                 system_rave_agreements: SystemRAVEAgreements {
                     compute_credit_limit: credit_limit_smart_agreement,
@@ -191,7 +194,7 @@ fn create_agreements(
                 {
                   "const": {
                     "id": "spender",
-                    "consumed_link": true
+                    "parked_link_type": "ParkedSpendBalance"
                   }
                 }
               ],

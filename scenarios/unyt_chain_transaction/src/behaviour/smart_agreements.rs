@@ -61,7 +61,7 @@ pub fn agent_behaviour(
     let incoming_transactions = ctx.unyt_get_incoming_raves()?;
     for transaction in incoming_transactions {
         log::info!("Collecting incoming transaction: {:?}", transaction);
-        if let Err(err) = ctx.unyt_collect_from_rave(transaction.clone()) {
+        if let Err(err) = ctx.unyt_create_collect_from_rave(transaction.clone()) {
             log::warn!("Failed to collect from RAVE, transaction '{transaction:?}': {err}");
         }
     }
@@ -216,7 +216,7 @@ fn generate_smart_agreement(
                   {
                     "const": {
                       "id": "spender",
-                      "consumed_link": true
+                      "parked_link_type": "ParkedSpendBalance"
                     }
                   }
                 ],

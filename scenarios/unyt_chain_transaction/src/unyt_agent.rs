@@ -39,12 +39,18 @@ pub trait UnytAgentExt {
         commitment: CommitmentInput,
     ) -> Result<ActionHashB64, anyhow::Error>;
     fn unyt_get_actionable_transactions(&mut self) -> Result<Actionable, anyhow::Error>;
-    fn unyt_accept(&mut self, accept_input: AcceptInput) -> Result<ActionHashB64, anyhow::Error>;
+    fn unyt_create_accept(
+        &mut self,
+        accept_input: AcceptInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
     fn unyt_get_ledger(&mut self) -> Result<Ledger, anyhow::Error>;
     fn unyt_get_my_current_applied_credit_limit(&mut self) -> Result<UnitMap, anyhow::Error>;
     fn unyt_get_history(&mut self, pagination: Pagination) -> Result<History, anyhow::Error>;
     fn unyt_get_incoming_raves(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
-    fn unyt_collect_from_rave(&mut self, tx: Transaction) -> Result<ActionHashB64, anyhow::Error>;
+    fn unyt_create_collect_from_rave(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<ActionHashB64, anyhow::Error>;
     fn unyt_create_parked_spend(
         &mut self,
         park: CreateParkedSpendInput,
@@ -195,8 +201,11 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
         self.call_zome_alliance("get_actionable_transactions", ())
     }
 
-    fn unyt_accept(&mut self, accept_input: AcceptInput) -> Result<ActionHashB64, anyhow::Error> {
-        self.call_zome_alliance("accept", accept_input)
+    fn unyt_create_accept(
+        &mut self,
+        accept_input: AcceptInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_accept", accept_input)
     }
 
     fn unyt_get_ledger(&mut self) -> Result<Ledger, anyhow::Error> {
@@ -215,8 +224,11 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
         self.call_zome_alliance("get_incoming_raves", ())
     }
 
-    fn unyt_collect_from_rave(&mut self, tx: Transaction) -> Result<ActionHashB64, anyhow::Error> {
-        self.call_zome_alliance("collect_from_rave", tx)
+    fn unyt_create_collect_from_rave(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_collect_from_rave", tx)
     }
 
     fn unyt_create_parked_spend(
