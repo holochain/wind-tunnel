@@ -52,7 +52,7 @@ pub fn agent_behaviour(
         );
     }
     for transaction in actionable_transactions.commitment_actionable {
-        if let Err(err) = ctx.unyt_accept(AcceptInput {
+        if let Err(err) = ctx.unyt_create_accept(AcceptInput {
             commitment: transaction.id.clone(),
             note: None,
         }) {
