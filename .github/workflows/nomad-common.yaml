@@ -180,7 +180,7 @@ jobs:
           nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ inputs.nomad-job-variant-directory }}/vars" "${{ matrix.job-name }}" "${{ steps.read-nomad-vars.outputs.scenario_name }}" "$RUN_ID" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
 
       - name: Upload alloc_ids
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: alloc_ids_${{ matrix.job-name }}
           path: alloc_ids.csv
