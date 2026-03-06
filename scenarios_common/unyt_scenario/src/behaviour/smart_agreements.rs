@@ -1,4 +1,6 @@
-use crate::{ScenarioValues, unyt_agent::UnytAgentExt};
+use crate::ArcType;
+use crate::UnytScenarioValues;
+use crate::unyt_agent::UnytAgentExt;
 use anyhow::anyhow;
 use holochain_types::prelude::{ActionHashB64, GetStrategy};
 use holochain_wind_tunnel_runner::prelude::*;
@@ -11,6 +13,7 @@ use rave_engine::types::{
     },
 };
 use serde_json::json;
+use std::time::SystemTime;
 use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
@@ -21,16 +24,21 @@ fn env_number_of_links_processed() -> usize {
         .unwrap_or(10)
 }
 
-pub fn agent_behaviour(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+/// Smart agreements agent behaviour shared across Unyt scenarios.
+///
+/// When `arc_type` is `Some`, the `global_definition_propagation_time`
+/// metric is tagged with an `arc` key (e.g. `"zero"` for 0-arc agents).
+pub fn agent_behaviour<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    arc_type: Option<ArcType>,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
     let session_started_at = ctx
         .get()
         .scenario_values
-        .session_start_time
+        .session_start_time()
         .ok_or(anyhow!("`session_started_at` not set"))?;
-    let network_initialized = ctx.get().scenario_values.network_initialized;
+    let network_initialized = ctx.get().scenario_values.network_initialized();
     // Test 1: common check for all agents
     if !network_initialized {
         if ctx.is_network_initialized() {
@@ -38,12 +46,14 @@ pub fn agent_behaviour(
                 "Network initialized for agent {}",
                 ctx.get().cell_id().agent_pubkey()
             );
-            reporter.add_custom(
-                ReportMetric::new("global_definition_propagation_time")
-                    .with_field("at", session_started_at.elapsed().as_secs())
-                    .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
-            );
-            ctx.get_mut().scenario_values.network_initialized = true;
+            let mut metric = ReportMetric::new("global_definition_propagation_time")
+                .with_field("at", session_started_at.elapsed().as_secs())
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string());
+            if let Some(tag) = arc_type {
+                metric = metric.with_tag("arc", tag.as_tag());
+            }
+            reporter.add_custom(metric);
+            ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {
             // if the network is not initialized do not proceed with further testing without waiting for it to be initialized
             log::info!(
@@ -58,7 +68,46 @@ pub fn agent_behaviour(
     // test 2: Accepting incoming transactions
     // check incoming RAVE transactions
     log::info!("Checking incoming transactions");
-    let incoming_transactions = ctx.unyt_get_incoming_raves()?;
+    let incoming_transactions = match ctx.unyt_get_incoming_raves() {
+        Ok(txs) => txs,
+        Err(err) => {
+            log::warn!("Failed to get incoming RAVEs (transient DHT issue): {err}");
+            Vec::new()
+        }
+    };
+
+    // Measure sync lag for newly discovered RAVE transactions (zero-arc only)
+    if let Some(tag) = arc_type {
+        let now_us = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("system clock before UNIX epoch")
+            .as_micros();
+        let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+        for tx in &incoming_transactions {
+            if ctx
+                .get()
+                .scenario_values
+                .seen_transactions()
+                .contains(&tx.id)
+            {
+                continue;
+            }
+            let published_at_us = tx.timestamp.as_micros() as u128;
+            let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
+            reporter.add_custom(
+                ReportMetric::new("sync_lag")
+                    .with_tag("agent", agent_key.clone())
+                    .with_tag("arc", tag.as_tag())
+                    .with_tag("tx_type", "rave")
+                    .with_field("value", lag_s),
+            );
+            ctx.get_mut()
+                .scenario_values
+                .seen_transactions_mut()
+                .insert(tx.id.clone());
+        }
+    }
+
     for transaction in incoming_transactions {
         log::info!("Collecting incoming transaction: {:?}", transaction);
         if let Err(err) = ctx.unyt_create_collect_from_rave(transaction.clone()) {
@@ -70,40 +119,96 @@ pub fn agent_behaviour(
     // execute any smart agreement that is ready to be executed
     let number_of_links_processed = env_number_of_links_processed();
     log::info!("Getting requests to execute agreements");
-    let requests = ctx.unyt_get_requests_to_execute_agreements()?;
-    let global_definition = ctx.unyt_get_current_global_definition()?;
-    for request in requests {
-        // select number of links and pass only NUMBER_OF_LINKS_TO_PROCESS links
-        if let TransactionDetails::GroupedParked {
-            attached_transactions,
-            ..
-        } = request.details
-        {
-            let links: Vec<_> = attached_transactions
-                .into_iter()
-                .take(number_of_links_processed)
-                .collect();
-            let ea_id = request.id;
-            log::info!("Executing rave: {:?}", links);
-            if let Err(err) = ctx.unyt_execute_rave(RAVEExecuteInputs {
-                ea_id: ea_id.into(),
-                executor_inputs: json!({}),
-                links: links.clone(),
-                global_definition: global_definition.id.clone().into(),
-                lane_definitions: Vec::new(),
-                strategy: GetStrategy::default(),
-            }) {
-                log::warn!("Failed to execute RAVE with links '{links:?}': {err}");
-            };
+    let requests = match ctx.unyt_get_requests_to_execute_agreements() {
+        Ok(reqs) => reqs,
+        Err(err) => {
+            log::warn!("Failed to get requests to execute agreements (transient DHT issue): {err}");
+            Vec::new()
         }
+    };
+
+    // Measure sync lag for newly discovered grouped-parked requests (zero-arc only)
+    if let Some(tag) = arc_type {
+        let now_us = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("system clock before UNIX epoch")
+            .as_micros();
+        let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+        for tx in &requests {
+            if ctx
+                .get()
+                .scenario_values
+                .seen_transactions()
+                .contains(&tx.id)
+            {
+                continue;
+            }
+            let published_at_us = tx.timestamp.as_micros() as u128;
+            let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
+            reporter.add_custom(
+                ReportMetric::new("sync_lag")
+                    .with_tag("agent", agent_key.clone())
+                    .with_tag("arc", tag.as_tag())
+                    .with_tag("tx_type", "grouped_parked")
+                    .with_field("value", lag_s),
+            );
+            ctx.get_mut()
+                .scenario_values
+                .seen_transactions_mut()
+                .insert(tx.id.clone());
+        }
+    }
+
+    if let Ok(global_definition) = ctx.unyt_get_current_global_definition() {
+        for request in requests {
+            // select number of links and pass only NUMBER_OF_LINKS_TO_PROCESS links
+            if let TransactionDetails::GroupedParked {
+                attached_transactions,
+                ..
+            } = request.details
+            {
+                let links: Vec<_> = attached_transactions
+                    .into_iter()
+                    .take(number_of_links_processed)
+                    .collect();
+                let ea_id = request.id;
+                log::info!("Executing rave: {:?}", links);
+                if let Err(err) = ctx.unyt_execute_rave(RAVEExecuteInputs {
+                    ea_id: ea_id.into(),
+                    executor_inputs: json!({}),
+                    links: links.clone(),
+                    global_definition: global_definition.id.clone().into(),
+                    lane_definitions: Vec::new(),
+                    strategy: GetStrategy::default(),
+                }) {
+                    log::warn!("Failed to execute RAVE with links '{links:?}': {err}");
+                };
+            }
+        }
+    } else {
+        log::warn!("Failed to get global definition, skipping RAVE execution");
     }
 
     // test 4
     // get ledger and calculate how much you can spend in this round
-    let ledger = ctx.unyt_get_ledger()?;
+    let ledger = match ctx.unyt_get_ledger() {
+        Ok(l) => l,
+        Err(err) => {
+            log::warn!("Failed to get ledger (transient DHT issue): {err}");
+            thread::sleep(Duration::from_secs(1));
+            return Ok(());
+        }
+    };
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees_owed;
-    let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
+    let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
+        Ok(cl) => cl,
+        Err(err) => {
+            log::warn!("Failed to get credit limit (transient DHT issue): {err}");
+            thread::sleep(Duration::from_secs(1));
+            return Ok(());
+        }
+    };
     let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
     // from the spend amount lets just use 75 % of it so that we have fees accounted for
     let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
@@ -117,7 +222,7 @@ pub fn agent_behaviour(
         if let Some(smart_agreement_hash) = generate_smart_agreement(ctx)? {
             // create a parked link spending transaction
             // spend with those agents
-            let participating_agents = ctx.get().scenario_values.participating_agents.clone();
+            let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
             if participating_agents.is_empty() {
                 log::warn!("No participating agents to spend with");
                 return Ok(());
@@ -134,13 +239,13 @@ pub fn agent_behaviour(
             for i in 0..number_of_links_processed {
                 let agent = &participating_agents[i % participating_agents.len()];
                 // create a parked link spending transaction
-                ctx.unyt_create_parked_spend(CreateParkedSpendInput {
+                if let Err(err) = ctx.unyt_create_parked_spend(CreateParkedSpendInput {
                     ea_id: smart_agreement_hash.clone().into(),
                     executor: ctx
                         .get()
                         .scenario_values
-                        .executor_pubkey
-                        .clone()
+                        .executor_pubkey()
+                        .cloned()
                         .map(Into::into),
                     amount: amount.clone(),
                     spender_payload: json!({
@@ -149,7 +254,9 @@ pub fn agent_behaviour(
                     }),
                     ct_role_id: None,
                     lane_definitions: Vec::new(),
-                })?;
+                }) {
+                    log::warn!("Failed to create parked spend for agent {agent}: {err}");
+                }
             }
         }
     } else {
@@ -164,10 +271,10 @@ pub fn agent_behaviour(
     Ok(())
 }
 
-fn generate_smart_agreement(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+fn generate_smart_agreement<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> Result<Option<ActionHashB64>, anyhow::Error> {
-    if let Some(smart_agreement_hash) = ctx.get().scenario_values.smart_agreement_hash.clone() {
+    if let Some(smart_agreement_hash) = ctx.get().scenario_values.smart_agreement_hash().cloned() {
         log::trace!(
             "Smart agreement already created for agent {}",
             ctx.get().cell_id().agent_pubkey()
@@ -178,7 +285,7 @@ fn generate_smart_agreement(
     let executor_pubkey = match ctx
         .get()
         .scenario_values
-        .participating_agents
+        .participating_agents()
         .choose(&mut rand::rng())
     {
         Some(executor_pubkey) => executor_pubkey.clone(),
@@ -319,7 +426,11 @@ fn generate_smart_agreement(
         tags: vec![],
         permissions: PermissionSpace::Default,
     })?;
-    ctx.get_mut().scenario_values.executor_pubkey = Some(executor_pubkey);
-    ctx.get_mut().scenario_values.smart_agreement_hash = Some(smart_agreement_hash.clone());
+    ctx.get_mut()
+        .scenario_values
+        .set_executor_pubkey(executor_pubkey);
+    ctx.get_mut()
+        .scenario_values
+        .set_smart_agreement_hash(smart_agreement_hash.clone());
     Ok(Some(smart_agreement_hash))
 }
