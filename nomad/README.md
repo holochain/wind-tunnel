@@ -26,6 +26,7 @@ A simple Example:
 
 The following variables are available:
 
+- `description`: A human-readable description of what the job does. (_optional_, not used at runtime — serves as documentation for the vars file)
 - `scenario_name`: The name of the scenario you want to run. (**required**)
 - `duration`: The duration of the scenario in seconds. (**required**)
 - `assignments`: A list of assignments to apply to the scenario. (_optional_, defaults to `[{"behaviour": "default"}]`)

@@ -59,7 +59,6 @@ pub(crate) async fn summarize_mixed_arc_must_get_agent_activity(
         query::query_zome_call_instrument_data(client.clone(), &summary)
             .await
             .context("Load create_validated_sample_entry zome call data")?
-            .clone()
             .lazy()
             .filter(col("fn_name").eq(lit("create_validated_sample_entry")))
             .collect()?;
