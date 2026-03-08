@@ -44,10 +44,6 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
         "write_validated_must_get_agent_activity"
     );
 
-    let zome_calls = query::query_zome_call_instrument_data(client.clone(), &summary)
-        .await
-        .context("Load zome call data")?;
-
     let chain_len_frame = query::query_custom_data(
         client.clone(),
         &summary,
@@ -74,11 +70,14 @@ pub(crate) async fn summarize_write_validated_must_get_agent_activity(
     )
     .await;
 
-    let create_validated_sample_entry_zome_calls = zome_calls
-        .clone()
-        .lazy()
-        .filter(col("fn_name").eq(lit("create_validated_sample_entry")))
-        .collect()?;
+    // Fetched last so the large unfiltered DataFrame is not held across earlier awaits.
+    let create_validated_sample_entry_zome_calls =
+        query::query_zome_call_instrument_data(client.clone(), &summary)
+            .await
+            .context("Load zome call data")?
+            .lazy()
+            .filter(col("fn_name").eq(lit("create_validated_sample_entry")))
+            .collect()?;
 
     Ok(WriteValidatedMustGetAgentActivitySummary {
         chain_len: chain_head_stats(chain_len_frame, "value", "write_agent", "10s")

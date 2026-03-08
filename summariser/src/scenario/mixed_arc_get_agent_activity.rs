@@ -67,14 +67,6 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
     .await
     .context("Load highest_observed_action_seq data")?;
 
-    let get_agent_activity_full_zome_calls =
-        query::query_zome_call_instrument_data(client.clone(), &summary)
-            .await
-            .context("Load get_agent_activity_full zome call data")?
-            .lazy()
-            .filter(col("fn_name").eq(lit("get_agent_activity_full")))
-            .collect()?;
-
     let chain_head_delay = query::query_custom_data(
         client.clone(),
         &summary,
@@ -100,6 +92,15 @@ pub(crate) async fn summarize_mixed_arc_get_agent_activity(
     )
     .await
     .context("Load open connections data")?;
+
+    // Fetched last so the large unfiltered DataFrame is not held across earlier awaits.
+    let get_agent_activity_full_zome_calls =
+        query::query_zome_call_instrument_data(client.clone(), &summary)
+            .await
+            .context("Load get_agent_activity_full zome call data")?
+            .lazy()
+            .filter(col("fn_name").eq(lit("get_agent_activity_full")))
+            .collect()?;
 
     Ok(MixedArcGetAgentActivitySummary {
         entry_created_count: partitioned_counter_stats_allow_empty(
