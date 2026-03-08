@@ -44,7 +44,6 @@ pub(crate) async fn summarize_write_validated(
         .collect()?;
 
     let update_zome_calls = zome_calls
-        .clone()
         .lazy()
         .filter(col("fn_name").eq(lit("update_sample_entry")))
         .collect()?;
