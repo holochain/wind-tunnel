@@ -68,6 +68,9 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
         }
         return createJSONResponse(JSON.stringify({ success: true }), 200);
     } catch (err) {
+        if (err instanceof SyntaxError) {
+            return createJSONResponse(JSON.stringify({ error: "Invalid JSON" }), 400);
+        }
         const message = err instanceof Error ? err.message : "Unknown error";
         return createJSONResponse(JSON.stringify({ error: message }), 500);
     }
