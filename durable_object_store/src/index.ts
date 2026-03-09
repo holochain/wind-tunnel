@@ -1,91 +1,91 @@
 import { DurableObject } from "cloudflare:workers";
 
 interface Env {
-	RUN_STORE: DurableObjectNamespace<RunStore>;
-	SECRET_KEY: string;
+    RUN_STORE: DurableObjectNamespace<RunStore>;
+    SECRET_KEY: string;
 }
 
 interface RunRecord {
-	value: unknown;
-	createdAt: number;
+    value: unknown;
+    createdAt: number;
 }
 
 export class RunStore extends DurableObject<Env> {
-	async fetch(request: Request): Promise<Response> {
-		const url = new URL(request.url);
-		const method = request.method;
+    async fetch(request: Request): Promise<Response> {
+        const url = new URL(request.url);
+        const method = request.method;
 
-		if (method === "POST" && url.pathname === "/set") {
-			const { value } = await request.json<{ value: unknown }>();
-			const createdAt = Date.now();
-			await this.ctx.storage.put("data", { value, createdAt });
-			return new Response(JSON.stringify({ success: true }));
-		}
+        if (method === "POST" && url.pathname === "/set") {
+            const { value } = await request.json<{ value: unknown }>();
+            const createdAt = Date.now();
+            await this.ctx.storage.put("data", { value, createdAt });
+            return new Response(JSON.stringify({ success: true }));
+        }
 
-		if (method === "GET" && url.pathname === "/get") {
-			const record = await this.ctx.storage.get<RunRecord>("data");
-			if (!record) {
-				return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
-			}
-			const twelveHours = 12 * 60 * 60 * 1000;
-			if (Date.now() - record.createdAt > twelveHours) {
-				await this.ctx.storage.delete("data");
-				return new Response(JSON.stringify({ error: "Expired" }), { status: 404 });
-			}
-			return new Response(JSON.stringify({ value: record.value }));
-		}
+        if (method === "GET" && url.pathname === "/get") {
+            const record = await this.ctx.storage.get<RunRecord>("data");
+            if (!record) {
+                return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+            }
+            const twelveHours = 12 * 60 * 60 * 1000;
+            if (Date.now() - record.createdAt > twelveHours) {
+                await this.ctx.storage.delete("data");
+                return new Response(JSON.stringify({ error: "Expired" }), { status: 404 });
+            }
+            return new Response(JSON.stringify({ value: record.value }));
+        }
 
-		return new Response("Not found", { status: 404 });
-	}
+        return new Response("Not found", { status: 404 });
+    }
 }
 
 async function handlePost(request: Request, env: Env): Promise<Response> {
-	try {
-		const { run_id, value, secret } = await request.json<{ run_id: string; value: unknown; secret: string }>();
-		if (!run_id || !value || !secret) {
-			return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
-		}
-		if (secret !== env.SECRET_KEY) {
-			return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
-		}
-		const id = env.RUN_STORE.idFromName(run_id);
-		const stub = env.RUN_STORE.get(id);
-		await stub.fetch("https://internal/set", {
-			method: "POST",
-			body: JSON.stringify({ value }),
-		});
-		return new Response(JSON.stringify({ success: true }), { status: 200 });
-	} catch (err) {
-		const message = err instanceof Error ? err.message : "Unknown error";
-		return new Response(JSON.stringify({ error: message }), { status: 500 });
-	}
+    try {
+        const { run_id, value, secret } = await request.json<{ run_id: string; value: unknown; secret: string }>();
+        if (!run_id || !value || !secret) {
+            return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
+        }
+        if (secret !== env.SECRET_KEY) {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
+        }
+        const id = env.RUN_STORE.idFromName(run_id);
+        const stub = env.RUN_STORE.get(id);
+        await stub.fetch("https://internal/set", {
+            method: "POST",
+            body: JSON.stringify({ value }),
+        });
+        return new Response(JSON.stringify({ success: true }), { status: 200 });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        return new Response(JSON.stringify({ error: message }), { status: 500 });
+    }
 }
 
 async function handleGet(url: URL, env: Env): Promise<Response> {
-	const run_id = url.searchParams.get("run_id");
-	if (!run_id) {
-		return new Response(JSON.stringify({ error: "Missing run_id" }), { status: 400 });
-	}
-	const id = env.RUN_STORE.idFromName(run_id);
-	const stub = env.RUN_STORE.get(id);
-	const resp = await stub.fetch("https://internal/get");
-	const data = await resp.json<{ error?: string; value?: unknown }>();
-	if (data.error) {
-		return new Response(JSON.stringify(data), { status: 404 });
-	}
-	return new Response(JSON.stringify(data), { status: 200 });
+    const run_id = url.searchParams.get("run_id");
+    if (!run_id) {
+        return new Response(JSON.stringify({ error: "Missing run_id" }), { status: 400 });
+    }
+    const id = env.RUN_STORE.idFromName(run_id);
+    const stub = env.RUN_STORE.get(id);
+    const resp = await stub.fetch("https://internal/get");
+    const data = await resp.json<{ error?: string; value?: unknown }>();
+    if (data.error) {
+        return new Response(JSON.stringify(data), { status: 404 });
+    }
+    return new Response(JSON.stringify(data), { status: 200 });
 }
 
 export default {
-	async fetch(request: Request, env: Env): Promise<Response> {
-		const url = new URL(request.url);
-		const method = request.method;
-		if (method === "POST") {
-			return await handlePost(request, env);
-		} else if (method === "GET") {
-			return await handleGet(url, env);
-		} else {
-			return new Response("Method Not Allowed", { status: 405 });
-		}
-	},
+    async fetch(request: Request, env: Env): Promise<Response> {
+        const url = new URL(request.url);
+        const method = request.method;
+        if (method === "POST") {
+            return await handlePost(request, env);
+        } else if (method === "GET") {
+            return await handleGet(url, env);
+        } else {
+            return new Response("Method Not Allowed", { status: 405 });
+        }
+    },
 } satisfies ExportedHandler<Env>;
