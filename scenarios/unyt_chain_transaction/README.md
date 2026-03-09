@@ -49,7 +49,19 @@ Additionally, all zome calls are automatically logged with timing and performanc
 
 ### Suggested command
 
-You can run the scenario locally with the following command:
+You can run the scenario locally but to do this you first need to run a local
+instance of the Durable Object store, do this by running the following command
+from the project root directory:
+
+```bash
+nix run .#local-durable-objects
+```
+
+This will start a Durable Object store running locally in dev mode with the
+port set to that of `UNYT_DURABLE_OBJECTS_URL` and the `SECRET_KEY` set to that
+of `UNYT_DURABLE_OBJECTS_SECRET`.
+
+Then, in another terminal pane, run the scenario with the following command:
 
 ```bash
 RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:4 --duration 300
