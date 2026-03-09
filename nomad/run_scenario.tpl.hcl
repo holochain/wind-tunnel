@@ -148,7 +148,7 @@ job "{{ (ds "vars").scenario_name }}" {
           RUN_SUMMARY_PATH            = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           WT_HOLOCHAIN_PATH           = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
           {{- if eq (ds "vars").scenario_name "unyt_chain_transaction" }}
-          UNYT_DURABLE_OBJECTS_URL    = "https://wind-tunnel-durable-objects.holochain.workers.dev"
+          UNYT_DURABLE_OBJECTS_URL    = secret.job_secrets.UNYT_DURABLE_OBJECTS_URL
           UNYT_DURABLE_OBJECTS_SECRET = secret.job_secrets.UNYT_DURABLE_OBJECTS_SECRET
           {{- end }}
         }
