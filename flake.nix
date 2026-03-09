@@ -148,6 +148,7 @@
                 ${config.pre-commit.installationScript}
                 source ${./scripts/influx.sh}
                 source ${./scripts/telegraf.sh}
+                source ${./scripts/local-durable-objects.sh}
                 source ${./scripts/checks.sh}
               '';
             };
@@ -553,6 +554,18 @@
                 ${summaryVisualiser}/summary-visualiser/test.sh "$@"
               '';
             };
+          local-durable-objects = pkgs.writeShellApplication {
+            name = "local-durable-objects";
+            runtimeInputs = [ pkgs.wrangler ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ${./scripts/local-durable-objects.sh}
+
+              run_local_durable_object_store
+            '';
+          };
         };
 
         checks = {
