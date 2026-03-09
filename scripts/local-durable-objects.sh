@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 run_local_durable_object_store() {
     if [[ -z "${UNYT_DURABLE_OBJECTS_URL:-}" ]]; then
