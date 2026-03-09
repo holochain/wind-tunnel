@@ -42,6 +42,7 @@ fn main() -> WindTunnelResult<()> {
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_NUMBER_OF_LINKS_TO_PROCESS")
+    .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
     .add_capture_env("MIN_AGENTS");
 
     run(builder)?;
