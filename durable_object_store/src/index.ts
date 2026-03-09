@@ -42,7 +42,7 @@ export class RunStore extends DurableObject<Env> {
 async function handlePost(request: Request, env: Env): Promise<Response> {
     try {
         const { run_id, value, secret } = await request.json<{ run_id: string; value: unknown; secret: string }>();
-        if (!run_id || !value || !secret) {
+        if (run_id == null || value == null || secret == null) {
             return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
         }
         if (secret !== env.SECRET_KEY) {
