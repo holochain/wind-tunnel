@@ -56,5 +56,5 @@ RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_chain_transaction -- --agent
 ```
 
 ```bash
-RUST_LOG=info NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
+RUST_LOG=info UNYT_NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
 ```

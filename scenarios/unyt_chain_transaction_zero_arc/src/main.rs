@@ -41,7 +41,7 @@ fn main() -> WindTunnelResult<()> {
         wind_tunnel_unyt_scenario::behaviour::observer::agent_behaviour(ctx, ArcType::Zero)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
-    .add_capture_env("NUMBER_OF_LINKS_TO_PROCESS")
+    .add_capture_env("UNYT_NUMBER_OF_LINKS_TO_PROCESS")
     .add_capture_env("MIN_AGENTS");
 
     run(builder)?;
