@@ -59,11 +59,14 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
         }
         const id = env.RUN_STORE.idFromName(run_id);
         const stub = env.RUN_STORE.get(id);
-        await stub.fetch("https://internal/set", {
+        const resp = await stub.fetch("https://internal/set", {
             method: "POST",
             body: JSON.stringify({ value }),
         });
-        return createJSONResponse(JSON.stringify({ success: true }), 200);
+        if (!resp.ok) {
+            return new Response(await resp.text(), { status: resp.status });
+        }
+        return new Response(JSON.stringify({ success: true }), { status: 200 });
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         return createJSONResponse(JSON.stringify({ error: message }), 500);
