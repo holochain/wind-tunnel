@@ -132,6 +132,8 @@
                 pkgs.tomlq
                 pkgs.getopt
                 pkgs.jq
+                pkgs.nodejs
+                pkgs.wrangler
                 unfreeUnstablePkgs.nomad_1_11
                 inputs'.holonix.packages.hn-introspect
               ];
