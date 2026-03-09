@@ -132,10 +132,13 @@ job "{{ (ds "vars").scenario_name }}" {
           }
         }
 
+        {{- if eq (ds "vars").scenario_name "unyt_chain_transaction" }}
+
         secret "job_secrets" {
           provider = "nomad"
           path     = "nomad/jobs"
         }
+        {{- end }}
 
         env {
           RUST_LOG                    = "info"
@@ -144,8 +147,10 @@ job "{{ (ds "vars").scenario_name }}" {
           MIN_AGENTS                  = "{{ index (ds "vars") "min_agents" | default 2 }}"
           RUN_SUMMARY_PATH            = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           WT_HOLOCHAIN_PATH           = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
+          {{- if eq (ds "vars").scenario_name "unyt_chain_transaction" }}
           UNYT_DURABLE_OBJECTS_URL    = "https://wind-tunnel-durable-objects.holochain.workers.dev"
           UNYT_DURABLE_OBJECTS_SECRET = secret.job_secrets.UNYT_DURABLE_OBJECTS_SECRET
+          {{- end }}
         }
 
         config {
