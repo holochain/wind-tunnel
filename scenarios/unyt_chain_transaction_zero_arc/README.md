@@ -35,7 +35,7 @@ The `zero_smart_agreements` agents run with a 0-arc DHT configuration and are re
 smart agreements. This involves:
 
 - Collecting incoming RAVE transactions from other agents
-- Executing smart agreements that are ready to be executed, processing up to `NUMBER_OF_LINKS_TO_PROCESS` links per
+- Executing smart agreements that are ready to be executed, processing up to `UNYT_NUMBER_OF_LINKS_TO_PROCESS` links per
   agreement
 - Calculating spendable amounts based on current balance, fees, and applied credit limits
 - Creating and executing parked link spending transactions with other agents in the network
@@ -83,7 +83,7 @@ Additionally, all zome calls are automatically logged with timing and performanc
 
 ### Environment Variables
 
-- `NUMBER_OF_LINKS_TO_PROCESS` (default: `10`): Maximum number of parked-link transactions to process per smart
+- `UNYT_NUMBER_OF_LINKS_TO_PROCESS` (default: `10`): Maximum number of parked-link transactions to process per smart
   agreement execution cycle
 - `MIN_AGENTS`: Minimum number of agents that must join before the scenario starts
 
