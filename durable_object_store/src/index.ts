@@ -2,6 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 
 interface Env {
     RUN_STORE: DurableObjectNamespace<RunStore>;
+
+    // Use `wrangler secret put SECRET_KEY` to set this in production.
     SECRET_KEY: string;
 }
 
