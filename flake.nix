@@ -141,6 +141,9 @@
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
+              UNYT_DURABLE_OBJECTS_URL = "http://localhost:8787";
+              UNYT_DURABLE_OBJECTS_SECRET = "local-only";
+
               shellHook = ''
                 ${config.pre-commit.installationScript}
                 source ${./scripts/influx.sh}
