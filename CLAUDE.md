@@ -117,6 +117,17 @@ Go templates and shell scripts — not a Rust crate. Renders the JSON summary ou
 - Backwards compatibility is not required to be maintained. If the source data changes, or a change is planned to the output summary statistics, then make the change directly without compatibility in mind.
 - Changes to queries that result in empty values in summary outputs for test data are not acceptable because the tests aren't exercising the code properly in that case. The user must be informed to re-generate test data when this happens.
 
+## PR Review Guidelines
+
+When reviewing pull requests:
+
+- **Be terse.** Only flag genuine issues: bugs, logic errors, security problems, or violations of project conventions documented here.
+- **Do NOT comment on:** style preferences, minor naming choices, things that are already fine, or anything that `cargo clippy` / `cargo fmt` / `taplo format` would catch (CI handles those).
+- **Do NOT leave praise or filler** like "nice work" or "looks good overall." If there are no issues, say "No issues found." and nothing else.
+- **Each comment should be 1–3 sentences.** State the problem, why it matters, and include a short code snippet showing the suggested fix.
+- **Focus on the diff.** Don't review unchanged code unless a change introduces a problem in surrounding context.
+- **Understand the architecture** before commenting. Read the relevant sections above (Framework, Bindings, Scenarios, Summariser) so your feedback is informed by how the project actually works.
+
 ## Code Hygiene
 
 - Generated Rust and TOML must always be properly formatted, if you're not sure then run `cargo fmt` or `taplo format` on the relevant files.

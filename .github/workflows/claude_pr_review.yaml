@@ -31,7 +31,8 @@ jobs:
           use_sticky_comment: true
           prompt: |
             /review ${{ github.event.pull_request.number }}
+
+            IMPORTANT: Be terse and concise. Only comment on genuine issues — bugs, logic errors, security problems, or clear violations of CLAUDE.md conventions. Do NOT leave praise, nitpicks, style suggestions, or comments about things that are fine. If there are no real issues, say so in one sentence. Each comment should be 1-3 sentences max. When flagging an issue, include a short code snippet showing the suggested fix.
           claude_args: |-
             --model sonnet
             --allowedTools "Bash(gh pr diff *),Bash(gh pr view *),Read,Grep,Glob"
-          github_token: ${{ github.token }}
