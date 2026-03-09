@@ -15,7 +15,7 @@ use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
 fn env_number_of_links_processed() -> usize {
-    std::env::var("NUMBER_OF_LINKS_TO_PROCESS")
+    std::env::var("UNYT_NUMBER_OF_LINKS_TO_PROCESS")
         .unwrap_or("10".to_string())
         .parse::<usize>()
         .unwrap_or(10)
@@ -73,7 +73,7 @@ pub fn agent_behaviour(
     let requests = ctx.unyt_get_requests_to_execute_agreements()?;
     let global_definition = ctx.unyt_get_current_global_definition()?;
     for request in requests {
-        // select number of links and pass only NUMBER_OF_LINKS_TO_PROCESS links
+        // select number of links and pass only UNYT_NUMBER_OF_LINKS_TO_PROCESS links
         if let TransactionDetails::GroupedParked {
             attached_transactions,
             ..
