@@ -10,6 +10,13 @@ interface RunRecord {
     createdAt: number;
 }
 
+function createJSONResponse(body: BodyInit, status?: number): Response {
+    return new Response(body, {
+        headers: { "Content-Type": "application/json" },
+        status: status,
+    });
+}
+
 export class RunStore extends DurableObject<Env> {
     async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
@@ -19,20 +26,20 @@ export class RunStore extends DurableObject<Env> {
             const { value } = await request.json<{ value: unknown }>();
             const createdAt = Date.now();
             await this.ctx.storage.put("data", { value, createdAt });
-            return new Response(JSON.stringify({ success: true }));
+            return createJSONResponse(JSON.stringify({ success: true }));
         }
 
         if (method === "GET" && url.pathname === "/get") {
             const record = await this.ctx.storage.get<RunRecord>("data");
             if (!record) {
-                return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+                return createJSONResponse(JSON.stringify({ error: "Not found" }), 404);
             }
             const twelveHours = 12 * 60 * 60 * 1000;
             if (Date.now() - record.createdAt > twelveHours) {
                 await this.ctx.storage.delete("data");
-                return new Response(JSON.stringify({ error: "Expired" }), { status: 404 });
+                return createJSONResponse(JSON.stringify({ error: "Expired" }), 404);
             }
-            return new Response(JSON.stringify({ value: record.value }));
+            return createJSONResponse(JSON.stringify({ value: record.value }));
         }
 
         return new Response("Not found", { status: 404 });
@@ -43,10 +50,10 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
     try {
         const { run_id, value, secret } = await request.json<{ run_id: string; value: unknown; secret: string }>();
         if (run_id == null || value == null || secret == null) {
-            return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
+            return createJSONResponse(JSON.stringify({ error: "Missing required fields" }), 400);
         }
         if (secret !== env.SECRET_KEY) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
+            return createJSONResponse(JSON.stringify({ error: "Unauthorized" }), 403);
         }
         const id = env.RUN_STORE.idFromName(run_id);
         const stub = env.RUN_STORE.get(id);
@@ -54,26 +61,26 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
             method: "POST",
             body: JSON.stringify({ value }),
         });
-        return new Response(JSON.stringify({ success: true }), { status: 200 });
+        return createJSONResponse(JSON.stringify({ success: true }), 200);
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
-        return new Response(JSON.stringify({ error: message }), { status: 500 });
+        return createJSONResponse(JSON.stringify({ error: message }), 500);
     }
 }
 
 async function handleGet(url: URL, env: Env): Promise<Response> {
     const run_id = url.searchParams.get("run_id");
     if (!run_id) {
-        return new Response(JSON.stringify({ error: "Missing run_id" }), { status: 400 });
+        return createJSONResponse(JSON.stringify({ error: "Missing run_id" }), 400);
     }
     const id = env.RUN_STORE.idFromName(run_id);
     const stub = env.RUN_STORE.get(id);
     const resp = await stub.fetch("https://internal/get");
     const data = await resp.json<{ error?: string; value?: unknown }>();
     if (data.error) {
-        return new Response(JSON.stringify(data), { status: 404 });
+        return createJSONResponse(JSON.stringify(data), 404);
     }
-    return new Response(JSON.stringify(data), { status: 200 });
+    return createJSONResponse(JSON.stringify(data), 200);
 }
 
 export default {
