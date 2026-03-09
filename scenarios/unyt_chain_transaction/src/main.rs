@@ -27,6 +27,7 @@ fn main() -> WindTunnelResult<()> {
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
+    .add_capture_env("UNYT_NUMBER_OF_LINKS_TO_PROCESS")
     .use_agent_setup(handle_agent_setup::agent_setup)
     .use_named_agent_behaviour("initiate", behaviour::initiate_network::agent_behaviour)
     .use_named_agent_behaviour("spend", behaviour::spend::agent_behaviour)
