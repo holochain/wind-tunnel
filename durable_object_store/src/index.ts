@@ -64,9 +64,9 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
             body: JSON.stringify({ value }),
         });
         if (!resp.ok) {
-            return new Response(await resp.text(), { status: resp.status });
+            return resp;
         }
-        return new Response(JSON.stringify({ success: true }), { status: 200 });
+        return createJSONResponse(JSON.stringify({ success: true }), 200);
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         return createJSONResponse(JSON.stringify({ error: message }), 500);
