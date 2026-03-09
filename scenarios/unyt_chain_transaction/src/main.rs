@@ -28,7 +28,8 @@ fn main() -> WindTunnelResult<()> {
         wind_tunnel_unyt_scenario::behaviour::smart_agreements::agent_behaviour(ctx, None)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
-    .add_capture_env("UNYT_NUMBER_OF_LINKS_TO_PROCESS");
+    .add_capture_env("UNYT_NUMBER_OF_LINKS_TO_PROCESS")
+    .add_capture_env("UNYT_DURABLE_OBJECTS_URL");
 
     run(builder)?;
 
