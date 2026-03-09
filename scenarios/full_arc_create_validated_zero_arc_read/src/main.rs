@@ -12,6 +12,7 @@ const RECORD_OPEN_CONNECTIONS_PERIOD_MS: i64 = 3_000;
 #[derive(Debug, Default)]
 struct ScenarioValues {
     sent_actions_count: u32,
+    retrieval_errors_count: u32,
     seen_actions: HashSet<ActionHash>,
     open_connections_last_recorded: Option<Timestamp>,
 }
@@ -113,10 +114,11 @@ fn agent_behaviour_zero(
                 .insert(new_record.action_address().clone());
         }
     } else {
+        ctx.get_mut().scenario_values.retrieval_errors_count += 1;
         let metric = ReportMetric::new("retrieval_error_count")
             .with_tag("agent", agent_pub_key.clone())
             .with_tag("arc", "zero")
-            .with_field("value", 1_f64);
+            .with_field("value", ctx.get().scenario_values.retrieval_errors_count);
         reporter_handle.add_custom(metric);
     }
 
