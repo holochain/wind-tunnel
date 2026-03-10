@@ -100,10 +100,7 @@ async function handleGet(url: URL, env: Env): Promise<Response> {
     const stub = env.RUN_STORE.get(id);
     const resp = await stub.fetch("https://internal/get");
     const data = await resp.json<{ error?: string; value?: unknown }>();
-    if (data.error) {
-        return createJSONResponse(JSON.stringify(data), 404);
-    }
-    return createJSONResponse(JSON.stringify(data), 200);
+    return createJSONResponse(JSON.stringify(data), resp.status);
 }
 
 export default {
