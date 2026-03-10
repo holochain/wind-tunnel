@@ -12,6 +12,7 @@ interface RunRecord {
     createdAt: number;
 }
 
+/** Creates a Response with Content-Type set to `application/json`. */
 function createJSONResponse(body: BodyInit, status?: number): Response {
     return new Response(body, {
         headers: { "Content-Type": "application/json" },
@@ -19,6 +20,11 @@ function createJSONResponse(body: BodyInit, status?: number): Response {
     });
 }
 
+/**
+ * Durable Object that stores a single JSON blob per run ID.
+ * Handles /set (POST) and /get (GET) internally via `stub.fetch` calls from
+ * the worker's `handlePost` and `handleGet` functions which are not exposed.
+ */
 export class RunStore extends DurableObject<Env> {
     async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
@@ -48,6 +54,10 @@ export class RunStore extends DurableObject<Env> {
     }
 }
 
+/**
+ * Handles POST requests to store a JSON blob for a given run ID.
+ * Requires a valid `SECRET_KEY` in the request body to prevent unauthorised writes.
+ */
 async function handlePost(request: Request, env: Env): Promise<Response> {
     try {
         const { run_id, value, secret } = await request.json<{ run_id: string; value: unknown; secret: string }>();
@@ -76,6 +86,11 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
     }
 }
 
+/**
+ * Handles GET requests to retrieve the stored JSON blob for a given run ID.
+ * No authentication is required — any caller with the run ID can read the value.
+ * Values expire after 12 hours and are deleted on first access after expiry.
+ */
 async function handleGet(url: URL, env: Env): Promise<Response> {
     const run_id = url.searchParams.get("run_id");
     if (!run_id) {
