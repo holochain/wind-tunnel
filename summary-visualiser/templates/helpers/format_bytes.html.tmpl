@@ -1,0 +1,22 @@
+{{/*
+  Format a byte value to human-readable (B, KiB, MiB, GiB).
+  Fields:
+  * `value` (number): The byte value to format.
+  * `label` (string, optional): A label to display before the value.
+  * `suffix` (string, optional): A suffix to append to the unit (e.g. "/s").
+  */}}<span class="scalar">
+    {{- if (index . "label") -}}
+        <span class="scalar-label">{{ .label }}</span>
+    {{- end }}
+    {{- $v := conv.ToFloat64 .value -}}
+    {{- $s := default "" (index . "suffix") -}}
+    {{- if (ge $v 1073741824.0) -}}
+        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1073741824.0) }}</span><span class="scalar-unit"> GiB{{ $s }}</span>
+    {{- else if (ge $v 1048576.0) -}}
+        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1048576.0) }}</span><span class="scalar-unit"> MiB{{ $s }}</span>
+    {{- else if (ge $v 1024.0) -}}
+        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1024.0) }}</span><span class="scalar-unit"> KiB{{ $s }}</span>
+    {{- else -}}
+        <span class="scalar-value">{{ printf "%.0f" $v }}</span><span class="scalar-unit"> B{{ $s }}</span>
+    {{- end -}}
+</span>

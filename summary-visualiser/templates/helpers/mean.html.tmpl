@@ -4,11 +4,19 @@ Fields:
 
 * `mean` (scalar): The mean value.
 * `unit` (string, optional): The unit to display alongside the mean value.
+* `format` (string, optional): "bytes" or "bytes_rate" for auto-scaled byte formatting.
 */}}
 <span class="mean">
-    {{- template "scalar" (dict
-        "label" "mean "
-        "value" .mean
-        "unit" (index . "unit"))
-    -}}
+    {{- $format := (index . "format") -}}
+    {{- if (eq $format "bytes") -}}
+        {{ template "format_bytes" (dict "label" "mean " "value" .mean) }}
+    {{- else if (eq $format "bytes_rate") -}}
+        {{ template "format_bytes_rate" (dict "label" "mean " "value" .mean) }}
+    {{- else -}}
+        {{ template "scalar" (dict
+            "label" "mean "
+            "value" .mean
+            "unit" (index . "unit"))
+        }}
+    {{- end -}}
 </span>
