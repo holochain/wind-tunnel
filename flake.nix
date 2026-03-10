@@ -34,7 +34,7 @@
 
     systems = builtins.attrNames inputs.holonix.devShells;
 
-    perSystem = { inputs', pkgs, lib, system, config, ... }:
+    perSystem = { inputs', pkgs, lib, system, config, self', ... }:
       let
         unfreeUnstablePkgs = import nixpkgsUnstable { inherit system; config.allowUnfree = true; };
         rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
@@ -508,6 +508,7 @@
           };
           rust-smoke-test = pkgs.writeShellApplication {
             name = "rust-smoke-test";
+            runtimeEnv = { inherit (self'.devShells.default) UNYT_DURABLE_OBJECTS_URL UNYT_DURABLE_OBJECTS_SECRET; };
             runtimeInputs = [
               config.rustHelper.rust
               customHolochain
@@ -556,6 +557,7 @@
             };
           local-durable-objects = pkgs.writeShellApplication {
             name = "local-durable-objects";
+            runtimeEnv = { inherit (self'.devShells.default) UNYT_DURABLE_OBJECTS_URL UNYT_DURABLE_OBJECTS_SECRET; };
             runtimeInputs = [ pkgs.wrangler ];
             text = ''
               set -euo pipefail
