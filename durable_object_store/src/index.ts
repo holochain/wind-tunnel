@@ -115,7 +115,7 @@ export default {
         } else if (method === "GET") {
             return await handleGet(url, env);
         } else {
-            return new Response("Method Not Allowed", { status: 405 });
+            return createJSONResponse(JSON.stringify({ error: "Method Not Allowed" }), 405);
         }
     },
 } satisfies ExportedHandler<Env>;
