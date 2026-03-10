@@ -4,14 +4,22 @@ Fields:
 
 * `std` (scalar): The standard deviation value.
 * `unit` (string, optional): The unit to display alongside the standard deviation value.
+* `format` (string, optional): "bytes" or "bytes_rate" for auto-scaled byte formatting.
 */}}
 <span class="std">
     {{/* These parentheses get wrapped in label spans so they're more subtle. */}}
     <span class="scalar-label">(</span>
-    {{- template "scalar" (dict
-        "label" "SD = "
-        "value" .std
-        "unit" (index . "unit"))
-    -}}
+    {{- $format := (index . "format") -}}
+    {{- if (eq $format "bytes") -}}
+        {{ template "format_bytes" (dict "label" "SD = " "value" .std) }}
+    {{- else if (eq $format "bytes_rate") -}}
+        {{ template "format_bytes_rate" (dict "label" "SD = " "value" .std) }}
+    {{- else -}}
+        {{ template "scalar" (dict
+            "label" "SD = "
+            "value" .std
+            "unit" (index . "unit"))
+        }}
+    {{- end -}}
     <span class="scalar-label">)</span>
 </span>

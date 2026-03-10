@@ -1,0 +1,7 @@
+{{/*
+  Format a byte-rate value to human-readable (B/s, KiB/s, MiB/s, GiB/s).
+  Wraps format_bytes with a "/s" suffix.
+  Fields:
+  * `value` (number): The byte-rate value to format.
+  * `label` (string, optional): A label to display before the value.
+  */}}{{ template "format_bytes" (dict "value" .value "label" (default "" (index . "label")) "suffix" "/s") }}
