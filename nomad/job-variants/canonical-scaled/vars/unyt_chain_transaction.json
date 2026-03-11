@@ -1,0 +1,23 @@
+{
+  "job_name": "unyt_chain_transaction_canonical_scaled",
+  "description": "1 progenitor initialises the network; 125 spend and 124 smart_agreements agents run concurrent transactions. Target 50/50 spend/smart_agreements; actual 50.2/49.8 at 249 transaction agents (250 nodes total).",
+  "scenario_name": "unyt_chain_transaction",
+  "duration": 900,
+  "assignments": [
+    {
+      "behaviour": "initiate"
+    },
+    {
+      "behaviour": "spend",
+      "nodes": 125
+    },
+    {
+      "behaviour": "smart_agreements",
+      "nodes": 124
+    }
+  ],
+  "env": {
+    "MIN_AGENTS": "250",
+    "UNYT_NUMBER_OF_LINKS_TO_PROCESS": "10"
+  }
+}
