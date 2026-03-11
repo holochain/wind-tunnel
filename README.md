@@ -553,6 +553,7 @@ A Nomad job will be deployed in different "job variants" depending on its contex
 Currently there are two job variants:
 - **demo**: Intended for CI runs on pull requests. They may use a smaller subset of all nodes, and may have shorter durations.
 - **canonical**: Intended for CI runs on the `main` branch, which produce summaries that get published to the wind tunnel results website. They may use a larger subset of available nodes, and may have longer durations.
+- **canonical-scaled**: Same as canonical, but for runs with very large numbers of nodes. When our nomad cluster lacks the required nodes, the rest will be deployed via Treefold for the duration of the run.
 
 Each job variant has its own set of variables files for each job, located in the directory `nomad/job-variants/<job variant name>/vars/`.
 

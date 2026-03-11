@@ -45,9 +45,10 @@ Once you have created the vars file, you can generate the Nomad job files by run
 ```bash
 nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/demo
 nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/canonical
+nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/canonical-scaled
 ```
 
-This will generate the nomad job files in the `nomad/job-variants/demo` and `nomad/job-variants/canonical` directories.
+This will generate the nomad job files in the `nomad/job-variants/demo`, `nomad/job-variants/canonical`, and `nomad/job-variants/canonical-scaled` directories.
 The job files will be named after the scenario name, with the `.nomad.hcl` extension.
 
 Mind that in order to generate the jobs, you need to have `gomplate` installed. You can use the one provided by nix
