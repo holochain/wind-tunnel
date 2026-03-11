@@ -323,7 +323,7 @@ jobs:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
-          RUST_LOG: debug
+          RUST_LOG: info,holochain_summariser=debug
           IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
         run: nix develop --command cargo run --release --bin holochain-summariser
 
