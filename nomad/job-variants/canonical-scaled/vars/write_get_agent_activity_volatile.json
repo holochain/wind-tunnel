@@ -1,0 +1,22 @@
+{
+  "job_name": "write_get_agent_activity_volatile_canonical_scaled",
+  "description": "73 write nodes produce chain entries; 177 nodes make volatile agent activity queries. Target 30/70 write/read; actual 29.2/70.8 at 250 nodes.",
+  "scenario_name": "write_get_agent_activity_volatile",
+  "duration": 1800,
+  "assignments": [
+    {
+      "behaviour": "write",
+      "nodes": 73
+    },
+    {
+      "behaviour": "get_agent_activity_volatile",
+      "nodes": 177
+    }
+  ],
+  "env": {
+    "CONDUCTOR_ON_MIN_S": "10",
+    "CONDUCTOR_ON_MAX_S": "30",
+    "CONDUCTOR_OFF_MIN_S": "2",
+    "CONDUCTOR_OFF_MAX_S": "10"
+  }
+}
