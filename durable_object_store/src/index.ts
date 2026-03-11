@@ -7,11 +7,6 @@ interface Env {
     SECRET_KEY: string;
 }
 
-interface RunRecord {
-    value: unknown;
-    createdAt: number;
-}
-
 /** Creates a Response with Content-Type set to `application/json`. */
 function createJSONResponse(body: BodyInit, status?: number): Response {
     return new Response(body, {
@@ -24,28 +19,30 @@ function createJSONResponse(body: BodyInit, status?: number): Response {
  * Durable Object that stores a single JSON blob per run ID.
  * Handles /set (POST) and /get (GET) internally via `stub.fetch` calls from
  * the worker's `handlePost` and `handleGet` functions which are not exposed.
+ * Data is automatically deleted after 12 hours via a scheduled alarm.
  */
 export class RunStore extends DurableObject<Env> {
+    /** Scheduled 12 hours after a value is stored; deletes all data for this instance. */
+    async alarm(): Promise<void> {
+        await this.ctx.storage.deleteAll();
+    }
+
     async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
         const method = request.method;
 
         if (method === "POST" && url.pathname === "/set") {
             const { value } = await request.json<{ value: unknown }>();
-            const createdAt = Date.now();
-            await this.ctx.storage.put("data", { value, createdAt });
+            const twelveHours = 12 * 60 * 60 * 1000;
+            await this.ctx.storage.put("data", { value });
+            await this.ctx.storage.setAlarm(Date.now() + twelveHours);
             return createJSONResponse(JSON.stringify({ success: true }));
         }
 
         if (method === "GET" && url.pathname === "/get") {
-            const record = await this.ctx.storage.get<RunRecord>("data");
+            const record = await this.ctx.storage.get<{ value: unknown }>("data");
             if (!record) {
                 return createJSONResponse(JSON.stringify({ error: "Not found" }), 404);
-            }
-            const twelveHours = 12 * 60 * 60 * 1000;
-            if (Date.now() - record.createdAt > twelveHours) {
-                await this.ctx.storage.delete("data");
-                return createJSONResponse(JSON.stringify({ error: "Expired" }), 404);
             }
             return createJSONResponse(JSON.stringify({ value: record.value }));
         }
@@ -89,7 +86,7 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
 /**
  * Handles GET requests to retrieve the stored JSON blob for a given run ID.
  * No authentication is required — any caller with the run ID can read the value.
- * Values expire after 12 hours and are deleted on first access after expiry.
+ * Values are automatically deleted after 12 hours via a scheduled alarm.
  */
 async function handleGet(url: URL, env: Env): Promise<Response> {
     const run_id = url.searchParams.get("run_id");
