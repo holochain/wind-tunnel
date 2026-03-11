@@ -432,4 +432,8 @@ impl OpStore for WtOpStore {
             Ok(self_lock.time_slice_hashes.get_all(&arc))
         })
     }
+
+    fn query_total_op_count(&self) -> BoxFut<'_, K2Result<u64>> {
+        Box::pin(async move { Ok(self.read().await.op_list.len() as u64) })
+    }
 }
