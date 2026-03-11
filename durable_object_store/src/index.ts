@@ -47,7 +47,7 @@ export class RunStore extends DurableObject<Env> {
             return createJSONResponse(JSON.stringify({ value: record.value }));
         }
 
-        return new Response("Not found", { status: 404 });
+        return createJSONResponse(JSON.stringify({ error: "Not found" }), 404);
     }
 }
 
