@@ -32,11 +32,11 @@ function get_status() {
     local client_status
     if ! client_status="$(echo "$nomad_status" | jq -r '.ClientStatus')"; then
         echo "Failed to retrieve status for allocation ID: $alloc_id" >&2
-        exit 1
+        return 1
     fi
     if [[ -z "$client_status" || "$client_status" == "null" ]]; then
         echo "No job found with allocation ID: $alloc_id" >&2
-        exit 1
+        return 1
     fi
     echo "$client_status"
 }
@@ -98,18 +98,20 @@ function wait_for_job() {
         local nomad_status
         if ! nomad_status="$(get_nomad_status "$alloc_id")"; then
             echo "Failed to fetch Nomad status for $scenario_name ($alloc_id)" >&2
-            exit 1
+            return 1
         fi
         local status
-        status="$(get_status "$nomad_status")"
+        if ! status="$(get_status "$nomad_status")"; then
+            return 1
+        fi
 
         if is_running "$status"; then
             echo "Scenario $scenario_name ($alloc_id) is still running (status=$status) (elapsed: $ELAPSED_SECS seconds)."
             sleep 1
             ELAPSED_SECS=$((ELAPSED_SECS + 1))
             if [[ $ELAPSED_SECS -gt $TIMEOUT ]]; then
-                echo "Timeout reached after $TIMEOUT seconds."
-                exit 255
+                echo "Timeout reached after $TIMEOUT seconds for $scenario_name ($alloc_id)."
+                return 1
             fi
             continue
         fi
@@ -121,7 +123,7 @@ function wait_for_job() {
 
         echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $ELAPSED_SECS seconds."
         print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
-        exit 1
+        return 1
     done
     echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
 
@@ -149,12 +151,18 @@ SCENARIO_NAME="$1"
 shift # Remove the first argument (scenario name)
 
 # Process each allocation ID passed as arguments
+FAILURE_COUNT=0
 while [[ $# -gt 0 ]]; do
     # Get next allocation ID from arguments
     alloc_id="$1"
-    wait_for_job "$SCENARIO_NAME" "$alloc_id"
+    wait_for_job "$SCENARIO_NAME" "$alloc_id" || FAILURE_COUNT=$((FAILURE_COUNT + 1))
 
     shift # Remove the processed allocation ID
 done
+
+if [[ $FAILURE_COUNT -gt 0 ]]; then
+    echo "$FAILURE_COUNT allocation(s) failed for $SCENARIO_NAME."
+    exit 1
+fi
 
 exit 0
