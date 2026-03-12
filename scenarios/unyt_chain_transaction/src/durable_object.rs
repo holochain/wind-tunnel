@@ -37,12 +37,12 @@ impl DurableObject {
         let base_url = std::env::var("UNYT_DURABLE_OBJECTS_URL")
             .ok()
             .map(|var| var.trim().to_string())
-            .and_then(|var| if var.is_empty() { None } else { Some(var) })
+            .filter(|var| !var.is_empty())
             .expect("UNYT_DURABLE_OBJECTS_URL needs to be set for this scenario to run");
         let secret = std::env::var("UNYT_DURABLE_OBJECTS_SECRET")
             .ok()
             .map(|var| var.trim().to_string())
-            .and_then(|var| if var.is_empty() { None } else { Some(var) })
+            .filter(|var| !var.is_empty())
             .expect("UNYT_DURABLE_OBJECTS_SECRET needs to be set for this scenario to run");
 
         Self {
