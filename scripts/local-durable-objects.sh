@@ -16,5 +16,7 @@ run_local_durable_object_store() {
         return 1
     fi
 
-    wrangler dev --types --config="$(pwd)/durable_object_store/wrangler.jsonc" --local --port "$port" --var "SECRET_KEY:$UNYT_DURABLE_OBJECTS_SECRET"
+    local repo_root
+    repo_root="$(git rev-parse --show-toplevel)"
+    wrangler dev --types --config="$repo_root/durable_object_store/wrangler.jsonc" --local --port "$port" --var "SECRET_KEY:$UNYT_DURABLE_OBJECTS_SECRET"
 }
