@@ -1,0 +1,232 @@
+name: "Run Nomad Scenario"
+description: "Build, upload, and run a Nomad scenario job"
+
+inputs:
+  job-name:
+    description: "Nomad job name to run"
+    required: true
+  holochain-bin-url:
+    description: "The URL to download the `holochain` binary from"
+    required: true
+  commit-hash:
+    description: "The git commit hash to checkout before running the tests"
+    required: false
+    default: ""
+  nomad-job-variant-directory:
+    description: "The path to the directory containing the nomad job variant"
+    required: true
+  include-threefold-node-pool:
+    description: "Allow scheduling jobs on the threefold node pool"
+    required: false
+    default: "false"
+  # Secrets passed as inputs (composite actions have no secrets: block)
+  nomad-access-token:
+    required: true
+  influx-token:
+    required: true
+  hetzner-buckets-access:
+    required: true
+  hetzner-buckets-secret:
+    required: true
+  cachix-auth-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Read Nomad Job Variables
+      id: read-nomad-vars
+      shell: bash
+      run: |
+        JOB_VARS_FILE="${{ inputs.nomad-job-variant-directory }}/vars/${{ inputs.job-name }}.json"
+        NOMAD_VAR_DURATION="$(jq -e -r '.duration' "$JOB_VARS_FILE")"
+        NOMAD_VAR_SCENARIO_NAME="$(jq -e -r '.scenario_name' "$JOB_VARS_FILE")"
+        # Parse required nodes count by summing the 'nodes' field of each assignment (defaulting to 1 per entry), or else default to 1 if no assignments.
+        REQUIRED_NODES="$(jq -e -r '(.assignments // []) | map(.nodes // 1) | add // 1' "$JOB_VARS_FILE")"
+
+        echo "duration=$NOMAD_VAR_DURATION" >> "$GITHUB_OUTPUT"
+        echo "scenario_name=$NOMAD_VAR_SCENARIO_NAME" >> "$GITHUB_OUTPUT"
+        echo "required_nodes=$REQUIRED_NODES" >> "$GITHUB_OUTPUT"
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@v16
+      with:
+        name: holochain-ci
+        authToken: "${{ inputs.cachix-auth-token }}"
+
+    - name: Check Eligible Nodes
+      shell: bash
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+        NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+        NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+        NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
+        REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
+        INCLUDE_THREEFOLD_NODE_POOL: ${{ inputs.include-threefold-node-pool }}
+      run: |
+        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+        count_args=(--eligible-only)
+        if [[ "$INCLUDE_THREEFOLD_NODE_POOL" == "true" ]]; then
+          count_args+=(--include-threefold-node-pool)
+        fi
+        available=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh "${count_args[@]}")
+        available=${available:-0}
+        echo "Available eligible nodes: $available"
+        if (( available < REQUIRED_NODES )); then
+          echo "::error::Only $available effective slot(s) available but $REQUIRED_NODES required for ${{ inputs.job-name }}; cannot proceed"
+          exit 1
+        fi
+
+    - name: Build Nomad Job
+      shell: bash
+      run: |
+        nix run .#generate-nomad-jobs -- --job-name ${{ inputs.job-name }} --job-variant-path ${{ inputs.nomad-job-variant-directory }}
+
+    - name: Build scenario
+      shell: bash
+      run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
+
+    - name: Upload scenario to bucket
+      id: upload-scenario
+      shell: bash
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.hetzner-buckets-access }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.hetzner-buckets-secret }}
+        AWS_DEFAULT_REGION: hel1
+        AWS_ENDPOINT_URL: https://hel1.your-objectstorage.com
+        S3_BUCKET_NAME: wind-tunnel-public-artifacts
+      run: |-
+        OUT_PATH="${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip"
+        nix run .#awscli-s3 cp ./result/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip "s3://${OUT_PATH}"
+
+        echo "scenario_download_url=${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_OUTPUT"
+        echo "Uploaded run scenario artifact to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Wait For Minimum Free Nodes
+      shell: bash
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+        NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+        NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+        NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
+        REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
+        INCLUDE_THREEFOLD_NODE_POOL: ${{ inputs.include-threefold-node-pool }}
+      run: |
+        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+        count_args=()
+        if [[ "$INCLUDE_THREEFOLD_NODE_POOL" == "true" ]]; then
+          count_args+=(--include-threefold-node-pool)
+        fi
+        echo "Waiting for $REQUIRED_NODES free effective slot(s)"
+        start_time=$SECONDS
+        timeout_seconds=3600
+        while true; do
+            if (( SECONDS - start_time >= timeout_seconds )); then
+                echo "Timed out waiting for free nodes after ${timeout_seconds}s"
+                exit 1
+            fi
+            count=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh "${count_args[@]}")
+            if (( ${count:-0} >= $REQUIRED_NODES )); then
+                break
+            else
+                echo -n "."
+            fi
+            sleep 5
+        done
+        echo "done"
+
+    - name: Dry Run Nomad Job
+      shell: bash
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+        NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+        NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+        NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
+        NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+        RUN_ID: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_run_id: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
+        NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}
+        NOMAD_VAR_wind_tunnel_git_ref: ${{ inputs.commit-hash || github.sha }}
+      run: |-
+        set -exuo pipefail
+        JOB_NAME="${{ inputs.job-name }}"
+        nomad_rc=0
+        nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job plan -no-color ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+        echo "$nomad_output"
+        if [ "$nomad_rc" -eq 255 ]; then
+            echo "Planning Nomad job failed"
+            exit 1
+        fi
+        if grep -Fq 'WARNING: Failed to place all allocations.' <<<"$nomad_output"; then
+            echo "Not all allocations would be placed"
+            exit 1
+        fi
+        # Nomad plan command exits with `1` if allocations would be created or destroyed, which is what we want
+        if [ "$nomad_rc" -ne 1 ]; then
+            echo "Nomad jobs would not be allocated"
+            exit 1
+        fi
+
+    - name: Run Nomad Job
+      id: run-nomad-job
+      shell: bash
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+        NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+        NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+        NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
+        NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+        RUN_ID: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_run_id: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
+        NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}
+        NOMAD_VAR_wind_tunnel_git_ref: ${{ inputs.commit-hash || github.sha }}
+      run: |-
+        set -exuo pipefail
+        JOB_NAME="${{ inputs.job-name }}"
+        nomad_rc=0
+        nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+        if [ "$nomad_rc" -ne 0 ]; then
+            echo "Nomad job submission failed with exit code $nomad_rc"
+            echo "$nomad_output"
+            exit "$nomad_rc"
+        fi
+        echo "$nomad_output"
+        echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+        alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
+        if [ -z "$alloc_ids" ]; then
+          echo "Failed to extract allocation IDs from Nomad job output"
+          exit 1
+        fi
+
+        echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
+        echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+        echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
+
+    - name: Persist matrix job outputs for subsequent job use
+      uses: cloudposse/github-action-matrix-outputs-write@v1
+      with:
+        matrix-step-name: run-scenarios
+        matrix-key: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        outputs: |-
+          alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+          run_id: "${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}"
+          job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
+          started_at: "${{ steps.run-nomad-job.outputs.started_at }}"
+          duration: "${{ steps.read-nomad-vars.outputs.duration }}"
+
+    - name: Save alloc_ids to file
+      shell: bash
+      run: |
+        started_at=${{ steps.run-nomad-job.outputs.started_at }}
+        nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ inputs.nomad-job-variant-directory }}/vars" "${{ inputs.job-name }}" "${{ steps.read-nomad-vars.outputs.scenario_name }}" "$RUN_ID" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
+
+    - name: Upload alloc_ids
+      uses: actions/upload-artifact@v7
+      with:
+        name: alloc_ids_${{ env.RUN_ID }}
+        path: alloc_ids.csv

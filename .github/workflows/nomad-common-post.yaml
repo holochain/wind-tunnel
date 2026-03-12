@@ -1,8 +1,4 @@
-name: "Run Nomad Scenario"
-
-concurrency:
-  group: nomad
-  cancel-in-progress: false
+name: "Nomad Post Processing"
 
 on:
   workflow_call:
@@ -15,10 +11,6 @@ on:
         description: "The git commit hash to checkout before running the tests"
         type: string
         required: false
-      nomad-job-variant-directory:
-        description: "The path to the directory containing the nomad job variant"
-        type: string
-        required: true
       enable-summary-uploads:
         description: "Enable upload of summary visualiser html to GitHub Pages and summary json to bucket"
         type: boolean
@@ -26,10 +18,6 @@ on:
       ignore-summary-errors:
         description: "Ignore errors from summarizer"
         type: boolean
-        required: true
-      job-names:
-        description: "JSON array of job names to run, e.g. '[\"first_call\",\"dht_sync_lag\"]'"
-        type: string
         required: true
     secrets:
       NOMAD_ACCESS_TOKEN:
@@ -44,200 +32,15 @@ on:
         required: true
 
 jobs:
-  run-scenarios:
-    name: Run ${{ matrix.job-name }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 480
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        job-name: ${{ fromJSON(inputs.job-names) }}
-
-    env:
-      RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.commit-hash || github.sha }}
-
-      - name: Read Nomad Job Variables
-        id: read-nomad-vars
-        run: |
-          JOB_VARS_FILE="${{ inputs.nomad-job-variant-directory }}/vars/${{ matrix.job-name }}.json"
-          NOMAD_VAR_DURATION="$(jq -e -r '.duration' "$JOB_VARS_FILE")"
-          NOMAD_VAR_SCENARIO_NAME="$(jq -e -r '.scenario_name' "$JOB_VARS_FILE")"
-          # Parse required nodes count by summing the 'nodes' field of each assignment (defaulting to 1 per entry), or else default to 1 if no assignments.
-          REQUIRED_NODES="$(jq -e -r 'if .assignments then [.assignments[] | .nodes // 1] | add else 1 end' "$JOB_VARS_FILE")"
-
-          echo "duration=$NOMAD_VAR_DURATION" >> "$GITHUB_OUTPUT"
-          echo "scenario_name=$NOMAD_VAR_SCENARIO_NAME" >> "$GITHUB_OUTPUT"
-          echo "required_nodes=$REQUIRED_NODES" >> "$GITHUB_OUTPUT"
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-
-      - name: Setup cachix
-        uses: cachix/cachix-action@v16
-        with:
-          name: holochain-ci
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
-      - name: Check Eligible Nodes
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1
-          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
-          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
-          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
-        run: |
-          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
-          available=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh --eligible-only)
-          available=${available:-0}
-          echo "Available eligible nodes: $available (required: $REQUIRED_NODES)"
-          if (( available < REQUIRED_NODES )); then
-            echo "::error::Only $available eligible node(s) available but $REQUIRED_NODES required for ${{ matrix.job-name }}; cannot proceed"
-            exit 1
-          fi
-
-      - name: Build Nomad Job
-        run: |
-          nix run .#generate-nomad-jobs -- --job-name ${{ matrix.job-name }} --job-variant-path ${{ inputs.nomad-job-variant-directory }}
-
-      - name: Build scenario
-        run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
-
-      - name: Upload scenario to bucket
-        id: upload-scenario
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
-          AWS_DEFAULT_REGION: hel1
-          AWS_ENDPOINT_URL: https://hel1.your-objectstorage.com
-          S3_BUCKET_NAME: wind-tunnel-public-artifacts
-        run: |-
-          OUT_PATH="${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip"
-          nix run .#awscli-s3 cp ./result/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip "s3://${OUT_PATH}"
-
-          echo "scenario_download_url=${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_OUTPUT"
-          echo "Uploaded run scenario artifact to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Wait For Minimum Free Nodes
-        timeout-minutes: 60
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1
-          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
-          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
-          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
-        run: |
-          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
-          echo "Waiting for $REQUIRED_NODES eligible node(s) to be free"
-          while true; do
-              count=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh)
-              if (( ${count:-0} >= $REQUIRED_NODES )); then
-                  break
-              else
-                  echo -n "."
-              fi
-              sleep 5
-          done
-          echo "done"
-
-      - name: Dry Run Nomad Job
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1
-          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
-          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
-          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
-          NOMAD_VAR_run_id: ${{ env.RUN_ID }}
-          NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
-        run: |-
-          set -exuo pipefail
-          JOB_NAME="${{ matrix.job-name }}"
-          nomad_rc=0
-          nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job plan -no-color ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl 2>&1) || nomad_rc=$?
-          echo "$nomad_output"
-          if [ "$nomad_rc" -eq 255 ]; then
-              echo "Planning Nomad job failed"
-              exit 1
-          fi
-          if grep -Fq 'WARNING: Failed to place all allocations.' <<<"$nomad_output"; then
-              echo "Not all allocations would be placed"
-              exit 1
-          fi
-          # Nomad plan command exits with `1` if allocations would be created or destroyed, which is what we want
-          if [ "$nomad_rc" -ne 1 ]; then
-              echo "Nomad jobs would not be allocated"
-              exit 1
-          fi
-
-      - name: Run Nomad Job
-        id: run-nomad-job
-        env:
-          NIXPKGS_ALLOW_UNFREE: 1
-          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
-          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
-          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
-          NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
-          NOMAD_VAR_run_id: ${{ env.RUN_ID }}
-          NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
-        run: |-
-          set -exuo pipefail
-          JOB_NAME="${{ matrix.job-name }}"
-          nomad_rc=0
-          nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
-          if [ "$nomad_rc" -ne 0 ]; then
-              echo "Nomad job submission failed with exit code $nomad_rc"
-              echo "$nomad_output"
-              exit "$nomad_rc"
-          fi
-          echo "$nomad_output"
-          echo "Ran ${JOB_NAME} with run ID ${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
-          alloc_ids=$(echo "$nomad_output" | grep -oP --color=never 'Allocation "\K[0-9a-f]+(?=" created)' | paste -sd ' ' -)
-          if [ -z "$alloc_ids" ]; then
-            echo "Failed to extract allocation IDs from Nomad job output"
-            exit 1
-          fi
-
-          echo "alloc_ids=$alloc_ids" >> "$GITHUB_OUTPUT"
-          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "job_name=${JOB_NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Save alloc_ids to file
-        run: |
-          started_at=${{ steps.run-nomad-job.outputs.started_at }}
-          nix develop --command ./nomad/scripts/ci_allocs.sh make_allocs_csv alloc_ids.csv "${{ inputs.nomad-job-variant-directory }}/vars" "${{ matrix.job-name }}" "${{ steps.read-nomad-vars.outputs.scenario_name }}" "$RUN_ID" "${started_at}" "${{ steps.run-nomad-job.outputs.alloc_ids }}"
-
-      - name: Upload alloc_ids
-        uses: actions/upload-artifact@v7
-        with:
-          name: alloc_ids_${{ matrix.job-name }}
-          path: alloc_ids.csv
-
-      - name: Persist matrix job outputs for subsequent job use
-        uses: cloudposse/github-action-matrix-outputs-write@v1
-        with:
-          matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ env.RUN_ID }}
-          outputs: |-
-            alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
-            run_id: "${{ env.RUN_ID }}"
-            job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
-            started_at: "${{ steps.run-nomad-job.outputs.started_at }}"
-            duration: "${{ steps.read-nomad-vars.outputs.duration }}"
-
   collect-github-matrix-outputs:
     name: Collect Run Ids
     runs-on: ubuntu-latest
-    needs: run-scenarios
-    if: always()
+    if: ${{ always() }}
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@v1
         id: read
         with:
+          # This must match the step name used in the nomad action (.github/actions/nomad/action.yaml)
           matrix-step-name: run-scenarios
 
       - name: Restructure merged output
