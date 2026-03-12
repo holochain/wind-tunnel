@@ -267,5 +267,12 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
 
     println!("#RunId: [{}]", definition.run_id);
 
+    // Explicitly shut down the tokio runtime with a timeout rather than relying on the implicit
+    // drop, which waits indefinitely. Some async libraries (e.g. iroh's QUIC transport) spawn
+    // background tasks that do not cooperate with cancellation and would cause the process to hang.
+    runner_context_for_teardown
+        .executor()
+        .shutdown_with_timeout(Duration::from_secs(30));
+
     Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }

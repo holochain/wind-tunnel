@@ -1,4 +1,6 @@
 use std::future::Future;
+use std::sync::Mutex;
+use std::time::Duration;
 use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
 
 /// A wrapper around a Tokio runtime which allows futures to be run with managed shutdown handling.
@@ -11,14 +13,17 @@ use wind_tunnel_core::prelude::{ShutdownHandle, ShutdownSignalError};
 /// as part of the [run](crate::run::run) function. You get a handle to it from the [RunnerContext](crate::context::RunnerContext).
 #[derive(Debug)]
 pub struct Executor {
-    runtime: tokio::runtime::Runtime,
+    handle: tokio::runtime::Handle,
+    runtime: Mutex<Option<tokio::runtime::Runtime>>,
     shutdown_handle: ShutdownHandle,
 }
 
 impl Executor {
     pub(crate) fn new(runtime: tokio::runtime::Runtime, shutdown_handle: ShutdownHandle) -> Self {
+        let handle = runtime.handle().clone();
         Self {
-            runtime,
+            handle,
+            runtime: Mutex::new(Some(runtime)),
             shutdown_handle,
         }
     }
@@ -33,7 +38,7 @@ impl Executor {
         fut: impl Future<Output = anyhow::Result<T>>,
     ) -> anyhow::Result<T> {
         let mut shutdown_listener = self.shutdown_handle.new_listener();
-        self.runtime.block_on(async move {
+        self.handle.block_on(async move {
             tokio::select! {
                 result = fut => result,
                 _ = shutdown_listener.wait_for_shutdown() => {
@@ -51,6 +56,17 @@ impl Executor {
     /// In agent behaviour hooks, you should use [Executor::execute_in_place] instead of [Executor::spawn] to ensure that your
     /// your future completes before the behaviour completes and is scheduled again.
     pub fn spawn(&self, fut: impl Future<Output = ()> + Send + 'static) {
-        self.runtime.spawn(fut);
+        self.handle.spawn(fut);
+    }
+
+    /// Shut down the runtime, waiting at most `timeout` for background tasks to complete.
+    ///
+    /// This should be called explicitly at the end of a run rather than relying on the implicit drop,
+    /// which waits indefinitely. Some third-party async runtimes (e.g. iroh's QUIC transport) spawn
+    /// background tasks that do not cooperate with cancellation, and would cause the process to hang.
+    pub(crate) fn shutdown_with_timeout(&self, timeout: Duration) {
+        if let Some(runtime) = self.runtime.lock().unwrap().take() {
+            runtime.shutdown_timeout(timeout);
+        }
     }
 }
