@@ -49,6 +49,11 @@ job "{{ (ds "vars").scenario_name }}" {
     value     = ">= 1.11.0"
   }
 
+  secret "job_secrets" {
+    provider = "nomad"
+    path     = "nomad/jobs"
+  }
+
   dynamic "group" {
     for_each = [{{- $assignments := (index (ds "vars") "assignments" | default (coll.Slice)) -}}{{- range $aIdx, $assignment := $assignments -}}{{- $nodes := (index $assignment "nodes" | default 1) -}}{{- range $nodeIdx := math.Seq 0 (sub $nodes 1) -}}{{- if or (gt $aIdx 0) (gt $nodeIdx 0) -}},{{- end -}}{{ merge $assignment (dict "nodeIndex" $nodeIdx) | toJSON }}{{- end -}}{{- end -}}{{- if eq (len $assignments) 0 -}}{{ dict "behaviour" "default" | toJSON }}{{- end -}}]
     labels   = ["{{ (ds "vars").scenario_name }}-${group.key}-${group.value.behaviour}-${lookup(group.value, "nodeIndex", 0)}"]
@@ -133,12 +138,14 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         env {
-          RUST_LOG          = "info"
-          HOME              = "${NOMAD_TASK_DIR}"
-          WT_METRICS_DIR    = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS        = "{{ index (ds "vars") "min_agents" | default 2 }}"
-          RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
-          WT_HOLOCHAIN_PATH = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
+          RUST_LOG                    = "info"
+          HOME                        = "${NOMAD_TASK_DIR}"
+          WT_METRICS_DIR              = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+          MIN_AGENTS                  = "{{ index (ds "vars") "min_agents" | default 2 }}"
+          RUN_SUMMARY_PATH            = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
+          WT_HOLOCHAIN_PATH           = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
+          UNYT_DURABLE_OBJECTS_URL    = secret.job_secrets.UNYT_DURABLE_OBJECTS_URL
+          UNYT_DURABLE_OBJECTS_SECRET = secret.job_secrets.UNYT_DURABLE_OBJECTS_SECRET
         }
 
         config {
@@ -168,11 +175,6 @@ job "{{ (ds "vars").scenario_name }}" {
         content {
           lifecycle {
             hook = "poststop"
-          }
-
-          secret "job_secrets" {
-            provider = "nomad"
-            path     = "nomad/jobs"
           }
 
           env {

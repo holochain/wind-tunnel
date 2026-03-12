@@ -312,7 +312,19 @@ jobs:
 
       - name: Smoke test - unyt_chain_transaction
         run: |
+          # Start a local Durable Objects store.
+          # Need to re-direct stdin otherwise the wrangler terminates when running in background.
+          nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
+
+          # Run the scenario
           nix run .#rust-smoke-test -- --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 30 --no-progress
+
+          # Print the logs from the local Durable Objects store
+          cat local-durable-objects.log
+
+          # Kill the local Durable Objects store process.
+          # Need to kill wrangler as killing the background process leaves wrangler orphaned.
+          pkill -f wrangler
 
           echo "==> Available space after step"
           echo

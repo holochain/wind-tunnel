@@ -34,9 +34,20 @@ struct GetResponse {
 
 impl DurableObject {
     pub fn new() -> Self {
+        let base_url = std::env::var("UNYT_DURABLE_OBJECTS_URL")
+            .ok()
+            .map(|var| var.trim().to_string())
+            .filter(|var| !var.is_empty())
+            .expect("UNYT_DURABLE_OBJECTS_URL needs to be set for this scenario to run");
+        let secret = std::env::var("UNYT_DURABLE_OBJECTS_SECRET")
+            .ok()
+            .map(|var| var.trim().to_string())
+            .filter(|var| !var.is_empty())
+            .expect("UNYT_DURABLE_OBJECTS_SECRET needs to be set for this scenario to run");
+
         Self {
-            base_url: "https://durable-object-tmp-storage.joel-ulahanna.workers.dev".to_string(),
-            secret: "zo-el".to_string(),
+            base_url,
+            secret,
             client: reqwest::Client::builder()
                 .connect_timeout(Duration::from_secs(10))
                 .read_timeout(Duration::from_secs(30))

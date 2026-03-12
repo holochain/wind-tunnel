@@ -1,0 +1,35 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "wind-tunnel-durable-objects",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-02-24",
+	"routes": [
+		{
+			"pattern": "wind-tunnel-durable-objects.holochain.org",
+			"custom_domain": true
+		}
+	],
+	"migrations": [
+		{
+			"new_sqlite_classes": [
+				"RunStore"
+			],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "RunStore",
+				"name": "RUN_STORE"
+			}
+		]
+	},
+	"observability": {
+		"enabled": true
+	}
+}

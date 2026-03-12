@@ -34,7 +34,7 @@
 
     systems = builtins.attrNames inputs.holonix.devShells;
 
-    perSystem = { inputs', pkgs, lib, system, config, ... }:
+    perSystem = { inputs', pkgs, lib, system, config, self', ... }:
       let
         unfreeUnstablePkgs = import nixpkgsUnstable { inherit system; config.allowUnfree = true; };
         rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix { inherit crane rust-overlay nixpkgs; };
@@ -132,6 +132,8 @@
                 pkgs.tomlq
                 pkgs.getopt
                 pkgs.jq
+                pkgs.nodejs
+                pkgs.wrangler
                 unfreeUnstablePkgs.nomad_1_11
                 inputs'.holonix.packages.hn-introspect
               ];
@@ -139,10 +141,14 @@
               NOMAD_ADDR = "https://nomad-server-01.holochain.org:4646";
               NOMAD_CACERT = ./nomad/server-ca-cert.pem;
 
+              UNYT_DURABLE_OBJECTS_URL = "http://localhost:8787";
+              UNYT_DURABLE_OBJECTS_SECRET = "local-only";
+
               shellHook = ''
                 ${config.pre-commit.installationScript}
                 source ${./scripts/influx.sh}
                 source ${./scripts/telegraf.sh}
+                source ${./scripts/local-durable-objects.sh}
                 source ${./scripts/checks.sh}
               '';
             };
@@ -502,6 +508,7 @@
           };
           rust-smoke-test = pkgs.writeShellApplication {
             name = "rust-smoke-test";
+            runtimeEnv = { inherit (self'.devShells.default) UNYT_DURABLE_OBJECTS_URL UNYT_DURABLE_OBJECTS_SECRET; };
             runtimeInputs = [
               config.rustHelper.rust
               customHolochain
@@ -548,6 +555,19 @@
                 ${summaryVisualiser}/summary-visualiser/test.sh "$@"
               '';
             };
+          local-durable-objects = pkgs.writeShellApplication {
+            name = "local-durable-objects";
+            runtimeEnv = { inherit (self'.devShells.default) UNYT_DURABLE_OBJECTS_URL UNYT_DURABLE_OBJECTS_SECRET; };
+            runtimeInputs = [ pkgs.wrangler ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ${./scripts/local-durable-objects.sh}
+
+              run_local_durable_object_store
+            '';
+          };
         };
 
         checks = {
