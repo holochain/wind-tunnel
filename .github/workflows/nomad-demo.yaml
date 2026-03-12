@@ -19,8 +19,54 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  nomad-demo:
+  run-scenarios:
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        job-name:
+          - first_call
+          - local_signals
+          - remote_call_rate
+          - remote_signals
+          - single_write_many_read
+          - write_query
+          - write_read
+          - write_validated
+          - zome_call_single_value
+          - app_install_large
+          - app_install_minimal
+          - dht_sync_lag
+          - validation_receipts
+          - write_get_agent_activity
+          - write_get_agent_activity_volatile
+          - write_validated_must_get_agent_activity
+          - two_party_countersigning
+          - zero_arc_create_data
+          - zero_arc_create_data_validated
+          - zero_arc_create_and_read
+          - full_arc_create_validated_zero_arc_read
+          - mixed_arc_get_agent_activity
+          - mixed_arc_must_get_agent_activity
+          - unyt_chain_transaction
+          - unyt_chain_transaction_zero_arc
     uses: ./.github/workflows/nomad-common.yaml
+    secrets:
+      NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+      INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    with:
+      job-name: ${{ matrix.job-name }}
+      holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu' }}
+      commit-hash: ${{ inputs.commit-hash }}
+      nomad-job-variant-directory: "nomad/job-variants/demo"
+
+  post-run-scenarios:
+    needs: run-scenarios
+    uses: ./.github/workflows/nomad-common-post.yaml
+    if: ${{ !cancelled() }}
     secrets:
       NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
       INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
@@ -30,6 +76,6 @@ jobs:
     with:
       holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu' }}
       commit-hash: ${{ inputs.commit-hash }}
-      nomad-job-variant-directory: "nomad/job-variants/demo"
       enable-summary-uploads: false
       ignore-summary-errors: false
+      matrix-step-name: run-scenarios

@@ -67,16 +67,47 @@ jobs:
 
             # Deploy threefold nodes
             nix develop .#ci --command tfrobot deploy -c threefold/config.yaml
-
-            echo "Provisioned threefold nodes. Sleeping 5 minutes to give them time to launch."
-
-            # Wait 5 mins for threefold nodes to launch
-            sleep 300
+            echo "Deployed threefold nodes."
           fi
 
-  nomad-canonical:
-    uses: ./.github/workflows/nomad-common.yaml
+  run-scenarios:
     needs: deploy-threefold-nodes
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        job-name:
+          - remote_call_rate
+          - remote_signals
+          - dht_sync_lag
+          - validation_receipts
+          - write_get_agent_activity
+          - write_get_agent_activity_volatile
+          - write_validated_must_get_agent_activity
+          - zero_arc_create_data
+          - zero_arc_create_data_validated
+          - zero_arc_create_and_read
+          - full_arc_create_validated_zero_arc_read
+          - mixed_arc_get_agent_activity
+          - mixed_arc_must_get_agent_activity
+          - unyt_chain_transaction
+          - unyt_chain_transaction_zero_arc
+    uses: ./.github/workflows/nomad-common.yaml
+    secrets:
+      NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+      INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    with:
+      job-name: ${{ matrix.job-name }}
+      holochain-bin-url: https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu
+      nomad-job-variant-directory: "nomad/job-variants/canonical-scaled"
+
+  post-run-scenarios:
+    needs: run-scenarios
+    uses: ./.github/workflows/nomad-common-post.yaml
+    if: ${{ !cancelled() }}
     secrets:
       NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
       INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
@@ -85,13 +116,13 @@ jobs:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     with:
       holochain-bin-url: https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu
-      nomad-job-variant-directory: "nomad/job-variants/canonical-scaled"
       enable-summary-uploads: true
       ignore-summary-errors: true
+      matrix-step-name: run-scenarios
 
   remove-threefold-nodes:
     runs-on: ubuntu-latest
-    needs: nomad-canonical
+    needs: post-run-scenarios
     if: always()
     steps:
       - uses: actions/checkout@v6
