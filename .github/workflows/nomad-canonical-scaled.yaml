@@ -2,8 +2,11 @@ name: "Run canonical scaled performance tests on Nomad cluster and Threefold nod
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "0 0 * * 5" # Run Nomad workflow at 00:00 on Fridays
+
+  push:
+    branches: [feat/threefold-large-scale]
+    # schedule:
+    #   - cron: "0 0 * * 5" # Run Nomad workflow at 00:00 on Fridays
 
 concurrency:
   group: nomad-canonical-scaled
