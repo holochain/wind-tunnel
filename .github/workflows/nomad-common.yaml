@@ -199,6 +199,7 @@ jobs:
     name: Collect Run Ids
     runs-on: ubuntu-latest
     needs: run-scenarios
+    if: ${{ !cancelled() }}
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@v1
         id: read
@@ -229,6 +230,7 @@ jobs:
     name: Wait for Nomad jobs to finish
     runs-on: ubuntu-latest
     needs: collect-github-matrix-outputs
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
