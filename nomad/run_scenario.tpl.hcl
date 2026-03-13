@@ -141,11 +141,32 @@ job "{{ (ds "vars").scenario_name }}" {
           WT_HOLOCHAIN_PATH = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
         }
 
+        template {
+          // Wrapper used to run dynamically linked binaries via a
+          // compatibility shim on runners that provide at /bin/wt-nix-ld-run.
+          // Other runners fall back to direct execution.
+          data = <<-EOF
+          #!/usr/bin/env bash
+          set -euo pipefail
+          binary="$1"
+          shift
+
+          if [ -x /bin/wt-nix-ld-run ]; then
+            exec /bin/wt-nix-ld-run "$binary" "$@"
+          fi
+
+          exec "$binary" "$@"
+          EOF
+          destination = "${NOMAD_TASK_DIR}/exec_with_optional_nixld.sh"
+          perms       = "755"
+        }
+
         config {
-          // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_TASK_DIR}/bin/{{ (ds "vars").scenario_name }}"
+          command = "${NOMAD_TASK_DIR}/exec_with_optional_nixld.sh"
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
+            // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
+            fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_TASK_DIR}/bin/{{ (ds "vars").scenario_name }}",
             "--duration=${var.duration}",
             "--reporter=${var.reporter}",
             "--behaviour=${group.value.behaviour}:${lookup(group.value, "agents", 1)}",
