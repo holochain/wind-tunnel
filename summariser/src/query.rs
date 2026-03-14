@@ -244,20 +244,39 @@ pub async fn query_metrics(
             // json_query failed to parse the response. Retry with the raw query to recover the
             // actual response body, which is consumed internally by json_query before the error
             // is returned and therefore not available directly.
-            let raw = client
-                .query(q.clone())
-                .await
-                .unwrap_or_else(|e| format!("<raw query also failed: {e}>"));
+            let raw_res = client.query(q.clone()).await;
+            let raw = match raw_res {
+                Ok(body) => body,
+                Err(retry_err) => {
+                    return Err(anyhow::anyhow!(
+                        "InfluxDB query '{}' failed to deserialize (json_query error: {}); \
+                         raw retry also failed: {}",
+                        query_str,
+                        deser_err,
+                        retry_err
+                    ));
+                }
+            };
+            const MAX_RAW_LEN: usize = 4096;
+            let truncated_raw = if raw.len() > MAX_RAW_LEN {
+                let mut end = MAX_RAW_LEN;
+                while !raw.is_char_boundary(end) {
+                    end -= 1;
+                }
+                format!("{}...(truncated)", &raw[..end])
+            } else {
+                raw.clone()
+            };
             serde_json::from_str::<influxdb::integrations::serde_integration::DatabaseQueryResult>(
                 &raw,
             )
             .map_err(|_| {
                 anyhow::anyhow!(
                     "InfluxDB returned a non-JSON response for query '{}' \
-                     (json_query error: {}). A retry also failed with raw response: {:?}",
+                     (json_query error: {}). Raw response: {:?}",
                     query_str,
                     deser_err,
-                    raw
+                    truncated_raw
                 )
             })?
         }

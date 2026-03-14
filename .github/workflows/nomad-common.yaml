@@ -93,7 +93,8 @@ jobs:
           available=${available:-0}
           echo "Available eligible nodes: $available (required: $REQUIRED_NODES)"
           if (( available < REQUIRED_NODES )); then
-            echo "::warning::Only $available eligible node(s) available but $REQUIRED_NODES required for ${{ matrix.job-name }}; job may not schedule correctly"
+            echo "::error::Only $available eligible node(s) available but $REQUIRED_NODES required for ${{ matrix.job-name }}; cannot proceed"
+            exit 1
           fi
 
       - name: Build Nomad Job

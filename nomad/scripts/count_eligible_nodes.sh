@@ -64,7 +64,7 @@ fi
 # 'nomad job status -namespace * -json' returns the full allocation list across all namespaces.
 # Filter immediately to "running" NodeIDs to avoid holding the large response (which includes
 # TaskStates/Events per allocation).
-busy_json=$("$NOMAD" job status -namespace '*' -json 2>&1 | jq '[.[].Allocations[]] | map(select(.ClientStatus == "running") | .NodeID) | unique' 2>&1) || {
+busy_json=$("$NOMAD" job status -namespace '*' -json 2>&1 | jq '[.[].Allocations // [] | .[]] | map(select(.ClientStatus == "running") | .NodeID) | unique' 2>&1) || {
   echo "ERROR: 'nomad job status -namespace * -json' failed or returned invalid JSON: $busy_json" >&2
   exit 1
 }
