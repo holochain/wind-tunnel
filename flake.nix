@@ -50,6 +50,62 @@
           src = ./lp-tool;
           vendorHash = "sha256-7IGJGP2K0H0eKYU+gveykhGYt9ZufJNBUEv3jM66Wt0=";
         };
+
+        # Threefold cli tool
+        tfgridSdkGoVersion = "0.17.5";
+        tfgridSdkGoRev = "v${tfgridSdkGoVersion}";
+        tfgridSdkGoSrc = pkgs.fetchFromGitHub {
+          owner = "threefoldtech";
+          repo = "tfgrid-sdk-go";
+          rev = tfgridSdkGoRev;
+          hash = "sha256-a0So46H3afPtb3mhD+ktzj4z4PX2W+0yaM5NH4i+y4E=";
+        };
+
+        tfgridSdkGoBuild =
+          { pname
+          , modRoot
+          , subPackages ? [ "." ]
+          , ldflags ? [ ]
+          , postInstall ? ""
+          , vendorHash
+          }:
+          pkgs.buildGoModule {
+            inherit pname modRoot subPackages ldflags vendorHash;
+            version = tfgridSdkGoVersion;
+            src = tfgridSdkGoSrc;
+            env = {
+              CGO_ENABLED = "0";
+              GOWORK = "off";
+            };
+            doCheck = false;
+            inherit postInstall;
+          };
+
+        tfgrid-sdk-go-tfrobot = tfgridSdkGoBuild {
+          pname = "tfgrid-sdk-go-tfrobot";
+          modRoot = "tfrobot";
+          vendorHash = "sha256-Lyms04JtyCeRmWDlebMc+l3D3hIng05YxjTMTkdu91s=";
+          ldflags = [
+            "-X github.com/threefoldtech/tfgrid-sdk-go/tfrobot/cmd.version=${tfgridSdkGoRev}"
+            "-X github.com/threefoldtech/tfgrid-sdk-go/tfrobot/cmd.commit=${tfgridSdkGoRev}"
+          ];
+        };
+
+        tfgrid-sdk-go-tf-grid-cmd = tfgridSdkGoBuild {
+          pname = "tfgrid-sdk-go-tf-grid-cmd";
+          modRoot = "grid-cli";
+          vendorHash = "sha256-wR/iIc4mQbXGlCZ38RQaYy13sASHDnkVmMJwtGh4NnY=";
+          ldflags = [
+            "-X github.com/threefoldtech/tfgrid-sdk-go/grid-cli/cmd.version=${tfgridSdkGoRev}"
+            "-X github.com/threefoldtech/tfgrid-sdk-go/grid-cli/cmd.commit=${tfgridSdkGoRev}"
+          ];
+          postInstall = ''
+            if [ -e "$out/bin/grid-cli" ]; then
+              mv "$out/bin/grid-cli" "$out/bin/tf-grid-cmd"
+              ln -s tf-grid-cmd "$out/bin/tfcmd"
+            fi
+          '';
+        };
       in
       {
         imports = [
@@ -126,7 +182,6 @@
                 pkgs.influxdb2-server
                 # TODO https://docs.influxdata.com/telegraf/v1/install/#ntp
                 pkgs.telegraf
-                pkgs.yq
                 pkgs.httpie
                 pkgs.openssl
                 pkgs.tomlq
@@ -150,6 +205,9 @@
             ci = pkgs.mkShell {
               packages = commonPackages ++ [
                 pkgs.go
+                tfgrid-sdk-go-tfrobot
+                tfgrid-sdk-go-tf-grid-cmd
+                pkgs.yq-go
               ];
             };
 
@@ -167,6 +225,7 @@
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
           inherit lp-tool;
+          inherit tfgrid-sdk-go-tfrobot tfgrid-sdk-go-tf-grid-cmd;
           local-upload-metrics = pkgs.writeShellApplication {
             name = "local-upload-metrics";
             runtimeInputs = [
@@ -395,6 +454,7 @@
               # shellcheck disable=SC1091
               ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/demo
               ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/canonical
+              ./nomad/scripts/generate_jobs.sh -- --validate --job-variant-path nomad/job-variants/canonical-scaled
             '';
           };
           check-influx-setup-script = pkgs.writeShellApplication {

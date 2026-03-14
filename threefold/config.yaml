@@ -1,0 +1,27 @@
+node_groups:
+  - name: default
+    nodes_count: 0
+    free_cpu: 2
+    free_mru: 8 # Memory in GB
+    free_ssd: 12
+    free_hdd: 0
+
+vms:
+  - name: wind_tunnel_runner
+    vms_count: 0
+    node_group: default
+    cpu: 2
+    mem: 8
+    flist: https://hub.threefold.me/holochain.3bot/ghcr.io-holochain-wind-tunnel-runner-threefold-latest.flist
+    entry_point: /entrypoint.sh
+
+    # The wind tunnel runner docker images are not configured for ssh access, but we still need to provide a key
+    ssh_key: unused-key
+
+ssh_keys:
+  unused-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrqSdswiHNffBpd4bHOieVNfLNQZABa6fLkG5CukFT+ matt@megion
+
+# Mnemonic seed of the tfchain wallet that will be billed
+mnemonic: REPLACE ME
+
+network: main

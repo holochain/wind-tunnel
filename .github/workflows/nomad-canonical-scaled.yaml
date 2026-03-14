@@ -1,0 +1,150 @@
+name: "Run canonical scaled performance tests on Nomad cluster and Threefold nodes"
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [feat/threefold-large-scale]
+    # schedule:
+    #   - cron: "0 0 * * 5" # Run Nomad workflow at 00:00 on Fridays
+
+concurrency:
+  group: nomad-canonical-scaled
+  cancel-in-progress: false
+
+jobs:
+  deploy-threefold-nodes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Check available nodes in nomad
+        id: check-available-nomad-nodes
+        env:
+          NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: |
+          COUNT=$(nix develop .#ci --command nomad node status -filter "Status == ready" -filter "SchedulingEligibility == eligible" -json | jq '. | length')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Provision additional nodes from Threefold
+        env:
+          THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
+
+          # Additional nodes provisioned in case some fail to deploy. In practice this seems to happen infrequently.
+          THREEFOLD_NODES_BUFFER_COUNT: 25
+        run: |
+          # Read canonical-scaled scenario vars to determine max nodes required by a single scenario.
+          MAX_SCENARIO_NODES_COUNT=$(jq -s 'map((.assignments // []) | map(.nodes // 1) | add // 1) | max // 1' \
+            nomad/job-variants/canonical-scaled/vars/*.json)
+
+          # Determine number of additional nodes needed
+          AVAILABLE_NODES="${{ steps.check-available-nomad-nodes.outputs.count }}"
+          MIN_THREEFOLD_NODES_COUNT=$(( MAX_SCENARIO_NODES_COUNT - AVAILABLE_NODES ))
+
+          echo "Available nodes: $AVAILABLE_NODES"
+          echo "Max nodes required by a scenario: $MAX_SCENARIO_NODES_COUNT"
+
+          if [ "$MIN_THREEFOLD_NODES_COUNT" -gt 0 ]; then
+            THREEFOLD_NODES_COUNT=$(( MIN_THREEFOLD_NODES_COUNT + THREEFOLD_NODES_BUFFER_COUNT ))
+            echo "Provisioning ${THREEFOLD_NODES_COUNT} threefold nodes with buffer"
+
+            # Configure the threefold deployment
+            NODE_GROUP_NAME="node_group_$(date +%s)" \
+            THREEFOLD_NODES_COUNT="$THREEFOLD_NODES_COUNT" \
+            yq eval --inplace '
+              .node_groups[0].name = env(NODE_GROUP_NAME) |
+              .vms[0].node_group = env(NODE_GROUP_NAME) |
+              .node_groups[0].nodes_count = env(THREEFOLD_NODES_COUNT) |
+              .vms[0].vms_count = env(THREEFOLD_NODES_COUNT) |
+              .mnemonic = strenv(THREEFOLD_TFCHAIN_WALLET_MNEMONIC)
+            ' threefold/config.yaml
+
+            # Deploy threefold nodes
+            nix develop .#ci --command tfrobot deploy -c threefold/config.yaml
+            echo "Deployed threefold nodes."
+          fi
+
+  run-scenarios:
+    needs: deploy-threefold-nodes
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        job-name:
+          - remote_call_rate
+          - remote_signals
+          - dht_sync_lag
+          - validation_receipts
+          - write_get_agent_activity
+          - write_get_agent_activity_volatile
+          - write_validated_must_get_agent_activity
+          - zero_arc_create_data
+          - zero_arc_create_data_validated
+          - zero_arc_create_and_read
+          - full_arc_create_validated_zero_arc_read
+          - mixed_arc_get_agent_activity
+          - mixed_arc_must_get_agent_activity
+          - unyt_chain_transaction
+          - unyt_chain_transaction_zero_arc
+    uses: ./.github/workflows/nomad-common.yaml
+    secrets:
+      NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+      INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    with:
+      job-name: ${{ matrix.job-name }}
+      holochain-bin-url: https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu
+      nomad-job-variant-directory: "nomad/job-variants/canonical-scaled"
+
+  post-run-scenarios:
+    needs: run-scenarios
+    uses: ./.github/workflows/nomad-common-post.yaml
+    if: ${{ !cancelled() }}
+    secrets:
+      NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+      INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_ACCESS }}
+      HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    with:
+      holochain-bin-url: https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.0/holochain-unstable-x86_64-unknown-linux-gnu
+      enable-summary-uploads: true
+      ignore-summary-errors: true
+      matrix-step-name: run-scenarios
+
+  remove-threefold-nodes:
+    runs-on: ubuntu-latest
+    needs: post-run-scenarios
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Cancel all Threefold nodes
+        env:
+          THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
+        run: |-
+          # Set login config for tf-grid-cmd
+          printf '{"mnemonics":"%s","network":"main"}\n' "$THREEFOLD_TFCHAIN_WALLET_MNEMONIC" > ~/.config/.tfgridconfig
+
+          # Cancel all threefold deployment contracts
+          nix develop .#ci --command tf-grid-cmd cancel contracts -a

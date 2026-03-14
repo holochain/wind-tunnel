@@ -1,8 +1,13 @@
 {{/*
-Create a useful title from a list of scenarios.
+Create a concise page title from scenario names.
 Expects a list of scenario objects with .run_summary.scenario_name fields.
-Deduplicates scenario names, truncates to three, and indicates if there are more.
 */}}
-{{ $deduped_summaries := coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .) }}
-{{- conv.Join (coll.GoSlice $deduped_summaries 0 3) ", " -}}
-{{- if gt (len $deduped_summaries) 3 }} and {{ sub (len $deduped_summaries) 3 }} more{{ end -}}
+{{- $names := coll.Uniq (coll.JQ "map(.run_summary.scenario_name)" .) -}}
+{{- $count := len $names -}}
+{{- if eq $count 0 -}}
+No scenarios
+{{- else if le $count 3 -}}
+{{ conv.Join $names ", " -}}
+{{- else -}}
+{{ conv.Join (coll.GoSlice $names 0 3) ", " }} and {{ sub $count 3 }} more
+{{- end -}}
