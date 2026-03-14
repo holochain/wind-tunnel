@@ -40,7 +40,7 @@ jobs:
           THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
 
           # Additional nodes provisioned in case some fail to deploy. In practice this seems to happen infrequently.
-          THREEFOLD_NODES_BUFFER_COUNT: 10
+          THREEFOLD_NODES_BUFFER_COUNT: 25
         run: |
           # Read canonical-scaled scenario vars to determine max nodes required by a single scenario.
           MAX_SCENARIO_NODES_COUNT=$(jq -s 'map((.assignments // []) | map(.nodes // 1) | add // 1) | max // 1' \
