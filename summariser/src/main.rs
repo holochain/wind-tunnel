@@ -44,8 +44,11 @@ async fn main() -> anyhow::Result<()> {
             .context("Cannot read metrics without environment variable `INFLUX_TOKEN`")?,
     );
 
-    let summary_results =
-        futures::future::join_all(latest_by_config_summaries.into_iter().filter_map(
+    const MAX_CONCURRENT_SUMMARIES: usize = 4;
+
+    let summary_results = {
+        use futures::StreamExt;
+        futures::stream::iter(latest_by_config_summaries.into_iter().filter_map(
             |(_, _, summary)| {
                 // When the test data feature is enabled, dump the run summary to a file
                 #[cfg(feature = "test_data")]
@@ -62,9 +65,10 @@ async fn main() -> anyhow::Result<()> {
                 holochain_summariser::execute_report_for_run_summary(client.clone(), summary)
             },
         ))
+        .buffer_unordered(MAX_CONCURRENT_SUMMARIES)
+        .collect::<Vec<_>>()
         .await
-        .into_iter()
-        .collect::<Vec<_>>();
+    };
 
     let total_summaries = summary_results.len();
     let mut errors = vec![];

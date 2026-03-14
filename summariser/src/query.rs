@@ -219,7 +219,7 @@ pub async fn query_metrics(
         query_str += format!(r#" AND "{tag_name}" = '{tag_value}'"#).as_str();
     };
 
-    let q = ReadQuery::new(query_str);
+    let q = ReadQuery::new(&query_str);
     log::debug!("Querying: {q:?}");
 
     #[cfg(feature = "query_test_data")]
@@ -238,7 +238,31 @@ pub async fn query_metrics(
         );
     }
 
-    let res = client.json_query(q.clone()).await?;
+    let res = match client.json_query(q.clone()).await {
+        Ok(res) => res,
+        Err(influxdb::Error::DeserializationError { error: deser_err }) => {
+            // json_query failed to parse the response. Retry with the raw query to recover the
+            // actual response body, which is consumed internally by json_query before the error
+            // is returned and therefore not available directly.
+            let raw = client
+                .query(q.clone())
+                .await
+                .unwrap_or_else(|e| format!("<raw query also failed: {e}>"));
+            serde_json::from_str::<influxdb::integrations::serde_integration::DatabaseQueryResult>(
+                &raw,
+            )
+            .map_err(|_| {
+                anyhow::anyhow!(
+                    "InfluxDB returned a non-JSON response for query '{}' \
+                     (json_query error: {}). A retry also failed with raw response: {:?}",
+                    query_str,
+                    deser_err,
+                    raw
+                )
+            })?
+        }
+        Err(e) => return Err(anyhow::Error::from(e)),
+    };
     let frame = crate::frame::load_from_response(measurement, res)?;
     log::debug!("Rows found: {}", frame.height());
 

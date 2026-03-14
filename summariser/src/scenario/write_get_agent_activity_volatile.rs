@@ -58,14 +58,6 @@ pub(crate) async fn summarize_write_get_agent_activity_volatile(
     .await
     .context("Load shutdown_count data")?;
 
-    let get_agent_activity_full_zome_calls =
-        query_zome_call_instrument_data(client.clone(), &summary)
-            .await
-            .context("Load get_agent_activity_full zome call data")?
-            .lazy()
-            .filter(col("fn_name").eq(lit("get_agent_activity_full")))
-            .collect()?;
-
     let total_on_duration_s = query_custom_data(
         client.clone(),
         &summary,
@@ -101,6 +93,15 @@ pub(crate) async fn summarize_write_get_agent_activity_volatile(
     )
     .await
     .context("Load reached target arc data")?;
+
+    // Fetched last so the large unfiltered DataFrame is not held across earlier awaits.
+    let get_agent_activity_full_zome_calls =
+        query_zome_call_instrument_data(client.clone(), &summary)
+            .await
+            .context("Load get_agent_activity_full zome call data")?
+            .lazy()
+            .filter(col("fn_name").eq(lit("get_agent_activity_full")))
+            .collect()?;
 
     Ok(WriteGetAgentActivityVolatileSummary {
         highest_observed_action_seq: partitioned_rate_stats(

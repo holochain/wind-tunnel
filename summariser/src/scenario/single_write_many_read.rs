@@ -28,7 +28,6 @@ pub(crate) async fn summarize_single_write_many_read(
         .context("Load zome call data")?;
 
     let zome_calls = zome_calls
-        .clone()
         .lazy()
         .filter(col("fn_name").eq(lit("get_sample_entry")))
         .collect()?;

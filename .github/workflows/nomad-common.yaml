@@ -23,6 +23,10 @@ on:
         description: "Ignore errors from summarizer"
         type: boolean
         required: true
+      job-names:
+        description: "JSON array of job names to run, e.g. '[\"first_call\",\"dht_sync_lag\"]'"
+        type: string
+        required: true
     secrets:
       NOMAD_ACCESS_TOKEN:
         required: true
@@ -39,36 +43,12 @@ jobs:
   run-scenarios:
     name: Run ${{ matrix.job-name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 480
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
-        job-name:
-          - first_call
-          - local_signals
-          - remote_call_rate
-          - remote_signals
-          - single_write_many_read
-          - write_query
-          - write_read
-          - write_validated
-          - zome_call_single_value
-          - app_install_large
-          - app_install_minimal
-          - dht_sync_lag
-          - validation_receipts
-          - write_get_agent_activity
-          - write_get_agent_activity_volatile
-          - write_validated_must_get_agent_activity
-          - two_party_countersigning
-          - zero_arc_create_data
-          - zero_arc_create_data_validated
-          - zero_arc_create_and_read
-          - full_arc_create_validated_zero_arc_read
-          - mixed_arc_get_agent_activity
-          - mixed_arc_must_get_agent_activity
-          - unyt_chain_transaction
-          - unyt_chain_transaction_zero_arc
+        job-name: ${{ fromJSON(inputs.job-names) }}
 
     env:
       RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}
@@ -100,6 +80,22 @@ jobs:
           name: holochain-ci
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
+      - name: Check Eligible Nodes
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
+        run: |
+          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+          available=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh --eligible-only)
+          available=${available:-0}
+          echo "Available eligible nodes: $available (required: $REQUIRED_NODES)"
+          if (( available < REQUIRED_NODES )); then
+            echo "::warning::Only $available eligible node(s) available but $REQUIRED_NODES required for ${{ matrix.job-name }}; job may not schedule correctly"
+          fi
+
       - name: Build Nomad Job
         run: |
           nix run .#generate-nomad-jobs -- --job-name ${{ matrix.job-name }} --job-variant-path ${{ inputs.nomad-job-variant-directory }}
@@ -123,7 +119,7 @@ jobs:
           echo "Uploaded run scenario artifact to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Wait For Minimum Free Nodes
-        timeout-minutes: 30
+        timeout-minutes: 60
         env:
           NIXPKGS_ALLOW_UNFREE: 1
           NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
@@ -131,9 +127,10 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
           REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
         run: |
-          echo "Waiting for $REQUIRED_NODES node(s) to be free"
+          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+          echo "Waiting for $REQUIRED_NODES eligible node(s) to be free"
           while true; do
-              count=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- node status -allocs | awk 'NR > 1 {if (($8 == "ready") && ($9 == 0)) count+=1} END {print count}')
+              count=$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh)
               if (( ${count:-0} >= $REQUIRED_NODES )); then
                   break
               else
@@ -202,6 +199,7 @@ jobs:
     name: Collect Run Ids
     runs-on: ubuntu-latest
     needs: run-scenarios
+    if: ${{ !cancelled() }}
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@v1
         id: read
@@ -232,6 +230,7 @@ jobs:
     name: Wait for Nomad jobs to finish
     runs-on: ubuntu-latest
     needs: collect-github-matrix-outputs
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
@@ -314,13 +313,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - name: Upload run summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: run_summary
+          path: run_summary.jsonl
+
       - name: Run summariser
         if: ${{ !cancelled() }}
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
           INFLUX_BUCKET: "windtunnel"
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
-          RUST_LOG: debug
+          RUST_LOG: info,holochain_summariser=debug
           IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
         run: nix develop --command cargo run --release --bin holochain-summariser
 
