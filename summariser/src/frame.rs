@@ -81,21 +81,32 @@ pub(crate) fn load_from_response(
     {
         let mut writer = std::io::BufWriter::new(&mut f);
         writer.write_all(b"[")?;
-        let n = values.len();
-        for (i, row) in values.into_iter().enumerate() {
-            if let serde_json::Value::Array(row_arr) = row {
-                let obj: serde_json::Map<String, serde_json::Value> = columns
-                    .iter()
-                    .zip(row_arr.into_iter())
-                    .map(|(col, val)| (col.clone(), val))
-                    .collect();
-                serde_json::to_writer(&mut writer, &serde_json::Value::Object(obj))?;
+        let mut wrote_row = false;
+        for row in values.into_iter() {
+            let row_arr = match row {
+                serde_json::Value::Array(arr) => arr,
+                other => anyhow::bail!("Expected row to be an array, got: {:?}", other),
+            };
+            if row_arr.len() != columns.len() {
+                anyhow::bail!(
+                    "Row length {} does not match column count {}",
+                    row_arr.len(),
+                    columns.len()
+                );
             }
-            if i + 1 < n {
+            if wrote_row {
                 writer.write_all(b",")?;
             }
+            let obj: serde_json::Map<String, serde_json::Value> = columns
+                .iter()
+                .zip(row_arr.into_iter())
+                .map(|(col, val)| (col.clone(), val))
+                .collect();
+            serde_json::to_writer(&mut writer, &serde_json::Value::Object(obj))?;
+            wrote_row = true;
         }
         writer.write_all(b"]")?;
+        writer.flush()?;
     }
 
     f.seek(SeekFrom::Start(0))?;
