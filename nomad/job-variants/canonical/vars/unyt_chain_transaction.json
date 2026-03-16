@@ -2,7 +2,6 @@
   "description": "1 progenitor initialises the network; 32 spend and 32 smart_agreements agents run concurrent transactions. Target 50/50 spend/smart_agreements; actual 50/50 at 64 transaction agents (65 nodes total).",
   "scenario_name": "unyt_chain_transaction",
   "duration": 900,
-  "min_agents": 65,
   "assignments": [
     {
       "behaviour": "initiate"
@@ -15,5 +14,9 @@
       "behaviour": "smart_agreements",
       "nodes": 32
     }
-  ]
+  ],
+  "env": {
+    "MIN_AGENTS": "65",
+    "UNYT_NUMBER_OF_LINKS_TO_PROCESS": "10"
+  }
 }

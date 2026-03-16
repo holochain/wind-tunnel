@@ -24,6 +24,31 @@ A simple Example:
 }
 ```
 
+An example with environment variables:
+
+```json
+{
+  "scenario_name": "write_get_agent_activity_volatile",
+  "duration": 900,
+  "assignments": [
+    {
+      "behaviour": "write",
+      "nodes": 2
+    },
+    {
+      "behaviour": "get_agent_activity_volatile",
+      "nodes": 8
+    }
+  ],
+  "env": {
+    "CONDUCTOR_ON_MIN_S": "10",
+    "CONDUCTOR_ON_MAX_S": "30",
+    "CONDUCTOR_OFF_MIN_S": "2",
+    "CONDUCTOR_OFF_MAX_S": "10"
+  }
+}
+```
+
 The following variables are available:
 
 - `description`: A human-readable description of what the job does. (_optional_, not used at runtime — serves as documentation for the vars file)
@@ -36,8 +61,10 @@ The following variables are available:
 - `connection_string`: The connection string to the Holochain conductor. (_optional_, defaults to `ws://localhost:8888`)
 - `run_id`: The ID of the run to distinguish it from other runs. (_optional_, defaults to `null`)
 - `reporter`: The reporter type to use. (_optional_, defaults to `influx-file`)
-- `min_agents`: The minimum number of agents each agent will wait for, including itself, before running some
-  scenarios. (_optional_, defaults to `2`)
+- `env`: An object of arbitrary key-value pairs to set as environment variables for the scenario run. (_optional_, defaults to `{}`)
+  Each key-value pair is injected into the Nomad task's `env` block. This can be used to configure scenario-specific
+  behavior. For example, `MIN_AGENTS` controls the minimum number of agents each agent will wait for before running.
+  See individual scenario documentation for available environment variables.
 
 ## Generate Nomad Jobs
 

@@ -141,11 +141,13 @@ job "{{ (ds "vars").scenario_name }}" {
           RUST_LOG                    = "info"
           HOME                        = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR              = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS                  = "{{ index (ds "vars") "min_agents" | default 2 }}"
           RUN_SUMMARY_PATH            = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
           WT_HOLOCHAIN_PATH           = var.holochain_bin_url == null ? "holochain" : "${NOMAD_ALLOC_DIR}/holochain"
           UNYT_DURABLE_OBJECTS_URL    = secret.job_secrets.UNYT_DURABLE_OBJECTS_URL
           UNYT_DURABLE_OBJECTS_SECRET = secret.job_secrets.UNYT_DURABLE_OBJECTS_SECRET
+          {{- range $key, $value := (index (ds "vars") "env" | default (coll.Dict)) }}
+          {{ $key }} = "{{ $value }}"
+          {{- end }}
         }
 
         config {
