@@ -71,6 +71,14 @@ function generate_run_summary() {
         return 1
     fi
 
+    # Fetch peer_end_count per run_id by querying each allocation's run_summary.jsonl via Nomad API
+    declare -A peer_end_count_by_run
+    while IFS=',' read -r _job_name _scenario_name alloc_id _run_id _started_at _duration _peer_count _behaviours; do
+        local this_alloc_peer_end_count
+        this_alloc_peer_end_count=$(fetch_peer_end_count "$alloc_id" "$_peer_count")
+        peer_end_count_by_run["$_run_id"]="$(( ${peer_end_count_by_run["$_run_id"]:-0} + this_alloc_peer_end_count ))"
+    done < "$allocs_csv_file"
+
     touch "$run_summary_file"
 
     local wind_tunnel_version
@@ -89,12 +97,14 @@ function generate_run_summary() {
     local behaviours
 
     while IFS=',' read -r _job_name scenario_name alloc_id run_id started_at duration peer_count behaviours; do
-        echo "Processing line: $run_id / $scenario_name / $alloc_id / $started_at / $duration / $peer_count / $behaviours"
+        local peer_end_count="${peer_end_count_by_run["$run_id"]:-$peer_count}"
+        echo "Processing line: $run_id / $scenario_name / $alloc_id / $started_at / $duration / $peer_count / $peer_end_count / $behaviours"
         jq -cn \
           --arg run_id "$run_id" \
           --arg scenario_name "$scenario_name" \
           --argjson started_at "$started_at" \
           --argjson peer_count "$peer_count" \
+          --argjson peer_end_count "$peer_end_count" \
           --arg behaviours "${behaviours:-}" \
           --arg wind_tunnel_version "$wind_tunnel_version" \
           --argjson holochain_build_info "$holochain_build_info" \
@@ -108,7 +118,7 @@ function generate_run_summary() {
                 duration: $duration,
                 assigned_behaviours: (reduce $bs[] as $b ({}; .[$b] += 1)),
                 peer_count: $peer_count,
-                peer_end_count: $peer_count,
+                peer_end_count: $peer_end_count,
                 env: {},
                 build_info: { info_type: "holochain", info: $holochain_build_info },
                 wind_tunnel_version: $wind_tunnel_version
@@ -135,6 +145,20 @@ function holochain_build_info() {
     local build_info
     build_info="$($holochain_bin --build-info 2>/dev/null || echo "null")"
     echo "$build_info"
+}
+
+function fetch_peer_end_count() {
+    local alloc_id="$1"
+    local fallback_peer_count="$2"
+    local result
+    result=$(nomad alloc fs "$alloc_id" alloc/run_summary.jsonl 2>/dev/null | jq --slurp 'last | .peer_end_count') || result=""
+    if [[ -z "$result" || "$result" == "null" ]]; then
+        echo "Warning: could not fetch peer_end_count for alloc $alloc_id, falling back to configured peer_count ($fallback_peer_count)" >&2
+        echo "$fallback_peer_count"
+        return
+    fi
+    echo "Fetched peer_end_count for alloc $alloc_id: $result" >&2
+    echo "$result"
 }
 
 cmd=$1
