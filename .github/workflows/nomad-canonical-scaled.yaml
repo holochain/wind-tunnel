@@ -62,17 +62,19 @@ jobs:
           echo "Additional buffer nodes: $THREEFOLD_NODES_BUFFER_COUNT"
 
           if [ "$MIN_THREEFOLD_NODES_COUNT" -gt 0 ]; then
-            THREEFOLD_NODES_COUNT=$(( MIN_THREEFOLD_NODES_COUNT + THREEFOLD_NODES_BUFFER_COUNT ))
-            echo "Provisioning ${THREEFOLD_NODES_COUNT} threefold nodes with buffer"
+            THREEFOLD_VMS_COUNT=$(( MIN_THREEFOLD_NODES_COUNT + THREEFOLD_NODES_BUFFER_COUNT ))
+            THREEFOLD_NODES_COUNT=$(( (THREEFOLD_VMS_COUNT / 4) + 1 ))
+            echo "Provisioning ${THREEFOLD_VMS_COUNT} threefold VMs on ${THREEFOLD_NODES_COUNT} threefold nodes"
 
             # Configure the threefold deployment
             NODE_GROUP_NAME="node_group_$(date +%s)" \
             THREEFOLD_NODES_COUNT="$THREEFOLD_NODES_COUNT" \
+            THREEFOLD_VMS_COUNT="$THREEFOLD_VMS_COUNT" \
             yq eval --inplace '
               .node_groups[0].name = env(NODE_GROUP_NAME) |
               .vms[0].node_group = env(NODE_GROUP_NAME) |
               .node_groups[0].nodes_count = env(THREEFOLD_NODES_COUNT) |
-              .vms[0].vms_count = env(THREEFOLD_NODES_COUNT) |
+              .vms[0].vms_count = env(THREEFOLD_VMS_COUNT) |
               .mnemonic = strenv(THREEFOLD_TFCHAIN_WALLET_MNEMONIC)
             ' threefold/config.yaml
 
