@@ -226,6 +226,15 @@ job "{{ (ds "vars").job_name }}" {
         labels   = ["upload_metrics"]
 
         content {
+          // Retry to workaround inconsistent InfluxDB upload failures.
+          // Conservative settings to avoid thundering-herd when the InfluxDB is under load.
+          restart {
+            attempts = 3
+            interval = "30m"
+            delay    = "45s"
+            mode     = "fail"
+          }
+
           lifecycle {
             hook = "poststop"
           }
