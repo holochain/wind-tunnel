@@ -2,13 +2,16 @@
 # Counts Nomad nodes that are eligible to run wind-tunnel jobs.
 #
 # Modes:
-#   (default)          Count eligible nodes that have no running allocations (free).
-#   --eligible-only    Count eligible nodes regardless of current allocation status.
+#   (default)                     Count free eligible nodes.
+#   --eligible-only               Count eligible nodes regardless of current allocation status.
+#   --include-threefold-node-pool Include threefold pool nodes; default excludes them.
 #
 # Eligibility criteria:
 #   - Nomad version >= 1.11.0 (matches the constraint in run_scenario.tpl.hcl)
 #   - Status: ready
 #   - Scheduling eligibility: eligible
+#   - Pool filter: exclude `threefold` unless explicitly included
+#   - Capacity key: unique `attr.unique.hostname` values (matches distinct_property)
 #
 # Requires env vars: NOMAD_ADDR, NOMAD_TOKEN, NOMAD_CACERT
 # Optional env var:  NOMAD_BIN — path to the nomad binary (defaults to "nomad")
@@ -17,11 +20,16 @@ set -euo pipefail
 
 NOMAD="${NOMAD_BIN:-nomad}"
 ELIGIBLE_ONLY=false
+INCLUDE_THREEFOLD_NODE_POOL=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --eligible-only)
             ELIGIBLE_ONLY=true
+            shift
+            ;;
+        --include-threefold-node-pool)
+            INCLUDE_THREEFOLD_NODE_POOL=true
             shift
             ;;
         *)
@@ -43,10 +51,14 @@ fi
 
 echo "Found total nodes: $(<<< "$nodes_json" jq length)" >&2
 
-# Filter for eligible nodes with version >= 1.11.0 (matching the constraint in run_scenario.tpl.hcl).
-eligible_nodes_json=$(<<< "$nodes_json" jq '[.[] | select(
+include_threefold_json="$INCLUDE_THREEFOLD_NODE_POOL"
+
+# Filter for eligible nodes with version >= 1.11.0 (matching run_scenario.tpl.hcl)
+# and pool policy (exclude threefold by default).
+eligible_nodes_json=$(<<< "$nodes_json" jq --argjson include_threefold "$include_threefold_json" '[.[] | select(
     .Status == "ready" and
     .SchedulingEligibility == "eligible" and
+    ($include_threefold or ((.NodePool // "") != "threefold")) and
     (.Version | split(".") | map(split("-")[0] | tonumber) as $v |
         ($v[0] > 1) or
         ($v[0] == 1 and $v[1] > 11) or
@@ -55,9 +67,10 @@ eligible_nodes_json=$(<<< "$nodes_json" jq '[.[] | select(
 )]')
 
 echo "Found eligible nodes: $(<<< "$eligible_nodes_json" jq length)" >&2
+echo "Found eligible unique hostnames: $(<<< "$eligible_nodes_json" jq '[ .[] | (.Attributes["unique.hostname"] // .Name) ] | unique | length')" >&2
 
 if [[ "$ELIGIBLE_ONLY" == "true" ]]; then
-    <<< "$eligible_nodes_json" jq 'length'
+    <<< "$eligible_nodes_json" jq '[ .[] | (.Attributes["unique.hostname"] // .Name) ] | unique | length'
     exit 0
 fi
 
@@ -91,7 +104,8 @@ fi
 
 echo "There are currently $(<<< "$busy_json" jq length) nodes with running allocations" >&2
 
-# Filter out nodes with running allocations and count the remainder.
+# Filter out nodes with running allocations and count effective capacity
+# by unique hostname (matches distinct_property behavior).
 <<< "$eligible_nodes_json" jq \
   --argjson busy "$busy_json" \
-  '[.[] | select(.ID | IN($busy[]) | not)] | length'
+  '[.[] | select(.ID | IN($busy[]) | not) | (.Attributes["unique.hostname"] // .Name) ] | unique | length'
