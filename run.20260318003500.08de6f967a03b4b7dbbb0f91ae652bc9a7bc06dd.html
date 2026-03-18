@@ -1,0 +1,4676 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>remote_call_rate, remote_signals | Wind Tunnel Report</title>
+        <meta name="description" content="
+Run summaries for the scenario(s): remote_call_rate, remote_signals"/>
+        <style>
+            :root {
+                --background: white;
+                --subtle: rgba(0, 0, 0, 0.5);
+                --more-subtle: rgba(0, 0, 0, 0.35);
+                --smoke: rgba(0, 0, 0, 0.2);
+                --good: rgb(0, 173, 12);
+                --bad: rgb(195, 25, 25);
+                --highlight: rgb(52, 152, 219);
+                --highlight-subtle: rgba(52, 152, 219, 0.5);
+                --grid: 0.5fr 1fr;
+                --grid-gap: 2rem;
+                --numeric-size: 14rem;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+            }
+
+            main {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .scenario {
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 30px;
+                margin: 2em 0;
+            }
+
+            .scenario code {
+                font-size: 1.2em;
+            }
+
+            /*
+Sample CSS for use in scenario templates.
+This CSS needs the following variables to be defined:
+
+  Colours:
+    --background: the background colour for each scenario
+    --subtle: less prominent text/graphics
+    --more-subtle: even less prominent text/graphics
+    --smoke: an extremely light colour, used for overlays
+    --good: indicate a desirable value (e.g., performance increases)
+    --bad: indicate an undesirable value (e.g., latency increases)
+    --highlight: an item that should have attention drawn to it via colour,
+                 used for example as the line in trend graphs
+    --highlight-subtle: highlighted, but secondary to --highlight
+
+  Layout:
+    --grid: Column sizes for label/content style information; the first is for
+            labels and the second is for content. You should give a generous
+            amount of space to content.
+    --grid-gap: The space between labels and content.
+    --numeric-size: Many metrics have a numeric widget of some sort, whether a
+                    simple scalar, a min/std value, or a composite value.
+                    These metrics often also have a trend graph or other widget
+                    that comes after them -- this value gives a consistent
+                    amount of space for the numeric value so that whatever comes
+                    after it will be lined up row-on-row.
+*/
+
+.scenario {
+    background-color: var(--background);
+}
+
+.scenario-summary {
+    margin-bottom: 4em;
+}
+
+.scenario-summary-description {
+    font-size: 1.25em;
+    color: var(--subtle);
+    margin: 2em 0;
+}
+
+.scenario-summary-details-line {
+    display: grid;
+    grid-template-columns: var(--grid);
+    gap: var(--grid-gap);
+    margin: 0.75em 0;
+}
+
+.scenario-summary-details-label {
+    text-align: right;
+    color: var(--subtle);
+}
+
+.scenario-summary-details-value {
+    font-weight: bold;
+}
+
+.scenario-summary-behaviours {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.scenario-summary-behaviour-agent-count {
+    font-weight: normal;
+    color: var(--subtle);
+}
+
+/* Scenario Subsection */
+.scenario-subsection {
+    text-align: center;
+
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-subsection-title {
+  color: var(--subtle);
+  font-size: 1.4em;
+  font-weight: bold;
+  text-align: center;
+  margin: 1em;
+}
+
+.scenario-subsection-button {
+  background-color: var(--subtle);
+  color: white;
+  padding: 0.75em;
+  display: inline-block;
+}
+
+.scenario-subsection-button:hover {
+    opacity: 0.85;
+    cursor: pointer;
+}
+
+details.scenario-subsection-hidden {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+details.scenario-subsection-hidden > summary > .scenario-subsection {
+    padding-top: 0 !important;
+    border-top-style: none !important;
+    border-color: none !important;
+}
+
+/* Metric structure */
+
+.scenario-metric {
+    display: grid;
+    grid-template-columns: var(--grid);
+    align-items: center;
+    gap: var(--grid-gap);
+    border-width: 2px;
+}
+
+/* Most metrics don't look good with their label top-aligned,
+but for some larger metrics, it's hard to see the label without scrolling. */
+.scenario-metric.large {
+    align-items: start;
+}
+
+.scenario-metric, .scenario-metric-content-item {
+    margin: 1em 0;
+    width: 100%;
+}
+
+.scenario-metric, .scenario-metric-content-item:not(:first-child) {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-metric-content-item {
+    border-width: 1px;
+}
+
+.scenario-metric-content-item:first-child {
+    margin-top: 0;
+}
+
+.scenario-metric-label, .scenario-metric-content-item-label, .scalar-label {
+    color: var(--subtle);
+}
+
+.scenario-metric-content-item-label {
+    margin-bottom: 1em;
+}
+
+.scenario-metric-name {
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+.scenario-metric-label {
+    text-align: right;
+}
+
+/* The data for a metric */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+}
+
+.composite-key {
+    list-style: none;
+    padding: 0;
+}
+
+/*** Widgets ***/
+
+.scalar-value {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Supplementary numbers shouldn't be so big. */
+.std .scalar-value,
+.mean-max-max .scalar-value,
+.min-max-mean-std-min .scalar-value,
+.min-max-mean-std-max .scalar-value,
+.delta-change .scalar-value {
+    font-size: inherit;
+}
+
+.min-max-mean-std .min-max-mean-std-min .scalar-label,
+.min-max-mean-std .mean .scalar-label,
+.min-max-mean-std .min-max-mean-std-max .scalar-label {
+    display: block;
+}
+
+/* These are spans in the markup, but we want them to be block elements. */
+.mean-std > *,
+.mean-max > * {
+    display: block;
+}
+
+.min-max-mean-std .mean-std {
+    display: inline-block;
+    text-align: center;
+}
+
+.min-max-mean-std,
+.delta-start-end {
+    display: flex;
+    gap: 0.5em;
+}
+
+.min-max-mean-std {
+    align-items: flex-start;
+}
+
+.min-max-mean-std-min,
+.min-max-mean-std-max,
+.min-max-mean-std .divider {
+    padding-top: 1rem;
+}
+
+.delta-start-end {
+    align-items: baseline;
+}
+
+.delta-change {
+    display: block;
+}
+
+.divider {
+    color: var(--more-subtle);
+    font-size: 2em;
+}
+
+/* Many metrics contain both a scalar and a trend graph.
+In those cases, make sure all the scalars are the same width
+so the following graph lines up. */
+.scenario-metric-content:not(:has(.scenario-metric-content-item)),
+.scenario-metric-content-item-content {
+    display: grid;
+    grid-template-columns: var(--numeric-size) auto;
+    grid-gap: var(--grid-gap);
+}
+
+/*** Graph SVG ***/
+
+/* Axis labels for a graph */
+.axis-label {
+    font-size: 11px;
+    fill: var(--subtle);
+}
+
+/* The line in a trend graph */
+.trend-line {
+    fill: none;
+    stroke: var(--highlight);
+    stroke-width: 2;
+}
+
+/* The area under the trend line */
+.trend-area {
+    fill: var(--smoke);
+    opacity: 0.2;
+}
+
+/* The mean line in a trend graph */
+.mean-line {
+    stroke: var(--highlight-subtle);
+    stroke-width: 2;
+    stroke-dasharray: 3, 3;
+}
+
+/* To line up with the start of the graph, indent the "no trend data available" note.
+This is a bit of a hard-coded hack based on our knowledge that the JS gives 60px for the Y axis labels. */
+.no-trend-graph {
+    margin-left: 60px;
+    color: var(--subtle);
+}
+
+.alert-good {
+    background-color: var(--good);
+    color: white;
+    padding: 0.5em;
+    display: inline-block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.alert-bad {
+    background-color: var(--bad);
+    color: white;
+    padding: 0.5em;
+    display: inline-block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+/**
+    Classes for toggleable visibility in pure css.
+**/
+.toggle-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-content {
+  display: none;
+}
+
+.toggle-checkbox:checked ~ .toggle-content {
+  display: block;
+}
+
+        </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+        <script>
+            window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
+    // Note: if you change the left margin value,
+    // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
+    // gets updated accordingly.
+    const margin = { top: 10, right: 20, bottom: 20, left: 60 };
+    // The width of each data point on the graph.
+    // If the graph is large enough, it'll cut the width by 50% or even 80%.
+    const pointWidth = trendData.length <= 40 ? 10
+                     : trendData.length <= 80 ? 5
+                     : 2;
+    const width = (trendData.length * pointWidth);
+    const height = 120;
+
+    const svg = d3.select(`#${svgId}`)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        // The guts of the graph go into this `<g>` wrapper,
+        // in order to make the coordinates of the trend data and axis label easy to work with --
+        // they're all zero-referenced to the top-left corner of the graph.
+        // It's then moved to the right position in the SVG to make room for the legends.
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const maxVal = d3.max(trendData);
+
+    // Map time window values to the x range of the graph.
+    const x = d3.scaleLinear()
+        .domain([0, trendData.length - 1])
+        .range([0, width]);
+
+    // Map data point values to the y range of the graph.
+    const y = d3.scaleLinear()
+        .domain([0, maxVal])
+        .range([height, 0]);
+
+    // The trend line.
+    const line = d3.line()
+        .x((d, i) => x(i))
+        .y(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-line")
+        .attr("d", line);
+
+    // The area under the trend line.
+    const area = d3.area()
+        .x((d, i) => x(i))
+        .y0(height)
+        .y1(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-area")
+        .attr("d", area);
+
+    // Draw the mean line if provided.
+    if (meanValue !== null) {
+        svg.append("line")
+            .attr("class", "mean-line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(meanValue))
+            .attr("y2", y(meanValue));
+    }
+
+    // Y-axis labels -- always zero on the bottom and the max data point value on the top.
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", 0)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`${maxVal}${yUnit || ""}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", height)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(`0${yUnit || ""}`);
+
+    // X-axis labels -- 0 seconds at the start,
+    // and the number of data points × the time window duration at the end.
+
+    // Extract numeric and non-numeric parts of windowDuration.
+    const match = windowDuration.match(/^(\d+)(.*)$/);
+    const durationValue = parseInt(match[1]);
+    const durationUnit = match[2];
+    const totalDuration = durationValue * trendData.length;
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", 0)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`0${durationUnit}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`${totalDuration}${durationUnit}`);
+};
+
+        </script>
+    </head>
+
+    <body><main>
+        
+
+    
+    
+    
+        <section class="scenario scenario-remote-call-rate">
+            
+<div class="scenario-summary">
+    <h1>Remote Call Rate</h1>
+
+    <div class="scenario-summary-description">
+<p>Test the throughput of <code>remote_call</code> operations. Each agent in this scenario waits for a certain number of peers to be available or for up to two minutes, whichever happens first, before starting its behaviour.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Wed, 18 Mar 2026 00:24:44 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">50</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">50</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>default</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Holochain version</div>
+                <div class="scenario-summary-details-value">0.6.1-rc.0</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.6.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">remote_call_rate_23222252791</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Dispatch timing</div>
+        
+            <div class="scenario-metric-description">The time between sending a remote call and the remote handler being invoked.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.239815</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.431348</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    </div>
+</div>
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Max</div>
+        
+            <div class="scenario-metric-content-item-description">Highest per-partition mean latency</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-label">max mean </span>
+    <span class="scalar-value">6.245351</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Min</div>
+        
+            <div class="scenario-metric-content-item-description">Lowest per-partition mean latency</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-label">min mean </span>
+    <span class="scalar-value">0.040637</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-x3kX5Fe9L94mizji"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-x3kX5Fe9L94mizji", [0.212162, 0.804954, 0.287153, 0.248299, 0.273354, 0.300788, 0.08297, 0.094509, 0.071094, 0.068592, 0.112749, 0.107373, 0.062651, 0.112328, 0.150792, 0.06213, 0.072287, 0.118439, 0.082602, 0.071458, 0.049754, 0.069397, 0.069193, 0.060977, 0.081833, 0.079087, 0.08162, 0.071367, 0.070957, 0.074487, 0.032113], 0.239815, "10s", "s");</script>
+
+
+
+
+    </div>
+</div>
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Round-trip timing</div>
+        
+            <div class="scenario-metric-description">The total elapsed time to get a response to the client.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.322908</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.450915</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    </div>
+</div>
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Max</div>
+        
+            <div class="scenario-metric-content-item-description">Highest per-partition mean latency</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-label">max mean </span>
+    <span class="scalar-value">6.814357</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Min</div>
+        
+            <div class="scenario-metric-content-item-description">Lowest per-partition mean latency</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-label">min mean </span>
+    <span class="scalar-value">0.107369</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-f3V7mInmtjpY1OI1"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-f3V7mInmtjpY1OI1", [0.264035, 0.869542, 0.355297, 0.320211, 0.383902, 0.393256, 0.156215, 0.135509, 0.140442, 0.142538, 0.20535, 0.160635, 0.131539, 0.175373, 0.26231, 0.13224, 0.151196, 0.230107, 0.148862, 0.143389, 0.108012, 0.142001, 0.139992, 0.133132, 0.162799, 0.149323, 0.147347, 0.154164, 0.152938, 0.153202, 0.107848], 0.322908, "10s", "s");</script>
+
+
+
+
+    </div>
+</div>
+
+
+        
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Request roundtrip duration: 'get'</div>
+        
+            <div class="scenario-metric-description">The time spent sending a get request and awaiting its response</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.197661</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.620499</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.116061</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.292903</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.507808</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-ZPWHiqZIW6meWmuW"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-ZPWHiqZIW6meWmuW", [0.083882, 0.170346, 0.139823, 0.118736, 0.170937, 1.170775, 0.119736, 0.114353, 0.129102, 0.120939, 0.129595, 0.290393, 0.11458, 0.333769, 0.222395, 0.493219, 0.134263, 0.141736, 0.143616, 0.144955, 0.124822, 0.150288, 0.14932, 0.208475, 0.119396, 0.114036, 0.100479, 0.107971, 0.129566, 0.096674], 0.197661, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Request roundtrip duration: 'send_validation_receipts'</div>
+        
+            <div class="scenario-metric-description">The time spent sending a send_validation_receipts request and awaiting its response</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.141332</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.352696</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.123831</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.304976</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.430765</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-JKSpHUdDqvQ1Sikk"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-JKSpHUdDqvQ1Sikk", [0.072266, 0.107554, 0.120103, 0.133855, 0.147729, 0.330135, 0.142342, 0.127003, 0.143412, 0.138359, 0.161608, 0.167902, 0.090441, 0.137577, 0.144255, 0.133947, 0.142756, 0.156211, 0.134845, 0.153958, 0.21563, 0.152893, 0.20412, 0.100921, 0.115188, 0.122353, 0.114216, 0.135141, 0.165728, 0.217601, 0.208816], 0.141332, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Request roundtrip duration: 'call_remote'</div>
+        
+            <div class="scenario-metric-description">The time spent sending a call_remote request and awaiting its response</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.273251</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.953008</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.126859</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.31929</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">3.206568</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-BnpKODR60Ce2R5UP"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-BnpKODR60Ce2R5UP", [0.128389, 0.633234, 0.354436, 0.237489, 0.342151, 0.450878, 0.148055, 0.140742, 0.12904, 0.185083, 0.205068, 0.154453, 0.1212, 0.158929, 0.227487, 0.683342, 0.142201, 0.219535, 0.138911, 0.135472, 0.097736, 0.132171, 0.12332, 0.119212, 0.152167, 0.136099, 0.136778, 0.142141, 0.146674, 0.144596, 0.099962], 0.273251, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming response duration</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming response message of any type</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">5.5e-05</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.00014</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">2.5e-05</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.000233</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.00047</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-h1R2oGw7QQWTHWAH"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-h1R2oGw7QQWTHWAH", [5.8e-05, 3.4e-05, 4.5e-05, 5.5e-05, 3.4e-05, 8.3e-05, 3.8e-05, 2.6e-05, 5.7e-05, 8.7e-05, 3.5e-05, 3.9e-05, 6.9e-05, 3.1e-05, 3.4e-05, 5.7e-05, 4.3e-05, 4.8e-05, 5.6e-05, 7.2e-05, 5.4e-05, 8.7e-05, 9.9e-05, 9.8e-05, 7.1e-05, 7.2e-05, 3.6e-05, 4.8e-05, 0.0001, 9e-05, 4.3e-05], 5.5e-05, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'call_remote'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming call_remote request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.058933</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.85321</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.007109</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.018398</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.667099</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HvrjJeXWNS8c6tEX"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HvrjJeXWNS8c6tEX", [0.058888, 0.490861, 0.230846, 0.1176, 0.008383, 0.009334, 0.009404, 0.00971, 0.0097, 0.009426, 0.00937, 0.010958, 0.185212, 0.0224, 0.015251, 0.009525, 0.0095, 0.009003, 0.008432, 0.008036, 0.008249, 0.00956, 0.0088, 0.009716, 0.009061, 0.008674, 0.008497, 0.008853, 0.008584, 0.0095, 0.004694], 0.058933, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'get'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming get request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.001044</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.003341</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.000619</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.002731</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.007839</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-DyZoA734YAp9qryM"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-DyZoA734YAp9qryM", [0.000646, 0.000799, 0.000969, 0.000943, 0.000924, 0.000876, 0.00075, 0.000743, 0.000776, 0.000757, 0.000957, 0.00083, 0.000946, 0.001474, 0.002292, 0.001531, 0.000905, 0.000927, 0.000682, 0.00079, 0.00124, 0.001053, 0.00334, 0.000671, 0.001002, 0.001051, 0.001104, 0.001235, 0.000827, 0.002201], 0.001044, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'send_validation_receipts'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming send_validation_receipts request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.006733</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.015642</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.003628</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.019842</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.053316</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-kB8DiTqcKNkNApS9"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-kB8DiTqcKNkNApS9", [0.005133, 0.006439, 0.006763, 0.006746, 0.005748, 0.005091, 0.004615, 0.003613, 0.004343, 0.004894, 0.006257, 0.004954, 0.004639, 0.013362, 0.015882, 0.008518, 0.004723, 0.004543, 0.003824, 0.003735, 0.004656, 0.004184, 0.004482, 0.007563, 0.004319, 0.004123, 0.004273, 0.004376, 0.004284, 0.005105, 0.006944], 0.006733, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+    
+
+
+    
+
+    
+        
+
+
+
+<div class="scenario-subsection">
+    <div class="scenario-subsection-title">Host Metrics</div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">User CPU usage</div>
+        
+            <div class="scenario-metric-description">CPU usage by user space</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">11.30</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Network receive rate (primary)</div>
+        
+            <div class="scenario-metric-description">Rate of bytes received on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">142</span><span class="scalar-unit"> B/s</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">277.49</span><span class="scalar-unit"> KiB/s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">1022.79</span><span class="scalar-unit"> KiB/s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">2.61</span><span class="scalar-unit"> MiB/s</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-2pBXbeXLpA1Sbi7l"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-2pBXbeXLpA1Sbi7l", [283225.33, 14374.03, 1.11742506e+06, 2982.73, 2765.69, 2241.41, 1394.7], null, "60s", "B/s");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Network send rate (primary)</div>
+        
+            <div class="scenario-metric-description">Rate of bytes sent on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">607</span><span class="scalar-unit"> B/s</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">9.76</span><span class="scalar-unit"> KiB/s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">19.46</span><span class="scalar-unit"> KiB/s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">49.15</span><span class="scalar-unit"> KiB/s</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HzAcyxw3D07q4hqc"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HzAcyxw3D07q4hqc", [12470.26, 2542.41, 27907.25, 3628.88, 3504.33, 4280.21, 2422.15], null, "60s", "B/s");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Total bytes received</div>
+        
+            <div class="scenario-metric-description">Total bytes received on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">3.90</span><span class="scalar-unit"> GiB</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">12.47</span><span class="scalar-unit"> MiB/s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Total bytes sent</div>
+        
+            <div class="scenario-metric-description">Total bytes sent on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">139.96</span><span class="scalar-unit"> MiB</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">447.87</span><span class="scalar-unit"> KiB/s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+    
+
+
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU spike anomaly</div>
+        
+            <div class="scenario-metric-description">CPU spike anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-bad">Detected</div>
+</div>
+
+
+
+    <p><b>Warning</b> CPU p99 reached 94.7%</p>
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory leak anomaly</div>
+        
+            <div class="scenario-metric-description">Memory leak anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-bad">Detected</div>
+</div>
+
+
+
+    <p><b>Warning</b> Memory growing at 592.09 MB/s</p>
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk full anomaly</div>
+        
+            <div class="scenario-metric-description">Disk full anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Swap thrashing anomaly</div>
+        
+            <div class="scenario-metric-description">Swap thrashing anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">System overload anomaly</div>
+        
+            <div class="scenario-metric-description">System overload anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+
+<details class="scenario-subsection-hidden">
+    <summary>    
+        <div class="scenario-subsection">
+
+            <div class="scenario-subsection-title">Additional Host Metrics</div>
+            <div>
+                <div class="scenario-subsection-button">
+                    Hidden by default. Click to toggle visibility.
+                </div>
+            </div>
+        </div>
+    </summary>
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU usage</div>
+        
+            <div class="scenario-metric-description">Total CPU usage and kernel CPU usage</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Total</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">3.06</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">15.61</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">18.79</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">66.16</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-wXbZyi42IVyhTIO4"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-wXbZyi42IVyhTIO4", [23.39, 5.35, 28.22, 9.94, 11.47, 8.91, 10.61], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">System</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">4.31</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU percentiles</div>
+        
+            <div class="scenario-metric-description">CPU usage percentiles</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p50</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">10.19</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p95</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">66.16</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p99</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">94.68</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU usage above 80%</div>
+        
+            <div class="scenario-metric-description">Number of hosts above 80% CPU and mean time spent above threshold for those hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">23</span><span class="scalar-unit"> hosts</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean time</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.07</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory used percentage</div>
+        
+            <div class="scenario-metric-description">Percentage of memory used</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">6.74</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">10.05</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">2.05</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">12.24</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-uSKwM0FTeohEn4X3"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-uSKwM0FTeohEn4X3", [5.81, 7.77, 8.23, 10.88, 11.93, 12.06, 12.06, 10.81], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory available percentage</div>
+        
+            <div class="scenario-metric-description">Percentage of available memory</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">87.76</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">89.95</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">2.05</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">93.26</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-gqv6EGjtMtZmBovh"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-gqv6EGjtMtZmBovh", [94.19, 92.23, 91.77, 89.12, 88.07, 87.94, 87.94, 89.19], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Max host memory used</div>
+        
+            <div class="scenario-metric-description">Maximum memory usage percentage across all hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">max</span>
+    <span class="scalar-value">11.03</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Max host swap used percentage</div>
+        
+            <div class="scenario-metric-description">Maximum swap space usage percentage across all hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">max</span>
+    <span class="scalar-value">0.00</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory growth rate</div>
+        
+            <div class="scenario-metric-description">Rate of memory growth over time</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">growth</span>
+    <span class="scalar-value">592.09</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+    
+
+    
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk read throughput</div>
+        
+            <div class="scenario-metric-description">Disk read throughput in MB/s</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk write throughput</div>
+        
+            <div class="scenario-metric-description">Disk write throughput in MB/s</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+        
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk space utilization risk</div>
+        
+            <div class="scenario-metric-description">Number of hosts nearing disk space capacity by mount point</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Mount Point <code>/</code></div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0/49</span><span class="scalar-unit">hosts</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">System load average</div>
+        
+            <div class="scenario-metric-description">System load averages over 1, 5, and 15 minutes. This is an unnormalised value not divided by number of CPUs, so it is only meaningful if all machines have the same core count.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">1 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.42</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">5 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.22</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">15 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.09</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU overloaded hosts</div>
+        
+            <div class="scenario-metric-description">Percentage of hosts that experienced CPU overload</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    
+
+    
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU pressure</div>
+        
+            <div class="scenario-metric-description">CPU pressure over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0.19</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">3.7851</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">5.0418</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">12.4</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-EzPZLkMLu8Fwutmp"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-EzPZLkMLu8Fwutmp", [2.193, 2.7364, 0.8776, 9.657, 2.7421, 3.1536, 2.5208, 2.75], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">3.3282</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">1.6699</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+
+        
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory pressure some</div>
+        
+            <div class="scenario-metric-description">Memory pressure (some tasks stalled) over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-le">&le;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-le">&le;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-CozO7RO1uwHyiqF8"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-CozO7RO1uwHyiqF8", [0, 0, 0, 0, 0, 0, 0, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0000</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0304</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory pressure full</div>
+        
+            <div class="scenario-metric-description">Memory pressure (all tasks stalled) over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-le">&le;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-le">&le;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-8IKqrOtrLiIubMdW"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-8IKqrOtrLiIubMdW", [0, 0, 0, 0, 0, 0, 0, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0000</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0218</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+        
+
+        
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">I/O pressure some</div>
+        
+            <div class="scenario-metric-description">I/O pressure (some tasks stalled) over 10, 60 and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.458</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.4316</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">2.45</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-6SxN0OZG0wa96WGw"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-6SxN0OZG0wa96WGw", [5.2209, 0.8818, 0.023, 0.6475, 0.0138, 0.0185, 0.0108, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.6704</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.5478</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">I/O pressure full</div>
+        
+            <div class="scenario-metric-description">I/O pressure (all tasks stalled) over 10, 60 and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.3916</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.3255</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">2.08</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-eTvASD53j4grJgMX"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-eTvASD53j4grJgMX", [4.7039, 0.7904, 0.0174, 0.504, 0.0037, 0.004, 0, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.5796</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.4687</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+        
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process CPU usage</div>
+        
+            <div class="scenario-metric-description">CPU usage by Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">1.94</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">9.06</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">16.85</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">46.35</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-kbCN6bxDVNMFu9u5"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-kbCN6bxDVNMFu9u5", [19.78, 3.96, 14.6, 3.96, 4.79, 4.64, 5.34], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process memory (PSS)</div>
+        
+            <div class="scenario-metric-description">Proportional Set Size memory of Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">95.16</span><span class="scalar-unit"> KiB</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">207.39</span><span class="scalar-unit"> KiB</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">47.80</span><span class="scalar-unit"> KiB</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">231.56</span><span class="scalar-unit"> KiB</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-yvW7rpzXAKwwp6Tt"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-yvW7rpzXAKwwp6Tt", [208866, 211093.15, 228411.69, 184162.25, 223286.73, 217474.75, 232732.36, 239048], null, "60s", "B");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process threads</div>
+        
+            <div class="scenario-metric-description">Number of threads in Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">4</span><span class="scalar-unit"> threads</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">19.62</span><span class="scalar-unit"> threads</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">13.2</span><span class="scalar-unit"> threads</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">41</span><span class="scalar-unit"> threads</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-j7LoossYWu3k6v2H"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-j7LoossYWu3k6v2H", [6.9, 18.48, 21.4, 16.2, 21.2, 21.32, 28, 27], null, "60s", " threads");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process file descriptors</div>
+        
+            <div class="scenario-metric-description">Number of file descriptors used by Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">11</span><span class="scalar-unit"> file descriptors</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">72.07</span><span class="scalar-unit"> file descriptors</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">19.48</span><span class="scalar-unit"> file descriptors</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">90</span><span class="scalar-unit"> file descriptors</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-wKm4PtQ7yduWNP3w"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-wKm4PtQ7yduWNP3w", [27.9, 78.33, 74.06, 65.03, 73.11, 73.11, 64.77, 60], null, "60s", " file descriptors");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+    
+</details>
+
+    
+</div>
+
+        </section>
+    
+
+    
+    
+    
+        <section class="scenario scenario-remote-signals">
+            
+
+
+<div class="scenario-summary">
+    <h1>Remote Signals</h1>
+
+    <div class="scenario-summary-description">
+<p>This scenario tests the throughput of <code>remote_signals</code> operations.</p>
+</div>
+
+    <div class="scenario-summary-details">
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Started</div>
+            <div class="scenario-summary-details-value">Wed, 18 Mar 2026 00:26:56 UTC</div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count</div>
+                <div class="scenario-summary-details-value">50</div>
+            </div>
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Peer count at end</div>
+                <div class="scenario-summary-details-value">50</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Behaviours</div>
+            <div class="scenario-summary-details-value">
+                <ul class="scenario-summary-behaviours">
+                    
+                        <li>
+                            <span class="scenario-summary-behaviour-name"><code>default</code></span>
+                            <span class="scenario-summary-behaviour-agent-count">(1 agent)</span>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        
+
+        
+            <div class="scenario-summary-details-line">
+                <div class="scenario-summary-details-label">Holochain version</div>
+                <div class="scenario-summary-details-value">0.6.1-rc.0</div>
+            </div>
+        
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Wind Tunnel version</div>
+            <div class="scenario-summary-details-value">0.6.0</div>
+        </div>
+
+        <div class="scenario-summary-details-line">
+            <div class="scenario-summary-details-label">Run ID</div>
+            <div class="scenario-summary-details-value">remote_signals_23222252791</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="scenario-metrics">
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Round trip time</div>
+        
+            <div class="scenario-metric-description">The time from origin signal dispatch to origin receive of the remote side's response signal.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.240991</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.61721</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.158415</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.382005</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">3.129724</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-OpI8eTpcThvZDVCV"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-OpI8eTpcThvZDVCV", [0.810007, 0.660242, 0.166988, 0.194266, 0.162519, 0.164063, 0.173524, 0.167184, 0.159665, 0.16143, 0.163706, 0.169705, 0.160437, 0.160644, 0.168141, 0.159345, 0.21492, 0.704872, 0.736765, 0.642241, 0.173101, 0.160141, 0.168137, 0.163553, 0.160742, 0.171957, 0.166915, 0.168719, 0.165493, 0.170634, 0.202002, 0.200272], 0.240991, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Timeouts</div>
+        
+            <div class="scenario-metric-description">The number of timeouts waiting for the remote side's response signal (default timeout is 20 seconds).</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">map[count:2 mean_rate_per_second:0.21 measurement_duration:map[nanos:313767697 secs:8] p5_rate_per_second:0 p95_rate_per_second:0.5 peak_rate_per_second:0.5 rate_trend:map[trend:[0.17 0.33] window_duration:10s] std_rate_per_second:0.21]</span></span>
+    </div>
+</div>
+
+
+        
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Request roundtrip duration: 'get'</div>
+        
+            <div class="scenario-metric-description">The time spent sending a get request and awaiting its response</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.129129</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.097087</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.11474</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.302604</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.474091</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-4naNdoOxBpRoeVim"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-4naNdoOxBpRoeVim", [0.076812, 0.126885, 0.142598, 0.137828, 0.127456, 0.12081, 0.123266, 0.128823, 0.128843, 0.127294, 0.132257, 0.128589, 0.132564, 0.138368, 0.129628, 0.129282, 0.136252, 0.136054, 0.17762, 0.097872, 0.104001, 0.331096, 0.128488, 0.131458, 0.138696, 0.094069, 0.101884, 0.117142, 0.103973, 0.128667], 0.129129, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Request roundtrip duration: 'send_validation_receipts'</div>
+        
+            <div class="scenario-metric-description">The time spent sending a send_validation_receipts request and awaiting its response</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.138786</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.137439</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.124803</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.305261</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.438312</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-pH7ZubeNlQMjhtK5"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-pH7ZubeNlQMjhtK5", [0.120808, 0.098824, 0.111159, 0.129354, 0.146512, 0.145135, 0.171109, 0.162754, 0.148197, 0.160071, 0.151539, 0.108015, 0.143478, 0.115171, 0.118203, 0.123703, 0.13059, 0.175594, 0.432288, 0.500714, 0.374048, 0.276761, 0.242424, 0.273053, 0.293611, 0.118835, 0.123406, 0.129804, 0.139263, 0.150457, 0.165132], 0.138786, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming response duration</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming response message of any type</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">2.7e-05</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">3.5e-05</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">2.1e-05</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">6.5e-05</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.000118</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-8CqN7Hma5g67Gylx"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-8CqN7Hma5g67Gylx", [1.4e-05, 2.1e-05, 2.4e-05, 2.4e-05, 2.2e-05, 2.3e-05, 2.2e-05, 2.4e-05, 2.4e-05, 2.5e-05, 2.6e-05, 2.8e-05, 2.6e-05, 2.5e-05, 3.1e-05, 2.9e-05, 3e-05, 3e-05, 3e-05, 3.2e-05, 3.2e-05, 3.3e-05, 3.4e-05, 2.9e-05, 2.9e-05, 3.2e-05, 3.2e-05, 3.2e-05, 3e-05, 2.7e-05, 2.4e-05], 2.7e-05, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'get'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming get request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.001272</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.011722</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.000581</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.002298</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.005774</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-bGmdPFO792Xq5QL0"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-bGmdPFO792Xq5QL0", [0.000381, 0.001035, 0.001285, 0.000944, 0.000882, 0.000853, 0.000752, 0.000956, 0.000804, 0.000833, 0.000859, 0.000764, 0.000753, 0.000833, 0.00104, 0.000994, 0.001054, 0.011128, 0.066645, 0.006334, 0.000801, 0.000892, 0.000983, 0.000538, 0.001039, 0.001339, 0.001304, 0.001431, 0.000847], 0.001272, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'send_validation_receipts'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming send_validation_receipts request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.010976</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.107744</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.003409</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.014219</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.040792</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HXwfk9j7JoF2bK92"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HXwfk9j7JoF2bK92", [0.003941, 0.006096, 0.006954, 0.005359, 0.0057, 0.004532, 0.004332, 0.004831, 0.005549, 0.004897, 0.004475, 0.004655, 0.004837, 0.004928, 0.004474, 0.004117, 0.004311, 0.031397, 0.267066, 0.315506, 0.146818, 0.004176, 0.004921, 0.00514, 0.005021, 0.005168, 0.00537, 0.005182, 0.005023, 0.004982, 0.00451], 0.010976, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Handle incoming request duration: 'remote_signal'</div>
+        
+            <div class="scenario-metric-description">The time spent handling an incoming remote_signal request</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+
+
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0.043844</span><span class="scalar-unit">s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0.38282</span><span class="scalar-unit">s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+<span class="timing-percentiles">
+    <span class="scalar"><span class="scalar-label">p50</span>
+    <span class="scalar-value">0.007137</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p95</span>
+    <span class="scalar-value">0.017784</span><span class="scalar-unit">s</span></span>
+    <span class="scalar"><span class="scalar-label">p99</span>
+    <span class="scalar-value">0.954403</span><span class="scalar-unit">s</span></span>
+</span>
+
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-utmu4HYRB72N96bj"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-utmu4HYRB72N96bj", [0.151005, 0.325413, 0.252621, 0.018633, 0.029025, 0.0083, 0.008019, 0.00885, 0.008587, 0.008674, 0.008722, 0.009064, 0.008531, 0.008185, 0.008385, 0.008762, 0.008533, 0.026958, 0.222307, 0.26206, 0.224763, 0.009383, 0.009392, 0.009909, 0.009107, 0.009173, 0.009321, 0.009259, 0.00945, 0.009818, 0.009433, 0.008383, 0.002788], 0.043844, "10s", "s");</script>
+
+
+
+    </div>
+</div>
+
+    
+
+    
+
+    
+
+
+    
+
+    
+        
+
+
+
+<div class="scenario-subsection">
+    <div class="scenario-subsection-title">Host Metrics</div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">User CPU usage</div>
+        
+            <div class="scenario-metric-description">CPU usage by user space</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">8.31</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Network receive rate (primary)</div>
+        
+            <div class="scenario-metric-description">Rate of bytes received on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">255</span><span class="scalar-unit"> B/s</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">84.01</span><span class="scalar-unit"> KiB/s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">506.80</span><span class="scalar-unit"> KiB/s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-le">&le;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">47.55</span><span class="scalar-unit"> KiB/s</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-Uj9jnkyiYt0Uz1xB"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-Uj9jnkyiYt0Uz1xB", [471732.51, 13284.47, 15293.8, 7036.46, 8207.56, 5416.59], null, "60s", "B/s");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Network send rate (primary)</div>
+        
+            <div class="scenario-metric-description">Rate of bytes sent on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">389</span><span class="scalar-unit"> B/s</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">14.89</span><span class="scalar-unit"> KiB/s</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">16.87</span><span class="scalar-unit"> KiB/s</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">47.20</span><span class="scalar-unit"> KiB/s</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-lQmvbqEncCkMQ1yA"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-lQmvbqEncCkMQ1yA", [34124.42, 13608.83, 15760.53, 9581.55, 8281.8, 6508.82], null, "60s", "B/s");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Total bytes received</div>
+        
+            <div class="scenario-metric-description">Total bytes received on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">1.18</span><span class="scalar-unit"> GiB</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">3.67</span><span class="scalar-unit"> MiB/s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Total bytes sent</div>
+        
+            <div class="scenario-metric-description">Total bytes sent on primary network interface</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">214.46</span><span class="scalar-unit"> MiB</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar"><span class="scalar-value">665.47</span><span class="scalar-unit"> KiB/s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+    
+
+
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU spike anomaly</div>
+        
+            <div class="scenario-metric-description">CPU spike anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-bad">Detected</div>
+</div>
+
+
+
+    <p><b>Warning</b> CPU p99 reached 90.8%</p>
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory leak anomaly</div>
+        
+            <div class="scenario-metric-description">Memory leak anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk full anomaly</div>
+        
+            <div class="scenario-metric-description">Disk full anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Swap thrashing anomaly</div>
+        
+            <div class="scenario-metric-description">Swap thrashing anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+    
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">System overload anomaly</div>
+        
+            <div class="scenario-metric-description">System overload anomaly was detected</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+    <div class="alert-container">
+    <div class="alert-good">NotDetected</div>
+</div>
+
+
+
+
+    </div>
+</div>
+
+
+
+<details class="scenario-subsection-hidden">
+    <summary>    
+        <div class="scenario-subsection">
+
+            <div class="scenario-subsection-title">Additional Host Metrics</div>
+            <div>
+                <div class="scenario-subsection-button">
+                    Hidden by default. Click to toggle visibility.
+                </div>
+            </div>
+        </div>
+    </summary>
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU usage</div>
+        
+            <div class="scenario-metric-description">Total CPU usage and kernel CPU usage</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Total</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">3.35</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">12.4</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">14.37</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">38.16</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-HesxEtLX0BZIEOlc"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-HesxEtLX0BZIEOlc", [31.51, 9.94, 11.46, 7.02, 6.92, 5.34], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">System</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">4.09</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU percentiles</div>
+        
+            <div class="scenario-metric-description">CPU usage percentiles</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p50</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">9.01</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p95</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">38.16</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">p99</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">90.84</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU usage above 80%</div>
+        
+            <div class="scenario-metric-description">Number of hosts above 80% CPU and mean time spent above threshold for those hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">count</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">20</span><span class="scalar-unit"> hosts</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">mean time</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.04</span><span class="scalar-unit">s</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory used percentage</div>
+        
+            <div class="scenario-metric-description">Percentage of memory used</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">8.09</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">10.25</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.77</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">12.24</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-H2c0xIPLDsRuaoo4"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-H2c0xIPLDsRuaoo4", [10.91, 11.93, 11.96, 8.53, 8.31, 8.25], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory available percentage</div>
+        
+            <div class="scenario-metric-description">Percentage of available memory</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">87.76</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">89.75</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">1.77</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">91.91</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-SlEgvrCIHefdkh9F"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-SlEgvrCIHefdkh9F", [89.09, 88.07, 88.04, 91.47, 91.69, 91.75], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Max host memory used</div>
+        
+            <div class="scenario-metric-description">Maximum memory usage percentage across all hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">max</span>
+    <span class="scalar-value">10.99</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Max host swap used percentage</div>
+        
+            <div class="scenario-metric-description">Maximum swap space usage percentage across all hosts</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">max</span>
+    <span class="scalar-value">0.00</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory growth rate</div>
+        
+            <div class="scenario-metric-description">Rate of memory growth over time</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar"><span class="scalar-label">growth</span>
+    <span class="scalar-value">-256.98</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+    
+
+    
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk read throughput</div>
+        
+            <div class="scenario-metric-description">Disk read throughput in MB/s</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk write throughput</div>
+        
+            <div class="scenario-metric-description">Disk write throughput in MB/s</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">MB/s</span></span>
+    </div>
+</div>
+
+        
+
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Disk space utilization risk</div>
+        
+            <div class="scenario-metric-description">Number of hosts nearing disk space capacity by mount point</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">Mount Point <code>/</code></div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0/49</span><span class="scalar-unit">hosts</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">System load average</div>
+        
+            <div class="scenario-metric-description">System load averages over 1, 5, and 15 minutes. This is an unnormalised value not divided by number of CPUs, so it is only meaningful if all machines have the same core count.</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">1 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.39</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">5 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.28</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">15 min</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.13</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU overloaded hosts</div>
+        
+            <div class="scenario-metric-description">Percentage of hosts that experienced CPU overload</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        <span class="scalar">
+    <span class="scalar-value">0.00</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    
+
+    
+        
+            
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">CPU pressure</div>
+        
+            <div class="scenario-metric-description">CPU pressure over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0.13</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">3.6009</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">5.0268</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">12.27</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-jPwIb6lTpPmWqwwE"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-jPwIb6lTpPmWqwwE", [9.7678, 2.7422, 3.161, 1.5562, 1.3608, 1.0688], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">3.5760</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">2.3728</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+        
+
+        
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory pressure some</div>
+        
+            <div class="scenario-metric-description">Memory pressure (some tasks stalled) over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-le">&le;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-le">&le;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-jzJdPiIt1FRtSJ99"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-jzJdPiIt1FRtSJ99", [0, 0, 0, 0, 0, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0000</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0187</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Memory pressure full</div>
+        
+            <div class="scenario-metric-description">Memory pressure (all tasks stalled) over 10, 60, and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-le">&le;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-le">&le;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-VaH84PTELkQTZOW5"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-VaH84PTELkQTZOW5", [0, 0, 0, 0, 0, 0], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0000</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.0133</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+        
+
+        
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">I/O pressure some</div>
+        
+            <div class="scenario-metric-description">I/O pressure (some tasks stalled) over 10, 60 and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">1.3615</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">6.7393</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">2.88</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-0b0WLmYk2VAgWts1"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-0b0WLmYk2VAgWts1", [0.6502, 0.0138, 0.0179, 6.2761, 0.1074, 0.0047], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">1.2501</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.7961</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+
+            
+                
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">I/O pressure full</div>
+        
+            <div class="scenario-metric-description">I/O pressure (all tasks stalled) over 10, 60 and 300 second averages</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">10 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">0</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">1.2602</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">6.3717</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">2.41</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-NfYOXrZHtVSMdBo9"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-NfYOXrZHtVSMdBo9", [0.5067, 0.0037, 0.0039, 5.9266, 0.0981, 0.0012], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">60 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">1.1462</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+<div class="scenario-metric-content-item">
+    <div class="scenario-metric-content-item-label">
+        <div class="scenario-metric-content-item-name">300 second average</div>
+        
+    </div>
+    <div class="scenario-metric-content-item-content">
+        <span class="scalar">
+    <span class="scalar-value">0.7084</span><span class="scalar-unit">%</span></span>
+    </div>
+</div>
+
+    </div>
+</div>
+
+            
+        
+    
+
+    
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process CPU usage</div>
+        
+            <div class="scenario-metric-description">CPU usage by Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">2</span><span class="scalar-unit">%</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">6.51</span><span class="scalar-unit">%</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">11.36</span><span class="scalar-unit">%</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">9.47</span><span class="scalar-unit">%</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-WuBoNfykDGRvFAMM"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-WuBoNfykDGRvFAMM", [16.91, 3.96, 4.8, 4.04, 5.27, 3.93], null, "60s", "%");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process memory (PSS)</div>
+        
+            <div class="scenario-metric-description">Proportional Set Size memory of Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span><span class="scalar-value">23.33</span><span class="scalar-unit"> KiB</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span><span class="scalar-value">198.19</span><span class="scalar-unit"> KiB</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span><span class="scalar-value">59.74</span><span class="scalar-unit"> KiB</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span><span class="scalar-value">231.60</span><span class="scalar-unit"> KiB</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-u0UVz3DAy7vwjQRc"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-u0UVz3DAy7vwjQRc", [187358.92, 223075.65, 217901.91, 171275.67, 222114.88, 224260.68], null, "60s", "B");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process threads</div>
+        
+            <div class="scenario-metric-description">Number of threads in Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">1</span><span class="scalar-unit"> threads</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">19.81</span><span class="scalar-unit"> threads</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">14.33</span><span class="scalar-unit"> threads</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">44</span><span class="scalar-unit"> threads</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-q5ZDdqWZ8Osbuhw5"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-q5ZDdqWZ8Osbuhw5", [16.5, 20.94, 20.62, 18.24, 22.56, 25.32], null, "60s", " threads");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+
+        
+<div class="scenario-metric ">
+    <div class="scenario-metric-label">
+        <div class="scenario-metric-name">Holochain process file descriptors</div>
+        
+            <div class="scenario-metric-description">Number of file descriptors used by Holochain process</div>
+        
+    </div>
+    <div class="scenario-metric-content">
+        
+<div class="min-max-mean-std">
+    
+    
+    
+    
+    
+    
+    
+    
+
+    <span class="min-max-mean-std-min"><span class="scalar"><span class="scalar-label">p5 </span>
+    <span class="scalar-value">6</span><span class="scalar-unit"> file descriptors</span></span></span>
+    
+    <span class="divider divider-lt">&lt;</span>
+    
+<span class="mean-std">
+    
+<span class="mean"><span class="scalar"><span class="scalar-label">mean </span>
+    <span class="scalar-value">66.03</span><span class="scalar-unit"> file descriptors</span></span></span>
+
+    
+<span class="std">
+    
+    <span class="scalar-label">(</span><span class="scalar"><span class="scalar-label">SD = </span>
+    <span class="scalar-value">23.51</span><span class="scalar-unit"> file descriptors</span></span><span class="scalar-label">)</span>
+</span>
+</span>
+
+    
+    <span class="divider divider-lt">&lt;</span>
+    <span class="min-max-mean-std-max"><span class="scalar"><span class="scalar-label"> p95</span>
+    <span class="scalar-value">90</span><span class="scalar-unit"> file descriptors</span></span></span>
+    
+    
+    
+    
+        
+
+    
+    <div class="trend-graph">
+        <svg id="trend-svg-43BfXNrJWLw9BJjz"></svg>
+    </div>
+
+    <script>createTrendGraph("trend-svg-43BfXNrJWLw9BJjz", [66.33, 72.2, 70.41, 52.57, 69.87, 79.75], null, "60s", " file descriptors");</script>
+
+
+    
+</div>
+
+    </div>
+</div>
+
+    
+</details>
+
+    
+</div>
+        </section>
+    
+
+
+    </main></body>
+</html>
