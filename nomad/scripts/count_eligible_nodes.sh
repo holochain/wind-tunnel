@@ -62,12 +62,32 @@ if [[ "$ELIGIBLE_ONLY" == "true" ]]; then
 fi
 
 # 'nomad job status -namespace * -json' returns the full allocation list across all namespaces.
-# Filter immediately to "running" NodeIDs to avoid holding the large response (which includes
-# TaskStates/Events per allocation).
-busy_json=$("$NOMAD" job status -namespace '*' -json 2>&1 | jq '[.[].Allocations // [] | .[]] | map(select(.ClientStatus == "running") | .NodeID) | unique' 2>&1) || {
-  echo "ERROR: 'nomad job status -namespace * -json' failed or returned invalid JSON: $busy_json" >&2
+# The response is buffered so we can handle the "No running jobs" plain-text fallback before
+# passing valid JSON to jq for filtering.
+nomad_jobs_stderr=$(mktemp)
+jobs_json=$("$NOMAD" job status -namespace '*' -json 2>"$nomad_jobs_stderr") || {
+  echo "ERROR: 'nomad job status -namespace * -json' failed: $jobs_json" >&2
+  if [[ -s "$nomad_jobs_stderr" ]]; then
+    echo "Nomad stderr: $(cat "$nomad_jobs_stderr")" >&2
+  fi
+  rm -f "$nomad_jobs_stderr"
   exit 1
 }
+if [[ -s "$nomad_jobs_stderr" ]]; then
+  echo "WARNING (nomad job status stderr): $(cat "$nomad_jobs_stderr")" >&2
+fi
+rm -f "$nomad_jobs_stderr"
+
+# When there are no running jobs, Nomad outputs "No running jobs" instead of JSON.
+if [[ "$jobs_json" == "No running jobs" ]]; then
+  busy_json='[]'
+elif echo "$jobs_json" | jq -e . >/dev/null 2>&1; then
+  busy_json=$(<<< "$jobs_json" jq '[.[].Allocations // [] | .[]] | map(select(.ClientStatus == "running") | .NodeID) | unique')
+else
+  echo "ERROR: 'nomad job status -namespace * -json' did not return valid JSON." >&2
+  echo "First 500 chars of output: ${jobs_json:0:500}" >&2
+  exit 1
+fi
 
 echo "There are currently $(<<< "$busy_json" jq length) nodes with running allocations" >&2
 
