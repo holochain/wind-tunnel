@@ -30,10 +30,26 @@ variable "run_id" {
   default     = {{ with index (ds "vars") "run_id" }}{{ . | quote }}{{ else }}null{{ end }}
 }
 
+variable "include_threefold_node_pool" {
+  type        = bool
+  description = "Allow scheduling on the threefold node pool"
+  {{- /* Default: exclude threefold unless explicitly enabled. */}}
+  default     = {{ index (ds "vars") "include_threefold_node_pool" | default false }}
+}
+
 job "{{ (ds "vars").job_name }}" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
-  node_pool = "all" // Run on all node pools
+  // Use the all-pools node pool so cross-pool scheduling is possible.
+  // Additional pool restrictions are applied with the `${node.pool}` constraint below.
+  node_pool   = "all"
+
+  // Exclude threefold nodes unless explicitly enabled by `include_threefold_node_pool`
+  constraint {
+    attribute = "${node.pool}"
+    operator  = var.include_threefold_node_pool ? "regexp" : "!="
+    value     = var.include_threefold_node_pool ? ".*" : "threefold"
+  }
 
   constraint {
     distinct_hosts = true // Don't run multiple instances on the same client at once

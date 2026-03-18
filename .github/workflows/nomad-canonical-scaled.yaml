@@ -34,7 +34,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          COUNT="$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- node status -filter "Status == ready" -filter "SchedulingEligibility == eligible" -json | jq -r '. | length')"
+          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+          COUNT="$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh --eligible-only --include-threefold-node-pool)"
 
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
 
