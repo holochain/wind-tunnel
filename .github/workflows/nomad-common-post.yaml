@@ -106,7 +106,7 @@ jobs:
     name: Cancel running Nomad allocations
     runs-on: ubuntu-latest
     needs: collect-github-matrix-outputs
-    if: cancelled()
+    if: ${{ cancelled() }}
     strategy:
       fail-fast: false
       matrix:
@@ -138,7 +138,9 @@ jobs:
   run-summary:
     name: Generate a summary of all scenarios
     runs-on: ubuntu-latest
-    needs: wait-for-jobs
+    needs:
+      - collect-github-matrix-outputs
+      - wait-for-jobs
     if: ${{ !cancelled() }}
     steps:
       - uses: actions/checkout@v6
@@ -156,9 +158,34 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           pattern: "alloc_ids_*"
+          path: alloc_ids_download
 
       - name: Combine alloc_ids files into single
-        run: cat alloc_ids_*/alloc_ids.csv >> alloc_ids.csv
+        env:
+          MATRIX_RESULT: ${{ needs.collect-github-matrix-outputs.outputs.result }}
+        run: |
+          ls -R alloc_ids_download
+
+          shopt -s globstar nullglob
+          files=(alloc_ids_download/**/alloc_ids.csv)
+
+          expected_files=$(jq 'length' <<<"$MATRIX_RESULT")
+          found_files=${#files[@]}
+
+          echo "Expected alloc_ids.csv files: ${expected_files}"
+          echo "Found alloc_ids.csv files: ${found_files}"
+
+          if (( found_files == 0 )); then
+            echo "No alloc_ids.csv files were downloaded." >&2
+            exit 1
+          fi
+
+          if (( found_files != expected_files )); then
+            echo "Expected ${expected_files} alloc_ids.csv file(s), but found ${found_files}." >&2
+            exit 1
+          fi
+
+          cat "${files[@]}" > alloc_ids.csv
 
       - name: Prepare run summary
         env:
@@ -190,6 +217,7 @@ jobs:
           path: run_summary.jsonl
 
       - name: Run summariser
+        # Avoid running summariser after any earlier step in this job failed.
         if: ${{ !cancelled() }}
         env:
           INFLUX_HOST: "https://ifdb.holochain.org"
@@ -267,7 +295,7 @@ jobs:
     name: Cleanup scenario artifacts
     runs-on: ubuntu-latest
     needs: wait-for-jobs
-    if: always()
+    if: ${{ always() }}
     steps:
       - uses: actions/checkout@v6
 
