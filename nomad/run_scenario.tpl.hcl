@@ -37,6 +37,12 @@ variable "include_threefold_node_pool" {
   default     = {{ index (ds "vars") "include_threefold_node_pool" | default false }}
 }
 
+variable "wind_tunnel_git_ref" {
+  type        = string
+  description = "Git ref from which github hosted artifacts are fetched"
+  default     = "main"
+}
+
 job "{{ (ds "vars").job_name }}" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
@@ -104,7 +110,7 @@ job "{{ (ds "vars").job_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/telegraf.host.conf"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/${var.wind_tunnel_git_ref}/telegraf/telegraf.host.conf"
           }
 
           config {
@@ -267,7 +273,7 @@ job "{{ (ds "vars").job_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/scripts/upload_metrics.sh"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/${var.wind_tunnel_git_ref}/nomad/scripts/upload_metrics.sh"
           }
 
           config {
