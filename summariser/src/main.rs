@@ -44,7 +44,10 @@ async fn main() -> anyhow::Result<()> {
             .context("Cannot read metrics without environment variable `INFLUX_TOKEN`")?,
     );
 
-    const MAX_CONCURRENT_SUMMARIES: usize = 4;
+    let max_concurrent_summaries: usize = std::env::var("MAX_CONCURRENT_SUMMARIES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(4);
 
     let summary_results = {
         use futures::StreamExt;
@@ -65,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
                 holochain_summariser::execute_report_for_run_summary(client.clone(), summary)
             },
         ))
-        .buffer_unordered(MAX_CONCURRENT_SUMMARIES)
+        .buffer_unordered(max_concurrent_summaries)
         .collect::<Vec<_>>()
         .await
     };

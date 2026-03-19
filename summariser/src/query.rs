@@ -414,19 +414,62 @@ pub async fn query_host_metrics(
 
 /// Build a SELECT query for a [`host_metrics::HostMetricMeasurement`].
 ///
-/// Given a [`host_metrics::HostMetricMeasurement`], it returns the select statement for the field and the relative timestamp
+/// Given a [`host_metrics::HostMetricMeasurement`], it returns the select statement for the field and the relative timestamp.
+/// When `downsample_interval()` returns `Some(interval)`, the query uses aggregation functions
+/// (MEAN/LAST) and GROUP BY time() to downsample the data, reducing peak memory usage.
 fn build_host_metrics_query(
     measurement: HostMetricMeasurement,
     filter: &host_metrics::SelectFilter,
 ) -> anyhow::Result<String> {
-    // Quote all identifiers to avoid collisions with InfluxQL reserved words
-    // (e.g. `name` in diskio). InfluxDB returns column names unquoted in the
-    // response regardless of quoting in the query.
-    let values = measurement
-        .select()
-        .iter()
-        .map(|v| format!("\"{v}\""))
-        .join(",");
+    let fields = measurement.select();
+    let aggregations = measurement.aggregations();
+    let downsample = measurement.downsample_interval();
+
+    debug_assert_eq!(
+        fields.len(),
+        aggregations.len(),
+        "aggregations() length must match select() length for {:?}",
+        measurement
+    );
+
+    let (select_clause, group_by_clause) = if let Some(interval) = downsample {
+        // Build SELECT with aggregation functions and GROUP BY with tags
+        let mut select_parts = Vec::new();
+        let mut group_by_tags = Vec::new();
+
+        for (field, agg) in fields.iter().zip(aggregations.iter()) {
+            match agg {
+                host_metrics::FieldAggregation::Mean => {
+                    select_parts.push(format!(r#"MEAN("{field}") AS "{field}""#));
+                }
+                host_metrics::FieldAggregation::Last => {
+                    select_parts.push(format!(r#"LAST("{field}") AS "{field}""#));
+                }
+                host_metrics::FieldAggregation::Tag => {
+                    group_by_tags.push(format!(r#""{field}""#));
+                }
+            }
+        }
+
+        let select = select_parts.join(",");
+        let tag_list = if group_by_tags.is_empty() {
+            String::new()
+        } else {
+            format!(", {}", group_by_tags.join(", "))
+        };
+        let group_by = format!("GROUP BY time({interval}){tag_list} fill(none)");
+
+        (select, group_by)
+    } else {
+        // No downsampling: select raw fields (original behavior)
+        let select = fields
+            .iter()
+            .map(|v| format!(r#""{v}""#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let select = format!("{select},time");
+        (select, String::new())
+    };
 
     let mut filter_tags = measurement
         .filter_tags()
@@ -439,9 +482,10 @@ fn build_host_metrics_query(
 
     match filter {
         host_metrics::SelectFilter::RunId(run_id) => Ok(format!(
-            r#"SELECT {values},time
+            r#"SELECT {select_clause}
             FROM "windtunnel"."autogen"."{table}"
             WHERE {filter_tags}run_id = '{run_id}'
+            {group_by_clause}
     "#,
             table = measurement.measurement(),
         )),
@@ -451,7 +495,6 @@ fn build_host_metrics_query(
             run_id,
         } => {
             let ended_at = started_at.saturating_add(duration.as_secs() as i64);
-
             let start_datetime = DateTime::from_timestamp(*started_at, 0)
                 .context("Failed to convert started_at to DateTime")?
                 .to_rfc3339();
@@ -460,9 +503,10 @@ fn build_host_metrics_query(
                 .to_rfc3339();
 
             Ok(format!(
-                r#"SELECT {values},time
+                r#"SELECT {select_clause}
                 FROM "windtunnel"."autogen"."{table}"
                 WHERE {filter_tags}run_id = '{run_id}' AND time >= '{start_datetime}' AND time <= '{end_datetime}'
+                {group_by_clause}
                 "#,
                 table = measurement.measurement()
             ))
@@ -488,9 +532,10 @@ mod tests {
                 .expect("Failed to build query");
         assert_eq!(
             query,
-            r#"SELECT "host","interface","bytes_recv","bytes_sent","packets_recv","packets_sent",time
+            r#"SELECT LAST("bytes_recv") AS "bytes_recv",LAST("bytes_sent") AS "bytes_sent",LAST("packets_recv") AS "packets_recv",LAST("packets_sent") AS "packets_sent"
             FROM "windtunnel"."autogen"."net"
             WHERE run_id = 'test_run_id'
+            GROUP BY time(30s), "host", "interface" fill(none)
     "#,
         );
     }
@@ -511,9 +556,10 @@ mod tests {
 
         assert_eq!(
             query,
-            r#"SELECT "host","interface","bytes_recv","bytes_sent","packets_recv","packets_sent",time
+            r#"SELECT LAST("bytes_recv") AS "bytes_recv",LAST("bytes_sent") AS "bytes_sent",LAST("packets_recv") AS "packets_recv",LAST("packets_sent") AS "packets_sent"
                 FROM "windtunnel"."autogen"."net"
                 WHERE run_id = 'test_run_id' AND time >= '2025-08-27T13:27:46+00:00' AND time <= '2025-08-27T13:32:46+00:00'
+                GROUP BY time(30s), "host", "interface" fill(none)
                 "#,
         );
     }

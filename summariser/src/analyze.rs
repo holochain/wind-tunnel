@@ -8,6 +8,7 @@ use anyhow::Context;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::*;
+use std::collections::HashMap;
 
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
@@ -77,17 +78,21 @@ pub(crate) fn partitioned_timing_stats(
     window_duration: &str,
     partition_by: &[&str],
 ) -> anyhow::Result<PartitionedTimingStats> {
-    let mut select_cols = vec![col("time"), col(column)];
-    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+    let select_cols_exprs: Vec<Expr> = vec![col("time"), col(column)]
+        .into_iter()
+        .chain(partition_by.iter().map(|&s| col(s)))
+        .collect();
 
-    let unique = frame
-        .clone()
-        .lazy()
-        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
-        .unique_stable(None, UniqueKeepStrategy::First)
-        .collect()?;
+    let selected = frame.clone().lazy().select(select_cols_exprs).collect()?;
+    let partitions = selected.partition_by(
+        partition_by
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
+        true,
+    )?;
+    let partition_count = partitions.len();
 
-    let partition_count = unique.height();
     if partition_count == 0 {
         return Ok(PartitionedTimingStats {
             mean: 0.0,
@@ -104,33 +109,8 @@ pub(crate) fn partitioned_timing_stats(
     let mut max_mean = 0.0_f64;
     let mut min_mean = f64::MAX;
 
-    for i in 0..partition_count {
-        let mut filter_expr = col("time").is_not_null();
-        let mut key = Vec::new();
-        for c in partition_by {
-            let value = unique
-                .column(c)?
-                .get(i)?
-                .get_str()
-                .context("Get string")?
-                .to_string();
-            key.push(PartitionKey {
-                key: c.to_string(),
-                value: value.to_string(),
-            });
-            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
-        }
-
-        let filtered = frame
-            .clone()
-            .lazy()
-            .select(select_cols.clone())
-            .filter(filter_expr)
-            .collect()
-            .context("filter by partition")?;
-
-        let summary_timing = standard_timing_stats(filtered, column, window_duration, None)
-            .with_context(|| format!("Timing stats for {key:?}"))?;
+    for partition in partitions {
+        let summary_timing = standard_timing_stats(partition, column, window_duration, None)?;
 
         sum_mean += summary_timing.mean;
         sum_std += summary_timing.std;
@@ -199,49 +179,28 @@ pub(crate) fn partitioned_counter_stats(
     window_duration: &str,
     partition_by: &[&str],
 ) -> anyhow::Result<PartitionedCounterStats> {
-    let mut select_cols = vec![col("time"), col(column)];
-    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+    let select_cols_exprs: Vec<Expr> = vec![col("time"), col(column)]
+        .into_iter()
+        .chain(partition_by.iter().map(|&s| col(s)))
+        .collect();
 
-    let unique = frame
-        .clone()
-        .lazy()
-        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
-        .unique_stable(None, UniqueKeepStrategy::First)
-        .collect()?;
+    let selected = frame.clone().lazy().select(select_cols_exprs).collect()?;
+    let partitions = selected.partition_by(
+        partition_by
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
+        true,
+    )?;
+    let partition_count = partitions.len();
 
-    let partition_count = unique.height();
     let mut total_count: u64 = 0;
     let mut partitions_above_zero: usize = 0;
     let mut max_per_partition: u64 = 0;
     let mut min_per_partition: u64 = u64::MAX;
 
-    for i in 0..partition_count {
-        let mut filter_expr = col("time").is_not_null();
-        let mut key = Vec::new();
-        for c in partition_by {
-            let value = unique
-                .column(c)?
-                .get(i)?
-                .get_str()
-                .context("Get string")?
-                .to_string();
-            key.push(PartitionKey {
-                key: c.to_string(),
-                value: value.to_string(),
-            });
-            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
-        }
-
-        let filtered = frame
-            .clone()
-            .lazy()
-            .select(select_cols.clone())
-            .filter(filter_expr)
-            .collect()
-            .context("filter by partition")?;
-
-        let stats = counter_stats(filtered, column, window_duration)
-            .with_context(|| format!("Counter stats for {key:?}"))?;
+    for partition in partitions {
+        let stats = counter_stats(partition, column, window_duration)?;
 
         total_count += stats.count;
         if stats.count > 0 {
@@ -612,44 +571,38 @@ pub(crate) fn partitioned_gauge_stats(
     partition_by: &[&str],
     window_duration: &str,
 ) -> anyhow::Result<PartitionedGaugeStats> {
-    let mut select_cols = vec![col("time"), col(column)];
-    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+    let select_cols_exprs: Vec<Expr> = vec![col("time"), col(column)]
+        .into_iter()
+        .chain(partition_by.iter().map(|&s| col(s)))
+        .collect();
 
-    let unique = frame
-        .clone()
-        .lazy()
-        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
-        .unique_stable(None, UniqueKeepStrategy::First)
-        .collect()?;
+    let selected = frame.lazy().select(select_cols_exprs).collect()?;
+    let df_partitions = selected.partition_by(
+        partition_by
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
+        true,
+    )?;
 
     let mut partitions = Vec::new();
-    for i in 0..unique.height() {
-        let mut filter_expr = col("time").is_not_null();
+    for df_partition in df_partitions {
         let mut key = Vec::new();
         for c in partition_by {
-            let value = unique
+            let value = df_partition
                 .column(c)?
-                .get(i)?
+                .get(0)?
                 .get_str()
                 .context("Get string")?
                 .to_string();
             key.push(PartitionKey {
                 key: c.to_string(),
-                value: value.to_string(),
+                value,
             });
-            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
         }
         key.sort();
 
-        let filtered = frame
-            .clone()
-            .lazy()
-            .select(select_cols.clone())
-            .filter(filter_expr)
-            .collect()
-            .context("filter by partition")?;
-
-        let gauge_stats = gauge_stats(filtered, column, window_duration)?;
+        let gauge_stats = gauge_stats(df_partition, column, window_duration)?;
 
         partitions.push(PartitionGaugeStats { key, gauge_stats });
     }
@@ -820,17 +773,21 @@ pub(crate) fn partitioned_rate_stats(
     window_duration: &str,
     partition_by: &[&str],
 ) -> anyhow::Result<PartitionedRateStats> {
-    let mut select_cols = vec![col("time"), col(column)];
-    select_cols.extend(partition_by.iter().map(|&s| col(s)));
+    let select_cols_exprs: Vec<Expr> = vec![col("time"), col(column)]
+        .into_iter()
+        .chain(partition_by.iter().map(|&s| col(s)))
+        .collect();
 
-    let unique = frame
-        .clone()
-        .lazy()
-        .select(partition_by.iter().map(|&s| col(s)).collect::<Vec<_>>())
-        .unique_stable(None, UniqueKeepStrategy::First)
-        .collect()?;
+    let selected = frame.clone().lazy().select(select_cols_exprs).collect()?;
+    let partitions = selected.partition_by(
+        partition_by
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
+        true,
+    )?;
+    let partition_count = partitions.len();
 
-    let partition_count = unique.height();
     if partition_count == 0 {
         return Ok(PartitionedRateStats {
             mean: 0.0,
@@ -845,33 +802,8 @@ pub(crate) fn partitioned_rate_stats(
     let mut max_mean = 0.0_f64;
     let mut min_mean = f64::MAX;
 
-    for i in 0..partition_count {
-        let mut filter_expr = col("time").is_not_null();
-        let mut key = Vec::new();
-        for c in partition_by {
-            let value = unique
-                .column(c)?
-                .get(i)?
-                .get_str()
-                .context("Get string")?
-                .to_string();
-            key.push(PartitionKey {
-                key: c.to_string(),
-                value: value.to_string(),
-            });
-            filter_expr = filter_expr.and(col(*c).eq(lit(value)));
-        }
-
-        let filtered = frame
-            .clone()
-            .lazy()
-            .select(select_cols.clone())
-            .filter(filter_expr)
-            .collect()
-            .context("filter by partition")?;
-
-        let summary_rate = standard_rate(filtered, column, window_duration)
-            .with_context(|| format!("Standard rate for {key:?}"))?;
+    for partition in partitions {
+        let summary_rate = standard_rate(partition, column, window_duration)?;
 
         sum_mean += summary_rate.mean;
         if summary_rate.mean > max_mean {
@@ -936,6 +868,32 @@ pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
 
 /// Return the mean of a single column in a [`DataFrame`], or 0.0 if the column
 /// is missing or empty.
+/// Partition a DataFrame by a string column into a `HashMap<String, DataFrame>`.
+///
+/// Each entry in the returned map has the column's distinct value as key and the
+/// corresponding subset of rows as value. Useful for splitting zome-call data by
+/// `fn_name` before computing per-function statistics.
+pub(crate) fn partition_into_map(
+    df: DataFrame,
+    column: &str,
+) -> anyhow::Result<HashMap<String, DataFrame>> {
+    let partitions = df
+        .partition_by([column.to_string()], true)
+        .with_context(|| format!("partition_by '{column}' failed"))?;
+
+    let mut map = HashMap::with_capacity(partitions.len());
+    for partition in partitions {
+        let key = partition
+            .column(column)?
+            .get(0)?
+            .get_str()
+            .with_context(|| format!("Non-string value in partition column '{column}'"))?
+            .to_string();
+        map.insert(key, partition);
+    }
+    Ok(map)
+}
+
 pub fn column_mean(df: &DataFrame, column: &str) -> f64 {
     df.column(column)
         .ok()

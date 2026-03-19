@@ -1,4 +1,4 @@
-use polars::prelude::{AnyValue, DataFrame, IntoLazy, UniqueKeepStrategy, col, lit};
+use polars::prelude::{DataFrame, DataType};
 use std::collections::{BTreeMap, HashSet};
 
 pub enum Partition {
@@ -26,69 +26,44 @@ pub fn partition_by_tags(data_frame: DataFrame, tags: &[&str]) -> anyhow::Result
             return Err(anyhow::anyhow!("Duplicate tag name found: {tag}"));
         }
     }
-    // Get unique combinations of all tag values
-    let tag_columns: Vec<String> = tags.iter().map(|&tag| tag.to_string()).collect();
-    let selectors = data_frame
-        .clone()
-        .lazy()
-        .select(tags.iter().map(|&tag| col(tag)).collect::<Vec<_>>())
-        .unique(Some(tag_columns), UniqueKeepStrategy::Any)
-        .collect()?;
 
-    // Create a map to store the sub-DataFrames
+    // Validate that all tag columns exist and are string-typed
+    for &tag in tags {
+        match data_frame.column(tag).map(|c| c.dtype().clone()) {
+            Ok(DataType::String) => {}
+            Ok(other) => {
+                anyhow::bail!("Tag column '{tag}' has non-String dtype: {other:?}");
+            }
+            Err(e) => {
+                anyhow::bail!("Tag column '{tag}' not found: {e}");
+            }
+        }
+    }
+
+    // Single-pass partition by the tag columns
+    let sub_frames = data_frame.partition_by(
+        tags.iter().map(|s| (*s).to_string()).collect::<Vec<_>>(),
+        true,
+    )?;
+
     let mut partitioned = BTreeMap::new();
-
-    // For each row in the selectors DataFrame, we have a unique combination of tag values
-    let n_rows = selectors.height();
-    for row_idx in 0..n_rows {
-        // Build a filter expression for this specific combination of tag values
-        let mut filter_expr = None;
+    for sub_frame in sub_frames {
+        // Build the partition key from the first row of each sub-frame
         let mut key_parts = Vec::with_capacity(tags.len());
-
         for &tag in tags {
-            // Get the value for this tag in the current row
-            let tag_value = match selectors.column(tag)?.get(row_idx) {
-                Ok(AnyValue::String(s)) => s.to_string(),
-                Ok(AnyValue::StringOwned(s)) => s.into_string(),
-                Ok(v) => {
-                    // Skip if not a string value
-                    log::warn!("In Tag Column {tag}, found non String value: {v:?}");
-                    continue;
-                }
-                Err(e) => {
-                    // Skip on error
-                    log::error!("In Tag Column {tag}: {e}");
-                    continue;
-                }
-            };
-
-            key_parts.push(format!("{tag}={tag_value}"));
-
-            // Build a filter expression that combines all tag conditions
-            let tag_filter = col(tag).eq(lit(tag_value));
-            filter_expr = match filter_expr {
-                None => Some(tag_filter),
-                Some(expr) => Some(expr.and(tag_filter)),
-            };
+            let any_val = sub_frame.column(tag)?.get(0)?;
+            let value = any_val
+                .get_str()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Non-string value in tag column '{tag}': {any_val:?}")
+                })?
+                .to_string();
+            key_parts.push(format!("{tag}={value}"));
         }
 
-        // Create a key that represents this unique combination of tag values
         let combination_key = key_parts.join(",");
         log::debug!("Partition for {combination_key}");
-
-        // Apply the filter to get rows matching this combination of tag values
-        if let Some(filter) = filter_expr {
-            let filtered = data_frame
-                .clone()
-                .lazy()
-                .select([col("*")])
-                .filter(filter)
-                .collect()?;
-
-            partitioned.insert(combination_key, filtered);
-        } else {
-            log::warn!("No rows found matching tag combination {combination_key}");
-        }
+        partitioned.insert(combination_key, sub_frame);
     }
 
     Ok(Partition::Partitioned(partitioned))
@@ -219,27 +194,16 @@ mod tests {
     }
 
     #[test]
-    fn test_partition_with_numerical_tag() -> anyhow::Result<()> {
+    fn test_partition_with_numerical_tag_errors() {
         let df = create_test_dataframe();
-        // Test partition with one string tag and one numeric tag
-        let partition = partition_by_tags(df.clone(), &["tag1", "numeric_tag"])?;
-        let Partition::Partitioned(partitioned) = partition else {
-            panic!("Expected Partitioned DataFrame");
-        };
-
-        // Should have 3 combinations: a,b,c
-        assert_eq!(partitioned.len(), 3);
-
-        // Check group "a" has 3 rows
-        assert!(partitioned.contains_key("tag1=a"));
-        assert_eq!(partitioned["tag1=a"].height(), 3);
-        // Check group "b" has 2 rows
-        assert!(partitioned.contains_key("tag1=b"));
-        assert_eq!(partitioned["tag1=b"].height(), 2);
-        // Check group "c" has 1 row
-        assert!(partitioned.contains_key("tag1=c"));
-        assert_eq!(partitioned["tag1=c"].height(), 1);
-
-        Ok(())
+        // Partitioning by a non-string tag should return an error
+        let result = partition_by_tags(df.clone(), &["tag1", "numeric_tag"]);
+        match result {
+            Err(e) => assert!(
+                e.to_string().contains("non-String dtype"),
+                "Expected non-String dtype error, got: {e}"
+            ),
+            Ok(_) => panic!("Expected error for non-string tag column"),
+        }
     }
 }

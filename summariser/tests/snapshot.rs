@@ -237,7 +237,7 @@ async fn write_get_agent_activity() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn write_get_agent_activity_volatile() -> anyhow::Result<()> {
-    run_snapshot_test!("a6cf1c63cf948c94dc09c63b77928e174dce09f4ff30317949d8216d5c576b9a");
+    run_snapshot_test!("abcd915c4c50b87e9b4bad480d0fb845c7e4a8ebea6d9132d597ccfbb130cff2");
     Ok(())
 }
 

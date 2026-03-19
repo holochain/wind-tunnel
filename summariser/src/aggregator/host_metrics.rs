@@ -1,5 +1,5 @@
 use anyhow::Context;
-use polars::frame::{DataFrame, UniqueKeepStrategy};
+use polars::frame::DataFrame;
 use polars::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use wind_tunnel_summary_model::RunSummary;
@@ -110,10 +110,7 @@ impl HostMetricsAggregator<'_> {
             .collect()
             .context("Failed to compute total CPU usage")?;
 
-        // Full stats on total CPU usage
-        let total_usage = gauge_stats(combined.clone(), "total", "60s")?;
-
-        // User/system means for context (where is the load coming from?)
+        // Borrow-based operations first
         let usage_user_mean = column_mean(&combined, CpuField::UsageUser.as_ref());
         let usage_system_mean = column_mean(&combined, CpuField::UsageSystem.as_ref());
 
@@ -178,6 +175,9 @@ impl HostMetricsAggregator<'_> {
                 (count, if count > 0 { time_s } else { 0.0 })
             };
 
+        // gauge_stats LAST — consumes combined, no clone needed
+        let total_usage = gauge_stats(combined, "total", "60s")?;
+
         Ok(CpuMetrics {
             total_usage,
             usage_user_mean: round_to_n_dp(usage_user_mean, 2),
@@ -204,7 +204,7 @@ impl HostMetricsAggregator<'_> {
         )
         .await?;
 
-        // Primary gauge stats
+        // Primary gauge stats (shallow clones — gauge_stats consumes the frame)
         let used_percent = gauge_stats(mem_data.clone(), MemField::UsedPercent.as_ref(), "60s")?;
         let available_percent =
             gauge_stats(mem_data.clone(), MemField::AvailablePercent.as_ref(), "60s")?;
@@ -217,8 +217,9 @@ impl HostMetricsAggregator<'_> {
             .column(MemField::Host.as_ref())
             .is_ok()
         {
+            // Consumes mem_data — no clone needed
             let by_host = self
-                .aggregate_data_frame_by_tag(mem_data.clone(), MemField::Host.as_ref())
+                .aggregate_data_frame_by_tag(mem_data, MemField::Host.as_ref())
                 .await?;
             let mut max_growth = f64::NEG_INFINITY;
             let mut max_swap = f64::NEG_INFINITY;
@@ -507,28 +508,21 @@ impl HostMetricsAggregator<'_> {
         data_frame: DataFrame,
         tag: &str,
     ) -> anyhow::Result<HashMap<String, DataFrame>> {
-        let aggregators = data_frame
-            .clone()
-            .lazy()
-            .select([col(tag)])
-            .unique(Some(vec![tag.to_string()]), UniqueKeepStrategy::Any)
-            .collect()?;
+        let partitions = data_frame
+            .partition_by([tag.to_string()], true)
+            .context("partition_by failed")?;
 
-        let keys: HashSet<&str> = aggregators.column(tag)?.str()?.iter().flatten().collect();
-
-        let mut aggregated = HashMap::with_capacity(keys.len());
-        for key in keys {
+        let mut aggregated = HashMap::with_capacity(partitions.len());
+        for partition in partitions {
+            let key = partition
+                .column(tag)?
+                .get(0)?
+                .get_str()
+                .context("Get string for partition key")?
+                .to_string();
             log::debug!("Aggregating for {tag}={key}");
-
-            let filtered = data_frame
-                .clone()
-                .lazy()
-                .select([col("*")])
-                .filter(col(tag).eq(lit(key)))
-                .collect()?;
-            aggregated.insert(key.to_string(), filtered);
+            aggregated.insert(key, partition);
         }
-
         Ok(aggregated)
     }
 
@@ -768,10 +762,12 @@ impl HostMetricsAggregator<'_> {
                 return Err(anyhow::anyhow!("No data for {field_set:?}"));
             }
 
-            let avg10 = gauge_stats_dp(frame.clone(), PressureField::Avg10.as_ref(), "60s", 4)
-                .unwrap_or_default();
+            // Borrow-based operations first
             let avg60_mean = column_mean(&frame, PressureField::Avg60.as_ref());
             let avg300_mean = column_mean(&frame, PressureField::Avg300.as_ref());
+            // gauge_stats_dp consumes frame — call last, no clone needed
+            let avg10 =
+                gauge_stats_dp(frame, PressureField::Avg10.as_ref(), "60s", 4).unwrap_or_default();
             Ok(PsiStall {
                 avg10,
                 avg60_mean: round_to_n_dp(avg60_mean, 4),

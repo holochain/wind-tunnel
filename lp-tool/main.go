@@ -155,6 +155,7 @@ func processLineProtocol(config Config) error {
 	}
 
 	scanner := bufio.NewScanner(inputFile)
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024) // allow lines up to 10 MB
 	writer := bufio.NewWriter(outputFile)
 	defer writer.Flush()
 

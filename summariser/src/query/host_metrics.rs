@@ -2,6 +2,17 @@ use std::time::Duration;
 use strum::VariantNames;
 use strum_macros::EnumString;
 
+/// How to aggregate a field when downsampling via GROUP BY time().
+#[derive(Debug, Clone, Copy)]
+pub enum FieldAggregation {
+    /// Use MEAN() — appropriate for gauges (CPU %, load averages, etc.)
+    Mean,
+    /// Use LAST() — appropriate for monotonic counters (bytes_recv, read_bytes, etc.)
+    Last,
+    /// This is a tag — include in GROUP BY, not in SELECT aggregation.
+    Tag,
+}
+
 /// A trait to describe how to source table data from InfluxDB for a type.
 pub trait InfluxSourced {
     /// A list of key-value tag pairs to filter by when sourcing data for this type.
@@ -17,6 +28,19 @@ pub trait InfluxSourced {
     ///
     /// These will become the columns in the resulting table.
     fn select(&self) -> &[&str];
+
+    /// How each selected field should be aggregated when downsampling.
+    /// Must return one entry per item in `select()`, in the same order.
+    /// Default: all fields use Mean (backward-compatible).
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        vec![FieldAggregation::Mean; self.select().len()]
+    }
+
+    /// The time interval for GROUP BY time() downsampling.
+    /// None means no downsampling (fetch raw data).
+    fn downsample_interval(&self) -> Option<&'static str> {
+        None
+    }
 }
 
 /// Host metric measurement.
@@ -84,6 +108,32 @@ impl InfluxSourced for HostMetricMeasurement {
             HostMetricMeasurement::Procstat(f) => f.select(),
         }
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            HostMetricMeasurement::Cpu(f) => f.aggregations(),
+            HostMetricMeasurement::Mem(f) => f.aggregations(),
+            HostMetricMeasurement::Net(f) => f.aggregations(),
+            HostMetricMeasurement::Disk(f) => f.aggregations(),
+            HostMetricMeasurement::DiskIo(f) => f.aggregations(),
+            HostMetricMeasurement::System(f) => f.aggregations(),
+            HostMetricMeasurement::Pressure(f) => f.aggregations(),
+            HostMetricMeasurement::Procstat(f) => f.aggregations(),
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        match self {
+            HostMetricMeasurement::Cpu(f) => f.downsample_interval(),
+            HostMetricMeasurement::Mem(f) => f.downsample_interval(),
+            HostMetricMeasurement::Net(f) => f.downsample_interval(),
+            HostMetricMeasurement::Disk(f) => f.downsample_interval(),
+            HostMetricMeasurement::DiskIo(f) => f.downsample_interval(),
+            HostMetricMeasurement::System(f) => f.downsample_interval(),
+            HostMetricMeasurement::Pressure(f) => f.downsample_interval(),
+            HostMetricMeasurement::Procstat(f) => f.downsample_interval(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -121,6 +171,20 @@ impl InfluxSourced for CpuFieldSet {
             CpuFieldSet::Default => CpuField::VARIANTS,
         }
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            CpuFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Mean, // usage_user
+                FieldAggregation::Mean, // usage_system
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -157,6 +221,25 @@ impl InfluxSourced for MemFieldSet {
             MemFieldSet::Default => MemField::VARIANTS,
         }
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            MemFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Mean, // used_percent
+                FieldAggregation::Mean, // available_percent
+                FieldAggregation::Last, // used
+                FieldAggregation::Last, // total
+                FieldAggregation::Last, // available
+                FieldAggregation::Last, // swap_free
+                FieldAggregation::Last, // swap_total
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -191,6 +274,23 @@ impl InfluxSourced for NetFieldSet {
             NetFieldSet::Default => NetField::VARIANTS,
         }
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            NetFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Tag,  // interface
+                FieldAggregation::Last, // bytes_recv (counter)
+                FieldAggregation::Last, // bytes_sent (counter)
+                FieldAggregation::Last, // packets_recv (counter)
+                FieldAggregation::Last, // packets_sent (counter)
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -221,6 +321,20 @@ impl InfluxSourced for DiskFieldSet {
         match self {
             DiskFieldSet::Default => DiskField::VARIANTS,
         }
+    }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            DiskFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Tag,  // path
+                FieldAggregation::Mean, // used_percent
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
     }
 }
 
@@ -255,6 +369,22 @@ impl InfluxSourced for DiskIoFieldSet {
             DiskIoFieldSet::Default => DiskIoField::VARIANTS,
         }
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            DiskIoFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Tag,  // path
+                FieldAggregation::Tag,  // name
+                FieldAggregation::Last, // read_bytes (counter)
+                FieldAggregation::Last, // write_bytes (counter)
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -287,6 +417,22 @@ impl InfluxSourced for SystemFieldSet {
         match self {
             SystemFieldSet::Default => SystemField::VARIANTS,
         }
+    }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            SystemFieldSet::Default => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Mean, // load1
+                FieldAggregation::Mean, // load5
+                FieldAggregation::Mean, // load15
+                FieldAggregation::Last, // n_cpus (constant per host)
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
     }
 }
 
@@ -346,6 +492,18 @@ impl InfluxSourced for PressureFieldSet {
         // All pressure variants use the same fields: avg10, avg60, avg300
         PressureField::VARIANTS
     }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        vec![
+            FieldAggregation::Mean,
+            FieldAggregation::Mean,
+            FieldAggregation::Mean,
+        ]
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -389,6 +547,22 @@ impl InfluxSourced for ProcstatFieldSet {
         match self {
             ProcstatFieldSet::Default { .. } => ProcstatField::VARIANTS,
         }
+    }
+
+    fn aggregations(&self) -> Vec<FieldAggregation> {
+        match self {
+            ProcstatFieldSet::Default { .. } => vec![
+                FieldAggregation::Tag,  // host
+                FieldAggregation::Mean, // cpu_usage
+                FieldAggregation::Last, // memory_pss
+                FieldAggregation::Mean, // num_threads
+                FieldAggregation::Mean, // num_fds
+            ],
+        }
+    }
+
+    fn downsample_interval(&self) -> Option<&'static str> {
+        Some("30s")
     }
 }
 

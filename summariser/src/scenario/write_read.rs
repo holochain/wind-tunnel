@@ -1,9 +1,8 @@
-use crate::analyze::{standard_rate, standard_timing_stats};
+use crate::analyze::{partition_into_map, standard_rate, standard_timing_stats};
 use crate::model::{StandardRateStats, StandardTimingsStats};
 use crate::query;
 use crate::query::zome_call_error_count;
 use anyhow::Context;
-use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
@@ -31,16 +30,13 @@ pub(crate) async fn summarize_write_read(
         .await
         .context("Load zome call data")?;
 
-    let create_zome_calls = zome_calls
-        .clone()
-        .lazy()
-        .filter(col("fn_name").eq(lit("create_sample_entry")))
-        .collect()?;
-
-    let get_zome_calls = zome_calls
-        .lazy()
-        .filter(col("fn_name").eq(lit("get_sample_entry")))
-        .collect()?;
+    let mut by_fn = partition_into_map(zome_calls, "fn_name")?;
+    let create_zome_calls = by_fn
+        .remove("create_sample_entry")
+        .context("No create_sample_entry calls found")?;
+    let get_zome_calls = by_fn
+        .remove("get_sample_entry")
+        .context("No get_sample_entry calls found")?;
 
     Ok(WriteQuerySummary {
         write_timing: standard_timing_stats(create_zome_calls.clone(), "value", "10s", None)
