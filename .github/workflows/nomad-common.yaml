@@ -141,6 +141,35 @@ jobs:
           done
           echo "done"
 
+      - name: Dry Run Nomad Job
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+          NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+          NOMAD_VAR_run_id: ${{ env.RUN_ID }}
+          NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
+        run: |-
+          set -exuo pipefail
+          JOB_NAME="${{ matrix.job-name }}"
+          nomad_rc=0
+          nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job plan -no-color ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl 2>&1) || nomad_rc=$?
+          echo "$nomad_output"
+          if [ "$nomad_rc" -eq 255 ]; then
+              echo "Planning Nomad job failed"
+              exit 1
+          fi
+          if grep -Fq 'WARNING: Failed to place all allocations.' <<<"$nomad_output"; then
+              echo "Not all allocations would be placed"
+              exit 1
+          fi
+          # Nomad plan command exits with `1` if allocations would be created or destroyed, which is what we want
+          if [ "$nomad_rc" -ne 1 ]; then
+              echo "Nomad jobs would not be allocated"
+              exit 1
+          fi
+
       - name: Run Nomad Job
         id: run-nomad-job
         env:
