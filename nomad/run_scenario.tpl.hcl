@@ -30,7 +30,7 @@ variable "run_id" {
   default     = {{ with index (ds "vars") "run_id" }}{{ . | quote }}{{ else }}null{{ end }}
 }
 
-job "{{ (ds "vars").scenario_name }}" {
+job "{{ (ds "vars").job_name }}" {
   type        = "batch"
   all_at_once = true // Try to run all groups at once
   node_pool = "all" // Run on all node pools
