@@ -30,11 +30,19 @@ check_yaml_fmt() {
 
 check_go() {
   set -euo pipefail
+
   cd lp-tool
-  go mod tidy
+  go mod tidy -diff
   go build
   go test -v
   ./lp-tool -h
+  cd -
+
+  cd threefold/deployer
+  go mod tidy -diff
+  go build
+  go test -v
+  ./deployer -h
   cd -
 }
 
