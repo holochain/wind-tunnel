@@ -74,33 +74,17 @@ if [[ "$ELIGIBLE_ONLY" == "true" ]]; then
     exit 0
 fi
 
-# 'nomad job status -namespace * -json' returns the full allocation list across all namespaces.
-# The response is buffered so we can handle the "No running jobs" plain-text fallback before
-# passing valid JSON to jq for filtering.
-nomad_jobs_stderr=$(mktemp)
-jobs_json=$("$NOMAD" job status -namespace '*' -json 2>"$nomad_jobs_stderr") || {
-  echo "ERROR: 'nomad job status -namespace * -json' failed: $jobs_json" >&2
-  if [[ -s "$nomad_jobs_stderr" ]]; then
-    echo "Nomad stderr: $(cat "$nomad_jobs_stderr")" >&2
-  fi
-  rm -f "$nomad_jobs_stderr"
+# Query the Nomad allocations API directly for running allocations only.
+# The API is used because it supports server-side filtering which the nomad cli tool lacks,
+# and the full list was large enough to crash jq.
+allocs_response=$(curl -sS --fail \
+  --cacert "$NOMAD_CACERT" \
+  -H "X-Nomad-Token: $NOMAD_TOKEN" \
+  "$NOMAD_ADDR/v1/allocations?namespace=*&filter=ClientStatus+%3D%3D+%22running%22") || {
+  echo "ERROR: Nomad allocations API request failed" >&2
   exit 1
 }
-if [[ -s "$nomad_jobs_stderr" ]]; then
-  echo "WARNING (nomad job status stderr): $(cat "$nomad_jobs_stderr")" >&2
-fi
-rm -f "$nomad_jobs_stderr"
-
-# When there are no running jobs, Nomad outputs "No running jobs" instead of JSON.
-if [[ "$jobs_json" == "No running jobs" ]]; then
-  busy_json='[]'
-elif echo "$jobs_json" | jq -e . >/dev/null 2>&1; then
-  busy_json=$(<<< "$jobs_json" jq '[.[].Allocations // [] | .[]] | map(select(.ClientStatus == "running") | .NodeID) | unique')
-else
-  echo "ERROR: 'nomad job status -namespace * -json' did not return valid JSON." >&2
-  echo "First 500 chars of output: ${jobs_json:0:500}" >&2
-  exit 1
-fi
+busy_json=$(<<< "$allocs_response" jq '[.[] | .NodeID] | unique')
 
 echo "There are currently $(<<< "$busy_json" jq length) nodes with running allocations" >&2
 
