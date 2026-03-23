@@ -229,7 +229,7 @@ jobs:
     name: Collect Run Ids
     runs-on: ubuntu-latest
     needs: run-scenarios
-    if: ${{ !cancelled() }}
+    if: always()
     steps:
       - uses: cloudposse/github-action-matrix-outputs-read@v1
         id: read
@@ -294,6 +294,39 @@ jobs:
           export TIMEOUT=$(( TIMEOUT < 0 ? $duration + $buffer : TIMEOUT )) # if timeout is negative; set to `duration + buffer`
           echo "Timeout for ${{ matrix.job_name }}: $TIMEOUT seconds (started_at: ${started_at}; duration: ${duration})"
           nix develop --command ./nomad/scripts/wait_for_jobs.sh ${{ matrix.job_name }} ${{ matrix.alloc_ids }}
+
+  cancel-nomad-allocations:
+    name: Cancel running Nomad allocations
+    runs-on: ubuntu-latest
+    needs: collect-github-matrix-outputs
+    if: cancelled()
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result || '[]') }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Stop allocations
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
+          NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
+          NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
+          NOMAD_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
+        run: |
+          for alloc_id in ${{ matrix.alloc_ids }}; do
+            echo "Stopping allocation: $alloc_id"
+            nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- alloc stop -detach "$alloc_id" || echo "Allocation $alloc_id could not be stopped"
+          done
 
   run-summary:
     name: Generate a summary of all scenarios
