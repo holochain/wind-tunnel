@@ -330,6 +330,33 @@ jobs:
           IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
         run: nix develop --command cargo run --release --bin holochain-summariser
 
+      - name: Print host memory metrics
+        if: ${{ !cancelled() }}
+        run: |
+          REPORT=$(ls -t summariser-report-*.json 2>/dev/null | head -1)
+          if [ -z "$REPORT" ]; then
+            echo "No summariser report found"
+            exit 0
+          fi
+          echo "=== Host Memory Metrics ==="
+          python3 -c "
+          import json, sys
+          with open('$REPORT') as f:
+              data = json.load(f)
+          for entry in data:
+              name = entry.get('run_summary', {}).get('scenario_name', 'unknown')
+              hm = entry.get('host_metrics') or {}
+              mem = hm.get('memory') or {}
+              proc = hm.get('holochain_process') or {}
+              pss = proc.get('memory_pss') or {}
+              print(f'--- {name} ---')
+              print(f'  Host used%%: mean={mem.get(\"used_percent\", {}).get(\"mean\", \"N/A\")}, max_host={mem.get(\"max_host_used_percent\", \"N/A\")}')
+              print(f'  Growth rate: {mem.get(\"growth_rate_mb_per_sec\", \"N/A\")} MB/s')
+              print(f'  Swap used%%: {mem.get(\"swap_used_percent\", \"N/A\")}')
+              print(f'  HC process PSS (KB): mean={pss.get(\"mean\", \"N/A\")}, p95={pss.get(\"p95\", \"N/A\")}')
+              print()
+          "
+
       - name: Generate summary id for artifacts
         id: generate-summary-id
         run: |
