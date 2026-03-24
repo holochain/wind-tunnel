@@ -51,7 +51,7 @@ jobs:
         job-name: ${{ fromJSON(inputs.job-names) }}
 
     env:
-      RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}
+      RUN_ID: ${{ matrix.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
 
     steps:
       - uses: actions/checkout@v6
