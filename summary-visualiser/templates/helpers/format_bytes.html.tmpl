@@ -4,19 +4,17 @@
   * `value` (number): The byte value to format.
   * `label` (string, optional): A label to display before the value.
   * `suffix` (string, optional): A suffix to append to the unit (e.g. "/s").
-  */}}<span class="scalar">
-    {{- if (index . "label") -}}
-        <div class="scalar-label">{{ .label }}</div>
-    {{- end }}
-    {{- $v := conv.ToFloat64 .value -}}
-    {{- $s := default "" (index . "suffix") -}}
-    {{- if (ge $v 1073741824.0) -}}
-        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1073741824.0) }}</span><span class="scalar-unit"> GiB{{ $s }}</span>
-    {{- else if (ge $v 1048576.0) -}}
-        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1048576.0) }}</span><span class="scalar-unit"> MiB{{ $s }}</span>
-    {{- else if (ge $v 1024.0) -}}
-        <span class="scalar-value">{{ printf "%.2f" (math.Div $v 1024.0) }}</span><span class="scalar-unit"> KiB{{ $s }}</span>
-    {{- else -}}
-        <span class="scalar-value">{{ printf "%.0f" $v }}</span><span class="scalar-unit"> B{{ $s }}</span>
-    {{- end -}}
-</span>
+  */}}
+
+{{- $value := conv.ToFloat64 .value -}}
+{{- $suffix := default "" (index . "suffix") -}}
+{{- $label := default "" (index . "label") -}}
+{{- if (ge $value 1073741824.0) -}}
+    {{ template "scalar" (dict "label" $label "value" (printf "%.2f" (math.Div $value 1073741824.0)) "unit" (printf "GiB%s" $suffix)) }}
+{{- else if (ge $value 1048576.0) -}}
+    {{ template "scalar" (dict "label" $label "value" (printf "%.2f" (math.Div $value 1048576.0)) "unit" (printf "MiB%s" $suffix)) }}
+{{- else if (ge $value 1024.0) -}}
+    {{ template "scalar" (dict "label" $label "value" (printf "%.2f" (math.Div $value 1024.0)) "unit" (printf "KiB%s" $suffix)) }}
+{{- else -}}
+    {{ template "scalar" (dict "label" $label "value" (printf "%.0f" $value) "unit" (printf "B%s" $suffix)) }}
+{{- end -}}
