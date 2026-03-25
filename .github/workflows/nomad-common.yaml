@@ -24,7 +24,7 @@ on:
         type: boolean
         required: true
       job-names:
-        description: "JSON array of job names to run, e.g. '[\"first_call\",\"dht_sync_lag\"]'"
+        description: 'JSON array of job names to run, e.g. ''["first_call","dht_sync_lag"]'''
         type: string
         required: true
     secrets:
@@ -328,7 +328,11 @@ jobs:
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
           RUST_LOG: info,holochain_summariser=debug
           IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
-        run: nix develop --command cargo run --release --bin holochain-summariser
+        run: |
+          /usr/bin/time -v nix develop --command cargo run --release --bin holochain-summariser 2>&1 | tee summariser_run.log
+          echo ""
+          echo "=== Summariser Peak RAM ==="
+          grep "Maximum resident set size" summariser_run.log || echo "Could not determine peak RSS"
 
       - name: Generate summary id for artifacts
         id: generate-summary-id
