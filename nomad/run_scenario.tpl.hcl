@@ -104,6 +104,13 @@ job "{{ (ds "vars").scenario_name }}" {
         labels   = ["download_holochain_bin"]
 
         content {
+          restart {
+            attempts = 5
+            interval = "1m"
+            delay    = "8s"
+            mode     = "fail"
+          }
+
           lifecycle {
             hook = "prestart"
             sidecar = false
@@ -125,17 +132,40 @@ job "{{ (ds "vars").scenario_name }}" {
         }
       }
 
-      task "run_scenario" {
-        driver = "raw_exec"
+      dynamic "task" {
+        // Only download the scenario binary if `var.scenario_url` is not a valid local path.
+        for_each = fileexists(abspath(var.scenario_url)) ? [] : [var.scenario_url]
+        labels   = ["download_scenario_bin"]
 
-        dynamic "artifact" {
-          // Download the scenario from the URL if it is not a valid local path.
-          for_each = fileexists(abspath(var.scenario_url)) ? [] : [var.scenario_url]
+        content {
+          restart {
+            attempts = 5
+            interval = "1m"
+            delay    = "8s"
+            mode     = "fail"
+          }
 
-          content {
-            source = var.scenario_url
+          lifecycle {
+            hook = "prestart"
+            sidecar = false
+          }
+
+          driver = "raw_exec"
+
+          artifact {
+            source      = var.scenario_url
+            destination = "${NOMAD_ALLOC_DIR}/scenario"
+          }
+
+          config {
+            command = "chmod"
+            args    = ["+x", "${NOMAD_ALLOC_DIR}/scenario/bin/{{ (ds "vars").scenario_name }}"]
           }
         }
+      }
+
+      task "run_scenario" {
+        driver = "raw_exec"
 
         env {
           RUST_LOG                    = "info"
@@ -151,8 +181,8 @@ job "{{ (ds "vars").scenario_name }}" {
         }
 
         config {
-          // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_TASK_DIR}/bin/{{ (ds "vars").scenario_name }}"
+          // If `var.scenario_url` is a valid local path then run that. Otherwise run the scenario downloaded by the `download_scenario_bin` task.
+          command = fileexists(abspath(var.scenario_url)) ? abspath(var.scenario_url) : "${NOMAD_ALLOC_DIR}/scenario/bin/{{ (ds "vars").scenario_name }}"
           // The `compact` function removes empty strings and `null` items from the list.
           args = compact([
             "--duration=${var.duration}",
