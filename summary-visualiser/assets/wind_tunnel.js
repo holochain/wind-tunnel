@@ -1,8 +1,16 @@
 window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
-    // Note: if you change the left margin value,
-    // make sure that the CSS for `.no-trend-graph` in `page.html.tmpl`
-    // gets updated accordingly.
-    const margin = { top: 10, right: 20, bottom: 20, left: 60 };
+    const maxVal = d3.max(trendData);
+    const maxYLabel = `${maxVal}${yUnit || ""}`;
+    const minYLabel = `0${yUnit || ""}`;
+    const widestYLabel = Math.max(maxYLabel.length, minYLabel.length);
+
+    // Keep enough left margin for longer unit strings (e.g. "10000 files/s").
+    const margin = {
+        top: 16,
+        right: 20,
+        bottom: 24,
+        left: Math.max(60, (widestYLabel + 2) * 7),
+    };
     // The width of each data point on the graph.
     // If the graph is large enough, it'll cut the width by 50% or even 80%.
     const pointWidth = trendData.length <= 40 ? 10
@@ -20,8 +28,6 @@ window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration,
         // It's then moved to the right position in the SVG to make room for the legends.
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const maxVal = d3.max(trendData);
 
     // Map time window values to the x range of the graph.
     const x = d3.scaleLinear()
@@ -66,18 +72,18 @@ window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration,
     svg.append("text")
         .attr("class", "axis-label")
         .attr("x", -5)
-        .attr("y", 0)
+        .attr("y", 2)
         .attr("text-anchor", "end")
-        .attr("alignment-baseline", "middle")
-        .text(`${maxVal}${yUnit || ""}`);
+        .attr("dominant-baseline", "hanging")
+        .text(maxYLabel);
 
     svg.append("text")
         .attr("class", "axis-label")
         .attr("x", -5)
-        .attr("y", height)
+        .attr("y", height - 2)
         .attr("text-anchor", "end")
-        .attr("alignment-baseline", "middle")
-        .text(`0${yUnit || ""}`);
+        .attr("dominant-baseline", "text-after-edge")
+        .text(minYLabel);
 
     // X-axis labels -- 0 seconds at the start,
     // and the number of data points × the time window duration at the end.
