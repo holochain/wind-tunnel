@@ -25,6 +25,9 @@ This CSS needs the following variables to be defined:
                     amount of space for the numeric value so that whatever comes
                     after it will be lined up row-on-row.
 */
+html,body {
+    min-width: 64rem;
+}
 
 .scenario {
     background-color: var(--background);
@@ -160,16 +163,6 @@ but for some larger metrics, it's hard to see the label without scrolling. */
     text-align: right;
 }
 
-/* The data for a metric */
-.scenario-metric-content:not(:has(.scenario-metric-content-item)),
-.scenario-metric-content-item-content {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1em;
-}
-
 .composite-key {
     list-style: none;
     padding: 0;
@@ -177,12 +170,28 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 
 /*** Widgets ***/
 
+.scalar {
+    display: inline-block;
+}
+
 .scalar-value {
     font-size: 2rem;
     font-weight: 600;
+    text-wrap-mode: nowrap;
+    display: inline-block;
+}
+
+.scalar-unit {
+    text-wrap-mode: nowrap;
+    display: inline-block;
+}
+
+.scalar-sm {
+    display: inline-block;
 }
 
 /* Supplementary numbers shouldn't be so big. */
+.scalar-sm .scalar-value,
 .std .scalar-value,
 .mean-max-max .scalar-value,
 .min-max-mean-std-min .scalar-value,
@@ -191,16 +200,10 @@ but for some larger metrics, it's hard to see the label without scrolling. */
     font-size: inherit;
 }
 
-.min-max-mean-std .min-max-mean-std-min .scalar-label,
-.min-max-mean-std .mean .scalar-label,
-.min-max-mean-std .min-max-mean-std-max .scalar-label {
-    display: block;
-}
-
-/* These are spans in the markup, but we want them to be block elements. */
-.mean-std > *,
-.mean-max > * {
-    display: block;
+.mean-std {
+    flex-direction: column;
+    justify-content: start;
+    display: flex;
 }
 
 .min-max-mean-std,
@@ -210,13 +213,21 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 }
 
 .min-max-mean-std {
-    align-items: flex-start;
+    display: flex;
+    justify-content: start;
+    gap: 10px;
+    margin-bottom: 25px;
 }
 
 .min-max-mean-std-min,
 .min-max-mean-std-max,
+.min-max-mean-std-middle,
 .min-max-mean-std .divider {
     padding-top: 1rem;
+}
+
+.min-max-mean-std-middle .scalar-value {
+    font-size: inherit;
 }
 
 .delta-start-end {
@@ -230,16 +241,6 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 .divider {
     color: var(--more-subtle);
     font-size: 2em;
-}
-
-/* Many metrics contain both a scalar and a trend graph.
-In those cases, make sure all the scalars are the same width
-so the following graph lines up. */
-.scenario-metric-content:not(:has(.scenario-metric-content-item)),
-.scenario-metric-content-item-content {
-    display: grid;
-    grid-template-columns: var(--numeric-size) auto;
-    grid-gap: var(--grid-gap);
 }
 
 /*** Graph SVG ***/
@@ -273,7 +274,6 @@ so the following graph lines up. */
 /* To line up with the start of the graph, indent the "no trend data available" note.
 This is a bit of a hard-coded hack based on our knowledge that the JS gives 60px for the Y axis labels. */
 .no-trend-graph {
-    margin-left: 60px;
     color: var(--subtle);
 }
 

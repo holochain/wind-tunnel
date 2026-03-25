@@ -10,12 +10,14 @@ Opening tag comes right after this comment's closing tag
 because this helper gets used in a lot of contexts
 where an extra space looks ugly.
 That's also why there's no trailing newline in this file.
-*/}}<span class="scalar">
+*/}}<div class="scalar">
     {{- if (index . "label") -}}
         <div class="scalar-label">{{ .label }}</div>
     {{- end }}
-    <span class="scalar-value">{{ .value }}</span>
-    {{- if (index . "unit") -}}
-        <span class="scalar-unit">{{ .unit }}</span>
-    {{- end -}}
-</span>
+    <div>
+        <div class="scalar-value">{{ .value }}</div>
+        {{- if (index . "unit") -}}
+            <div class="scalar-unit">{{ .unit }}</div>
+        {{- end -}}
+    </div>
+</div>

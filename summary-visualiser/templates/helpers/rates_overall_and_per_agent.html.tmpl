@@ -16,12 +16,12 @@ The trend shows the mean count per time window averaged across partitions.
     {{ template "scenario_metric_content_item" (dict
         "name" "Max"
         "description" "Highest per-partition mean rate"
-        "content" (tmpl.Exec "scalar" (dict "label" "max " "value" .max_mean "unit" "/s"))
+        "content" (tmpl.Exec "scalar" (dict "label" "max" "value" .max_mean "unit" "/s"))
     ) }}
     {{ template "scenario_metric_content_item" (dict
         "name" "Min"
         "description" "Lowest per-partition mean rate"
-        "content" (tmpl.Exec "scalar" (dict "label" "min " "value" .min_mean "unit" "/s"))
+        "content" (tmpl.Exec "scalar" (dict "label" "min" "value" .min_mean "unit" "/s"))
     ) }}
     {{ template "trend_graph" (dict
         "data" .trend
