@@ -56,6 +56,11 @@ function is_run_success() {
     [[ "$status" == "complete" ]]
 }
 
+function stop_nomad_alloc() {
+  local alloc_id="$1"
+  nomad alloc stop -detach "$alloc_id"
+}
+
 function print_failed_tasks_and_logs() {
   local alloc_id="$1"
   local status="$2"
@@ -110,7 +115,8 @@ function wait_for_job() {
             sleep 1
             ELAPSED_SECS=$((ELAPSED_SECS + 1))
             if [[ $ELAPSED_SECS -gt $TIMEOUT ]]; then
-                echo "Timeout reached after $TIMEOUT seconds for $scenario_name ($alloc_id)."
+                echo "Timeout reached after $TIMEOUT seconds for $scenario_name ($alloc_id). Stopping allocation."
+                stop_nomad_alloc "$alloc_id" || echo "Allocation $alloc_id could not be stopped"
                 return 1
             fi
             continue
