@@ -328,7 +328,9 @@ jobs:
           INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
           RUST_LOG: info,holochain_summariser=debug
           IGNORE_SUMMARY_ERRORS: ${{ inputs.ignore-summary-errors }}
-        run: nix develop --command cargo run --release --bin holochain-summariser
+        run: |
+          nix develop --command cargo build --release --bin holochain-summariser
+          nix develop --command /usr/bin/time -v ./target/release/holochain-summariser
 
       - name: Generate summary id for artifacts
         id: generate-summary-id
