@@ -8,18 +8,16 @@ Fields:
 */}}
 <span class="std">
     {{/* These parentheses get wrapped in label spans so they're more subtle. */}}
-    <span class="scalar-label">(</span>
     {{- $format := (index . "format") -}}
     {{- if (eq $format "bytes") -}}
-        {{ template "format_bytes" (dict "label" "SD = " "value" .std) }}
+        {{ template "format_bytes" (dict "label" "SD" "value" .std) }}
     {{- else if (eq $format "bytes_rate") -}}
-        {{ template "format_bytes_rate" (dict "label" "SD = " "value" .std) }}
+        {{ template "format_bytes_rate" (dict "label" "SD" "value" .std) }}
     {{- else -}}
         {{ template "scalar" (dict
-            "label" "SD = "
+            "label" "SD"
             "value" .std
             "unit" (index . "unit"))
         }}
     {{- end -}}
-    <span class="scalar-label">)</span>
 </span>

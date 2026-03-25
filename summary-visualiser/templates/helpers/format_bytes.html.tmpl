@@ -6,7 +6,7 @@
   * `suffix` (string, optional): A suffix to append to the unit (e.g. "/s").
   */}}<span class="scalar">
     {{- if (index . "label") -}}
-        <span class="scalar-label">{{ .label }}</span>
+        <div class="scalar-label">{{ .label }}</div>
     {{- end }}
     {{- $v := conv.ToFloat64 .value -}}
     {{- $s := default "" (index . "suffix") -}}
