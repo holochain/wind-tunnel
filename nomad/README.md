@@ -12,6 +12,7 @@ A simple Example:
 
 ```json
 {
+  "job_name": "app_install_minimal_demo",
   "scenario_name": "app_install",
   "duration": 300,
   "assignments": [
@@ -28,6 +29,7 @@ An example with environment variables:
 
 ```json
 {
+  "job_name": "write_get_agent_activity_volatile_demo",
   "scenario_name": "write_get_agent_activity_volatile",
   "duration": 900,
   "assignments": [
@@ -52,6 +54,7 @@ An example with environment variables:
 The following variables are available:
 
 - `description`: A human-readable description of what the job does. (_optional_, not used at runtime — serves as documentation for the vars file)
+- `job_name`: The name of the Nomad job where all runs of this scenario will be grouped under. (**required**)
 - `scenario_name`: The name of the scenario you want to run. (**required**)
 - `duration`: The duration of the scenario in seconds. (**required**)
 - `assignments`: A list of assignments to apply to the scenario. (_optional_, defaults to `[{"behaviour": "default"}]`)
