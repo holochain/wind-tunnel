@@ -11,7 +11,7 @@ to human-readable units instead of using the raw `unit` string.
 
 Corresponding Rust types: `GaugeStats` or `RatioStats`
 */}}
-<div class="min-max-mean-std">
+<div>
     {{/* Detect which type we have by checking for the "p5" key.
          We use `ne nil` because the value itself may be 0.0 (falsy). */}}
     {{ $is_gauge := ne (index . "p5") nil }}
@@ -22,37 +22,40 @@ Corresponding Rust types: `GaugeStats` or `RatioStats`
     {{ $unit := (index . "unit") }}
     {{ $format := (index . "format") }}
 
-    <span class="min-max-mean-std-min">
-        {{- if (eq $format "bytes") -}}
-            {{ template "format_bytes" (dict "label" $low_label "value" $low) }}
-        {{- else if (eq $format "bytes_rate") -}}
-            {{ template "format_bytes_rate" (dict "label" $low_label "value" $low) }}
-        {{- else -}}
-            {{ template "scalar" (dict
-                "label" $low_label
-                "value" $low
-                "unit" $unit
-            ) }}
-        {{- end -}}
-    </span>
-    {{ $lo_mean_symbol := test.Ternary "lt" "le" (lt $low .mean) }}
-    <span class="divider divider-{{ $lo_mean_symbol }}">&{{ $lo_mean_symbol }};</span>
-    {{ template "mean_std" . }}
-    {{ $mean_hi_symbol := test.Ternary "lt" "le" (lt .mean $high) }}
-    <span class="divider divider-{{ $mean_hi_symbol }}">&{{ $mean_hi_symbol }};</span>
-    <span class="min-max-mean-std-max">
-        {{- if (eq $format "bytes") -}}
-            {{ template "format_bytes" (dict "label" $high_label "value" $high) }}
-        {{- else if (eq $format "bytes_rate") -}}
-            {{ template "format_bytes_rate" (dict "label" $high_label "value" $high) }}
-        {{- else -}}
-            {{ template "scalar" (dict
-                "label" $high_label
-                "value" $high
-                "unit" $unit
-            ) }}
-        {{- end -}}
-    </span>
+    <div class="min-max-mean-std">
+        <div class="min-max-mean-std-min">
+            {{- if (eq $format "bytes") -}}
+                {{ template "format_bytes" (dict "label" $low_label "value" $low) }}
+            {{- else if (eq $format "bytes_rate") -}}
+                {{ template "format_bytes_rate" (dict "label" $low_label "value" $low) }}
+            {{- else -}}
+                {{ template "scalar" (dict
+                    "label" $low_label
+                    "value" $low
+                    "unit" $unit
+                ) }}
+            {{- end -}}
+        </div>
+        {{ $lo_mean_symbol := test.Ternary "lt" "le" (lt $low .mean) }}
+        <span class="divider divider-{{ $lo_mean_symbol }}">&{{ $lo_mean_symbol }};</span>
+        {{ template "mean_std" . }}
+        {{ $mean_hi_symbol := test.Ternary "lt" "le" (lt .mean $high) }}
+        <span class="divider divider-{{ $mean_hi_symbol }}">&{{ $mean_hi_symbol }};</span>
+        <div class="min-max-mean-std-max">
+            {{- if (eq $format "bytes") -}}
+                {{ template "format_bytes" (dict "label" $high_label "value" $high) }}
+            {{- else if (eq $format "bytes_rate") -}}
+                {{ template "format_bytes_rate" (dict "label" $high_label "value" $high) }}
+            {{- else -}}
+                {{ template "scalar" (dict
+                    "label" $high_label
+                    "value" $high
+                    "unit" $unit
+                ) }}
+            {{- end -}}
+        </div>
+    </div>
+    
     {{ $trend_unit := $unit }}
     {{ if and (not $trend_unit) (eq $format "bytes") }}{{ $trend_unit = "B" }}{{ end }}
     {{ if and (not $trend_unit) (eq $format "bytes_rate") }}{{ $trend_unit = "B/s" }}{{ end }}

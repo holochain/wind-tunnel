@@ -15,21 +15,21 @@ Fields (from CounterStats):
 Corresponding Rust type: `holochain_summariser::model::CounterStats` with the `unit` field added on.
 */}}
 <div class="delta">
-    <span class="delta-count">
+    <div class="delta-count">
         {{- template "scalar" (dict "label" "total" "value" .count "unit" (index . "unit")) -}}
-        <span class="delta-measurement-duration">over {{ math.Add .measurement_duration.secs (math.Div .measurement_duration.nanos 1000000000) }}s</span>
-    </span>
+        <div class="delta-measurement-duration">over {{ math.Add .measurement_duration.secs (math.Div .measurement_duration.nanos 1000000000) }}s</div>
+    </div>
 
     {{ if .mean_rate_per_second }}
-        <span class="delta-rate">
+        <div class="delta-rate">
             {{ template "scalar" (dict "label" "mean rate" "value" .mean_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
             {{ template "scalar" (dict "label" "std" "value" .std_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
-        </span>
-        <span class="delta-rate-range">
+        </div>
+        <div class="delta-rate-range">
             {{ template "scalar" (dict "label" "p5" "value" .p5_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
             {{ template "scalar" (dict "label" "p95" "value" .p95_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
             {{ template "scalar" (dict "label" "peak" "value" .peak_rate_per_second "unit" (print (default "" (index . "unit")) "/s")) }}
-        </span>
+        </div>
     {{ end }}
 </div>
 {{ with .rate_trend }}

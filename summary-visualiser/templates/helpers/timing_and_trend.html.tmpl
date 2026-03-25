@@ -9,11 +9,25 @@ with an optional string `unit` field that will default to `"s"`.
     "std" .std
     "unit" $unit
 ) }}
-<span class="timing-percentiles">
-    {{ template "scalar" (dict "label" "p50" "value" .p50 "unit" $unit) }}
-    {{ template "scalar" (dict "label" "p95" "value" .p95 "unit" $unit) }}
-    {{ template "scalar" (dict "label" "p99" "value" .p99 "unit" $unit) }}
-</span>
+
+<div class="min-max-mean-std">
+    <div class="min-max-mean-std-min">
+        {{ template "scalar" (dict "label" "p50" "value" .p50 "unit" $unit) }}
+    </div>
+    {{ $p50_p95_symbol := test.Ternary "lt" "le" (lt .p50 .p95) }}
+    <span class="divider divider-{{ $p50_p95_symbol }}">&{{ $p50_p95_symbol }};</span>
+    <div class="min-max-mean-std-middle">
+        <div class="scalar-sm">
+            {{ template "scalar" (dict "label" "p95" "value" .p95 "unit" $unit) }}
+        </div>
+    </div>
+    {{ $p95_p99_symbol := test.Ternary "lt" "le" (lt .p95 .p99) }}
+    <span class="divider divider-{{ $p95_p99_symbol }}">&{{ $p95_p99_symbol }};</span>
+    <div class="min-max-mean-std-max">
+        {{ template "scalar" (dict "label" "p99" "value" .p99 "unit" $unit) }}
+    </div>
+</div>
+
 {{ template "trend_graph" (dict
     "data" .trend.trend
     "mean" .mean
