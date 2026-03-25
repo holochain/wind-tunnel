@@ -115,7 +115,7 @@ details.scenario-subsection-hidden > summary > .scenario-subsection {
 
 .scenario-metric {
     display: grid;
-    grid-template-columns: var(--grid);
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr);
     align-items: center;
     gap: var(--grid-gap);
     border-width: 2px;
@@ -161,6 +161,8 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 
 .scenario-metric-label {
     text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .composite-key {
