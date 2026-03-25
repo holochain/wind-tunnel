@@ -923,7 +923,7 @@ impl HostMetricsAggregator<'_> {
             AnomalyStatus::Detected {
                 severity: Severity::Warning,
                 description: format!(
-                    "Memory growing at {:.2} MB/s",
+                    "Memory growing at {:.2} MiB/s",
                     memory.growth_rate_mb_per_sec
                 ),
             }
