@@ -225,9 +225,8 @@ impl OpStore for WtOpStore {
             if number_of_added_ops > 0 {
                 // Ops may have come in multiple times. This reports only distinct op ids as heard messages.
                 self.reporter.add_custom(
-                    ReportMetric::new("heard_messages")
-                        .with_tag("agent_id", self.agent_id.to_string())
-                        .with_field("num_messages", number_of_added_ops),
+                    ReportMetric::new("heard_messages", number_of_added_ops as f64)
+                        .with_tag("agent_id", self.agent_id.to_string()),
                 );
             }
 

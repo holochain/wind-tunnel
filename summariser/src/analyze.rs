@@ -71,6 +71,112 @@ pub(crate) fn standard_timing_stats(
     })
 }
 
+/// Compute [`StandardTimingsStats`] from pre-aggregated histogram data.
+///
+/// When the reporter uses OTel with a PeriodicReader, each row in the DataFrame contains
+/// interval-level aggregates: `count`, `sum`, `min`, `max`, `mean`. This function computes
+/// overall statistics from those per-interval summaries.
+///
+/// **Limitations compared to [`standard_timing_stats`]:**
+/// - Percentiles (p50, p95, p99) cannot be exactly reconstructed from per-interval means.
+///   The values reported here are percentiles of the *per-interval mean* distribution, not
+///   of individual observations. They are useful for detecting shifts in typical latency
+///   but will underestimate tail latency compared to raw-sample percentiles.
+/// - Standard deviation is computed from per-interval means, not individual samples.
+#[allow(dead_code)]
+pub(crate) fn aggregated_timing_stats(
+    frame: DataFrame,
+    window_duration: &str,
+    skip: Option<i64>,
+) -> anyhow::Result<StandardTimingsStats> {
+    // Extract count, sum, min, max columns
+    let mut count_col = frame.column("count").context("Read count column")?.clone();
+    let mut sum_col = frame.column("sum").context("Read sum column")?.clone();
+    let mut mean_col = frame.column("mean").context("Read mean column")?.clone();
+
+    if let Some(skip) = skip {
+        count_col = count_col.slice(skip, usize::MAX);
+        sum_col = sum_col.slice(skip, usize::MAX);
+        mean_col = mean_col.slice(skip, usize::MAX);
+    }
+
+    let count_series = count_col
+        .as_materialized_series()
+        .cast(&DataType::Float64)?;
+    let sum_series = sum_col.as_materialized_series().cast(&DataType::Float64)?;
+    let mean_series = mean_col.as_materialized_series().cast(&DataType::Float64)?;
+
+    let counts = count_series.f64().context("count as f64")?;
+    let sums = sum_series.f64().context("sum as f64")?;
+
+    // Weighted mean: sum(sum) / sum(count)
+    let total_count: f64 = counts.sum().unwrap_or(0.0);
+    let total_sum: f64 = sums.sum().unwrap_or(0.0);
+    let mean = if total_count > 0.0 {
+        total_sum / total_count
+    } else {
+        0.0
+    };
+
+    // Std is computed from per-interval means (an approximation)
+    let std = mean_series.std(0).unwrap_or(0.0);
+
+    // Percentiles are over per-interval means (see doc comment for limitations)
+    let sorted_means = mean_series.f64()?.sort(false);
+    let p50 = round_to_n_dp(sorted_percentile(&sorted_means, 0.50), 6);
+    let p95 = round_to_n_dp(sorted_percentile(&sorted_means, 0.95), 6);
+    let p99 = round_to_n_dp(sorted_percentile(&sorted_means, 0.99), 6);
+
+    // Trend: weighted mean per window = sum(sum)/sum(count) for each window
+    let trend = frame
+        .clone()
+        .lazy()
+        .select([
+            col("time"),
+            col("count").cast(DataType::Float64),
+            col("sum").cast(DataType::Float64),
+        ])
+        .filter(col("time").is_not_null())
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([
+            col("sum").sum().alias("window_sum"),
+            col("count").sum().alias("window_count"),
+        ])
+        .with_column((col("window_sum") / col("window_count")).alias("window_mean"))
+        .collect()
+        .context("Windowed mean for aggregated data")?
+        .column("window_mean")?
+        .f64()?
+        .iter()
+        .filter_map(|v| v.map(|v| round_to_n_dp(v, 6)))
+        .collect_vec();
+
+    Ok(StandardTimingsStats {
+        mean: round_to_n_dp(mean, 6),
+        std: round_to_n_dp(std, 6),
+        p50,
+        p95,
+        p99,
+        trend: Float64Trend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
+    })
+}
+
 pub(crate) fn partitioned_timing_stats(
     frame: DataFrame,
     column: &str,

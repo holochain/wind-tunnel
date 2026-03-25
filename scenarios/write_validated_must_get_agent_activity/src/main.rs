@@ -69,10 +69,12 @@ fn agent_behaviour_write(
     ctx.get_mut().scenario_values.batch_count += 1;
 
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("entry_created_count")
-        .with_tag("agent", agent_pub_key)
-        .with_tag("behaviour", ctx.assigned_behaviour().to_string())
-        .with_field("value", ctx.get().scenario_values.batch_count * BATCH_SIZE);
+    let metric = ReportMetric::new(
+        "entry_created_count",
+        (ctx.get().scenario_values.batch_count * BATCH_SIZE) as f64,
+    )
+    .with_tag("agent", agent_pub_key)
+    .with_tag("behaviour", ctx.assigned_behaviour().to_string());
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     std::thread::sleep(std::time::Duration::from_millis(
@@ -195,12 +197,11 @@ fn agent_behaviour_must_get_agent_activity(
             batch_chain_top.batch_num,
         );
         ctx.get_mut().scenario_values.retrieval_errors_count += 1;
-        let metric = ReportMetric::new("retrieval_error_count")
-            .with_tag("agent", agent_pub_key.clone())
-            .with_field(
-                "value",
-                ctx.get_mut().scenario_values.retrieval_errors_count,
-            );
+        let metric = ReportMetric::new(
+            "retrieval_error_count",
+            ctx.get_mut().scenario_values.retrieval_errors_count as f64,
+        )
+        .with_tag("agent", agent_pub_key.clone());
         reporter.add_custom(metric);
 
         std::thread::sleep(std::time::Duration::from_secs(1));
@@ -220,16 +221,14 @@ fn agent_behaviour_must_get_agent_activity(
     let delta_s = (now.as_millis() - batch_chain_top.timestamp.as_millis()) as f64 / 1e3;
 
     reporter.add_custom(
-        ReportMetric::new("chain_batch_delay")
+        ReportMetric::new("chain_batch_delay", delta_s)
             .with_tag("agent", agent_pub_key.clone())
-            .with_tag("write_agent", write_peer.to_string())
-            .with_field("value", delta_s),
+            .with_tag("write_agent", write_peer.to_string()),
     );
     reporter.add_custom(
-        ReportMetric::new("chain_len")
+        ReportMetric::new("chain_len", batch_chain_top.chain_len as f64)
             .with_tag("agent", agent_pub_key)
-            .with_tag("write_agent", write_peer.to_string())
-            .with_field("value", batch_chain_top.chain_len as f64),
+            .with_tag("write_agent", write_peer.to_string()),
     );
 
     // Increase the last successfully fetched batch counter by one

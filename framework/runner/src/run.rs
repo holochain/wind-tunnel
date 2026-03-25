@@ -14,7 +14,7 @@ use crate::{
 };
 use anyhow::Context;
 use log::debug;
-use wind_tunnel_core::prelude::{AgentBailError, ShutdownHandle, ShutdownSignalError};
+use wind_tunnel_core::prelude::{AgentBailError, ShutdownSignalError};
 use wind_tunnel_instruments::ReportConfig;
 use wind_tunnel_summary_model::{RunSummaryInitArgs, append_run_summary};
 
@@ -65,12 +65,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let runtime = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
 
     let shutdown_handle = start_shutdown_listener(&runtime)?;
-    let report_shutdown_handle = ShutdownHandle::default();
-
     let reporter = {
-        let _h = runtime.handle().enter();
         let mut report_config =
-            ReportConfig::new(definition.run_id.clone(), definition.name.clone());
+            ReportConfig::new(definition.run_id.clone(), definition.name.clone())
+                .with_metrics_interval(Duration::from_secs(definition.metrics_interval_s));
 
         match definition.reporter {
             ReporterOpt::InMemory => {
@@ -91,9 +89,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             }
         }
 
-        Arc::new(
-            report_config.init_reporter(runtime.handle(), report_shutdown_handle.new_listener())?,
-        )
+        Arc::new(report_config.init_reporter()?)
     };
     let executor = Arc::new(Executor::new(runtime, shutdown_handle.clone()));
     let mut runner_context = RunnerContext::new(
@@ -248,10 +244,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         }
     }
 
-    // Manually shutdown the reporting once all the teardown steps are complete, this doesn't
-    // respond to Ctrl+C like the user-provided code does.
-    report_shutdown_handle.shutdown();
-    // Then wait for the reporting to finish
+    // Shutdown metrics reporting — this triggers a final flush of any buffered metrics
     runner_context_for_teardown.reporter().finalize();
 
     summary.set_peer_end_count(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire));

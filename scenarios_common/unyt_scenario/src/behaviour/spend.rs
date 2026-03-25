@@ -31,9 +31,11 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 "Network initialized for agent {}",
                 ctx.get().cell_id().agent_pubkey()
             );
-            let mut metric = ReportMetric::new("global_definition_propagation_time")
-                .with_field("at", session_started_at.elapsed().as_secs())
-                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string());
+            let mut metric = ReportMetric::new(
+                "global_definition_propagation_time",
+                session_started_at.elapsed().as_secs() as f64,
+            )
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string());
             if let Some(tag) = arc_type {
                 metric = metric.with_tag("arc", tag.as_tag());
             }
@@ -79,11 +81,10 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             let published_at_us = tx.timestamp.as_micros() as u128;
             let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
             reporter.add_custom(
-                ReportMetric::new("sync_lag")
+                ReportMetric::new("sync_lag", lag_s)
                     .with_tag("agent", agent_key.clone())
                     .with_tag("arc", tag.as_tag())
-                    .with_tag("tx_type", "commitment")
-                    .with_field("value", lag_s),
+                    .with_tag("tx_type", "commitment"),
             );
             ctx.get_mut()
                 .scenario_values

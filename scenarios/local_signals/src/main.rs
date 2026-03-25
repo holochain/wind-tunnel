@@ -52,13 +52,11 @@ fn agent_behaviour(
                 // meaningful drain time to report.
                 if let Some(recv_start_instant) = *recv_start.lock().unwrap() {
                     let recv_elapsed_s = recv_start_instant.elapsed().as_secs_f64();
-                    let metric =
-                        ReportMetric::new("signal_batch_recv").with_field("value", recv_elapsed_s);
+                    let metric = ReportMetric::new("signal_batch_recv", recv_elapsed_s);
                     reporter.clone().add_custom(metric);
                 }
 
-                let metric = ReportMetric::new("signal_success_ratio")
-                    .with_field("value", count as f32 / 10_000.0);
+                let metric = ReportMetric::new("signal_success_ratio", count as f64 / 10_000.0);
                 reporter.clone().add_custom(metric);
             }
         }),
@@ -70,7 +68,7 @@ fn agent_behaviour(
     *recv_start.lock().unwrap() = Some(Instant::now());
 
     // Write send metric immediately after zome call
-    let metric = ReportMetric::new("signal_batch_send").with_field("value", send_elapsed_s);
+    let metric = ReportMetric::new("signal_batch_send", send_elapsed_s);
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     ctx.runner_context().executor().execute_in_place({

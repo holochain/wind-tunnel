@@ -197,9 +197,8 @@ impl WtChatter {
         }
 
         self.reporter.add_custom(
-            ReportMetric::new("said_messages")
-                .with_tag("agent_id", state.agent.agent().to_string())
-                .with_field("num_messages", message_ids.len() as u32),
+            ReportMetric::new("said_messages", message_ids.len() as f64)
+                .with_tag("agent_id", state.agent.agent().to_string()),
         );
 
         Ok(message_ids)
@@ -212,16 +211,13 @@ mod tests {
     use kitsune2_bootstrap_srv::{BootstrapSrv, Config};
     use rustls::crypto::{self, CryptoProvider};
     use std::time::{Duration, Instant};
-    use wind_tunnel_core::prelude::ShutdownHandle;
     use wind_tunnel_instruments::{ReportConfig, Reporter};
 
     pub(crate) fn test_reporter() -> Arc<Reporter> {
-        let runtime = tokio::runtime::Handle::current();
-        let shutdown_listener = ShutdownHandle::new().new_listener();
         Arc::new(
             ReportConfig::new("".to_string(), "".to_string())
                 .enable_in_memory()
-                .init_reporter(&runtime, shutdown_listener)
+                .init_reporter()
                 .unwrap(),
         )
     }

@@ -27,6 +27,7 @@ fn sample_cli_cfg() -> WindTunnelScenarioCli {
         no_progress: true,
         reporter: ReporterOpt::Noop,
         run_id: None,
+        metrics_interval: 10,
     }
 }
 

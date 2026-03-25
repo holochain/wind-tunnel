@@ -61,6 +61,12 @@ pub struct WindTunnelKitsuneScenarioCli {
     /// If not set, a random ID is used.
     #[arg(long, short)]
     pub run_id: Option<String>,
+
+    /// The interval in seconds at which metrics are flushed to the output file.
+    ///
+    /// Only applies when using the influx-file reporter. Defaults to 10 seconds.
+    #[arg(long, default_value = "10")]
+    pub metrics_interval: u64,
 }
 
 impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
@@ -79,6 +85,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
             no_progress: self.no_progress,
             reporter: self.reporter,
             run_id: self.run_id,
+            metrics_interval: self.metrics_interval,
         })
     }
 }

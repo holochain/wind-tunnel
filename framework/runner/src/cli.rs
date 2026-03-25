@@ -49,6 +49,12 @@ pub struct WindTunnelScenarioCli {
     /// If not set, a random ID is used.
     #[arg(long, short)]
     pub run_id: Option<String>,
+
+    /// The interval in seconds at which metrics are flushed to the output file.
+    ///
+    /// Only applies when using the influx-file reporter. Defaults to 10 seconds.
+    #[arg(long, default_value = "10")]
+    pub metrics_interval: u64,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]

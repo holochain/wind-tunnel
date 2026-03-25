@@ -30,10 +30,12 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 ctx.get().cell_id().agent_pubkey()
             );
             reporter.add_custom(
-                ReportMetric::new("global_definition_propagation_time")
-                    .with_field("at", session_started_at.elapsed().as_secs())
-                    .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
-                    .with_tag("arc", arc_type.as_tag()),
+                ReportMetric::new(
+                    "global_definition_propagation_time",
+                    session_started_at.elapsed().as_secs() as f64,
+                )
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+                .with_tag("arc", arc_type.as_tag()),
             );
             ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {
@@ -68,10 +70,9 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
 
         reporter.add_custom(
-            ReportMetric::new("sync_lag")
+            ReportMetric::new("sync_lag", lag_s)
                 .with_tag("agent", agent_pub_key.clone())
-                .with_tag("arc", arc_type.as_tag())
-                .with_field("value", lag_s),
+                .with_tag("arc", arc_type.as_tag()),
         );
 
         ctx.get_mut()
@@ -82,13 +83,12 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
 
     // Report total discovered items
     reporter.add_custom(
-        ReportMetric::new("recv_count")
-            .with_tag("agent", agent_pub_key)
-            .with_tag("arc", arc_type.as_tag())
-            .with_field(
-                "value",
-                ctx.get().scenario_values.seen_templates().len() as f64,
-            ),
+        ReportMetric::new(
+            "recv_count",
+            ctx.get().scenario_values.seen_templates().len() as f64,
+        )
+        .with_tag("agent", agent_pub_key)
+        .with_tag("arc", arc_type.as_tag()),
     );
 
     // Throttle to avoid overwhelming

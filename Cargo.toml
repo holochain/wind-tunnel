@@ -106,7 +106,11 @@ parking_lot = "0.12.1"
 log = "0.4.20"
 env_logger = "0.11.2"
 derive_more = { version = "2", features = ["error", "display", "debug"] }
-opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
+opentelemetry = { version = "0.31", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.31", features = [
+  "metrics",
+  "experimental_metrics_custom_reader",
+] }
 toml = "0.8.10"
 serde = "1"
 serde_yaml = "0.9"
@@ -121,7 +125,7 @@ indicatif = "0.17.8"
 influxdb = { version = "0.7.3-beta.1", package = "ts_influxdb", features = [
   "reqwest-client-native-tls-vendored",
 ] }
-influxive-core = "0.0.2-alpha.1"
+dashmap = "6"
 nanoid = "0.4.0"
 which = "8.0"
 rand = "0.9"

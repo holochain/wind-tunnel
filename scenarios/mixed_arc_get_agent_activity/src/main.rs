@@ -70,9 +70,8 @@ fn record_open_connections_if_necessary(
             .executor()
             .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-        let metric = ReportMetric::new("open_connections")
-            .with_tag("behaviour", ctx.assigned_behaviour().to_string())
-            .with_field("value", network_stats.connections.len() as u32);
+        let metric = ReportMetric::new("open_connections", network_stats.connections.len() as f64)
+            .with_tag("behaviour", ctx.assigned_behaviour().to_string());
         ctx.runner_context().reporter().clone().add_custom(metric);
 
         ctx.get_mut().scenario_values.open_connections_last_recorded = Some(now);
@@ -96,10 +95,12 @@ fn agent_behaviour_write(
     ctx.get_mut().scenario_values.entries_created_count += 1;
 
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("entry_created_count")
-        .with_tag("agent", agent_pub_key)
-        .with_tag("behaviour", ctx.assigned_behaviour().to_string())
-        .with_field("value", ctx.get().scenario_values.entries_created_count);
+    let metric = ReportMetric::new(
+        "entry_created_count",
+        ctx.get().scenario_values.entries_created_count as f64,
+    )
+    .with_tag("agent", agent_pub_key)
+    .with_tag("behaviour", ctx.assigned_behaviour().to_string());
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
@@ -143,16 +144,14 @@ fn agent_behaviour_get_agent_activity(
                         (now as f64 - previous_observed_chain_head.timestamp_micros as f64) / 1e6;
                     let time_delta_per_action_sequence_s = time_delta_s / n_jump as f64;
                     reporter.add_custom(
-                        ReportMetric::new("chain_head_delay")
-                            .with_tag("agent", agent_pub_key.clone())
-                            .with_field("value", time_delta_per_action_sequence_s),
+                        ReportMetric::new("chain_head_delay", time_delta_per_action_sequence_s)
+                            .with_tag("agent", agent_pub_key.clone()),
                     );
 
                     reporter.add_custom(
-                        ReportMetric::new("highest_observed_action_seq")
+                        ReportMetric::new("highest_observed_action_seq", highest_observed as f64)
                             .with_tag("agent", agent_pub_key)
-                            .with_tag("write_agent", write_peer.to_string())
-                            .with_field("value", highest_observed),
+                            .with_tag("write_agent", write_peer.to_string()),
                     );
 
                     // Set new observed chain head
@@ -163,9 +162,11 @@ fn agent_behaviour_get_agent_activity(
                 }
             } else {
                 ctx.get_mut().scenario_values.retrieval_errors_count += 1;
-                let metric = ReportMetric::new("retrieval_error_count")
-                    .with_tag("agent", agent_pub_key.clone())
-                    .with_field("value", ctx.get().scenario_values.retrieval_errors_count);
+                let metric = ReportMetric::new(
+                    "retrieval_error_count",
+                    ctx.get().scenario_values.retrieval_errors_count as f64,
+                )
+                .with_tag("agent", agent_pub_key.clone());
                 reporter.add_custom(metric);
             }
         }

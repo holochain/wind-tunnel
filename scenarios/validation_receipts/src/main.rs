@@ -156,10 +156,12 @@ fn wait_for_receipts_for_action(
             // and mark it complete
             if set.receipts_complete && !*op_complete {
                 reporter.add_custom(
-                    ReportMetric::new("validation_receipts_complete_time")
-                        .with_tag("op_type", set.op_type.clone())
-                        .with_tag("agent", agent.clone())
-                        .with_field("value", created_at.elapsed().as_secs_f64()),
+                    ReportMetric::new(
+                        "validation_receipts_complete_time",
+                        created_at.elapsed().as_secs_f64(),
+                    )
+                    .with_tag("op_type", set.op_type.clone())
+                    .with_tag("agent", agent.clone()),
                 );
                 *op_complete = true;
                 // if we are not waiting for all, break out

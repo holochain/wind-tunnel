@@ -117,9 +117,11 @@ fn agent_setup(
         let reporter = ctx.runner_context().reporter();
         let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
         reporter.add_custom(
-            ReportMetric::new("startup_count")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key)
-                .with_field("value", ctx.get().scenario_values.startup_count),
+            ReportMetric::new(
+                "startup_count",
+                ctx.get().scenario_values.startup_count as f64,
+            )
+            .with_tag("get_agent_activity_volatile_agent", agent_pub_key),
         );
     }
 
@@ -178,9 +180,8 @@ fn agent_behaviour_get_agent_activity_volatile(
                 .as_micros(),
         ) as u64;
         reporter.add_custom(
-            ReportMetric::new("on_duration_s")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
-                .with_field("value", last_running_time_micros as f64 / 1e6_f64),
+            ReportMetric::new("on_duration_s", last_running_time_micros as f64 / 1e6_f64)
+                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone()),
         );
 
         // Report total running time
@@ -188,18 +189,16 @@ fn agent_behaviour_get_agent_activity_volatile(
             ctx.get().scenario_values.total_running_time_micros + last_running_time_micros;
         let reached_target_arc = has_reached_target_arc(ctx)? as u8;
         reporter.add_custom(
-            ReportMetric::new("total_on_duration_s")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
-                .with_tag("reached_target_arc", reached_target_arc)
-                .with_field(
-                    "value",
-                    ctx.get().scenario_values.total_running_time_micros / 1_000_000,
-                ),
+            ReportMetric::new(
+                "total_on_duration_s",
+                (ctx.get().scenario_values.total_running_time_micros / 1_000_000) as f64,
+            )
+            .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
+            .with_tag("reached_target_arc", reached_target_arc.to_string()),
         );
         reporter.add_custom(
-            ReportMetric::new("reached_target_arc")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
-                .with_field("value", reached_target_arc),
+            ReportMetric::new("reached_target_arc", reached_target_arc as f64)
+                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone()),
         );
 
         // Stop the conductor
@@ -208,9 +207,11 @@ fn agent_behaviour_get_agent_activity_volatile(
         // Report the number of shutdowns
         ctx.get_mut().scenario_values.shutdown_count += 1;
         reporter.add_custom(
-            ReportMetric::new("shutdown_count")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
-                .with_field("value", ctx.get().scenario_values.shutdown_count),
+            ReportMetric::new(
+                "shutdown_count",
+                ctx.get().scenario_values.shutdown_count as f64,
+            )
+            .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone()),
         );
 
         // Sleep for the full duration that conductor should remain off
@@ -224,9 +225,11 @@ fn agent_behaviour_get_agent_activity_volatile(
 
         // Report startup
         reporter.add_custom(
-            ReportMetric::new("startup_count")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone())
-                .with_field("value", ctx.get().scenario_values.startup_count),
+            ReportMetric::new(
+                "startup_count",
+                ctx.get().scenario_values.startup_count as f64,
+            )
+            .with_tag("get_agent_activity_volatile_agent", agent_pub_key.clone()),
         );
 
         // Report last off time
@@ -238,9 +241,8 @@ fn agent_behaviour_get_agent_activity_volatile(
                 .as_micros(),
         ) as f64;
         reporter.add_custom(
-            ReportMetric::new("off_duration_s")
-                .with_tag("get_agent_activity_volatile_agent", agent_pub_key)
-                .with_field("value", last_off_time_micros / 1e6_f64),
+            ReportMetric::new("off_duration_s", last_off_time_micros / 1e6_f64)
+                .with_tag("get_agent_activity_volatile_agent", agent_pub_key),
         );
 
         // Wait for the minimum agents
@@ -263,13 +265,12 @@ fn agent_behaviour_get_agent_activity_volatile(
 
             let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
             reporter.add_custom(
-                ReportMetric::new("highest_observed_action_seq")
-                    .with_tag("get_agent_activity_volatile_agent", agent_pub_key)
-                    .with_tag("write_agent", write_peer.to_string())
-                    .with_field(
-                        "value",
-                        activity.highest_observed.map_or(0, |v| v.action_seq),
-                    ),
+                ReportMetric::new(
+                    "highest_observed_action_seq",
+                    activity.highest_observed.map_or(0, |v| v.action_seq) as f64,
+                )
+                .with_tag("get_agent_activity_volatile_agent", agent_pub_key)
+                .with_tag("write_agent", write_peer.to_string()),
             );
         }
         _ => {

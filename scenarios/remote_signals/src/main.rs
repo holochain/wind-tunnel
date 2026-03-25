@@ -80,10 +80,10 @@ fn agent_setup(
                                 let receive_time_s =
                                     Timestamp::now().as_micros() as f64 / 1_000_000.0;
 
-                                reporter.add_custom(
-                                    ReportMetric::new("remote_signal_round_trip")
-                                        .with_field("value", receive_time_s - dispatch_time_s),
-                                );
+                                reporter.add_custom(ReportMetric::new(
+                                    "remote_signal_round_trip",
+                                    receive_time_s - dispatch_time_s,
+                                ));
                             }
                         }
                     })
@@ -125,8 +125,10 @@ fn agent_behaviour(
     if timeout_count > 0 {
         ctx.get_mut().scenario_values.cumulative_timeout_count += timeout_count as u32;
         let cumulative = ctx.get().scenario_values.cumulative_timeout_count;
-        reporter
-            .add_custom(ReportMetric::new("remote_signal_timeout").with_field("value", cumulative));
+        reporter.add_custom(ReportMetric::new(
+            "remote_signal_timeout",
+            cumulative as f64,
+        ));
     }
 
     let new_peers = match next_remote_signal_peer {

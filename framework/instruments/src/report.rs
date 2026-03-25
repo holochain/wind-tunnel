@@ -1,72 +1,62 @@
 mod in_memory_reporter;
 mod in_memory_with_custom_metrics_reporter;
-mod influx_file_reporter;
-mod influx_reporter_base;
 
 use crate::OperationRecord;
-use influxive_core::{Metric, StringType};
-use std::ops::Deref;
 
 pub use in_memory_reporter::InMemoryReporter;
 pub use in_memory_with_custom_metrics_reporter::InMemoryWithCustomMetricsReporter;
-pub use influx_file_reporter::InfluxFileReportCollector;
 
-/// A simple, opinionated, newtype for the influxive_core::Metric type.
+/// The kind of custom metric being recorded.
+#[derive(Debug, Clone, Copy, Default)]
+pub enum MetricKind {
+    /// A point-in-time measurement (e.g. open_connections, sync_lag).
+    #[default]
+    Gauge,
+    /// A monotonically increasing cumulative value (e.g. entry_created_count).
+    Counter,
+}
+
+/// A custom metric to be reported.
 ///
-/// The reported timestamp for the metric will be the current time when the metric is created.
-/// The name you choose will be transformed into `ws.instruments.custom.<name>`.
-pub struct ReportMetric(Metric);
+/// All custom metrics are emitted under the `wt.custom.<name>` namespace.
+#[derive(Debug, Clone)]
+pub struct ReportMetric {
+    pub(crate) name: String,
+    pub(crate) value: f64,
+    pub(crate) tags: Vec<(String, String)>,
+    pub(crate) kind: MetricKind,
+}
 
 impl ReportMetric {
-    pub fn new(name: &str) -> Self {
-        Self(Metric::new(
-            std::time::SystemTime::now(),
-            format!("wt.custom.{name}"),
-        ))
-    }
-
-    pub fn with_field<N, V>(mut self, name: N, value: V) -> Self
-    where
-        N: Into<StringType>,
-        V: Into<influxive_core::DataType>,
-    {
-        self.0 = self.0.with_field(name, value);
-        self
-    }
-
-    pub fn with_tag<N, V>(mut self, name: N, value: V) -> Self
-    where
-        N: Into<StringType>,
-        V: Into<influxive_core::DataType>,
-    {
-        self.0 = self.0.with_tag(name, value);
-        self
-    }
-
-    pub(crate) fn into_inner(self) -> Metric {
-        self.0
-    }
-}
-
-// TODO temporary, prefer to do without multiple reporter implementations
-impl Clone for ReportMetric {
-    fn clone(&self) -> Self {
-        let mut new_inner = Metric::new(self.timestamp, self.name.clone());
-        for (k, v) in &self.fields {
-            new_inner = new_inner.with_field(k.clone(), v.clone());
+    /// Create a new gauge metric with the given name and value.
+    ///
+    /// The name will be prefixed with `wt.custom.` when emitted.
+    pub fn new(name: impl Into<String>, value: impl Into<f64>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+            tags: Vec::new(),
+            kind: MetricKind::Gauge,
         }
-        for (k, v) in &self.tags {
-            new_inner = new_inner.with_tag(k.clone(), v.clone());
-        }
-        Self(new_inner)
     }
-}
 
-impl Deref for ReportMetric {
-    type Target = Metric;
+    /// Create a new counter metric with the given name and value.
+    ///
+    /// Counters represent monotonically increasing cumulative values.
+    /// The name will be prefixed with `wt.custom.` when emitted.
+    pub fn counter(name: impl Into<String>, value: impl Into<f64>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+            tags: Vec::new(),
+            kind: MetricKind::Counter,
+        }
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    /// Add a tag to this metric.
+    pub fn with_tag(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.tags.push((key.into(), value.into()));
+        self
     }
 }
 

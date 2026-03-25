@@ -60,13 +60,12 @@ fn agent_behaviour_get_agent_activity(
 
             let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
             reporter.add_custom(
-                ReportMetric::new("highest_observed_action_seq")
-                    .with_tag("agent", agent_pub_key)
-                    .with_tag("write_agent", write_peer.to_string())
-                    .with_field(
-                        "value",
-                        activity.highest_observed.map_or(0, |v| v.action_seq),
-                    ),
+                ReportMetric::new(
+                    "highest_observed_action_seq",
+                    activity.highest_observed.map_or(0, |v| v.action_seq) as f64,
+                )
+                .with_tag("agent", agent_pub_key)
+                .with_tag("write_agent", write_peer.to_string()),
             );
         }
         _ => {

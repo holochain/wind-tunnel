@@ -43,9 +43,8 @@ fn agent_behaviour_zero(
         .executor()
         .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-    let metric = ReportMetric::new("open_connections")
-        .with_tag("arc", "zero")
-        .with_field("value", network_stats.connections.len() as u32);
+    let metric = ReportMetric::new("open_connections", network_stats.connections.len() as f64)
+        .with_tag("arc", "zero");
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     let _: ActionHash = call_zome(
@@ -61,10 +60,12 @@ fn agent_behaviour_zero(
 
     // Report number of timed entries created
     let agent_pub_key = ctx.get().cell_id().agent_pubkey().to_string();
-    let metric = ReportMetric::new("entry_created_count")
-        .with_tag("agent", agent_pub_key)
-        .with_tag("arc", "zero")
-        .with_field("value", ctx.get().scenario_values.sent_actions_count);
+    let metric = ReportMetric::new(
+        "entry_created_count",
+        ctx.get().scenario_values.sent_actions_count as f64,
+    )
+    .with_tag("agent", agent_pub_key)
+    .with_tag("arc", "zero");
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
@@ -94,18 +95,12 @@ fn agent_behaviour_full(
             .map_err(|e| anyhow!("Failed to deserialize TimedEntry: {}", e))?
             .unwrap();
 
-        let metric = ReportMetric::new("sync_lag");
-        let lag_s = (metric
-            .timestamp
-            .clone()
+        let now_us = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
-            .as_micros()
-            - timed_entry.created_at.as_micros() as u128) as f64
-            / 1e6;
-        let metric = metric
-            .with_tag("agent", agent_pub_key.clone())
-            .with_field("value", lag_s);
+            .as_micros();
+        let lag_s = (now_us - timed_entry.created_at.as_micros() as u128) as f64 / 1e6;
+        let metric = ReportMetric::new("sync_lag", lag_s).with_tag("agent", agent_pub_key.clone());
 
         reporter_handle.add_custom(metric);
 
@@ -115,9 +110,11 @@ fn agent_behaviour_full(
             .insert(new_record.action_address().clone());
     }
 
-    let metric = ReportMetric::new("recv_count")
-        .with_tag("agent", agent_pub_key)
-        .with_field("value", ctx.get().scenario_values.seen_actions.len() as f64);
+    let metric = ReportMetric::new(
+        "recv_count",
+        ctx.get().scenario_values.seen_actions.len() as f64,
+    )
+    .with_tag("agent", agent_pub_key);
     reporter_handle.add_custom(metric);
 
     // Report the number of open connections
@@ -127,9 +124,8 @@ fn agent_behaviour_full(
         .executor()
         .execute_in_place(async move { app_client.dump_network_stats().await })?;
 
-    let metric = ReportMetric::new("open_connections")
-        .with_tag("arc", "full")
-        .with_field("value", network_stats.connections.len() as u32);
+    let metric = ReportMetric::new("open_connections", network_stats.connections.len() as f64)
+        .with_tag("arc", "full");
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())

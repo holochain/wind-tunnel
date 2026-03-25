@@ -132,9 +132,8 @@ fn agent_behaviour_initiate(
                     let start = Instant::now();
                     let initiated = initiated.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     reporter.add_custom(
-                        ReportMetric::new("countersigning_session_initiated")
-                            .with_tag("agent", cell_id.agent_pubkey().to_string())
-                            .with_field("value", initiated as u64),
+                        ReportMetric::new("countersigning_session_initiated", initiated as f64)
+                            .with_tag("agent", cell_id.agent_pubkey().to_string()),
                     );
 
                     // Start a countersigning session with the next agent in the list.
@@ -182,16 +181,20 @@ fn agent_behaviour_initiate(
                             let initiated_success = initiated_success
                                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
-                                ReportMetric::new("countersigning_session_initiated_success")
-                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                    .with_tag("retries", retry_count as u64)
-                                    .with_field("value", (initiated_success + 1) as u64),
+                                ReportMetric::new(
+                                    "countersigning_session_initiated_success",
+                                    (initiated_success + 1) as f64,
+                                )
+                                .with_tag("agent", cell_id.agent_pubkey().to_string())
+                                .with_tag("retries", (retry_count as u64).to_string()),
                             );
                             reporter.add_custom(
-                                ReportMetric::new("countersigning_session_initiated_duration")
-                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                    .with_tag("failed", false)
-                                    .with_field("value", elapsed.as_secs_f64()),
+                                ReportMetric::new(
+                                    "countersigning_session_initiated_duration",
+                                    elapsed.as_secs_f64(),
+                                )
+                                .with_tag("agent", cell_id.agent_pubkey().to_string())
+                                .with_tag("failed", "false"),
                             );
                         }
                         Err(e) => {
@@ -204,15 +207,19 @@ fn agent_behaviour_initiate(
                             let initiated_failure = initiated_failure
                                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             reporter.add_custom(
-                                ReportMetric::new("countersigning_session_initiated_failure")
-                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                    .with_field("value", (initiated_failure + 1) as u64),
+                                ReportMetric::new(
+                                    "countersigning_session_initiated_failure",
+                                    (initiated_failure + 1) as f64,
+                                )
+                                .with_tag("agent", cell_id.agent_pubkey().to_string()),
                             );
                             reporter.add_custom(
-                                ReportMetric::new("countersigning_session_initiated_duration")
-                                    .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                    .with_tag("failed", true)
-                                    .with_field("value", elapsed.as_secs_f64()),
+                                ReportMetric::new(
+                                    "countersigning_session_initiated_duration",
+                                    elapsed.as_secs_f64(),
+                                )
+                                .with_tag("agent", cell_id.agent_pubkey().to_string())
+                                .with_tag("failed", "true"),
                             );
                         }
                     }
@@ -345,9 +352,8 @@ fn agent_behaviour_participate(
                 let start = Instant::now();
                 let accepted = accepted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 reporter.add_custom(
-                    ReportMetric::new("countersigning_session_accepted")
-                        .with_tag("agent", cell_id.agent_pubkey().to_string())
-                        .with_field("value", accepted as u64),
+                    ReportMetric::new("countersigning_session_accepted", accepted as f64)
+                        .with_tag("agent", cell_id.agent_pubkey().to_string()),
                 );
 
                 // Figure out the session end time, so we can stop waiting for the session to complete when
@@ -365,16 +371,14 @@ fn agent_behaviour_participate(
 
                         let accepted_success = accepted_success.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_success")
+                            ReportMetric::new("countersigning_session_accepted_success", (accepted_success + 1) as f64)
                                 .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                .with_tag("retries", retry_count as u64)
-                                .with_field("value", (accepted_success + 1) as u64),
+                                .with_tag("retries", (retry_count as u64).to_string()),
                         );
                         reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_duration")
+                            ReportMetric::new("countersigning_session_accepted_duration", elapsed.as_secs_f64())
                                 .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                .with_tag("failed", false)
-                                .with_field("value", elapsed.as_secs_f64()),
+                                .with_tag("failed", "false"),
                         );
                     },
                     Err(e) => {
@@ -387,15 +391,13 @@ fn agent_behaviour_participate(
 
                         let accepted_failure = accepted_failure.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_failure")
-                                .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                .with_field("value", (accepted_failure + 1) as u64),
+                            ReportMetric::new("countersigning_session_accepted_failure", (accepted_failure + 1) as f64)
+                                .with_tag("agent", cell_id.agent_pubkey().to_string()),
                         );
                         reporter.add_custom(
-                            ReportMetric::new("countersigning_session_accepted_duration")
+                            ReportMetric::new("countersigning_session_accepted_duration", elapsed.as_secs_f64())
                                 .with_tag("agent", cell_id.agent_pubkey().to_string())
-                                .with_tag("failed", true)
-                                .with_field("value", elapsed.as_secs_f64()),
+                                .with_tag("failed", "true"),
                         );
                     }
                 };

@@ -58,6 +58,7 @@ pub struct ScenarioDefinition<RV: UserValuesConstraint, V: UserValuesConstraint>
     pub(crate) teardown_agent_fn: Option<AgentHookMut<RV, V>>,
     pub(crate) teardown_fn: Option<GlobalHook<RV>>,
     pub(crate) run_id: String,
+    pub(crate) metrics_interval_s: u64,
 }
 
 impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinition<RV, V> {
@@ -238,6 +239,7 @@ impl<RV: UserValuesConstraint, V: UserValuesConstraint> ScenarioDefinitionBuilde
             teardown_agent_fn: self.teardown_agent_fn,
             teardown_fn: self.teardown_fn,
             run_id,
+            metrics_interval_s: self.cli.metrics_interval,
         })
     }
 }
@@ -289,6 +291,7 @@ mod tests {
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
                 run_id: None,
+                metrics_interval: 10,
             },
             5,
         )
@@ -311,6 +314,7 @@ mod tests {
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
                 run_id: None,
+                metrics_interval: 10,
             },
             5,
         )
@@ -333,6 +337,7 @@ mod tests {
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
                 run_id: None,
+                metrics_interval: 10,
             },
             5,
         )
@@ -357,6 +362,7 @@ mod tests {
                 no_progress: true,
                 reporter: ReporterOpt::Noop,
                 run_id: None,
+                metrics_interval: 10,
             },
             5,
         );

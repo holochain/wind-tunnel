@@ -45,14 +45,12 @@ fn agent_behaviour(
             let receive_time_s = response.value.as_micros() as f64 / 1e6;
 
             reporter.add_custom(
-                ReportMetric::new("remote_call_dispatch")
-                    .with_tag("agent", agent_pub_key.to_string())
-                    .with_field("value", receive_time_s - dispatch_time_s),
+                ReportMetric::new("remote_call_dispatch", receive_time_s - dispatch_time_s)
+                    .with_tag("agent", agent_pub_key.to_string()),
             );
             reporter.add_custom(
-                ReportMetric::new("remote_call_round_trip")
-                    .with_tag("agent", agent_pub_key.to_string())
-                    .with_field("value", round_trip_time_s.as_secs_f64()),
+                ReportMetric::new("remote_call_round_trip", round_trip_time_s.as_secs_f64())
+                    .with_tag("agent", agent_pub_key.to_string()),
             );
 
             // Add no new agents, that should only happen when we exhaust the list.
