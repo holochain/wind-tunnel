@@ -70,7 +70,7 @@ pub struct MemMetrics {
     /// then the maximum across all hosts is reported. Hosts with no swap
     /// (swap_total = 0) are excluded. Zero if no swap is configured anywhere.
     pub swap_used_percent: f64,
-    /// Memory growth rate in MB/s (positive = growing, for leak detection)
+    /// Memory growth rate in MiB/s (positive = growing, for leak detection)
     pub growth_rate_mb_per_sec: f64,
 }
 
@@ -115,12 +115,12 @@ pub struct PrimaryNetStats {
 /// Disk metrics model
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DiskMetrics {
-    /// Combined throughput of all disk devices in MB/s
+    /// Combined throughput of all disk devices in MiB/s
     pub io_throughput_mbps: DiskThroughput,
     pub space_utilization: BTreeMap<String, DiskSpace>,
 }
 
-/// Disk I/O throughput in MB/s
+/// Disk I/O throughput in MiB/s
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DiskThroughput {
     pub read: f64,

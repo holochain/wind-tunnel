@@ -193,7 +193,7 @@ This template displays system-level performance metrics collected during the sce
         {{ template "scenario_metric" (dict
             "name" "Memory growth rate"
             "description" "Rate of memory growth over time"
-            "content" (tmpl.Exec "scalar" (dict "label" "growth" "value" (printf "%.2f" .growth_rate_mb_per_sec) "unit" "MB/s"))
+            "content" (tmpl.Exec "scalar" (dict "label" "growth" "value" (printf "%.2f" .growth_rate_mb_per_sec) "unit" "MiB/s"))
         ) }}
     {{ end }}
 
@@ -201,14 +201,14 @@ This template displays system-level performance metrics collected during the sce
         {{ with .io_throughput_mbps }}
             {{ template "scenario_metric" (dict
                 "name" "Disk read throughput"
-                "description" "Disk read throughput in MB/s"
-                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .read) "unit" "MB/s"))
+                "description" "Disk read throughput in MiB/s"
+                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .read) "unit" "MiB/s"))
             ) }}
 
             {{ template "scenario_metric" (dict
                 "name" "Disk write throughput"
-                "description" "Disk write throughput in MB/s"
-                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .write) "unit" "MB/s"))
+                "description" "Disk write throughput in MiB/s"
+                "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .write) "unit" "MiB/s"))
             ) }}
         {{ end }}
 
