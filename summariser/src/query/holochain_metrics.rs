@@ -1,11 +1,15 @@
+use std::collections::BTreeMap;
+
+use crate::analyze::{counter_stats, standard_timing_stats};
 use crate::frame::LoadError;
 use crate::model::{
     CounterStats, DbConnectionUseTimes, GaugeStats, HolochainMetrics, HolochainWorkflowKind,
-    P2pHandleRequestCounts, P2pHandleRequestDurations, P2pMetrics, P2pRequestCounts,
-    P2pRequestDurations, StandardTimingsStats, WorkflowDurations,
+    LairRequestDurations, P2pHandleRequestCounts, P2pHandleRequestDurations, P2pMetrics,
+    P2pRequestCounts, P2pRequestDurations, StandardTimingsStats, WorkflowDurations,
 };
-use crate::query::{query_count, query_counter, query_duration, query_gauge};
+use crate::query::{query_count, query_counter, query_duration, query_gauge, query_metrics};
 use anyhow::Context;
+use polars::prelude::*;
 use wind_tunnel_summary_model::RunSummary;
 
 /// Query all Holochain metrics for a run and return them as a single struct.
@@ -42,17 +46,38 @@ async fn query_holochain_metrics_inner(
         integration_delay,
         validation_attempts,
         workflow_duration,
-        db_connection_use_time,
-        write_txn_duration,
+        db_connection_use_duration,
+        db_write_txn_duration,
         lair_request_duration,
         p2p,
     ) = futures::join!(
         query_optional_duration(client, summary, "hc.cascade.duration.s", None),
         query_optional_counter(client, summary, "hc.cascade.fetch_error", None, "10s"),
-        query_optional_counter(client, summary, "hc.ribosome.wasm.usage", None, "10s"),
-        query_optional_duration(client, summary, "hc.ribosome.zome_call.duration.s", None),
-        query_optional_duration(client, summary, "hc.ribosome.wasm_call.duration.s", None),
-        query_optional_duration(client, summary, "hc.ribosome.host_fn_call.duration.s", None),
+        query_partitioned_counter(
+            client,
+            summary,
+            "hc.ribosome.wasm.usage",
+            &["zome", "fn"],
+            "10s"
+        ),
+        query_partitioned_duration(
+            client,
+            summary,
+            "hc.ribosome.zome_call.duration.s",
+            &["zome", "fn"]
+        ),
+        query_partitioned_duration(
+            client,
+            summary,
+            "hc.ribosome.wasm_call.duration.s",
+            &["zome", "fn"]
+        ),
+        query_partitioned_duration(
+            client,
+            summary,
+            "hc.ribosome.host_fn_call.duration.s",
+            &["host_fn"]
+        ),
         query_optional_counter(
             client,
             summary,
@@ -98,7 +123,7 @@ async fn query_holochain_metrics_inner(
         query_workflow_durations(client, summary),
         query_db_connection_use_times(client, summary),
         query_optional_duration(client, summary, "hc.db.write_txn.duration.s", None),
-        query_optional_duration(client, summary, "hc.keystore.lair_request.duration.s", None),
+        query_lair_request_durations(client, summary),
         query_p2p_metrics(client, summary),
     );
 
@@ -119,8 +144,9 @@ async fn query_holochain_metrics_inner(
         integration_delay: integration_delay.context("integration_delay")?,
         validation_attempts: validation_attempts.context("validation_attempts")?,
         workflow_duration: workflow_duration.context("workflow_duration")?,
-        db_connection_use_time: db_connection_use_time.context("db_connection_use_time")?,
-        write_txn_duration: write_txn_duration.context("write_txn_duration")?,
+        db_connection_use_duration: db_connection_use_duration
+            .context("db_connection_use_duration")?,
+        db_write_txn_duration: db_write_txn_duration.context("db_write_txn_duration")?,
         lair_request_duration: lair_request_duration.context("lair_request_duration")?,
         p2p: p2p.context("p2p")?,
     })
@@ -190,6 +216,192 @@ async fn query_optional_count(
             None => Err(e),
         },
     }
+}
+
+// ---------------------------------------------------------------------------
+// Partitioned query helpers — query with tag columns, then split by tag values
+// ---------------------------------------------------------------------------
+
+/// Build a composite key from the tag columns in a row, joined by `::`.
+fn composite_key(row: &[AnyValue]) -> String {
+    row.iter()
+        .map(|v| match v {
+            AnyValue::String(s) => s.to_string(),
+            AnyValue::StringOwned(s) => s.to_string(),
+            other => other.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("::")
+}
+
+/// Query a duration metric with tag columns included, then partition by unique
+/// tag combinations and compute `StandardTimingsStats` for each partition.
+///
+/// Returns `None` if no data exists. Keys are `"tag1::tag2"` for multi-tag
+/// partitions or just `"tag_value"` for single-tag partitions.
+async fn query_partitioned_duration(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    tag_columns: &[&str],
+) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+    let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
+        Ok(f) => f,
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => return Ok(None),
+            None => return Err(e),
+        },
+    };
+
+    partition_duration_stats(frame, tag_columns)
+}
+
+/// Query a counter metric with tag columns included, then partition by unique
+/// tag combinations and compute `CounterStats` for each partition.
+///
+/// Returns `None` if no data exists.
+async fn query_partitioned_counter(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    tag_columns: &[&str],
+    window_duration: &str,
+) -> anyhow::Result<Option<BTreeMap<String, CounterStats>>> {
+    let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
+        Ok(f) => f,
+        Err(e) => match e.downcast_ref::<LoadError>() {
+            Some(LoadError::NoSeriesInResult { .. }) => return Ok(None),
+            None => return Err(e),
+        },
+    };
+
+    partition_counter_stats(frame, tag_columns, window_duration)
+}
+
+/// Partition a DataFrame by tag columns and compute `StandardTimingsStats` per partition.
+fn partition_duration_stats(
+    frame: DataFrame,
+    tag_columns: &[&str],
+) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+    let unique_keys = unique_tag_combinations(&frame, tag_columns)?;
+    if unique_keys.is_empty() {
+        return Ok(None);
+    }
+
+    let mut map = BTreeMap::new();
+    for (key, filter_values) in &unique_keys {
+        let filtered = filter_by_tags(&frame, tag_columns, filter_values)?;
+        let stats = standard_timing_stats(filtered, "value", "10s", None)
+            .with_context(|| format!("Timing stats for partition {key:?}"))?;
+        map.insert(key.clone(), stats);
+    }
+    Ok(Some(map))
+}
+
+/// Partition a DataFrame by tag columns and compute `CounterStats` per partition.
+fn partition_counter_stats(
+    frame: DataFrame,
+    tag_columns: &[&str],
+    window_duration: &str,
+) -> anyhow::Result<Option<BTreeMap<String, CounterStats>>> {
+    let unique_keys = unique_tag_combinations(&frame, tag_columns)?;
+    if unique_keys.is_empty() {
+        return Ok(None);
+    }
+
+    let mut map = BTreeMap::new();
+    for (key, filter_values) in &unique_keys {
+        let filtered = filter_by_tags(&frame, tag_columns, filter_values)?;
+        let stats = counter_stats(filtered, "value", window_duration)
+            .with_context(|| format!("Counter stats for partition {key:?}"))?;
+        map.insert(key.clone(), stats);
+    }
+    Ok(Some(map))
+}
+
+/// Extract unique combinations of tag columns from a DataFrame.
+/// Returns a Vec of (composite_key, Vec<tag_values>) pairs.
+fn unique_tag_combinations(
+    frame: &DataFrame,
+    tag_columns: &[&str],
+) -> anyhow::Result<Vec<(String, Vec<String>)>> {
+    let tag_cols: Vec<&str> = tag_columns.to_vec();
+    let unique = frame
+        .clone()
+        .lazy()
+        .select(tag_cols.iter().map(|&c| col(c)).collect::<Vec<_>>())
+        .unique(None, UniqueKeepStrategy::First)
+        .collect()
+        .context("Unique tag combinations")?;
+
+    let mut result = Vec::new();
+    for row_idx in 0..unique.height() {
+        let row: Vec<AnyValue> = tag_cols
+            .iter()
+            .map(|&c| unique.column(c).unwrap().get(row_idx).unwrap())
+            .collect();
+        let key = composite_key(&row);
+        let values: Vec<String> = row
+            .iter()
+            .map(|v| match v {
+                AnyValue::String(s) => s.to_string(),
+                AnyValue::StringOwned(s) => s.to_string(),
+                other => other.to_string(),
+            })
+            .collect();
+        result.push((key, values));
+    }
+    Ok(result)
+}
+
+/// Filter a DataFrame to rows where tag columns match the given values.
+fn filter_by_tags(
+    frame: &DataFrame,
+    tag_columns: &[&str],
+    values: &[String],
+) -> anyhow::Result<DataFrame> {
+    let mut expr = lit(true);
+    for (col_name, val) in tag_columns.iter().zip(values.iter()) {
+        expr = expr.and(col(*col_name).eq(lit(val.as_str())));
+    }
+    frame
+        .clone()
+        .lazy()
+        .filter(expr)
+        .collect()
+        .context("Filter by tags")
+}
+
+// ---------------------------------------------------------------------------
+// Lair keystore request durations
+// ---------------------------------------------------------------------------
+
+async fn query_lair_request_durations(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+) -> anyhow::Result<Option<LairRequestDurations>> {
+    let m = "hc.keystore.lair_request.duration.s";
+    let (sign, shared_secret_encrypt, crypto_box_xsalsa) = futures::join!(
+        query_optional_duration(client, summary, m, Some(("operation", "sign"))),
+        query_optional_duration(
+            client,
+            summary,
+            m,
+            Some(("operation", "shared_secret_encrypt"))
+        ),
+        query_optional_duration(client, summary, m, Some(("operation", "crypto_box_xsalsa"))),
+    );
+
+    let d = LairRequestDurations {
+        sign: sign?,
+        shared_secret_encrypt: shared_secret_encrypt?,
+        crypto_box_xsalsa: crypto_box_xsalsa?,
+    };
+
+    if d.sign.is_none() && d.shared_secret_encrypt.is_none() && d.crypto_box_xsalsa.is_none() {
+        return Ok(None);
+    }
+    Ok(Some(d))
 }
 
 // ---------------------------------------------------------------------------

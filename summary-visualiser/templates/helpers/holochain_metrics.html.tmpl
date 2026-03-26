@@ -23,35 +23,43 @@ Each section uses (index . "key") for nil-safety with skip_serializing_none.
 
 {{/* === Ribosome === */}}
 {{ with (index . "wasm_usage") }}
-    {{ template "scenario_metric" (dict
-        "name" "WASM usage"
-        "description" "Metered usage count of the WASM ribosome."
-        "content" (tmpl.Exec "delta" .)
-    ) }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "WASM usage: '" $key "'")
+            "description" "Metered usage count of the WASM ribosome for this zome function."
+            "content" (tmpl.Exec "delta" $value)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ with (index . "zome_call_duration") }}
-    {{ template "scenario_metric" (dict
-        "name" "Zome call duration"
-        "description" "Duration of zome calls as measured by Holochain internally."
-        "content" (tmpl.Exec "timing_and_trend" .)
-    ) }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "Zome call duration: '" $key "'")
+            "description" "Duration of this zome call as measured by Holochain internally."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ with (index . "wasm_call_duration") }}
-    {{ template "scenario_metric" (dict
-        "name" "WASM call duration"
-        "description" "Duration of inner WASM calls, excluding Holochain overhead."
-        "content" (tmpl.Exec "timing_and_trend" .)
-    ) }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "WASM call duration: '" $key "'")
+            "description" "Duration of inner WASM calls for this function, excluding Holochain overhead."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ with (index . "host_fn_call_duration") }}
-    {{ template "scenario_metric" (dict
-        "name" "Host function call duration"
-        "description" "Duration of host function calls invoked from within WASM (aggregate)."
-        "content" (tmpl.Exec "timing_and_trend" .)
-    ) }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "Host function call duration: '" $key "'")
+            "description" "Duration of this host function call invoked from within WASM."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ with (index . "emit_signal_count") }}
@@ -98,7 +106,7 @@ Each section uses (index . "key") for nil-safety with skip_serializing_none.
 {{ with (index . "integrated_ops_count") }}
     {{ template "scenario_metric" (dict
         "name" "Integrated ops"
-        "description" "Count of DHT operations integrated across the run."
+        "description" "Count of DHT operations integrated since the conductor started. Resets on restart."
         "content" (tmpl.Exec "delta" .)
     ) }}
 {{ end }}
@@ -173,7 +181,7 @@ Each section uses (index . "key") for nil-safety with skip_serializing_none.
 {{ end }}
 
 {{/* === Database === */}}
-{{ with (index . "db_connection_use_time") }}
+{{ with (index . "db_connection_use_duration") }}
     {{ with (index . "authored") }}
         {{ template "scenario_metric" (dict
             "name" "Authored DB connection use time"
@@ -218,7 +226,7 @@ Each section uses (index . "key") for nil-safety with skip_serializing_none.
     {{ end }}
 {{ end }}
 
-{{ with (index . "write_txn_duration") }}
+{{ with (index . "db_write_txn_duration") }}
     {{ template "scenario_metric" (dict
         "name" "Write transaction duration"
         "description" "Duration of exclusive write transactions across all databases."
@@ -228,11 +236,27 @@ Each section uses (index . "key") for nil-safety with skip_serializing_none.
 
 {{/* === Keystore === */}}
 {{ with (index . "lair_request_duration") }}
-    {{ template "scenario_metric" (dict
-        "name" "Lair keystore request duration"
-        "description" "Duration of signing and encryption requests to the Lair keystore."
-        "content" (tmpl.Exec "timing_and_trend" .)
-    ) }}
+    {{ with (index . "sign") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: signing"
+            "description" "Duration of Ed25519 signing requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "shared_secret_encrypt") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: shared secret encryption"
+            "description" "Duration of shared-secret encryption requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "crypto_box_xsalsa") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: crypto_box"
+            "description" "Duration of XSalsa20-Poly1305 crypto_box requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{/* === P2P === */}}

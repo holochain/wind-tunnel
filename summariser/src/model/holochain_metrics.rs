@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
@@ -21,8 +23,12 @@ pub enum HolochainWorkflowKind {
 /// All fields are optional because not every metric is emitted in every scenario (e.g.
 /// countersigning workflows only run in countersigning scenarios). Fields that have no
 /// data in InfluxDB for a given run are serialized as absent (via `skip_serializing_none`).
-#[skip_serializing_none]
+///
+/// **Note on counter metrics:** All OpenTelemetry counters in Holochain start at zero when
+/// the conductor process starts. They do NOT persist across restarts. If the conductor
+/// restarts mid-run, counters reset to zero at that point.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct HolochainMetrics {
     // === Cascade ===
     /// Duration of cascade (get) operations inside Holochain (seconds)
@@ -31,20 +37,30 @@ pub struct HolochainMetrics {
     pub cascade_fetch_error_count: Option<CounterStats>,
 
     // === Ribosome ===
-    /// Total WASM execution count across the run
-    pub wasm_usage: Option<CounterStats>,
-    /// Duration of zome calls as measured by Holochain (seconds).
+    /// WASM execution count by zome function.
     ///
+    /// Keys are `"zome::fn"` strings where the `zome` is the zome name and `fn`
+    /// is the fn name that each call was tagged with.
+    ///
+    /// The set of keys is bounded by the application's zome functions, not by
+    /// the number of agents.
+    pub wasm_usage: Option<BTreeMap<String, CounterStats>>,
+    /// Duration of zome calls as measured by Holochain (seconds), by zome function.
+    ///
+    /// Keys are `"zome::fn"` strings where the `zome` is the zome name and `fn` is the
+    /// fn name that each call was tagged with.
     /// This is the Holochain-internal measurement of zome call time, complementary
     /// to wind-tunnel's own instrumented round-trip measurement.
-    pub zome_call_duration: Option<StandardTimingsStats>,
-    /// Duration of inner WASM calls (seconds), excluding Holochain overhead
-    pub wasm_call_duration: Option<StandardTimingsStats>,
-    /// Duration of host function calls invoked from within WASM (seconds).
+    pub zome_call_duration: Option<BTreeMap<String, StandardTimingsStats>>,
+    /// Duration of inner WASM calls (seconds) by zome function, excluding Holochain overhead.
     ///
-    /// Aggregated across all host functions; individual function breakdown is not
-    /// retained to limit output size.
-    pub host_fn_call_duration: Option<StandardTimingsStats>,
+    /// Keys are `"zome::fn"` strings.
+    pub wasm_call_duration: Option<BTreeMap<String, StandardTimingsStats>>,
+    /// Duration of host function calls invoked from within WASM (seconds), by host function.
+    ///
+    /// Keys are host function names (e.g. `"create"`, `"get"`, `"query"`, `"sign"`).
+    /// The set of keys is fixed by the Holochain host API.
+    pub host_fn_call_duration: Option<BTreeMap<String, StandardTimingsStats>>,
     /// Count of local signals emitted via the `emit_signal` host function
     pub emit_signal_count: Option<CounterStats>,
     /// Count of remote signals sent via the `send_remote_signal` host function
@@ -60,16 +76,26 @@ pub struct HolochainMetrics {
     pub uptime: Option<GaugeStats>,
     /// Count of signals dropped from the app WebSocket due to channel overload
     pub dropped_signal_count: Option<CounterStats>,
-    /// Count of DHT operations integrated across the run
+    /// Count of DHT operations integrated since the conductor started.
+    ///
+    /// This counter starts at zero each time the conductor process starts; it does
+    /// not initialize from the database. A conductor restart mid-run will cause the
+    /// counter to reset.
     pub integrated_ops_count: Option<CounterStats>,
     /// Delay between an op being stored and being integrated (seconds).
     ///
     /// High values indicate the validation -> integration pipeline is falling behind.
     pub integration_delay: Option<StandardTimingsStats>,
-    /// Number of validation attempts required per operation.
+    /// Number of validation attempts required per operation (count, not a duration).
     ///
-    /// Values consistently above 1 indicate validation retries, which may signal
-    /// dependency-ordering issues or transient failures.
+    /// Recorded as a `u64_histogram` of attempt counts. Each observation is the number
+    /// of times a single op had to be validated before it passed. Values consistently
+    /// above 1 indicate retries, which may signal dependency-ordering issues or
+    /// transient failures.
+    ///
+    /// Summarised using `StandardTimingsStats` which computes mean, std, percentiles,
+    /// and trend over the per-interval means — the same analysis applied to duration
+    /// histograms, but here the unit is "attempts" rather than seconds.
     pub validation_attempts: Option<StandardTimingsStats>,
 
     // === Workflows ===
@@ -78,13 +104,13 @@ pub struct HolochainMetrics {
 
     // === Database ===
     /// Time spent holding database connections, by database kind (seconds)
-    pub db_connection_use_time: Option<DbConnectionUseTimes>,
+    pub db_connection_use_duration: Option<DbConnectionUseTimes>,
     /// Duration of exclusive write transactions across all databases (seconds)
-    pub write_txn_duration: Option<StandardTimingsStats>,
+    pub db_write_txn_duration: Option<StandardTimingsStats>,
 
     // === Keystore ===
-    /// Duration of signing and encryption requests to the Lair keystore (seconds)
-    pub lair_request_duration: Option<StandardTimingsStats>,
+    /// Duration of requests to the Lair keystore, by operation type (seconds)
+    pub lair_request_duration: Option<LairRequestDurations>,
 
     // === P2P ===
     /// Holochain peer-to-peer network metrics
@@ -95,8 +121,8 @@ pub struct HolochainMetrics {
 ///
 /// Each field corresponds to one workflow consumer. Not all workflows run in every
 /// scenario, so all fields are optional.
-#[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct WorkflowDurations {
     /// Duration of system validation workflow executions (seconds)
     pub sys_validation: Option<StandardTimingsStats>,
@@ -115,8 +141,8 @@ pub struct WorkflowDurations {
 }
 
 /// Time spent holding database connections, by database kind (seconds).
-#[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct DbConnectionUseTimes {
     /// Authored database connection hold time (seconds)
     pub authored: Option<StandardTimingsStats>,
@@ -132,12 +158,28 @@ pub struct DbConnectionUseTimes {
     pub peer_meta_store: Option<StandardTimingsStats>,
 }
 
+/// Duration of Lair keystore requests by operation type (seconds).
+///
+/// Each field corresponds to a distinct cryptographic operation. Signing is typically
+/// the most performance-sensitive; encryption operations have different characteristics
+/// and would skew aggregate statistics if combined.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
+pub struct LairRequestDurations {
+    /// Duration of Ed25519 signing requests (seconds)
+    pub sign: Option<StandardTimingsStats>,
+    /// Duration of shared-secret encryption requests (seconds)
+    pub shared_secret_encrypt: Option<StandardTimingsStats>,
+    /// Duration of XSalsa20-Poly1305 crypto_box requests (seconds)
+    pub crypto_box_xsalsa: Option<StandardTimingsStats>,
+}
+
 /// Holochain peer-to-peer network metrics.
 ///
 /// Covers outgoing request round-trips, incoming request handling, and anomaly
 /// counters (ignored requests, received remote signals).
-#[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct P2pMetrics {
     /// Outgoing P2P request round-trip durations by request type
     pub request_duration: Option<P2pRequestDurations>,
@@ -154,8 +196,8 @@ pub struct P2pMetrics {
 }
 
 /// Outgoing P2P request round-trip duration by request type (seconds).
-#[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct P2pRequestDurations {
     /// Round-trip time for `get` requests (seconds)
     pub get: Option<StandardTimingsStats>,
@@ -193,8 +235,8 @@ pub struct P2pRequestCounts {
 }
 
 /// Incoming P2P request handling duration by message type (seconds).
-#[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[skip_serializing_none]
 pub struct P2pHandleRequestDurations {
     /// Time to handle incoming response messages (seconds)
     pub response: Option<StandardTimingsStats>,

@@ -100,22 +100,62 @@
         "window_duration": "10s"
       }
     },
+    "cascade_fetch_error_count": null,
     "wasm_usage": {
-      "count": 0,
-      "measurement_duration": {
-        "secs": 4,
-        "nanos": 938288765
+      "timed::created_timed_entry": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 4,
+          "nanos": 28544547
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
       },
-      "mean_rate_per_second": 0.0,
-      "std_rate_per_second": 0.0,
-      "p5_rate_per_second": 0.0,
-      "p95_rate_per_second": 0.0,
-      "peak_rate_per_second": 0.0,
-      "rate_trend": {
-        "trend": [],
-        "window_duration": ""
+      "timed::get_timed_entries_local": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 4,
+          "nanos": 16471389
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
+      },
+      "timed_integrity::entry_defs": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 4,
+          "nanos": 938288765
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
       }
     },
+    "zome_call_duration": null,
+    "wasm_call_duration": null,
+    "host_fn_call_duration": null,
+    "emit_signal_count": null,
+    "send_remote_signal_count": null,
     "post_commit_duration": {
       "mean": 0.000055,
       "std": 0.000019,
@@ -134,7 +174,31 @@
         "window_duration": "10s"
       }
     },
+    "uptime": null,
+    "dropped_signal_count": null,
+    "integrated_ops_count": null,
+    "integration_delay": null,
+    "validation_attempts": null,
     "workflow_duration": {
+      "sys_validation": {
+        "mean": 0.0085,
+        "std": 0.170857,
+        "p50": 0.002188,
+        "p95": 0.019052,
+        "p99": 0.030264,
+        "trend": {
+          "trend": [
+            0.000505,
+            0.000134,
+            0.005407,
+            0.03735,
+            0.005806,
+            0.002807,
+            0.002937
+          ],
+          "window_duration": "10s"
+        }
+      },
       "app_validation": {
         "mean": 0.00877,
         "std": 0.20765,
@@ -188,25 +252,6 @@
           "window_duration": "10s"
         }
       },
-      "sys_validation": {
-        "mean": 0.0085,
-        "std": 0.170857,
-        "p50": 0.002188,
-        "p95": 0.019052,
-        "p99": 0.030264,
-        "trend": {
-          "trend": [
-            0.000505,
-            0.000134,
-            0.005407,
-            0.03735,
-            0.005806,
-            0.002807,
-            0.002937
-          ],
-          "window_duration": "10s"
-        }
-      },
       "validation_receipt": {
         "mean": 0.013098,
         "std": 0.134151,
@@ -225,9 +270,11 @@
           ],
           "window_duration": "10s"
         }
-      }
+      },
+      "countersigning": null,
+      "witnessing": null
     },
-    "db_connection_use_time": {
+    "db_connection_use_duration": {
       "authored": {
         "mean": 0.000112,
         "std": 0.000239,
@@ -270,8 +317,13 @@
           ],
           "window_duration": "10s"
         }
-      }
+      },
+      "cache": null,
+      "wasm": null,
+      "peer_meta_store": null
     },
+    "db_write_txn_duration": null,
+    "lair_request_duration": null,
     "p2p": {
       "request_duration": {
         "get": {
@@ -289,6 +341,10 @@
             "window_duration": "10s"
           }
         },
+        "get_links": null,
+        "count_links": null,
+        "get_agent_activity": null,
+        "must_get_agent_activity": null,
         "send_validation_receipts": {
           "mean": 0.019213,
           "std": 0.06264,
@@ -305,7 +361,8 @@
             ],
             "window_duration": "10s"
           }
-        }
+        },
+        "call_remote": null
       },
       "request_count": {
         "get": 113,
@@ -334,6 +391,7 @@
             "window_duration": "10s"
           }
         },
+        "call_remote": null,
         "get": {
           "mean": 0.000234,
           "std": 0.000088,
@@ -349,6 +407,10 @@
             "window_duration": "10s"
           }
         },
+        "get_links": null,
+        "count_links": null,
+        "get_agent_activity": null,
+        "must_get_agent_activity": null,
         "send_validation_receipts": {
           "mean": 0.018887,
           "std": 0.062508,
@@ -365,7 +427,10 @@
             ],
             "window_duration": "10s"
           }
-        }
+        },
+        "remote_signal": null,
+        "publish_counter_sign": null,
+        "countersigning_session_negotiation": null
       },
       "handle_request_count": {
         "response": 762,
@@ -379,7 +444,9 @@
         "remote_signal": 0,
         "publish_counter_sign": 0,
         "countersigning_session_negotiation": 0
-      }
+      },
+      "ignored_request_count": null,
+      "recv_remote_signal_count": null
     }
   },
   "host_metrics": {

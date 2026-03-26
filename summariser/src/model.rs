@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 pub use self::holochain_metrics::{
-    DbConnectionUseTimes, HolochainMetrics, HolochainWorkflowKind, P2pHandleRequestCounts,
-    P2pHandleRequestDurations, P2pMetrics, P2pRequestCounts, P2pRequestDurations,
-    WorkflowDurations,
+    DbConnectionUseTimes, HolochainMetrics, HolochainWorkflowKind, LairRequestDurations,
+    P2pHandleRequestCounts, P2pHandleRequestDurations, P2pMetrics, P2pRequestCounts,
+    P2pRequestDurations, WorkflowDurations,
 };
 pub use self::host_metrics::{
     AnomalyStatus, CpuMetrics, DiskMetrics, DiskSpace, DiskThroughput, HostAnomalies, HostMetrics,
