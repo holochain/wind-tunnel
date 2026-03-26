@@ -128,32 +128,32 @@ async fn query_holochain_metrics_inner(
     );
 
     Ok(HolochainMetrics {
-        cascade_duration: cascade_duration.context("cascade_duration")?,
-        cascade_fetch_error_count: cascade_fetch_error_count
-            .context("cascade_fetch_error_count")?,
-        wasm_usage: wasm_usage.context("wasm_usage")?,
-        zome_call_duration: zome_call_duration.context("zome_call_duration")?,
-        wasm_call_duration: wasm_call_duration.context("wasm_call_duration")?,
-        host_fn_call_duration: host_fn_call_duration.context("host_fn_call_duration")?,
-        emit_signal_count: emit_signal_count.context("emit_signal_count")?,
-        send_remote_signal_count: send_remote_signal_count.context("send_remote_signal_count")?,
-        post_commit_duration: post_commit_duration.context("post_commit_duration")?,
-        uptime: uptime.context("uptime")?,
-        dropped_signal_count: dropped_signal_count.context("dropped_signal_count")?,
-        integrated_ops_count: integrated_ops_count.context("integrated_ops_count")?,
-        integration_delay: integration_delay.context("integration_delay")?,
-        validation_attempts: validation_attempts.context("validation_attempts")?,
-        workflow_duration: workflow_duration.context("workflow_duration")?,
-        db_connection_use_duration: db_connection_use_duration
-            .context("db_connection_use_duration")?,
-        db_write_txn_duration: db_write_txn_duration.context("db_write_txn_duration")?,
-        lair_request_duration: lair_request_duration.context("lair_request_duration")?,
-        p2p: p2p.context("p2p")?,
+        cascade_duration,
+        cascade_fetch_error_count,
+        wasm_usage,
+        zome_call_duration,
+        wasm_call_duration,
+        host_fn_call_duration,
+        emit_signal_count,
+        send_remote_signal_count,
+        post_commit_duration,
+        uptime,
+        dropped_signal_count,
+        integrated_ops_count,
+        integration_delay,
+        validation_attempts,
+        workflow_duration,
+        db_connection_use_duration,
+        db_write_txn_duration,
+        lair_request_duration,
+        p2p,
     })
 }
 
 // ---------------------------------------------------------------------------
-// Private helpers — each wraps NoSeriesInResult → None
+// Private helpers — each returns None on any error (missing data or otherwise).
+// Non-missing-data errors are logged as warnings so individual metric failures
+// don't discard the entire HolochainMetrics struct.
 // ---------------------------------------------------------------------------
 
 async fn query_optional_duration(
@@ -161,13 +161,18 @@ async fn query_optional_duration(
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
-) -> anyhow::Result<Option<StandardTimingsStats>> {
+) -> Option<StandardTimingsStats> {
     match query_duration(client, summary, measurement, filter_tag).await {
-        Ok(v) => Ok(Some(v)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e),
-        },
+        Ok(v) => Some(v),
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            None
+        }
     }
 }
 
@@ -177,13 +182,18 @@ async fn query_optional_counter(
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
     window_duration: &str,
-) -> anyhow::Result<Option<CounterStats>> {
+) -> Option<CounterStats> {
     match query_counter(client, summary, measurement, filter_tag, window_duration).await {
-        Ok(v) => Ok(Some(v)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e),
-        },
+        Ok(v) => Some(v),
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            None
+        }
     }
 }
 
@@ -193,13 +203,18 @@ async fn query_optional_gauge(
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
     window_duration: &str,
-) -> anyhow::Result<Option<GaugeStats>> {
+) -> Option<GaugeStats> {
     match query_gauge(client, summary, measurement, filter_tag, window_duration).await {
-        Ok(v) => Ok(Some(v)),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(None),
-            None => Err(e),
-        },
+        Ok(v) => Some(v),
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            None
+        }
     }
 }
 
@@ -208,13 +223,18 @@ async fn query_optional_count(
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
-) -> anyhow::Result<usize> {
+) -> usize {
     match query_count(client, summary, measurement, filter_tag).await {
-        Ok(v) => Ok(v),
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => Ok(0),
-            None => Err(e),
-        },
+        Ok(v) => v,
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            0
+        }
     }
 }
 
@@ -244,16 +264,27 @@ async fn query_partitioned_duration(
     summary: &RunSummary,
     measurement: &str,
     tag_columns: &[&str],
-) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
+) -> Option<BTreeMap<String, StandardTimingsStats>> {
     let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
         Ok(f) => f,
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => return Ok(None),
-            None => return Err(e),
-        },
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            return None;
+        }
     };
 
-    partition_duration_stats(frame, tag_columns)
+    match partition_duration_stats(frame, tag_columns) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("Failed to partition Holochain metric {measurement}: {e:#}");
+            None
+        }
+    }
 }
 
 /// Query a counter metric with tag columns included, then partition by unique
@@ -266,16 +297,27 @@ async fn query_partitioned_counter(
     measurement: &str,
     tag_columns: &[&str],
     window_duration: &str,
-) -> anyhow::Result<Option<BTreeMap<String, CounterStats>>> {
+) -> Option<BTreeMap<String, CounterStats>> {
     let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
         Ok(f) => f,
-        Err(e) => match e.downcast_ref::<LoadError>() {
-            Some(LoadError::NoSeriesInResult { .. }) => return Ok(None),
-            None => return Err(e),
-        },
+        Err(e) => {
+            if !matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) {
+                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+            }
+            return None;
+        }
     };
 
-    partition_counter_stats(frame, tag_columns, window_duration)
+    match partition_counter_stats(frame, tag_columns, window_duration) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("Failed to partition Holochain metric {measurement}: {e:#}");
+            None
+        }
+    }
 }
 
 /// Partition a DataFrame by tag columns and compute `StandardTimingsStats` per partition.
@@ -379,7 +421,7 @@ fn filter_by_tags(
 async fn query_lair_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<LairRequestDurations>> {
+) -> Option<LairRequestDurations> {
     let m = "hc.keystore.lair_request.duration.s";
     let (sign, shared_secret_encrypt, crypto_box_xsalsa) = futures::join!(
         query_optional_duration(client, summary, m, Some(("operation", "sign"))),
@@ -393,15 +435,15 @@ async fn query_lair_request_durations(
     );
 
     let d = LairRequestDurations {
-        sign: sign?,
-        shared_secret_encrypt: shared_secret_encrypt?,
-        crypto_box_xsalsa: crypto_box_xsalsa?,
+        sign,
+        shared_secret_encrypt,
+        crypto_box_xsalsa,
     };
 
     if d.sign.is_none() && d.shared_secret_encrypt.is_none() && d.crypto_box_xsalsa.is_none() {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(d))
+    Some(d)
 }
 
 // ---------------------------------------------------------------------------
@@ -411,7 +453,7 @@ async fn query_lair_request_durations(
 async fn query_workflow_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<WorkflowDurations>> {
+) -> Option<WorkflowDurations> {
     let app_validation_tag = HolochainWorkflowKind::AppValidation.to_string();
     let countersigning_tag = HolochainWorkflowKind::Countersigning.to_string();
     let integrate_tag = HolochainWorkflowKind::IntegrateDhtOps.to_string();
@@ -445,13 +487,13 @@ async fn query_workflow_durations(
     );
 
     let wd = WorkflowDurations {
-        app_validation: app_validation?,
-        countersigning: countersigning?,
-        integrate_dht_ops: integrate_dht_ops?,
-        publish_dht_ops: publish_dht_ops?,
-        sys_validation: sys_validation?,
-        validation_receipt: validation_receipt?,
-        witnessing: witnessing?,
+        app_validation,
+        countersigning,
+        integrate_dht_ops,
+        publish_dht_ops,
+        sys_validation,
+        validation_receipt,
+        witnessing,
     };
 
     // Return None if every field is None (no workflow data at all).
@@ -463,9 +505,9 @@ async fn query_workflow_durations(
         && wd.validation_receipt.is_none()
         && wd.witnessing.is_none()
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(wd))
+    Some(wd)
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +517,7 @@ async fn query_workflow_durations(
 async fn query_db_connection_use_times(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<DbConnectionUseTimes>> {
+) -> Option<DbConnectionUseTimes> {
     let (authored, dht, conductor, cache, wasm, peer_meta_store) = futures::join!(
         query_optional_duration(
             client,
@@ -516,12 +558,12 @@ async fn query_db_connection_use_times(
     );
 
     let db = DbConnectionUseTimes {
-        authored: authored?,
-        dht: dht?,
-        conductor: conductor?,
-        cache: cache?,
-        wasm: wasm?,
-        peer_meta_store: peer_meta_store?,
+        authored,
+        dht,
+        conductor,
+        cache,
+        wasm,
+        peer_meta_store,
     };
 
     if db.authored.is_none()
@@ -531,19 +573,16 @@ async fn query_db_connection_use_times(
         && db.wasm.is_none()
         && db.peer_meta_store.is_none()
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(db))
+    Some(db)
 }
 
 // ---------------------------------------------------------------------------
 // P2P metrics
 // ---------------------------------------------------------------------------
 
-async fn query_p2p_metrics(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-) -> anyhow::Result<Option<P2pMetrics>> {
+async fn query_p2p_metrics(client: &influxdb::Client, summary: &RunSummary) -> Option<P2pMetrics> {
     let (
         request_duration,
         request_count,
@@ -573,12 +612,12 @@ async fn query_p2p_metrics(
     );
 
     let p2p = P2pMetrics {
-        request_duration: request_duration?,
-        request_count: request_count?,
-        handle_request_duration: handle_request_duration?,
-        handle_request_count: handle_request_count?,
-        ignored_request_count: ignored_request_count?,
-        recv_remote_signal_count: recv_remote_signal_count?,
+        request_duration,
+        request_count,
+        handle_request_duration,
+        handle_request_count,
+        ignored_request_count,
+        recv_remote_signal_count,
     };
 
     // Return None only if there's no P2P data at all.
@@ -589,15 +628,15 @@ async fn query_p2p_metrics(
         && p2p.ignored_request_count.is_none()
         && p2p.recv_remote_signal_count.is_none()
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(p2p))
+    Some(p2p)
 }
 
 async fn query_p2p_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<P2pRequestDurations>> {
+) -> Option<P2pRequestDurations> {
     let m = "hc.holochain_p2p.request.duration.s";
     let (
         get,
@@ -623,13 +662,13 @@ async fn query_p2p_request_durations(
     );
 
     let d = P2pRequestDurations {
-        get: get?,
-        get_links: get_links?,
-        count_links: count_links?,
-        get_agent_activity: get_agent_activity?,
-        must_get_agent_activity: must_get_agent_activity?,
-        send_validation_receipts: send_validation_receipts?,
-        call_remote: call_remote?,
+        get,
+        get_links,
+        count_links,
+        get_agent_activity,
+        must_get_agent_activity,
+        send_validation_receipts,
+        call_remote,
     };
 
     if d.get.is_none()
@@ -640,15 +679,15 @@ async fn query_p2p_request_durations(
         && d.send_validation_receipts.is_none()
         && d.call_remote.is_none()
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(d))
+    Some(d)
 }
 
 async fn query_p2p_request_counts(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<P2pRequestCounts>> {
+) -> Option<P2pRequestCounts> {
     let m = "hc.holochain_p2p.request.duration.s";
     let (
         get,
@@ -674,13 +713,13 @@ async fn query_p2p_request_counts(
     );
 
     let c = P2pRequestCounts {
-        get: get?,
-        get_links: get_links?,
-        count_links: count_links?,
-        get_agent_activity: get_agent_activity?,
-        must_get_agent_activity: must_get_agent_activity?,
-        send_validation_receipts: send_validation_receipts?,
-        call_remote: call_remote?,
+        get,
+        get_links,
+        count_links,
+        get_agent_activity,
+        must_get_agent_activity,
+        send_validation_receipts,
+        call_remote,
     };
 
     // Return None if all counts are zero (no outgoing P2P requests at all).
@@ -692,15 +731,15 @@ async fn query_p2p_request_counts(
         && c.send_validation_receipts == 0
         && c.call_remote == 0
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(c))
+    Some(c)
 }
 
 async fn query_p2p_handle_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<P2pHandleRequestDurations>> {
+) -> Option<P2pHandleRequestDurations> {
     let m = "hc.holochain_p2p.handle_request.duration.s";
     let (
         response,
@@ -754,17 +793,17 @@ async fn query_p2p_handle_request_durations(
     );
 
     let d = P2pHandleRequestDurations {
-        response: response?,
-        call_remote: call_remote?,
-        get: get?,
-        get_links: get_links?,
-        count_links: count_links?,
-        get_agent_activity: get_agent_activity?,
-        must_get_agent_activity: must_get_agent_activity?,
-        send_validation_receipts: send_validation_receipts?,
-        remote_signal: remote_signal?,
-        publish_counter_sign: publish_counter_sign?,
-        countersigning_session_negotiation: countersigning_session_negotiation?,
+        response,
+        call_remote,
+        get,
+        get_links,
+        count_links,
+        get_agent_activity,
+        must_get_agent_activity,
+        send_validation_receipts,
+        remote_signal,
+        publish_counter_sign,
+        countersigning_session_negotiation,
     };
 
     if d.response.is_none()
@@ -779,15 +818,15 @@ async fn query_p2p_handle_request_durations(
         && d.publish_counter_sign.is_none()
         && d.countersigning_session_negotiation.is_none()
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(d))
+    Some(d)
 }
 
 async fn query_p2p_handle_request_counts(
     client: &influxdb::Client,
     summary: &RunSummary,
-) -> anyhow::Result<Option<P2pHandleRequestCounts>> {
+) -> Option<P2pHandleRequestCounts> {
     let m = "hc.holochain_p2p.handle_request.duration.s";
     let (
         response,
@@ -841,17 +880,17 @@ async fn query_p2p_handle_request_counts(
     );
 
     let c = P2pHandleRequestCounts {
-        response: response?,
-        call_remote: call_remote?,
-        get: get?,
-        get_links: get_links?,
-        count_links: count_links?,
-        get_agent_activity: get_agent_activity?,
-        must_get_agent_activity: must_get_agent_activity?,
-        send_validation_receipts: send_validation_receipts?,
-        remote_signal: remote_signal?,
-        publish_counter_sign: publish_counter_sign?,
-        countersigning_session_negotiation: countersigning_session_negotiation?,
+        response,
+        call_remote,
+        get,
+        get_links,
+        count_links,
+        get_agent_activity,
+        must_get_agent_activity,
+        send_validation_receipts,
+        remote_signal,
+        publish_counter_sign,
+        countersigning_session_negotiation,
     };
 
     if c.response == 0
@@ -866,7 +905,7 @@ async fn query_p2p_handle_request_counts(
         && c.publish_counter_sign == 0
         && c.countersigning_session_negotiation == 0
     {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(c))
+    Some(c)
 }
