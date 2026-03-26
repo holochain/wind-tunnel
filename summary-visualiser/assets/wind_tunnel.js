@@ -44,6 +44,13 @@ function getTrendGraphMargin(trendData, yUnit) {
     };
 }
 
+function getTrendBucketPoints(trendData) {
+    return trendData.flatMap((value, index) => [
+        { x: index, y: value },
+        { x: index + 1, y: value },
+    ]);
+}
+
 function renderTrendGraph(entry, plotWidth, margin) {
     const {
         svgElement,
@@ -54,6 +61,7 @@ function renderTrendGraph(entry, plotWidth, margin) {
     } = entry;
     const width = Math.max(1, plotWidth);
     const height = 120;
+    const bucketPoints = getTrendBucketPoints(trendData);
     const maxVal = d3.max(trendData);
     const maxYLabel = `${maxVal}${yUnit || ""}`;
     const minYLabel = `0${yUnit || ""}`;
@@ -70,9 +78,9 @@ function renderTrendGraph(entry, plotWidth, margin) {
     const svg = root.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Map time window values to the x range of the graph.
+    // Map bucket boundaries to the x range of the graph.
     const x = d3.scaleLinear()
-        .domain([0, trendData.length - 1])
+        .domain([0, trendData.length])
         .range([0, width]);
 
     // Map data point values to the y range of the graph.
@@ -82,20 +90,20 @@ function renderTrendGraph(entry, plotWidth, margin) {
 
     // The trend line.
     const line = d3.line()
-        .x((d, i) => x(i))
-        .y(d => y(d));
+        .x(d => x(d.x))
+        .y(d => y(d.y));
     svg.append("path")
-        .datum(trendData)
+        .datum(bucketPoints)
         .attr("class", "trend-line")
         .attr("d", line);
 
     // The area under the trend line.
     const area = d3.area()
-        .x((d, i) => x(i))
+        .x(d => x(d.x))
         .y0(height)
-        .y1(d => y(d));
+        .y1(d => y(d.y));
     svg.append("path")
-        .datum(trendData)
+        .datum(bucketPoints)
         .attr("class", "trend-area")
         .attr("d", area);
 
@@ -127,7 +135,7 @@ function renderTrendGraph(entry, plotWidth, margin) {
         .text(minYLabel);
 
     // X-axis labels -- 0 seconds at the start,
-    // and the number of data points × the time window duration at the end.
+    // and the number of buckets × the time window duration at the end.
     const parsedDuration = parseWindowDuration(windowDuration);
     const totalDuration = parsedDuration.durationValue * trendData.length;
 
