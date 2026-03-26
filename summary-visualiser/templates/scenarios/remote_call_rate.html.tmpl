@@ -21,8 +21,9 @@
             "content" (tmpl.Exec "timings_overall_and_per_agent" .round_trip_timing)
         ) }}
 
-        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
 
     {{ with .host_metrics }}
         {{ template "host_metrics" . }}

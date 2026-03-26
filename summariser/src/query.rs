@@ -1,12 +1,8 @@
 pub mod holochain_metrics;
-pub mod holochain_p2p_metrics;
 pub mod host_metrics;
 
-use std::collections::BTreeMap;
-
-use crate::analyze::{counter_stats, gauge_stats, standard_timing_stats};
+use crate::analyze::{counter_stats, gauge_stats, histogram_timing_stats};
 use crate::model::{CounterStats, GaugeStats, StandardTimingsStats};
-use crate::partition::{Partition, partition_by_tags};
 use crate::{
     frame::LoadError,
     query::host_metrics::{HostMetricMeasurement, InfluxSourced as _},
@@ -16,6 +12,7 @@ use chrono::DateTime;
 use influxdb::ReadQuery;
 use itertools::Itertools;
 use polars::frame::DataFrame;
+use polars::prelude::*;
 use wind_tunnel_summary_model::RunSummary;
 
 pub async fn query_instrument_data(
@@ -181,26 +178,43 @@ pub async fn zome_call_error_count(
     }
 }
 
-/// Query [`DataFrame`] for any given wind-tunnel metric
+/// Query [`DataFrame`] for an OTel-style metric with explicit field names.
 ///
-/// Query will filter by time if `summary.run_duration` has been set.
-/// Query may also filter for a specific a tag value if provided.
-pub async fn query_metrics(
+/// Unlike [`query_metrics`] which always selects `value`, this function selects the
+/// specified `fields` (e.g. `["count", "sum", "min", "max"]` for histograms,
+/// `["gauge"]` for gauges, `["sum"]` for counters). Extra tag `columns` are appended
+/// after the fields.
+pub async fn query_metrics_fields(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
+    fields: &[&str],
     columns: &[&str],
     filter_by_tag: Option<(&str, &str)>,
 ) -> anyhow::Result<DataFrame> {
-    let mut cols = columns.join(", ");
-    if !cols.is_empty() {
-        cols.insert_str(0, ", ");
-    }
+    // Double-quote field and column names so that InfluxQL reserved words
+    // (e.g. "count", "sum") are treated as field references, not functions.
+    let select_clause = fields
+        .iter()
+        .chain(columns.iter())
+        .map(|name| format!(r#""{name}""#))
+        .join(", ");
+    execute_influx_query(client, summary, measurement, &select_clause, filter_by_tag).await
+}
+
+/// Shared query execution: builds the InfluxQL string, handles test-data features,
+/// executes against InfluxDB, and returns a parsed DataFrame.
+async fn execute_influx_query(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    select_clause: &str,
+    filter_by_tag: Option<(&str, &str)>,
+) -> anyhow::Result<DataFrame> {
     let mut query_str = format!(
-        r#"SELECT value{cols} FROM "windtunnel"."autogen"."{measurement}" WHERE run_id = '{run_id}'"#,
+        r#"SELECT {select_clause} FROM "windtunnel"."autogen"."{measurement}" WHERE run_id = '{run_id}'"#,
         run_id = summary.run_id
-    )
-    .to_string();
+    );
     // Add time filter if there is a run duration
     if let Some(run_duration) = summary.run_duration {
         let duration = std::time::Duration::from_secs(run_duration);
@@ -297,78 +311,73 @@ pub async fn query_metrics(
     Ok(frame)
 }
 
-/// Query the measurement with the filter tag and run [`standard_timing_stats()`].
-pub async fn query_duration(
+// ---------------------------------------------------------------------------
+// OTel metric query helpers — for pre-aggregated histogram / gauge / counter
+// ---------------------------------------------------------------------------
+
+/// Query a pre-aggregated OTel histogram and compute [`StandardTimingsStats`].
+///
+/// Selects the `count`, `sum`, `min`, `max` fields emitted by the OTel SDK.
+pub async fn query_histogram_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
 ) -> anyhow::Result<StandardTimingsStats> {
-    let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    standard_timing_stats(frame, "value", "10s", None)
+    let frame = query_metrics_fields(
+        client,
+        summary,
+        measurement,
+        &["count", "sum", "min", "max"],
+        &[],
+        filter_tag,
+    )
+    .await?;
+    histogram_timing_stats(frame, "10s")
 }
 
-/// Query the measurement with the filter tag and return the number of data points.
-pub async fn query_count(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    filter_tag: Option<(&str, &str)>,
-) -> anyhow::Result<usize> {
-    let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    Ok(frame.height())
-}
-
-/// Query the measurement with the filter tag and run `counter_stats()`.
-pub async fn query_counter(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    filter_tag: Option<(&str, &str)>,
-    window_duration: &str,
-) -> anyhow::Result<CounterStats> {
-    let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    counter_stats(frame, "value", window_duration)
-}
-
-/// Query and partition the measurement with the filter tag, then partition the data by `partitioning_tags`.
-/// and run `counter_stats()` on each partition.
-pub async fn query_and_partition_counter(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    partitioning_tags: &[&str],
-    filter_tag: Option<(&str, &str)>,
-    window_duration: &str,
-) -> anyhow::Result<BTreeMap<String, CounterStats>> {
-    if partitioning_tags.is_empty() {
-        return Err(anyhow::anyhow!(
-            "Cannot partition metric {measurement} without partitioning tags"
-        ));
-    }
-    let data = query_metrics(client, summary, measurement, partitioning_tags, filter_tag).await?;
-    let Partition::Partitioned(parts) = partition_by_tags(data, partitioning_tags)? else {
-        return Err(anyhow::anyhow!("No partitions found for {measurement}"));
-    };
-    parts
-        .into_iter()
-        .map(|(tag_combination, frame)| {
-            counter_stats(frame, "value", window_duration)
-                .map(|analysis| (tag_combination, analysis))
-        })
-        .collect::<Result<BTreeMap<_, _>, _>>()
-}
-
-/// Query the measurement with the filter tag and run [`gauge_stats()`].
-pub async fn query_gauge(
+/// Query an OTel gauge metric (field name `"gauge"` rather than `"value"`).
+pub async fn query_otel_gauge(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
     window_duration: &str,
 ) -> anyhow::Result<GaugeStats> {
-    let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
-    gauge_stats(frame, "value", window_duration)
+    let frame =
+        query_metrics_fields(client, summary, measurement, &["gauge"], &[], filter_tag).await?;
+    gauge_stats(frame, "gauge", window_duration)
+}
+
+/// Query an OTel counter metric (field name `"sum"`, potentially UInt64).
+pub async fn query_otel_counter(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    filter_tag: Option<(&str, &str)>,
+    window_duration: &str,
+) -> anyhow::Result<CounterStats> {
+    let frame =
+        query_metrics_fields(client, summary, measurement, &["sum"], &[], filter_tag).await?;
+    counter_stats(frame, "sum", window_duration)
+}
+
+/// Return the total observation count from an OTel histogram by summing `count`.
+pub async fn query_histogram_total_count(
+    client: &influxdb::Client,
+    summary: &RunSummary,
+    measurement: &str,
+    filter_tag: Option<(&str, &str)>,
+) -> anyhow::Result<usize> {
+    let frame =
+        query_metrics_fields(client, summary, measurement, &["count"], &[], filter_tag).await?;
+    let total: u64 = frame
+        .column("count")
+        .ok()
+        .and_then(|c| c.as_materialized_series().cast(&DataType::UInt64).ok())
+        .and_then(|s| s.u64().ok().map(|ca| ca.sum().unwrap_or(0)))
+        .unwrap_or(0);
+    Ok(total as usize)
 }
 
 /// Query [`DataFrame`] for the given [`HostMetricMeasurement`].

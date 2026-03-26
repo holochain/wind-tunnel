@@ -18,7 +18,7 @@ use rave_engine::types::{
     },
 };
 use serde_json::json;
-use std::{thread, time::Duration};
+use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::fuel::ZFuel;
 
 /// Progenitor behaviour that initializes the Unyt network.
@@ -56,6 +56,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                         },
                         ops_accounts: vec![],
                         service_infrastructure_account: None,
+                        unit_issuers: BTreeMap::new(),
                     },
                     rave_agreements: CommonRAVEAgreements {
                         bridging_agreement: None,

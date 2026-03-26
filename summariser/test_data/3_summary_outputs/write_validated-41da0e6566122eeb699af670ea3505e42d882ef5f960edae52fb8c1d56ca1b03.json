@@ -1,8 +1,8 @@
 {
   "run_summary": {
-    "run_id": "VMyzQcFHoUs0KDoj9vo6L",
+    "run_id": "0nUPRIINc4-Mkj5sqgFbt",
     "scenario_name": "write_validated",
-    "started_at": 1771511824,
+    "started_at": 1774658073,
     "run_duration": 60,
     "peer_count": 1,
     "peer_end_count": 1,
@@ -14,151 +14,789 @@
     "build_info": {
       "info_type": "holochain",
       "info": {
-        "cargo_pkg_version": "0.6.1-rc.0",
+        "cargo_pkg_version": "0.6.1-rc.4",
         "git_info": null,
-        "hdi_version_req": "0.7.1-rc.0",
-        "hdk_version_req": "0.6.1-rc.0",
+        "hdi_version_req": "0.7.1-rc.2",
+        "hdk_version_req": "0.6.1-rc.2",
         "host": "x86_64-unknown-linux-gnu",
         "hostname": "localhost",
         "lair_keystore_version_req": "0.6.3",
         "profile": "release",
-        "rustc_version": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+        "rustc_version": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
         "rustflags": "",
         "target": "x86_64-unknown-linux-gnu",
-        "timestamp": "2026-01-22T16:39:58.108519158Z"
+        "timestamp": "2026-03-25T18:15:05.074913919Z"
       }
     }
   },
   "scenario_metrics": {
-    "write_timing": {
-      "mean": 0.015456,
-      "std": 0.006831,
-      "p50": 0.013456,
-      "p95": 0.027346,
-      "p99": 0.031594,
+    "errors": 0,
+    "read_rate": {
+      "mean": 237.4,
+      "trend": [
+        141,
+        291,
+        269,
+        242,
+        203,
+        182,
+        60
+      ],
+      "window_duration": "10s"
+    },
+    "read_timing": {
+      "mean": 0.026361,
+      "p50": 0.025478,
+      "p95": 0.03668,
+      "p99": 0.041985,
+      "std": 0.0052,
       "trend": {
         "trend": [
-          0.009619,
-          0.011085,
-          0.013056,
-          0.014266,
-          0.019864,
-          0.02314,
-          0.024231
+          0.020624,
+          0.022887,
+          0.024368,
+          0.02706,
+          0.02967,
+          0.032305,
+          0.033589
         ],
         "window_duration": "10s"
       }
     },
     "write_rate": {
-      "mean": 236.8,
+      "mean": 237.6,
       "trend": [
-        119,
-        296,
-        266,
-        240,
-        200,
+        141,
+        291,
+        270,
+        242,
+        203,
         182,
-        72
+        59
       ],
       "window_duration": "10s"
     },
-    "read_timing": {
-      "mean": 0.026436,
-      "std": 0.006814,
-      "p50": 0.025436,
-      "p95": 0.036788,
-      "p99": 0.04266,
+    "write_timing": {
+      "mean": 0.01515,
+      "p50": 0.013358,
+      "p95": 0.0269,
+      "p99": 0.033099,
+      "std": 0.005527,
       "trend": {
         "trend": [
-          0.019925,
-          0.022645,
-          0.024484,
-          0.027147,
-          0.030069,
-          0.031601,
-          0.034417
+          0.009912,
+          0.011403,
+          0.012616,
+          0.014133,
+          0.019575,
+          0.022444,
+          0.024184
+        ],
+        "window_duration": "10s"
+      }
+    }
+  },
+  "holochain_metrics": {
+    "cascade_duration": {
+      "mean": 0.000218,
+      "std": 0.000037,
+      "p50": 0.000241,
+      "p95": 0.000287,
+      "p99": 0.000287,
+      "trend": {
+        "trend": [
+          0.000199,
+          0.000202,
+          0.000208,
+          0.000222,
+          0.000233
         ],
         "window_duration": "10s"
       }
     },
-    "read_rate": {
-      "mean": 236.8,
-      "trend": [
-        119,
-        295,
-        266,
-        241,
-        200,
-        182,
-        72
-      ],
-      "window_duration": "10s"
+    "cascade_fetch_error_count": null,
+    "wasm_usage": {
+      "validated::create_sample_entry": {
+        "count": 39656056,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 231783
+        },
+        "mean_rate_per_second": 991395.72,
+        "std_rate_per_second": 139888.67,
+        "p5_rate_per_second": 794754.3,
+        "p95_rate_per_second": 1163459.24,
+        "peak_rate_per_second": 1163459.24,
+        "rate_trend": {
+          "trend": [
+            1163459.24,
+            1073325.28,
+            934044.08,
+            794754.3
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated::update_sample_entry": {
+        "count": 46444640,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 231783
+        },
+        "mean_rate_per_second": 1161109.35,
+        "std_rate_per_second": 162672.38,
+        "p5_rate_per_second": 935603.53,
+        "p95_rate_per_second": 1362627.83,
+        "peak_rate_per_second": 1362627.83,
+        "rate_trend": {
+          "trend": [
+            1362627.83,
+            1257064.15,
+            1089141.89,
+            935603.53
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated_integrity::entry_defs": {
+        "count": 62470110,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 231783
+        },
+        "mean_rate_per_second": 1561743.81,
+        "std_rate_per_second": 221191.04,
+        "p5_rate_per_second": 1252989.34,
+        "p95_rate_per_second": 1836157.37,
+        "peak_rate_per_second": 1836157.37,
+        "rate_trend": {
+          "trend": [
+            1836157.37,
+            1689549.07,
+            1468279.46,
+            1252989.34
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated_integrity::validate": {
+        "count": 788978866,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 231783
+        },
+        "mean_rate_per_second": 19724358.77,
+        "std_rate_per_second": 2794767.87,
+        "p5_rate_per_second": 15821134.9,
+        "p95_rate_per_second": 23197151.44,
+        "peak_rate_per_second": 23197151.44,
+        "rate_trend": {
+          "trend": [
+            23197151.44,
+            21327887.88,
+            18551260.86,
+            15821134.9
+          ],
+          "window_duration": "10s"
+        }
+      }
     },
-    "errors": 0
+    "zome_call_duration": {
+      "validated::create_sample_entry": {
+        "mean": 0.001994,
+        "std": 0.000028,
+        "p50": 0.001979,
+        "p95": 0.002021,
+        "p99": 0.002021,
+        "trend": {
+          "trend": [
+            0.001939,
+            0.00197,
+            0.001979,
+            0.001999,
+            0.002021
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated::update_sample_entry": {
+        "mean": 0.002399,
+        "std": 0.000041,
+        "p50": 0.002385,
+        "p95": 0.002437,
+        "p99": 0.002437,
+        "trend": {
+          "trend": [
+            0.002325,
+            0.002344,
+            0.002385,
+            0.002412,
+            0.002437
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "wasm_call_duration": {
+      "validated::create_sample_entry": {
+        "mean": 0.001633,
+        "std": 0.000018,
+        "p50": 0.001622,
+        "p95": 0.001652,
+        "p99": 0.001652,
+        "trend": {
+          "trend": [
+            0.001598,
+            0.001615,
+            0.001622,
+            0.001636,
+            0.001652
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated::update_sample_entry": {
+        "mean": 0.002041,
+        "std": 0.00003,
+        "p50": 0.002024,
+        "p95": 0.002072,
+        "p99": 0.002072,
+        "trend": {
+          "trend": [
+            0.00199,
+            0.002002,
+            0.002024,
+            0.00205,
+            0.002072
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated_integrity::entry_defs": {
+        "mean": 0.000526,
+        "std": 1e-6,
+        "p50": 0.000525,
+        "p95": 0.000528,
+        "p99": 0.000528,
+        "trend": {
+          "trend": [
+            0.000525,
+            0.000524,
+            0.000525,
+            0.000527,
+            0.000528
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validated_integrity::validate": {
+        "mean": 0.001496,
+        "std": 7e-6,
+        "p50": 0.001491,
+        "p95": 0.001504,
+        "p99": 0.001504,
+        "trend": {
+          "trend": [
+            0.001484,
+            0.001487,
+            0.001491,
+            0.001499,
+            0.001504
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "host_fn_call_duration": {
+      "__hc__create_1": {
+        "mean": 0.00013,
+        "std": 2e-6,
+        "p50": 0.000129,
+        "p95": 0.000132,
+        "p99": 0.000132,
+        "trend": {
+          "trend": [
+            0.000126,
+            0.000127,
+            0.000129,
+            0.00013,
+            0.000132
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__create_link_1": {
+        "mean": 0.000107,
+        "std": 1e-6,
+        "p50": 0.000107,
+        "p95": 0.000108,
+        "p99": 0.000108,
+        "trend": {
+          "trend": [
+            0.000106,
+            0.000107,
+            0.000107,
+            0.000107,
+            0.000108
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__must_get_valid_record_1": {
+        "mean": 0.00027,
+        "std": 0.00001,
+        "p50": 0.000261,
+        "p95": 0.000282,
+        "p99": 0.000282,
+        "trend": {
+          "trend": [
+            0.000256,
+            0.000258,
+            0.000261,
+            0.000272,
+            0.000282
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__update_1": {
+        "mean": 0.00041,
+        "std": 0.00002,
+        "p50": 0.000395,
+        "p95": 0.000433,
+        "p99": 0.000433,
+        "trend": {
+          "trend": [
+            0.000381,
+            0.000383,
+            0.000395,
+            0.000414,
+            0.000433
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__zome_info_1": {
+        "mean": 0.000805,
+        "std": 0.000027,
+        "p50": 0.000838,
+        "p95": 0.000863,
+        "p99": 0.000863,
+        "trend": {
+          "trend": [
+            0.000801,
+            0.000799,
+            0.000802,
+            0.000806,
+            0.000809
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "emit_signal_count": null,
+    "send_remote_signal_count": null,
+    "post_commit_duration": {
+      "mean": 0.000051,
+      "std": 1e-6,
+      "p50": 0.00005,
+      "p95": 0.000051,
+      "p99": 0.000051,
+      "trend": {
+        "trend": [
+          0.000049,
+          0.00005,
+          0.00005,
+          0.000051,
+          0.000051
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "uptime": {
+      "mean": 28.87,
+      "std": 14.14,
+      "p5": 8.87,
+      "p95": 48.87,
+      "trend": {
+        "trend": [
+          8.87,
+          18.87,
+          28.87,
+          38.87,
+          48.87
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "dropped_signal_count": null,
+    "integrated_ops_count": {
+      "count": 10648,
+      "measurement_duration": {
+        "secs": 40,
+        "nanos": 238697
+      },
+      "mean_rate_per_second": 266.2,
+      "std_rate_per_second": 37.56,
+      "p5_rate_per_second": 213.4,
+      "p95_rate_per_second": 312.4,
+      "peak_rate_per_second": 312.4,
+      "rate_trend": {
+        "trend": [
+          312.4,
+          288.2,
+          250.8,
+          213.4
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "integration_delay": {
+      "mean": 0.001215,
+      "std": 0.000047,
+      "p50": 0.001201,
+      "p95": 0.001252,
+      "p99": 0.001252,
+      "trend": {
+        "trend": [
+          0.00112,
+          0.001163,
+          0.001201,
+          0.001232,
+          0.001252
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "validation_attempts": {
+      "mean": 1.0,
+      "std": 0.0,
+      "p50": 1.0,
+      "p95": 1.0,
+      "p99": 1.0,
+      "trend": {
+        "trend": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "workflow_duration": {
+      "sys_validation": {
+        "mean": 0.000749,
+        "std": 0.0,
+        "p50": 0.000749,
+        "p95": 0.000749,
+        "p99": 0.000749,
+        "trend": {
+          "trend": [
+            0.000749,
+            0.000749,
+            0.000749,
+            0.000749,
+            0.000749
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "app_validation": {
+        "mean": 0.000248,
+        "std": 0.0,
+        "p50": 0.000248,
+        "p95": 0.000248,
+        "p99": 0.000248,
+        "trend": {
+          "trend": [
+            0.000248,
+            0.000248,
+            0.000248,
+            0.000248,
+            0.000248
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "integrate_dht_ops": {
+        "mean": 0.000651,
+        "std": 0.000151,
+        "p50": 0.000577,
+        "p95": 0.000797,
+        "p99": 0.000797,
+        "trend": {
+          "trend": [
+            0.000366,
+            0.000484,
+            0.000577,
+            0.000689,
+            0.000797
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "publish_dht_ops": {
+        "mean": 0.008892,
+        "std": 0.003422,
+        "p50": 0.00698,
+        "p95": 0.012446,
+        "p99": 0.012446,
+        "trend": {
+          "trend": [
+            0.002818,
+            0.004871,
+            0.00698,
+            0.009748,
+            0.012446
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validation_receipt": {
+        "mean": 0.002429,
+        "std": 0.000847,
+        "p50": 0.002129,
+        "p95": 0.003156,
+        "p99": 0.003156,
+        "trend": {
+          "trend": [
+            0.000772,
+            0.001482,
+            0.002129,
+            0.002687,
+            0.003156
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "countersigning": {
+        "mean": 0.000345,
+        "std": 0.0,
+        "p50": 0.000345,
+        "p95": 0.000345,
+        "p99": 0.000345,
+        "trend": {
+          "trend": [
+            0.000345,
+            0.000345,
+            0.000345,
+            0.000345,
+            0.000345
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "witnessing": null
+    },
+    "db_connection_use_duration": {
+      "authored": {
+        "mean": 0.000854,
+        "std": 0.000296,
+        "p50": 0.000719,
+        "p95": 0.001134,
+        "p99": 0.001134,
+        "trend": {
+          "trend": [
+            0.000297,
+            0.000518,
+            0.000719,
+            0.000934,
+            0.001134
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "dht": {
+        "mean": 0.0003,
+        "std": 0.0001,
+        "p50": 0.000269,
+        "p95": 0.000391,
+        "p99": 0.000391,
+        "trend": {
+          "trend": [
+            0.000108,
+            0.000193,
+            0.000269,
+            0.000335,
+            0.000391
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "conductor": {
+        "mean": 0.000045,
+        "std": 3e-6,
+        "p50": 0.000043,
+        "p95": 0.000049,
+        "p99": 0.000049,
+        "trend": {
+          "trend": [
+            0.000039,
+            0.000041,
+            0.000043,
+            0.000046,
+            0.000049
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "cache": {
+        "mean": 0.000105,
+        "std": 7e-6,
+        "p50": 0.0001,
+        "p95": 0.000113,
+        "p99": 0.000113,
+        "trend": {
+          "trend": [
+            0.000094,
+            0.000096,
+            0.0001,
+            0.000107,
+            0.000113
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "wasm": {
+        "mean": 0.000042,
+        "std": 0.0,
+        "p50": 0.000042,
+        "p95": 0.000042,
+        "p99": 0.000042,
+        "trend": {
+          "trend": [
+            0.000042,
+            0.000042,
+            0.000042,
+            0.000042,
+            0.000042
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "peer_meta_store": {
+        "mean": 0.00003,
+        "std": 1e-6,
+        "p50": 0.000029,
+        "p95": 0.000031,
+        "p99": 0.000031,
+        "trend": {
+          "trend": [
+            0.000028,
+            0.000029,
+            0.000029,
+            0.00003,
+            0.000031
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "db_write_txn_duration": {
+      "mean": 0.000746,
+      "std": 0.011579,
+      "p50": 0.000378,
+      "p95": 0.031399,
+      "p99": 0.031399,
+      "trend": {
+        "trend": [
+          0.000418,
+          0.000516,
+          0.000624,
+          0.00079,
+          0.000953
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "lair_request_duration": {
+      "sign": {
+        "mean": 0.000104,
+        "std": 1e-6,
+        "p50": 0.000103,
+        "p95": 0.000105,
+        "p99": 0.000105,
+        "trend": {
+          "trend": [
+            0.000102,
+            0.000102,
+            0.000103,
+            0.000104,
+            0.000105
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "shared_secret_encrypt": null,
+      "crypto_box_xsalsa": null
+    },
+    "p2p": null
   },
   "host_metrics": {
     "cpu": {
       "total_usage": {
-        "mean": 15.09,
-        "std": 0.8,
-        "p5": 13.34,
-        "p95": 15.64,
+        "mean": 12.69,
+        "std": 0.99,
+        "p5": 11.25,
+        "p95": 14.07,
         "trend": {
           "trend": [
-            15.08,
-            15.15
+            11.25,
+            13.05
           ],
           "window_duration": "60s"
         }
       },
-      "usage_user_mean": 12.18,
-      "usage_system_mean": 2.91,
-      "p50": 15.49,
-      "p95": 15.64,
-      "p99": 15.64,
+      "usage_user_mean": 10.21,
+      "usage_system_mean": 2.48,
+      "p50": 12.78,
+      "p95": 14.07,
+      "p99": 14.07,
       "hosts_above_80_percent": 0,
       "mean_time_above_80_percent_s": 0.0
     },
     "memory": {
       "used_percent": {
-        "mean": 47.15,
-        "std": 0.08,
-        "p5": 46.98,
-        "p95": 47.22,
+        "mean": 43.14,
+        "std": 0.16,
+        "p5": 42.84,
+        "p95": 43.28,
         "trend": {
           "trend": [
-            47.13,
-            47.22
+            43.27,
+            43.07
           ],
           "window_duration": "60s"
         }
       },
       "available_percent": {
-        "mean": 52.85,
-        "std": 0.08,
-        "p5": 52.78,
-        "p95": 53.02,
+        "mean": 56.86,
+        "std": 0.16,
+        "p5": 56.72,
+        "p95": 57.16,
         "trend": {
           "trend": [
-            52.87,
-            52.78
+            56.73,
+            56.93
           ],
           "window_duration": "60s"
         }
       },
-      "max_host_used_percent": 47.15,
-      "swap_used_percent": 0.0,
-      "growth_rate_mb_per_sec": 1.11
+      "max_host_used_percent": 43.14,
+      "swap_used_percent": 45.71,
+      "growth_rate_mb_per_sec": -0.37
     },
     "network": {
       "primary": {
         "bytes_recv": {
-          "count": 12311723,
+          "count": 462006,
           "measurement_duration": {
             "secs": 50,
             "nanos": 0
           },
-          "mean_rate_per_second": 246234.46,
+          "mean_rate_per_second": 9240.12,
           "std_rate_per_second": 0.0,
           "p5_rate_per_second": 0.0,
           "p95_rate_per_second": 0.0,
@@ -169,12 +807,12 @@
           }
         },
         "bytes_sent": {
-          "count": 291169,
+          "count": 225670,
           "measurement_duration": {
             "secs": 50,
             "nanos": 0
           },
-          "mean_rate_per_second": 5823.38,
+          "mean_rate_per_second": 4513.4,
           "std_rate_per_second": 0.0,
           "p5_rate_per_second": 0.0,
           "p95_rate_per_second": 0.0,
@@ -185,27 +823,27 @@
           }
         },
         "recv_rate": {
-          "mean": 246234.46,
-          "std": 158184.68,
-          "p5": 27474.7,
-          "p95": 436765.9,
+          "mean": 9240.12,
+          "std": 9218.37,
+          "p5": 1439.6,
+          "p95": 26467.3,
           "trend": {
             "trend": [
-              300924.4,
-              27474.7
+              11062.5,
+              8784.53
             ],
             "window_duration": "60s"
           }
         },
         "send_rate": {
-          "mean": 5823.38,
-          "std": 2523.1,
-          "p5": 2069.5,
-          "p95": 9841.5,
+          "mean": 4513.4,
+          "std": 2554.89,
+          "p5": 2409.1,
+          "p95": 9453.5,
           "trend": {
             "trend": [
-              6761.85,
-              2069.5
+              2761.4,
+              4951.4
             ],
             "window_duration": "60s"
           }
@@ -215,7 +853,7 @@
     "disk": {
       "io_throughput_mbps": {
         "read": 0.0,
-        "write": 70.24
+        "write": 70.18
       },
       "space_utilization": {
         "/": {
@@ -229,29 +867,29 @@
       }
     },
     "system_load": {
-      "load_1min": 3.8,
-      "load_5min": 4.61,
-      "load_15min": 4.39,
+      "load_1min": 4.09,
+      "load_5min": 5.61,
+      "load_15min": 6.55,
       "host_count": 1,
       "overloaded_percent": 0.0
     },
     "pressure": {
       "cpu": {
         "avg10": {
-          "mean": 0.2417,
-          "std": 0.1567,
-          "p5": 0.13,
-          "p95": 0.57,
+          "mean": 0.105,
+          "std": 0.1502,
+          "p5": 0.0,
+          "p95": 0.42,
           "trend": {
             "trend": [
-              0.264,
-              0.13
+              0.285,
+              0.015
             ],
             "window_duration": "60s"
           }
         },
-        "avg60_mean": 0.2817,
-        "avg300_mean": 0.8767
+        "avg60_mean": 0.1617,
+        "avg300_mean": 1.1717
       },
       "memory": {
         "some": {
@@ -328,53 +966,53 @@
     },
     "holochain_process": {
       "cpu_usage": {
-        "mean": 2.64,
-        "std": 2.94,
-        "p5": 0.0,
-        "p95": 6.6,
+        "mean": 5.82,
+        "std": 0.84,
+        "p5": 4.42,
+        "p95": 6.61,
         "trend": {
           "trend": [
-            2.49,
-            3.28
+            4.42,
+            6.17
           ],
           "window_duration": "60s"
         }
       },
       "memory_pss": {
-        "mean": 827940.67,
-        "std": 1508.98,
-        "p5": 825276.0,
-        "p95": 829204.0,
+        "mean": 827904.0,
+        "std": 1069.88,
+        "p5": 826680.0,
+        "p95": 829540.0,
         "trend": {
           "trend": [
-            827690.4,
-            829192.0
+            826866.0,
+            828423.0
           ],
           "window_duration": "60s"
         }
       },
       "num_threads": {
-        "mean": 28.0,
-        "std": 12.0,
-        "p5": 16.0,
-        "p95": 40.0,
+        "mean": 40.83,
+        "std": 0.37,
+        "p5": 40.0,
+        "p95": 41.0,
         "trend": {
           "trend": [
-            28.0,
-            28.0
+            40.5,
+            41.0
           ],
           "window_duration": "60s"
         }
       },
       "num_fds": {
-        "mean": 70.0,
+        "mean": 68.0,
         "std": 1.0,
-        "p5": 69.0,
-        "p95": 71.0,
+        "p5": 67.0,
+        "p95": 69.0,
         "trend": {
           "trend": [
-            69.8,
-            71.0
+            67.0,
+            68.5
           ],
           "window_duration": "60s"
         }
@@ -385,15 +1023,15 @@
         "type": "NotDetected"
       },
       "memory_leak": {
-        "type": "Detected",
-        "severity": "Warning",
-        "description": "Memory growing at 1.11 MiB/s"
+        "type": "NotDetected"
       },
       "disk_full": {
         "type": "NotDetected"
       },
       "swap_thrashing": {
-        "type": "NotDetected"
+        "type": "Detected",
+        "severity": "Critical",
+        "description": "Heavy swap usage (45.7% swap used)"
       },
       "system_overload": {
         "type": "NotDetected"

@@ -6,7 +6,11 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
-pub use self::holochain_metrics::{HolochainDatabaseKind, HolochainWorkflowKind};
+pub use self::holochain_metrics::{
+    DbConnectionUseTimes, HolochainMetrics, HolochainWorkflowKind, LairRequestDurations,
+    P2pHandleRequestCounts, P2pHandleRequestDurations, P2pMetrics, P2pRequestCounts,
+    P2pRequestDurations, WorkflowDurations,
+};
 pub use self::host_metrics::{
     AnomalyStatus, CpuMetrics, DiskMetrics, DiskSpace, DiskThroughput, HostAnomalies, HostMetrics,
     MemMetrics, NetMetrics, OomRisk, PrimaryNetStats, ProcessMetrics, PsiMetrics, PsiResource,
@@ -17,6 +21,7 @@ pub use self::host_metrics::{
 pub struct SummaryOutput {
     pub run_summary: RunSummary,
     pub scenario_metrics: serde_json::Value,
+    pub holochain_metrics: Option<HolochainMetrics>,
     pub host_metrics: Option<HostMetrics>,
 }
 
@@ -24,6 +29,7 @@ impl SummaryOutput {
     pub fn new<V>(
         run_summary: RunSummary,
         data: V,
+        holochain_metrics: Option<HolochainMetrics>,
         host_metrics: Option<HostMetrics>,
     ) -> anyhow::Result<Self>
     where
@@ -32,6 +38,7 @@ impl SummaryOutput {
         Ok(Self {
             run_summary,
             scenario_metrics: serde_json::to_value(data)?,
+            holochain_metrics,
             host_metrics,
         })
     }

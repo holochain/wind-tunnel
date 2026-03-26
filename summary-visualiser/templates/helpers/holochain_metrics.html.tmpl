@@ -1,0 +1,441 @@
+{{/*
+Render all Holochain internal metrics.
+Receives the top-level HolochainMetrics struct.
+Each section uses (index . "key") for nil-safety with skip_serializing_none.
+*/}}
+
+<details class="scenario-subsection-hidden">
+    <summary>
+        <div class="scenario-subsection">
+            <div class="scenario-subsection-title">Holochain Metrics</div>
+            <div>
+                <div class="scenario-subsection-button">
+                    Hidden by default. Click to toggle visibility.
+                </div>
+            </div>
+        </div>
+    </summary>
+
+{{/* === Cascade === */}}
+{{ with (index . "cascade_duration") }}
+    {{ template "scenario_metric" (dict
+        "name" "Cascade duration"
+        "description" "Time taken to execute a cascade (get) query inside Holochain."
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "cascade_fetch_error_count") }}
+    {{ template "scenario_metric" (dict
+        "name" "Cascade fetch errors"
+        "description" "Count of network fetch errors during cascade calls."
+        "content" (tmpl.Exec "delta" .)
+    ) }}
+{{ end }}
+
+{{/* === Ribosome === */}}
+{{ with (index . "wasm_usage") }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "WASM usage: '" $key "'")
+            "description" "Metered usage count of the WASM ribosome for this zome function."
+            "content" (tmpl.Exec "delta" $value)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with (index . "zome_call_duration") }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "Zome call duration: '" $key "'")
+            "description" "Duration of this zome call as measured by Holochain internally."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with (index . "wasm_call_duration") }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "WASM call duration: '" $key "'")
+            "description" "Duration of inner WASM calls for this function, excluding Holochain overhead."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with (index . "host_fn_call_duration") }}
+    {{ range $key, $value := . }}
+        {{ template "scenario_metric" (dict
+            "name" (print "Host function call duration: '" $key "'")
+            "description" "Duration of this host function call invoked from within WASM."
+            "content" (tmpl.Exec "timing_and_trend" $value)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with (index . "emit_signal_count") }}
+    {{ template "scenario_metric" (dict
+        "name" "Emitted local signals"
+        "description" "Count of local signals emitted via the emit_signal host function."
+        "content" (tmpl.Exec "delta" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "send_remote_signal_count") }}
+    {{ template "scenario_metric" (dict
+        "name" "Sent remote signals"
+        "description" "Count of remote signals sent via the send_remote_signal host function."
+        "content" (tmpl.Exec "delta" .)
+    ) }}
+{{ end }}
+
+{{/* === Conductor === */}}
+{{ with (index . "post_commit_duration") }}
+    {{ template "scenario_metric" (dict
+        "name" "Post-commit duration"
+        "description" "Time spent executing post-commit workflows."
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "uptime") }}
+    {{ template "scenario_metric" (dict
+        "name" "Conductor uptime"
+        "description" "Conductor uptime gauge. A drop in the trend indicates a restart during the run."
+        "content" (tmpl.Exec "min_max_mean_std" (merge (dict "unit" "s") .))
+    ) }}
+{{ end }}
+
+{{ with (index . "dropped_signal_count") }}
+    {{ template "scenario_metric" (dict
+        "name" "Dropped WebSocket signals"
+        "description" "Count of signals dropped from the app WebSocket due to channel overload."
+        "content" (tmpl.Exec "delta" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "integrated_ops_count") }}
+    {{ template "scenario_metric" (dict
+        "name" "Integrated ops"
+        "description" "Count of DHT ops integrated since the conductor started. Resets on restart."
+        "content" (tmpl.Exec "delta" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "integration_delay") }}
+    {{ template "scenario_metric" (dict
+        "name" "Integration delay"
+        "description" "Delay between an op being stored and being integrated. High values indicate the pipeline is falling behind."
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{ with (index . "validation_attempts") }}
+    {{ template "scenario_metric" (dict
+        "name" "Validation attempts per op"
+        "description" "Number of validation attempts required per op. Values consistently above 1 indicate retries."
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{/* === Workflows === */}}
+{{ with (index . "workflow_duration") }}
+    {{ with (index . "app_validation") }}
+        {{ template "scenario_metric" (dict
+            "name" "App validation workflow duration"
+            "description" "Time spent running the app validation workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "countersigning") }}
+        {{ template "scenario_metric" (dict
+            "name" "Countersigning workflow duration"
+            "description" "Time spent running the countersigning workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "integrate_dht_ops") }}
+        {{ template "scenario_metric" (dict
+            "name" "Integrate DHT ops workflow duration"
+            "description" "Time spent running the integration workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "publish_dht_ops") }}
+        {{ template "scenario_metric" (dict
+            "name" "Publish DHT ops workflow duration"
+            "description" "Time spent running the publish workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "sys_validation") }}
+        {{ template "scenario_metric" (dict
+            "name" "System validation workflow duration"
+            "description" "Time spent running the sys validation workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "validation_receipt") }}
+        {{ template "scenario_metric" (dict
+            "name" "Validation receipt workflow duration"
+            "description" "Time spent running the validation receipt workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "witnessing") }}
+        {{ template "scenario_metric" (dict
+            "name" "Witnessing workflow duration"
+            "description" "Time spent running the witnessing workflow."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{/* === Database === */}}
+{{ with (index . "db_connection_use_duration") }}
+    {{ with (index . "authored") }}
+        {{ template "scenario_metric" (dict
+            "name" "Authored DB connection use time"
+            "description" "Time spent holding authored database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "dht") }}
+        {{ template "scenario_metric" (dict
+            "name" "DHT DB connection use time"
+            "description" "Time spent holding DHT database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "conductor") }}
+        {{ template "scenario_metric" (dict
+            "name" "Conductor DB connection use time"
+            "description" "Time spent holding conductor database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "cache") }}
+        {{ template "scenario_metric" (dict
+            "name" "Cache DB connection use time"
+            "description" "Time spent holding cache database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "wasm") }}
+        {{ template "scenario_metric" (dict
+            "name" "WASM DB connection use time"
+            "description" "Time spent holding WASM database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "peer_meta_store") }}
+        {{ template "scenario_metric" (dict
+            "name" "Peer meta store DB connection use time"
+            "description" "Time spent holding peer meta store database connections."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ with (index . "db_write_txn_duration") }}
+    {{ template "scenario_metric" (dict
+        "name" "Write transaction duration"
+        "description" "Duration of exclusive write transactions across all databases."
+        "content" (tmpl.Exec "timing_and_trend" .)
+    ) }}
+{{ end }}
+
+{{/* === Keystore === */}}
+{{ with (index . "lair_request_duration") }}
+    {{ with (index . "sign") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: signing"
+            "description" "Duration of Ed25519 signing requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "shared_secret_encrypt") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: shared secret encryption"
+            "description" "Duration of shared-secret encryption requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+    {{ with (index . "crypto_box_xsalsa") }}
+        {{ template "scenario_metric" (dict
+            "name" "Lair keystore: crypto_box"
+            "description" "Duration of XSalsa20-Poly1305 crypto_box requests to the Lair keystore."
+            "content" (tmpl.Exec "timing_and_trend" .)
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{/* === P2P === */}}
+{{ with (index . "p2p") }}
+    {{ with (index . "request_duration") }}
+        {{ if (index . "get") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'get'"
+                "description" "Time spent sending a get request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .get)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "get_links") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'get_links'"
+                "description" "Time spent sending a get_links request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .get_links)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "count_links") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'count_links'"
+                "description" "Time spent sending a count_links request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .count_links)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "get_agent_activity") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'get_agent_activity'"
+                "description" "Time spent sending a get_agent_activity request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .get_agent_activity)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "must_get_agent_activity") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'must_get_agent_activity'"
+                "description" "Time spent sending a must_get_agent_activity request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .must_get_agent_activity)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "send_validation_receipts") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'send_validation_receipts'"
+                "description" "Time spent sending a send_validation_receipts request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .send_validation_receipts)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "call_remote") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P request roundtrip: 'call_remote'"
+                "description" "Time spent sending a call_remote request and awaiting its response."
+                "content" (tmpl.Exec "timing_and_trend" .call_remote)
+            ) }}
+        {{ end }}
+    {{ end }}
+
+    {{ with (index . "handle_request_duration") }}
+        {{ if (index . "response") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'response'"
+                "description" "Time spent handling an incoming response message."
+                "content" (tmpl.Exec "timing_and_trend" .response)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "call_remote") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'call_remote'"
+                "description" "Time spent handling an incoming call_remote request."
+                "content" (tmpl.Exec "timing_and_trend" .call_remote)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "get") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'get'"
+                "description" "Time spent handling an incoming get request."
+                "content" (tmpl.Exec "timing_and_trend" .get)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "get_links") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'get_links'"
+                "description" "Time spent handling an incoming get_links request."
+                "content" (tmpl.Exec "timing_and_trend" .get_links)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "count_links") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'count_links'"
+                "description" "Time spent handling an incoming count_links request."
+                "content" (tmpl.Exec "timing_and_trend" .count_links)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "get_agent_activity") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'get_agent_activity'"
+                "description" "Time spent handling an incoming get_agent_activity request."
+                "content" (tmpl.Exec "timing_and_trend" .get_agent_activity)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "must_get_agent_activity") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'must_get_agent_activity'"
+                "description" "Time spent handling an incoming must_get_agent_activity request."
+                "content" (tmpl.Exec "timing_and_trend" .must_get_agent_activity)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "send_validation_receipts") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'send_validation_receipts'"
+                "description" "Time spent handling an incoming send_validation_receipts request."
+                "content" (tmpl.Exec "timing_and_trend" .send_validation_receipts)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "remote_signal") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'remote_signal'"
+                "description" "Time spent handling an incoming remote_signal request."
+                "content" (tmpl.Exec "timing_and_trend" .remote_signal)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "publish_counter_sign") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'publish_counter_sign'"
+                "description" "Time spent handling an incoming publish_counter_sign request."
+                "content" (tmpl.Exec "timing_and_trend" .publish_counter_sign)
+            ) }}
+        {{ end }}
+
+        {{ if (index . "countersigning_session_negotiation") }}
+            {{ template "scenario_metric" (dict
+                "name" "P2P handle incoming: 'countersigning_session_negotiation'"
+                "description" "Time spent handling an incoming countersigning_session_negotiation request."
+                "content" (tmpl.Exec "timing_and_trend" .countersigning_session_negotiation)
+            ) }}
+        {{ end }}
+    {{ end }}
+
+    {{ with (index . "ignored_request_count") }}
+        {{ template "scenario_metric" (dict
+            "name" "P2P ignored requests"
+            "description" "Count of incoming P2P requests that were ignored."
+            "content" (tmpl.Exec "delta" .)
+        ) }}
+    {{ end }}
+
+    {{ with (index . "recv_remote_signal_count") }}
+        {{ template "scenario_metric" (dict
+            "name" "P2P received remote signals"
+            "description" "Count of remote signals received."
+            "content" (tmpl.Exec "delta" .)
+        ) }}
+    {{ end }}
+{{ end }}
+
+</details>

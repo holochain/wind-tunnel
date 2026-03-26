@@ -71,6 +71,111 @@ pub(crate) fn standard_timing_stats(
     })
 }
 
+/// Compute timing statistics from a pre-aggregated OTel histogram DataFrame.
+///
+/// The input `frame` must have columns `time`, `count` (number of observations per
+/// reporting interval), `sum` (total value per interval), `min` and `max` (extremes per
+/// interval). Each row represents one OTel reporting interval, NOT one observation.
+///
+/// **Percentile approximation:** `p50`, `p95` and `p99` are computed over per-interval
+/// means (`sum / count`). They reflect the distribution of *interval averages*, not the
+/// distribution of individual observations. Accuracy improves as the reporting interval
+/// becomes shorter relative to the total run duration.
+pub(crate) fn histogram_timing_stats(
+    frame: DataFrame,
+    window_duration: &str,
+) -> anyhow::Result<StandardTimingsStats> {
+    // Cast all columns to Float64 for uniform arithmetic (count arrives as UInt64).
+    let df = frame
+        .lazy()
+        .select([
+            col("time"),
+            col("count").cast(DataType::Float64).alias("count"),
+            col("sum").cast(DataType::Float64).alias("sum"),
+            col("min").cast(DataType::Float64).alias("min"),
+            col("max").cast(DataType::Float64).alias("max"),
+        ])
+        .filter(col("time").is_not_null())
+        .filter(col("count").gt(lit(0.0)))
+        .collect()
+        .context("Prepare histogram frame")?;
+
+    let count_series = df.column("count")?.as_materialized_series();
+    let sum_series = df.column("sum")?.as_materialized_series();
+
+    let total_count: f64 = count_series.sum().context("Sum of count")?;
+    let total_sum: f64 = sum_series.sum().context("Sum of sum")?;
+
+    let mean = if total_count > 0.0 {
+        total_sum / total_count
+    } else {
+        0.0
+    };
+
+    // Per-interval means for percentile estimation and std deviation.
+    let with_interval_mean = df
+        .lazy()
+        .with_column((col("sum") / col("count")).alias("interval_mean"))
+        .collect()
+        .context("Compute interval means")?;
+
+    let interval_mean_series = with_interval_mean
+        .column("interval_mean")?
+        .as_materialized_series();
+
+    let std = interval_mean_series
+        .std(0)
+        .context("Std of interval means")?;
+
+    let cast_means = interval_mean_series.cast(&DataType::Float64)?;
+    let sorted = cast_means.f64()?.sort(false);
+    let p50 = round_to_n_dp(sorted_percentile(&sorted, 0.50), 6);
+    let p95 = round_to_n_dp(sorted_percentile(&sorted, 0.95), 6);
+    let p99 = round_to_n_dp(sorted_percentile(&sorted, 0.99), 6);
+
+    // Windowed trend: weighted mean per window (sum(sum)/sum(count)), not mean-of-means.
+    let trend = with_interval_mean
+        .lazy()
+        .sort(
+            ["time"],
+            SortMultipleOptions::default().with_maintain_order(true),
+        )
+        .group_by_dynamic(
+            col("time"),
+            [],
+            DynamicGroupOptions {
+                every: Duration::parse(window_duration),
+                period: Duration::parse(window_duration),
+                offset: Duration::parse("0s"),
+                ..Default::default()
+            },
+        )
+        .agg([
+            col("sum").sum().alias("window_sum"),
+            col("count").sum().alias("window_count"),
+        ])
+        .with_column((col("window_sum") / col("window_count")).alias("mean"))
+        .collect()
+        .context("Windowed histogram mean")?
+        .column("mean")?
+        .f64()?
+        .iter()
+        .filter_map(|v| v.map(|v| round_to_n_dp(v, 6)))
+        .collect_vec();
+
+    Ok(StandardTimingsStats {
+        mean: round_to_n_dp(mean, 6),
+        std: round_to_n_dp(std, 6),
+        p50,
+        p95,
+        p99,
+        trend: Float64Trend {
+            trend,
+            window_duration: window_duration.to_string(),
+        },
+    })
+}
+
 pub(crate) fn partitioned_timing_stats(
     frame: DataFrame,
     column: &str,
@@ -680,11 +785,12 @@ pub(crate) fn counter_stats(
         .collect()?;
 
     let times = counter_by_time.column("time")?.as_materialized_series();
-    let series = counter_by_time
+    let cast_col = counter_by_time
         .column(column)?
         .as_materialized_series()
-        .i64()
-        .context("Get series as i64")?;
+        .cast(&DataType::Int64)
+        .context("Cast counter column to i64")?;
+    let series = cast_col.i64().context("Get series as i64")?;
 
     // Measurement duration from timestamps
     let times_dt = times.datetime().context("Get times")?;
@@ -717,11 +823,12 @@ pub(crate) fn counter_stats(
         .as_materialized_series()
         .datetime()
         .context("time as datetime")?;
-    let values = counter_by_time
+    let values_cast = counter_by_time
         .column(column)?
         .as_materialized_series()
-        .i64()
-        .context("values as i64")?;
+        .cast(&DataType::Int64)
+        .context("Cast counter values to i64")?;
+    let values = values_cast.i64().context("values as i64")?;
 
     let mut rate_timestamps: Vec<i64> = Vec::new();
     let mut rate_values: Vec<f64> = Vec::new();
@@ -954,8 +1061,28 @@ pub(crate) fn aggregated_single_value(
 }
 
 pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
-    let places = 10.0_f64.powi(n as i32);
-    (value * places).round() / places
+    // f64 has ~15.9 significant decimal digits. For very large values the
+    // requested decimal places fall below representable precision, and Polars'
+    // parallel aggregation can cause the last few significant digits to vary
+    // between runs. In that regime, round to 12 significant figures instead of
+    // N decimal places to absorb the noise while preserving meaningful precision.
+    let magnitude = value.abs();
+    if magnitude >= 10.0_f64.powi(12_i32.saturating_sub(n as i32)) {
+        round_to_significant(value, 12)
+    } else {
+        let places = 10.0_f64.powi(n as i32);
+        (value * places).round() / places
+    }
+}
+
+fn round_to_significant(value: f64, digits: u32) -> f64 {
+    if value == 0.0 || !value.is_finite() {
+        return value;
+    }
+    let d = value.abs().log10().floor() as i32 + 1;
+    let power = digits as i32 - d;
+    let magnitude = 10.0_f64.powi(power);
+    (value * magnitude).round() / magnitude
 }
 
 /// Return the mean of a single column in a [`DataFrame`], or 0.0 if the column
