@@ -1,0 +1,28 @@
+{
+  "description": "1 progenitor initialises the network; 32 propose and 32 respond agents run concurrent proposal flows. Target 50/50 propose/respond; actual 50/50 at 64 proposal agents (65 nodes total).",
+  "job_name": "unyt_proposal_canonical",
+  "scenario_name": "unyt_proposal",
+  "duration": 900,
+  "assignments": [
+    {
+      "behaviour": "initiate"
+    },
+    {
+      "behaviour": "propose",
+      "nodes": 32
+    },
+    {
+      "behaviour": "respond",
+      "nodes": 32
+    }
+  ],
+  "env": {
+    "MIN_AGENTS": "65",
+    "UNYT_NUMBER_OF_LINKS_TO_PROCESS": "10",
+    "UNYT_PROPOSER_WEIGHTS": "60,20,20",
+    "UNYT_RESPONDER_WEIGHTS": "60,20,20",
+    "UNYT_COMMITMENT_ACCEPT_PCT": "80",
+    "UNYT_COUNTER_ADJUSTMENT_PCT": "10",
+    "UNYT_MAX_NEGOTIATION_ROUNDS": "5"
+  }
+}
