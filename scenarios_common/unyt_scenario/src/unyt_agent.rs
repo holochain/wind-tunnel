@@ -12,8 +12,9 @@ use rave_engine::types::{
     InitializeGlobalDefinition, Ledger, Pagination, PermissionSpace, RAVEExecuteInputs, State,
     Transaction, UnitMap,
     entries::{
-        AgreementDefInput, CodeTemplateExt, ExecutionEngine, GlobalDefinitionExt, RAVE,
-        SmartAgreement, SmartAgreementExt, code_template::CodeTemplate,
+        AgreementDefInput, CodeTemplateExt, CommitmentToProposalInput, CounterProposalInput,
+        ExecutionEngine, GlobalDefinitionExt, ProposalInput, RAVE, ReceiptInput, ReclaimInput,
+        RejectInput, SmartAgreement, SmartAgreementExt, code_template::CodeTemplate,
     },
 };
 
@@ -116,6 +117,42 @@ pub trait UnytAgentExt {
     fn unyt_get_requests_to_execute_agreements(
         &mut self,
     ) -> Result<Vec<Transaction>, anyhow::Error>;
+
+    /// Creates a new proposal for a negotiated transaction.
+    fn unyt_create_proposal(
+        &mut self,
+        proposal: ProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Creates a counter-proposal in response to an existing proposal.
+    fn unyt_create_counter_proposal(
+        &mut self,
+        counter_proposal: CounterProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Commits to an existing proposal, converting it into a commitment.
+    fn unyt_create_commit_to_proposal(
+        &mut self,
+        commit: CommitmentToProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Rejects a proposal or commitment.
+    fn unyt_create_reject_proposal(
+        &mut self,
+        reject: RejectInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Creates a receipt acknowledging an accepted transaction.
+    fn unyt_create_receipt_for_accept(
+        &mut self,
+        receipt: ReceiptInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Reclaims committed balance after a rejection.
+    fn unyt_create_reclaim_balance(
+        &mut self,
+        reclaim: ReclaimInput,
+    ) -> Result<ActionHashB64, anyhow::Error>;
 }
 
 impl<SV: UnytScenarioValues> UnytAgentExt
@@ -312,6 +349,48 @@ impl<SV: UnytScenarioValues> UnytAgentExt
         &mut self,
     ) -> Result<Vec<Transaction>, anyhow::Error> {
         self.call_zome_alliance("get_requests_to_execute_agreements", ())
+    }
+
+    fn unyt_create_proposal(
+        &mut self,
+        proposal: ProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_proposal", proposal)
+    }
+
+    fn unyt_create_counter_proposal(
+        &mut self,
+        counter_proposal: CounterProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_counter_proposal", counter_proposal)
+    }
+
+    fn unyt_create_commit_to_proposal(
+        &mut self,
+        commit: CommitmentToProposalInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_commit_to_proposal", commit)
+    }
+
+    fn unyt_create_reject_proposal(
+        &mut self,
+        reject: RejectInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_reject_proposal", reject)
+    }
+
+    fn unyt_create_receipt_for_accept(
+        &mut self,
+        receipt: ReceiptInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_receipt_for_accept", receipt)
+    }
+
+    fn unyt_create_reclaim_balance(
+        &mut self,
+        reclaim: ReclaimInput,
+    ) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("create_reclaim_balance", reclaim)
     }
 }
 

@@ -126,13 +126,12 @@ pub async fn query_custom_data(
     metric: &str,
     tags: &[&str],
 ) -> anyhow::Result<DataFrame> {
-    let mut select_tags = tags.join(", ");
-    if !select_tags.is_empty() {
-        select_tags = format!(", {select_tags}");
-    }
+    let mut select_columns: Vec<&str> = vec!["value"];
+    select_columns.extend_from_slice(tags);
+    let select = select_columns.join(", ");
 
     let q = ReadQuery::new(format!(
-        r#"SELECT value{select_tags} FROM "windtunnel"."autogen"."{metric}" WHERE run_id = '{run_id}'"#,
+        r#"SELECT {select} FROM "windtunnel"."autogen"."{metric}" WHERE run_id = '{run_id}'"#,
         run_id = summary.run_id
     ));
     log::debug!("Querying: {q:?}");

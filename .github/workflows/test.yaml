@@ -350,6 +350,26 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - unyt_proposal
+        run: |
+          set -euo pipefail
+          cleanup() {
+            cat local-durable-objects.log || true
+            pkill -f wrangler || true
+          }
+          trap cleanup EXIT
+
+          # Start a local Durable Objects store.
+          # Need to re-direct stdin otherwise the wrangler terminates when running in background.
+          nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
+
+          # Run the scenario
+          nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 30 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test

@@ -200,6 +200,12 @@ async fn single_write_many_read() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn unyt_proposal() -> anyhow::Result<()> {
+    run_snapshot_test!("015092ac8048d45ae3427587588debba8aeec9fa8d45e833bee10822194d5665");
+    Ok(())
+}
+
+#[tokio::test]
 async fn validation_receipts() -> anyhow::Result<()> {
     run_snapshot_test!("d8e2bf9989e959ca9116ef9f3d6ec6a6912e0eb042e4a90b2d520c1ed9dd199b");
     Ok(())

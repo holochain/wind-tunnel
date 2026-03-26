@@ -1,0 +1,40 @@
+mod behaviours;
+mod values;
+
+use holochain_wind_tunnel_runner::happ_path;
+use holochain_wind_tunnel_runner::prelude::*;
+
+use self::values::ScenarioValues;
+
+fn agent_setup(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &[])
+}
+
+fn main() -> WindTunnelResult<()> {
+    log::info!("Starting Unyt Proposal scenario");
+    let builder = ScenarioDefinitionBuilder::<
+        HolochainRunnerContext,
+        HolochainAgentContext<ScenarioValues>,
+    >::new_with_init(env!("CARGO_PKG_NAME"))
+    .use_agent_setup(agent_setup)
+    .use_named_agent_behaviour(
+        "initiate",
+        wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
+    )
+    .use_named_agent_behaviour("propose", self::behaviours::propose::agent_behaviour)
+    .use_named_agent_behaviour("respond", self::behaviours::respond::agent_behaviour)
+    .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
+    .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
+    .add_capture_env("UNYT_PROPOSER_WEIGHTS")
+    .add_capture_env("UNYT_RESPONDER_WEIGHTS")
+    .add_capture_env("UNYT_COMMITMENT_ACCEPT_PCT")
+    .add_capture_env("UNYT_COUNTER_ADJUSTMENT_PCT")
+    .add_capture_env("UNYT_MAX_NEGOTIATION_ROUNDS")
+    .add_capture_env("MIN_AGENTS");
+
+    run(builder)?;
+
+    Ok(())
+}

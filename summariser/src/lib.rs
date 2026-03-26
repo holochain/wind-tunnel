@@ -123,6 +123,21 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_countersigning_two_party
         )),
+        "unyt_chain_transaction" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_unyt_chain_transaction
+        )),
+        "unyt_chain_transaction_zero_arc" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_unyt_chain_transaction_zero_arc
+        )),
+        "unyt_proposal" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_unyt_proposal
+        )),
         "validation_receipts" => Some(execute_report_with_common_metrics!(
             client,
             summary,
@@ -177,16 +192,6 @@ pub fn execute_report_for_run_summary(
             client,
             summary,
             summarize_zero_arc_create_and_read
-        )),
-        "unyt_chain_transaction" => Some(execute_report_with_common_metrics!(
-            client,
-            summary,
-            summarize_unyt_chain_transaction
-        )),
-        "unyt_chain_transaction_zero_arc" => Some(execute_report_with_common_metrics!(
-            client,
-            summary,
-            summarize_unyt_chain_transaction_zero_arc
         )),
         _ => {
             log::warn!("No report for scenario: {name}");

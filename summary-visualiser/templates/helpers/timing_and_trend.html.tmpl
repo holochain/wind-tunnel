@@ -3,7 +3,7 @@ Render a timing and trend metric.
 Corresponding Rust type: `holochain_metrics::StandardTimingsStats`
 with an optional string `unit` field that will default to `"s"`.
 */}}
-{{ $unit := default "s" (index . "unit") }}
+{{ $unit := coll.Has . "unit" | test.Ternary (index . "unit") "s" }}
 {{ template "mean_std" (dict
     "mean" .mean
     "std" .std

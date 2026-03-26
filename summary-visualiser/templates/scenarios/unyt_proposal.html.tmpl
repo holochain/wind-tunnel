@@ -1,0 +1,208 @@
+{{ define "unyt_proposal_description" }}
+<p>This scenario tests the performance of the Unyt negotiated transaction flow.
+Agents create proposals, exchange counter-proposals, commit to agreed terms, and
+finalize or reject transactions. There are three roles:
+<b><code>initiate</code></b> (progenitor),
+<b><code>propose</code></b> (proposer agents), and
+<b><code>respond</code></b> (responder agents).</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Unyt Proposal"
+    "description" (tmpl.Exec "unyt_proposal_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ $metrics := . }}
+        {{ template "scenario_metric" (dict
+            "name" "Global definition propagation time"
+            "description" "Time (seconds since session start) at which each agent first detects network initialization."
+            "content" (tmpl.Exec "timing_and_trend" .global_definition_propagation_time)
+        ) }}
+
+        {{ with .proposal_round_trip_accepted }}
+            {{ template "scenario_metric" (dict
+                "name" "Proposal round-trip time (accepted)"
+                "description" "Duration from proposal creation to final acceptance/receipt, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .proposal_round_trip_rejected }}
+            {{ template "scenario_metric" (dict
+                "name" "Proposal round-trip time (rejected)"
+                "description" "Duration from proposal creation to rejection/reclaim, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Negotiation rounds"
+            "description" "Number of counter-proposal rounds before a proposal reaches commitment. Lower values indicate faster convergence."
+            "content" (tmpl.Exec "timing_and_trend" (merge .negotiation_rounds (dict "unit" "")))
+        ) }}
+
+        {{ with .sync_lag_proposal }}
+            {{ template "scenario_metric" (dict
+                "name" "Sync lag — proposals"
+                "description" "Delay between proposal publish and first observation by the counterparty."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .sync_lag_commitment }}
+            {{ template "scenario_metric" (dict
+                "name" "Sync lag — commitments"
+                "description" "Delay between commitment publish and first observation by the counterparty."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .sync_lag_accept }}
+            {{ template "scenario_metric" (dict
+                "name" "Sync lag — accepts"
+                "description" "Delay between accept publish and first observation by the counterparty."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .sync_lag_reject }}
+            {{ template "scenario_metric" (dict
+                "name" "Sync lag — rejects"
+                "description" "Delay between reject publish and first observation by the counterparty."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Zome call — create_proposal"
+            "description" "Duration of create_proposal zome calls per agent."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .create_proposal_zome_call)
+        ) }}
+
+        {{ with .create_counter_proposal_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_counter_proposal"
+                "description" "Duration of create_counter_proposal zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_commit_to_proposal_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_commit_to_proposal"
+                "description" "Duration of create_commit_to_proposal zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_accept_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_accept"
+                "description" "Duration of create_accept zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_reject_proposal_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_reject_proposal"
+                "description" "Duration of create_reject_proposal zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_receipt_for_accept_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_receipt_for_accept"
+                "description" "Duration of create_receipt_for_accept zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_reclaim_balance_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_reclaim_balance"
+                "description" "Duration of create_reclaim_balance zome calls per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Zome call — get_actionable_transactions"
+            "description" "Duration of get_actionable_transactions zome calls per agent. Called every iteration."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .get_actionable_transactions_zome_call)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Zome call errors"
+            "description" "Total number of zome call errors observed during the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
+        {{ with .completed_transaction_accepts.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction accepts"
+                "description" "Completed transaction accepts at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_accepts)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_spends.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction spends"
+                "description" "Completed transaction spends at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_spends)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_raves.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction RAVEs"
+                "description" "Completed transaction RAVEs at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_raves)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_proposals.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction proposals"
+                "description" "Remaining actionable transaction proposals at teardown. Non-zero sum indicates unresolved negotiations."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_proposals)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_commitments.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction commitments"
+                "description" "Remaining actionable transaction commitments at teardown. Non-zero sum indicates unresolved negotiations."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_commitments)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_accepts.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction accepts"
+                "description" "Remaining actionable transaction accepts at teardown. Non-zero sum indicates unresolved negotiations."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_accepts)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_rejects.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction rejects"
+                "description" "Remaining actionable transaction rejects at teardown. Non-zero sum indicates unresolved negotiations."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_rejects)
+            ) }}
+        {{ end }}
+
+    {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
+</div>
