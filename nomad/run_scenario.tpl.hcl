@@ -185,7 +185,7 @@ job "{{ (ds "vars").scenario_name }}" {
             RUN_SUMMARY_PATH     = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
             INFLUX_HOST          = "https://ifdb.holochain.org"
             INFLUX_BUCKET        = "windtunnel"
-            INFLUX_TOKEN         = secret.job_secrets.INFLUX_WINDTUNNEL_BUCKET_TOKEN
+            INFLUX_TOKEN         = secret.job_secrets.INFLUX_TOKEN
           }
 
           driver = "raw_exec"
