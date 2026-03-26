@@ -88,30 +88,71 @@
       "window_duration": "10s"
     },
     "error_count": 238,
-    "holochain_p2p_metrics": {
-      "handle_incoming_request_duration": {
+    "retrieval_errors": {
+      "max_per_partition": 0,
+      "mean_count": 0,
+      "min_per_partition": 0,
+      "partition_count": 0,
+      "partitions_above_zero": 0,
+      "total_count": 0,
+      "trend": [],
+      "window_duration": "10s"
+    }
+  },
+  "holochain_metrics": {
+    "p2p": {
+      "request_duration": {
         "get": {
-          "mean": 0.000123,
-          "p50": 0.000113,
-          "p95": 0.000211,
-          "p99": 0.000211,
-          "std": 0.000042,
+          "mean": 0.000282,
+          "std": 0.000049,
+          "p50": 0.000264,
+          "p95": 0.000365,
+          "p99": 0.000365,
           "trend": {
             "trend": [
-              0.000209,
-              0.000119,
-              0.000108,
-              0.000098
+              0.000361,
+              0.000291,
+              0.000269,
+              0.000238
             ],
             "window_duration": "10s"
           }
         },
+        "send_validation_receipts": {
+          "mean": 0.000847,
+          "std": 0.001274,
+          "p50": 0.000425,
+          "p95": 0.002619,
+          "p99": 0.00901,
+          "trend": {
+            "trend": [
+              0.000454,
+              0.001326,
+              0.000668,
+              0.000785,
+              0.000724,
+              0.001278
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "request_count": {
+        "get": 14,
+        "get_links": 0,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 100,
+        "call_remote": 0
+      },
+      "handle_request_duration": {
         "response": {
           "mean": 4e-6,
+          "std": 1e-6,
           "p50": 4e-6,
           "p95": 6e-6,
           "p99": 7e-6,
-          "std": 1e-6,
           "trend": {
             "trend": [
               4e-6,
@@ -124,12 +165,28 @@
             "window_duration": "10s"
           }
         },
+        "get": {
+          "mean": 0.000123,
+          "std": 0.000042,
+          "p50": 0.000113,
+          "p95": 0.000211,
+          "p99": 0.000211,
+          "trend": {
+            "trend": [
+              0.000209,
+              0.000119,
+              0.000108,
+              0.000098
+            ],
+            "window_duration": "10s"
+          }
+        },
         "send_validation_receipts": {
           "mean": 0.000663,
+          "std": 0.001235,
           "p50": 0.000244,
           "p95": 0.002353,
           "p99": 0.008744,
-          "std": 0.001235,
           "trend": {
             "trend": [
               0.00028,
@@ -143,52 +200,19 @@
           }
         }
       },
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000282,
-          "p50": 0.000264,
-          "p95": 0.000365,
-          "p99": 0.000365,
-          "std": 0.000049,
-          "trend": {
-            "trend": [
-              0.000361,
-              0.000291,
-              0.000269,
-              0.000238
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.000847,
-          "p50": 0.000425,
-          "p95": 0.002619,
-          "p99": 0.00901,
-          "std": 0.001274,
-          "trend": {
-            "trend": [
-              0.000454,
-              0.001326,
-              0.000668,
-              0.000785,
-              0.000724,
-              0.001278
-            ],
-            "window_duration": "10s"
-          }
-        }
+      "handle_request_count": {
+        "response": 114,
+        "call_remote": 0,
+        "get": 14,
+        "get_links": 0,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 100,
+        "remote_signal": 0,
+        "publish_counter_sign": 0,
+        "countersigning_session_negotiation": 0
       }
-    },
-    "retrieval_errors": {
-      "max_per_partition": 0,
-      "mean_count": 0,
-      "min_per_partition": 0,
-      "partition_count": 0,
-      "partitions_above_zero": 0,
-      "total_count": 0,
-      "trend": [],
-      "window_duration": "10s"
     }
   },
   "host_metrics": {

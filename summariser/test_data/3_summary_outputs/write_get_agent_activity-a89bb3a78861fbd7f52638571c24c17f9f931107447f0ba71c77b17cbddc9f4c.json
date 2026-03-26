@@ -53,84 +53,17 @@
         "window_duration": "10s"
       },
       "write_agent_count": 1
-    },
-    "holochain_p2p_metrics": {
-      "handle_incoming_request_duration": {
-        "get": {
-          "mean": 0.00022,
-          "p50": 0.000182,
-          "p95": 0.00041,
-          "p99": 0.001028,
-          "std": 0.000133,
-          "trend": {
-            "trend": [
-              0.000161,
-              0.000174,
-              0.000263,
-              0.000219,
-              0.000203
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_agent_activity": {
-          "mean": 0.019445,
-          "p50": 0.018749,
-          "p95": 0.028119,
-          "p99": 0.031911,
-          "std": 0.004955,
-          "trend": {
-            "trend": [
-              0.014635,
-              0.016497,
-              0.020921,
-              0.025671
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "response": {
-          "mean": 6e-6,
-          "p50": 6e-6,
-          "p95": 9e-6,
-          "p99": 0.000013,
-          "std": 6e-6,
-          "trend": {
-            "trend": [
-              4e-6,
-              6e-6,
-              6e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.01379,
-          "p50": 0.008467,
-          "p95": 0.024983,
-          "p99": 0.03971,
-          "std": 0.062863,
-          "trend": {
-            "trend": [
-              0.002718,
-              0.341749,
-              0.008277,
-              0.011186,
-              0.015707
-            ],
-            "window_duration": "10s"
-          }
-        }
-      },
-      "request_roundtrip_duration": {
+    }
+  },
+  "holochain_metrics": {
+    "p2p": {
+      "request_duration": {
         "get": {
           "mean": 0.0004,
+          "std": 0.000156,
           "p50": 0.000367,
           "p95": 0.000665,
           "p99": 0.00123,
-          "std": 0.000156,
           "trend": {
             "trend": [
               0.000304,
@@ -144,10 +77,10 @@
         },
         "get_agent_activity": {
           "mean": 0.020116,
+          "std": 0.005031,
           "p50": 0.019376,
           "p95": 0.028988,
           "p99": 0.032648,
-          "std": 0.005031,
           "trend": {
             "trend": [
               0.015248,
@@ -160,10 +93,10 @@
         },
         "send_validation_receipts": {
           "mean": 0.014028,
+          "std": 0.062926,
           "p50": 0.008714,
           "p95": 0.025248,
           "p99": 0.039962,
-          "std": 0.062926,
           "trend": {
             "trend": [
               0.002883,
@@ -175,6 +108,97 @@
             "window_duration": "10s"
           }
         }
+      },
+      "request_count": {
+        "get": 68,
+        "get_links": 0,
+        "count_links": 0,
+        "get_agent_activity": 1252,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 1631,
+        "call_remote": 0
+      },
+      "handle_request_duration": {
+        "response": {
+          "mean": 6e-6,
+          "std": 6e-6,
+          "p50": 6e-6,
+          "p95": 9e-6,
+          "p99": 0.000013,
+          "trend": {
+            "trend": [
+              4e-6,
+              6e-6,
+              6e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.00022,
+          "std": 0.000133,
+          "p50": 0.000182,
+          "p95": 0.00041,
+          "p99": 0.001028,
+          "trend": {
+            "trend": [
+              0.000161,
+              0.000174,
+              0.000263,
+              0.000219,
+              0.000203
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_agent_activity": {
+          "mean": 0.019445,
+          "std": 0.004955,
+          "p50": 0.018749,
+          "p95": 0.028119,
+          "p99": 0.031911,
+          "trend": {
+            "trend": [
+              0.014635,
+              0.016497,
+              0.020921,
+              0.025671
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.01379,
+          "std": 0.062863,
+          "p50": 0.008467,
+          "p95": 0.024983,
+          "p99": 0.03971,
+          "trend": {
+            "trend": [
+              0.002718,
+              0.341749,
+              0.008277,
+              0.011186,
+              0.015707
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "handle_request_count": {
+        "response": 2951,
+        "call_remote": 0,
+        "get": 68,
+        "get_links": 0,
+        "count_links": 0,
+        "get_agent_activity": 1252,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 1631,
+        "remote_signal": 0,
+        "publish_counter_sign": 0,
+        "countersigning_session_negotiation": 0
       }
     }
   },

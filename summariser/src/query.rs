@@ -1,12 +1,8 @@
 pub mod holochain_metrics;
-pub mod holochain_p2p_metrics;
 pub mod host_metrics;
-
-use std::collections::BTreeMap;
 
 use crate::analyze::{counter_stats, gauge_stats, standard_timing_stats};
 use crate::model::{CounterStats, GaugeStats, StandardTimingsStats};
-use crate::partition::{Partition, partition_by_tags};
 use crate::{
     frame::LoadError,
     query::host_metrics::{HostMetricMeasurement, InfluxSourced as _},
@@ -329,34 +325,6 @@ pub async fn query_counter(
 ) -> anyhow::Result<CounterStats> {
     let frame = query_metrics(client, summary, measurement, &[], filter_tag).await?;
     counter_stats(frame, "value", window_duration)
-}
-
-/// Query and partition the measurement with the filter tag, then partition the data by `partitioning_tags`.
-/// and run `counter_stats()` on each partition.
-pub async fn query_and_partition_counter(
-    client: &influxdb::Client,
-    summary: &RunSummary,
-    measurement: &str,
-    partitioning_tags: &[&str],
-    filter_tag: Option<(&str, &str)>,
-    window_duration: &str,
-) -> anyhow::Result<BTreeMap<String, CounterStats>> {
-    if partitioning_tags.is_empty() {
-        return Err(anyhow::anyhow!(
-            "Cannot partition metric {measurement} without partitioning tags"
-        ));
-    }
-    let data = query_metrics(client, summary, measurement, partitioning_tags, filter_tag).await?;
-    let Partition::Partitioned(parts) = partition_by_tags(data, partitioning_tags)? else {
-        return Err(anyhow::anyhow!("No partitions found for {measurement}"));
-    };
-    parts
-        .into_iter()
-        .map(|(tag_combination, frame)| {
-            counter_stats(frame, "value", window_duration)
-                .map(|analysis| (tag_combination, analysis))
-        })
-        .collect::<Result<BTreeMap<_, _>, _>>()
 }
 
 /// Query the measurement with the filter tag and run [`gauge_stats()`].

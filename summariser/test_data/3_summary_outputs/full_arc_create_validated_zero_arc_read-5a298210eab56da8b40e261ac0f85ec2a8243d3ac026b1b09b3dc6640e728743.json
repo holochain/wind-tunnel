@@ -31,21 +31,6 @@
     }
   },
   "scenario_metrics": {
-    "app_validation_workflow_duration": {
-      "mean": 6.120344,
-      "p50": 0.002757,
-      "p95": 21.441775,
-      "p99": 21.441775,
-      "std": 9.674779,
-      "trend": {
-        "trend": [
-          0.00052,
-          0.002925,
-          21.417499
-        ],
-        "window_duration": "10s"
-      }
-    },
     "create_rate": {
       "max_mean": 0.0,
       "mean": 0.0,
@@ -104,152 +89,6 @@
         271.0
       ],
       "window_duration": "10s"
-    },
-    "holochain_p2p_metrics": {
-      "handle_incoming_request_count": {
-        "call_remote": 0,
-        "count_links": 0,
-        "countersigning_session_negotiation": 0,
-        "get": 5000,
-        "get_agent_activity": 0,
-        "get_links": 52,
-        "must_get_agent_activity": 0,
-        "publish_counter_sign": 0,
-        "remote_signal": 0,
-        "response": 5000,
-        "send_validation_receipts": 1735
-      },
-      "handle_incoming_request_duration": {
-        "get": {
-          "mean": 0.00022,
-          "p50": 0.000198,
-          "p95": 0.000388,
-          "p99": 0.000523,
-          "std": 0.000111,
-          "trend": {
-            "trend": [
-              0.000185,
-              0.00021,
-              0.00026,
-              0.000279
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_links": {
-          "mean": 0.017267,
-          "p50": 0.013438,
-          "p95": 0.043609,
-          "p99": 0.045377,
-          "std": 0.012206,
-          "trend": {
-            "trend": [
-              0.00646,
-              0.011558,
-              0.02121,
-              0.035212,
-              0.044008
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "response": {
-          "mean": 5e-6,
-          "p50": 5e-6,
-          "p95": 8e-6,
-          "p99": 0.000012,
-          "std": 5e-6,
-          "trend": {
-            "trend": [
-              5e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.021481,
-          "p50": 0.010317,
-          "p95": 0.05232,
-          "p99": 0.189437,
-          "std": 0.083892,
-          "trend": {
-            "trend": [
-              0.000354,
-              0.005789,
-              0.016775,
-              0.016076,
-              0.28055,
-              1.346367
-            ],
-            "window_duration": "10s"
-          }
-        }
-      },
-      "request_count": {
-        "call_remote": 0,
-        "count_links": 0,
-        "get": 5000,
-        "get_agent_activity": 0,
-        "get_links": 27,
-        "must_get_agent_activity": 0,
-        "send_validation_receipts": 1735
-      },
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000425,
-          "p50": 0.000399,
-          "p95": 0.000652,
-          "p99": 0.000861,
-          "std": 0.000165,
-          "trend": {
-            "trend": [
-              0.000359,
-              0.000407,
-              0.000488,
-              0.000503,
-              0.000534
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_links": {
-          "mean": 0.018078,
-          "p50": 0.011895,
-          "p95": 0.046185,
-          "p99": 0.047205,
-          "std": 0.012673,
-          "trend": {
-            "trend": [
-              0.007336,
-              0.01244,
-              0.022239,
-              0.037628,
-              0.046695
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.021791,
-          "p50": 0.010607,
-          "p95": 0.052676,
-          "p99": 0.189678,
-          "std": 0.083925,
-          "trend": {
-            "trend": [
-              0.000534,
-              0.006082,
-              0.017102,
-              0.016372,
-              0.280971,
-              1.347197
-            ],
-            "window_duration": "10s"
-          }
-        }
-      }
     },
     "open_connections": {
       "partitions": [
@@ -336,24 +175,189 @@
         0.0
       ],
       "window_duration": "10s"
+    }
+  },
+  "holochain_metrics": {
+    "workflow_duration": {
+      "app_validation": {
+        "mean": 6.120344,
+        "std": 9.674779,
+        "p50": 0.002757,
+        "p95": 21.441775,
+        "p99": 21.441775,
+        "trend": {
+          "trend": [
+            0.00052,
+            0.002925,
+            21.417499
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "sys_validation": {
+        "mean": 0.020614,
+        "std": 0.233962,
+        "p50": 0.013787,
+        "p95": 0.027376,
+        "p99": 0.035485,
+        "trend": {
+          "trend": [
+            0.000575,
+            0.001744,
+            0.049668,
+            0.015396,
+            0.014601,
+            0.016685,
+            0.019339
+          ],
+          "window_duration": "10s"
+        }
+      }
     },
-    "system_validation_workflow_duration": {
-      "mean": 0.020614,
-      "p50": 0.013787,
-      "p95": 0.027376,
-      "p99": 0.035485,
-      "std": 0.233962,
-      "trend": {
-        "trend": [
-          0.000575,
-          0.001744,
-          0.049668,
-          0.015396,
-          0.014601,
-          0.016685,
-          0.019339
-        ],
-        "window_duration": "10s"
+    "p2p": {
+      "request_duration": {
+        "get": {
+          "mean": 0.000425,
+          "std": 0.000165,
+          "p50": 0.000399,
+          "p95": 0.000652,
+          "p99": 0.000861,
+          "trend": {
+            "trend": [
+              0.000359,
+              0.000407,
+              0.000488,
+              0.000503,
+              0.000534
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.018078,
+          "std": 0.012673,
+          "p50": 0.011895,
+          "p95": 0.046185,
+          "p99": 0.047205,
+          "trend": {
+            "trend": [
+              0.007336,
+              0.01244,
+              0.022239,
+              0.037628,
+              0.046695
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.021791,
+          "std": 0.083925,
+          "p50": 0.010607,
+          "p95": 0.052676,
+          "p99": 0.189678,
+          "trend": {
+            "trend": [
+              0.000534,
+              0.006082,
+              0.017102,
+              0.016372,
+              0.280971,
+              1.347197
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "request_count": {
+        "get": 5000,
+        "get_links": 27,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 1735,
+        "call_remote": 0
+      },
+      "handle_request_duration": {
+        "response": {
+          "mean": 5e-6,
+          "std": 5e-6,
+          "p50": 5e-6,
+          "p95": 8e-6,
+          "p99": 0.000012,
+          "trend": {
+            "trend": [
+              5e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get": {
+          "mean": 0.00022,
+          "std": 0.000111,
+          "p50": 0.000198,
+          "p95": 0.000388,
+          "p99": 0.000523,
+          "trend": {
+            "trend": [
+              0.000185,
+              0.00021,
+              0.00026,
+              0.000279
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.017267,
+          "std": 0.012206,
+          "p50": 0.013438,
+          "p95": 0.043609,
+          "p99": 0.045377,
+          "trend": {
+            "trend": [
+              0.00646,
+              0.011558,
+              0.02121,
+              0.035212,
+              0.044008
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.021481,
+          "std": 0.083892,
+          "p50": 0.010317,
+          "p95": 0.05232,
+          "p99": 0.189437,
+          "trend": {
+            "trend": [
+              0.000354,
+              0.005789,
+              0.016775,
+              0.016076,
+              0.28055,
+              1.346367
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
+      "handle_request_count": {
+        "response": 5000,
+        "call_remote": 0,
+        "get": 5000,
+        "get_links": 52,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 1735,
+        "remote_signal": 0,
+        "publish_counter_sign": 0,
+        "countersigning_session_negotiation": 0
       }
     }
   },

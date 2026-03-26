@@ -5,7 +5,6 @@ use crate::analyze::{
 use crate::model::{
     GaugeStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
 };
-use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use crate::query::{query_custom_data, query_zome_call_instrument_data, zome_call_error_count};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
@@ -22,7 +21,6 @@ pub(crate) struct WriteGetAgentActivityVolatileSummary {
     off_duration_s: PartitionedTimingStats,
     reached_target_arc_before_shutdown: PartitionedGaugeStats,
     error_count: usize,
-    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_write_get_agent_activity_volatile(
@@ -154,6 +152,5 @@ pub(crate) async fn summarize_write_get_agent_activity_volatile(
         )
         .context("Reached target arc stats")?,
         error_count: zome_call_error_count(client.clone(), &summary).await?,
-        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
 }

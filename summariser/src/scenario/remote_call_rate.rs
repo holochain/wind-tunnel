@@ -1,5 +1,4 @@
 use crate::model::PartitionedTimingStats;
-use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use crate::{analyze, query};
 use analyze::partitioned_timing_stats;
 use anyhow::Context;
@@ -15,8 +14,6 @@ pub(crate) struct RemoteCallRateSummary {
     round_trip_timing: PartitionedTimingStats,
     /// Number of zome call errors observed during the run
     error_count: usize,
-    /// Holochain p2p network metrics for the run
-    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_remote_call_rate(
@@ -49,6 +46,5 @@ pub(crate) async fn summarize_remote_call_rate(
         round_trip_timing: partitioned_timing_stats(round_trip_frame, "value", "10s", &["agent"])
             .context("Timing stats for round trip")?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
 }

@@ -1,10 +1,7 @@
 use crate::{
     analyze::{counter_stats, round_to_n_dp, standard_timing_stats},
     model::{CounterStats, StandardTimingsStats},
-    query::{
-        self,
-        holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics},
-    },
+    query,
 };
 use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
@@ -21,8 +18,6 @@ pub(crate) struct RemoteSignalsSummary {
     ///
     /// Zero when no timeouts occurred. Values > 0 indicate reliability issues.
     timeout_rate: f64,
-    /// Holochain p2p network metrics for the run
-    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_remote_signals(
@@ -76,6 +71,5 @@ pub(crate) async fn summarize_remote_signals(
         .context("Send timing stats")?,
         remote_signal_timeout,
         timeout_rate,
-        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
 }

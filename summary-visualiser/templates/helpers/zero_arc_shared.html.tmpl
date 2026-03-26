@@ -8,7 +8,6 @@ Fields:
   Fields: `create_rate`, `sync_lag_timing`, `sync_lag_rate`, `open_connections`, `error_count`
 * `extra_metrics` (HTML, optional): Extra metrics to inject
   between the open connections metric and the error count metric.
-  Only used by `zero_arc_create_data_validated` at present.
 */}}
 
 {{ define "zero_arc_shared_open_connections" }}
@@ -66,8 +65,9 @@ Fields:
             ))
         ) }}
 
-        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
 
     {{ with .host_metrics }}
         {{ template "host_metrics" . }}

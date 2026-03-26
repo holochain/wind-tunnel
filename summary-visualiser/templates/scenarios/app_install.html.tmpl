@@ -35,6 +35,8 @@
         {{ end }}
     {{ end }}
 
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
+
     {{ with .host_metrics }}
         {{ template "host_metrics" . }}
     {{ end }}

@@ -64,22 +64,6 @@
             {{ end }}
         {{ end }}
 
-        {{ with .app_validation_workflow_duration }}
-            {{ template "scenario_metric" (dict
-                "name" "App validation workflow duration"
-                "description" "The time taken to apply app validation to the data."
-                "content" (tmpl.Exec "timing_and_trend" .)
-            ) }}
-        {{ end }}
-
-        {{ with .system_validation_workflow_duration }}
-            {{ template "scenario_metric" (dict
-                "name" "System validation workflow duration"
-                "description" "The time taken to apply system validation to the data."
-                "content" (tmpl.Exec "timing_and_trend" .)
-            ) }}
-        {{ end }}
-
         {{ template "scenario_metric" (dict
             "name" "Error count"
             "description" "The number of errors accumulated across all nodes."
@@ -88,6 +72,7 @@
             ))
         ) }}
 
-        {{ template "holochain_p2p_metrics" .holochain_p2p_metrics }}
     {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
 </div>
