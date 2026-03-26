@@ -1,7 +1,6 @@
 use crate::analyze::{partitioned_rate_stats, partitioned_timing_stats};
 use crate::model::{PartitionedRateStats, PartitionedTimingStats};
 use crate::query;
-use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use crate::query::zome_call_error_count;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -15,8 +14,6 @@ pub(crate) struct ValidationReceiptsSummary {
     receipts_complete_rate: PartitionedRateStats,
     /// Number of zome call errors observed during the run
     error_count: usize,
-    /// Holochain p2p network metrics for the run
-    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_validation_receipts(
@@ -50,6 +47,5 @@ pub(crate) async fn summarize_validation_receipts(
         )
         .context("Receipts complete rate")?,
         error_count: zome_call_error_count(client.clone(), &summary).await?,
-        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
 }

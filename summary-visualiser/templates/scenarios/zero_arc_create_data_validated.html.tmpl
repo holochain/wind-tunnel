@@ -13,27 +13,4 @@
     "data" .run_summary
 ) }}
 
-{{ define "zero_arc_create_data_validated_extra_metrics" }}
-    {{ with .scenario_metrics }}
-        {{ with .app_validation_workflow_duration }}
-            {{ template "scenario_metric" (dict
-                "name" "App validation workflow duration"
-                "description" "The time taken to apply app validation to the data."
-                "content" (tmpl.Exec "timing_and_trend" .)
-            ) }}
-        {{ end }}
-
-        {{ with .system_validation_workflow_duration }}
-            {{ template "scenario_metric" (dict
-                "name" "System validation workflow duration"
-                "description" "The time taken to apply system validation to the data."
-                "content" (tmpl.Exec "timing_and_trend" .)
-            ) }}
-        {{ end }}
-    {{ end }}
-{{ end }}
-
-{{ template "zero_arc_shared" (merge
-    (dict "extra_metrics" (tmpl.Exec "zero_arc_create_data_validated_extra_metrics" .))
-    .
-) }}
+{{ template "zero_arc_shared" . }}

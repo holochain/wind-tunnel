@@ -3,14 +3,9 @@ use crate::analyze::{
     partitioned_rate_stats, partitioned_timing_stats,
 };
 use crate::model::{
-    HolochainWorkflowKind, PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats,
-    PartitionedTimingStats, StandardTimingsStats,
+    PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
 };
 use crate::query;
-use crate::query::holochain_metrics::query_workflow_duration;
-use crate::query::holochain_p2p_metrics::{
-    HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
-};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -37,14 +32,8 @@ pub(crate) struct ZeroArcCreateValidatedSummary {
     /// how many readers there are. A value < 1 indicates data loss or incomplete propagation.
     /// Zero if nothing was created or there were no receivers.
     delivery_ratio: f64,
-    /// Duration of AppValidation workflow executions (seconds); None if no data
-    app_validation_workflow_duration: Option<StandardTimingsStats>,
-    /// Duration of SysValidation workflow executions (seconds); None if no data
-    system_validation_workflow_duration: Option<StandardTimingsStats>,
     /// Number of zome call errors observed during the run
     error_count: usize,
-    /// Holochain p2p network metrics including operation counts for the run
-    holochain_p2p_metrics: HolochainP2pMetricsWithCounts,
 }
 
 pub(crate) async fn summarize_zero_arc_create_data_validated(
@@ -110,19 +99,6 @@ pub(crate) async fn summarize_zero_arc_create_data_validated(
         entry_created_count,
         recv_count,
         delivery_ratio,
-        app_validation_workflow_duration: query_workflow_duration(
-            &client,
-            &summary,
-            HolochainWorkflowKind::AppValidation,
-        )
-        .await?,
-        system_validation_workflow_duration: query_workflow_duration(
-            &client,
-            &summary,
-            HolochainWorkflowKind::SysValidation,
-        )
-        .await?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-        holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,
     })
 }

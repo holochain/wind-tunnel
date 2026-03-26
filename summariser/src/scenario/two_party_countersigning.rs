@@ -4,7 +4,6 @@ use crate::analyze::{
 };
 use crate::model::{PartitionedCounterStats, PartitionedRateStats, PartitionedTimingStats};
 use crate::query;
-use crate::query::holochain_p2p_metrics::{HolochainP2pMetrics, query_holochain_p2p_metrics};
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
@@ -37,8 +36,6 @@ pub(crate) struct TwoPartyCountersigningSummary {
     /// Computed as initiated_success_rate.mean / total_initiated_rate.mean.
     /// Zero if no sessions were initiated.
     initiated_success_ratio: f64,
-    /// Holochain p2p network metrics for the run
-    holochain_p2p_metrics: HolochainP2pMetrics,
 }
 
 pub(crate) async fn summarize_countersigning_two_party(
@@ -161,6 +158,5 @@ pub(crate) async fn summarize_countersigning_two_party(
         )
         .context("Initiated failure count")?,
         initiated_success_ratio,
-        holochain_p2p_metrics: query_holochain_p2p_metrics(&client, &summary).await?,
     })
 }

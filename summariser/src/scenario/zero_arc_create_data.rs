@@ -6,9 +6,6 @@ use crate::model::{
     PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
 };
 use crate::query;
-use crate::query::holochain_p2p_metrics::{
-    HolochainP2pMetricsWithCounts, query_holochain_p2p_metrics_with_counts,
-};
 use anyhow::Context;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
@@ -37,8 +34,6 @@ pub(crate) struct ZeroArcCreateSummary {
     delivery_ratio: f64,
     /// Number of zome call errors observed during the run
     error_count: usize,
-    /// Holochain p2p network metrics including operation counts for the run
-    holochain_p2p_metrics: HolochainP2pMetricsWithCounts,
 }
 
 pub(crate) async fn summarize_zero_arc_create_data(
@@ -105,6 +100,5 @@ pub(crate) async fn summarize_zero_arc_create_data(
         recv_count,
         delivery_ratio,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
-        holochain_p2p_metrics: query_holochain_p2p_metrics_with_counts(&client, &summary).await?,
     })
 }
