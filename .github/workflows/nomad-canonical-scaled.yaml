@@ -165,3 +165,15 @@ jobs:
 
           # Cancel all threefold deployment contracts
           nix develop .#ci --command tf-grid-cmd cancel contracts -a
+
+      - name: Notify team via Mattermost if cancellation failed
+        uses: holochain/actions/mattermost-notify@v1.8.0
+        if: ${{ failure() }}
+        with:
+          MATTERMOST_PERSONAL_ACCESS_TOKEN: ${{ secrets.HOLOCHAIN_NOTIFIER_MATTERMOST_PERSONAL_ACCESS_TOKEN }}
+          channel_id: cxskxqhb37rtjp5w8myri3pdhh # HCF Tech channel
+          message: |-
+            ALERT! A nomad canonical-scaled workflow run *failed* to cancel all Threefold node contracts.
+            You may need to visit the [Threefold grid dashboard](https://dashboard.grid.tf/) to cancel all contracts manually.
+
+            Workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
