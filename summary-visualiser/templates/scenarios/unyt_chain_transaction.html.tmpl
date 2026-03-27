@@ -1,0 +1,135 @@
+{{- define "unyt_chain_transaction_description" }}
+<p>Tests Unyt chain transaction system performance with credit ledger and smart agreement primitives. The scenario has three roles:</p>
+<ul>
+    <li><b><code>initiate</code></b>: Progenitor agent that initializes the network with system templates, global configuration, and foundational smart agreements</li>
+    <li><b><code>spend</code></b>: Transaction agents that accept incoming commitments and create spend transactions distributed among participants</li>
+    <li><b><code>smart_agreements</code></b>: Smart agreement agents that collect RAVEs, execute agreements, and create parked link spending transactions</li>
+</ul>
+{{ end -}}
+
+{{ template "scenario_summary" (dict
+    "title" "Unyt Chain Transaction"
+    "description" (tmpl.Exec "unyt_chain_transaction_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ $metrics := . }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Global definition propagation time"
+            "description" "Time from session start until each agent detected the global_definition propagation. Shows aggregate statistics across agents."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .global_definition_propagation_time)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Sync lag: Commitment transactions"
+            "description" "Time between commitment creation and discovery by the receiving agent (seconds). Shows aggregate statistics across agents."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .sync_lag_commitment)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Sync lag: RAVE transactions"
+            "description" "Time between RAVE creation and discovery by smart_agreements agents (seconds). Shows aggregate statistics across agents."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .sync_lag_rave)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Sync lag: Grouped parked requests"
+            "description" "Time between grouped_parked request creation and discovery (seconds). Shows aggregate statistics across agents."
+            "content" (tmpl.Exec "timings_overall_and_per_agent" .sync_lag_grouped_parked)
+        ) }}
+
+        {{ with .ledger_balance.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Final ledger balance"
+                "description" "Final ledger balance across all agents at teardown (base unyt units). Sum should be stable across runs; deviation indicates value was created or destroyed."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.ledger_balance)
+            ) }}
+        {{ end }}
+
+        {{ with .ledger_fees.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Final ledger fees"
+                "description" "Final ledger fees owed across all agents at teardown (base unyt units)."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.ledger_fees)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_proposals.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction proposals"
+                "description" "Remaining actionable transaction proposals at teardown. Non-zero sum indicates work left unfinished."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_proposals)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_commitments.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction commitments"
+                "description" "Remaining actionable transaction commitments at teardown. Non-zero sum indicates work left unfinished."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_commitments)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_accepts.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction accepts"
+                "description" "Remaining actionable transaction accepts at teardown. Non-zero sum indicates work left unfinished."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_accepts)
+            ) }}
+        {{ end }}
+
+        {{ with .actionable_transaction_rejects.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Actionable transaction rejects"
+                "description" "Remaining actionable transaction rejects at teardown. Non-zero sum indicates work left unfinished."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_rejects)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_accepts.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction accepts"
+                "description" "Completed transaction accepts at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_accepts)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_spends.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction spends"
+                "description" "Completed transaction spends at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_spends)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_raves.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction RAVEs"
+                "description" "Completed transaction RAVEs at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_raves)
+            ) }}
+        {{ end }}
+
+        {{ with .parked_spends.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Parked spends"
+                "description" "Parked spend counts at teardown. These are pending link-spending transactions."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.parked_spends)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The total number of errors accumulated across all agents over the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
+    {{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
+</div>

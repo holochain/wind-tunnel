@@ -163,6 +163,16 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_zero_arc_create_and_read
         )),
+        "unyt_chain_transaction" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            summarize_unyt_chain_transaction
+        )),
+        "unyt_chain_transaction_zero_arc" => Some(execute_report_with_host_metrics!(
+            client,
+            summary,
+            summarize_unyt_chain_transaction_zero_arc
+        )),
         _ => {
             log::warn!("No report for scenario: {name}");
             None

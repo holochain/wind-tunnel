@@ -31,9 +31,9 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             );
             reporter.add_custom(
                 ReportMetric::new("global_definition_propagation_time")
-                    .with_field("at", session_started_at.elapsed().as_secs())
                     .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
-                    .with_tag("arc", arc_type.as_tag()),
+                    .with_tag("arc", arc_type.as_tag())
+                    .with_field("value", session_started_at.elapsed().as_secs()),
             );
             ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {

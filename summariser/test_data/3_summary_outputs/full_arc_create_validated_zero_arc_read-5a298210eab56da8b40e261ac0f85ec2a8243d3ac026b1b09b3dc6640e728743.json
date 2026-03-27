@@ -31,24 +31,9 @@
     }
   },
   "scenario_metrics": {
-    "app_validation_workflow_duration": {
-      "mean": 6.120344,
-      "p50": 0.002757,
-      "p95": 21.441775,
-      "p99": 21.441775,
-      "std": 9.674779,
-      "trend": {
-        "trend": [
-          0.00052,
-          0.002925,
-          21.417499
-        ],
-        "window_duration": "10s"
-      }
-    },
     "create_rate": {
-      "max_mean": 0.0,
       "mean": 0.0,
+      "max_mean": 0.0,
       "min_mean": 0.0,
       "trend": [
         223.5,
@@ -56,30 +41,10 @@
       ],
       "window_duration": "10s"
     },
-    "delivery_ratio": 0.91,
-    "entry_created_count": {
-      "max_per_partition": 1852,
-      "mean_count": 1850,
-      "min_per_partition": 1848,
-      "partition_count": 2,
-      "partitions_above_zero": 2,
-      "total_count": 3700,
-      "trend": [
-        222.5,
-        451.0,
-        366.5,
-        284.5,
-        254.0,
-        230.5,
-        35.0
-      ],
-      "window_duration": "10s"
-    },
-    "error_count": 0,
     "fetch_lag_timing": {
-      "max_mean": 5.715262,
       "mean": 5.715262,
       "mean_std_dev": 3.626203,
+      "max_mean": 5.715262,
       "min_mean": 5.715262,
       "trend": [
         5.559865,
@@ -92,8 +57,8 @@
       "window_duration": "10s"
     },
     "fetch_rate": {
-      "max_mean": 460.5,
       "mean": 460.5,
+      "max_mean": 460.5,
       "min_mean": 460.5,
       "trend": [
         1254.0,
@@ -105,27 +70,223 @@
       ],
       "window_duration": "10s"
     },
+    "retrieval_errors": {
+      "total_count": 0,
+      "partition_count": 1,
+      "partitions_above_zero": 0,
+      "mean_count": 0,
+      "max_per_partition": 0,
+      "min_per_partition": 0,
+      "trend": [
+        0.0
+      ],
+      "window_duration": "10s"
+    },
+    "open_connections": {
+      "partitions": [
+        {
+          "key": [
+            {
+              "key": "arc",
+              "value": "full"
+            }
+          ],
+          "gauge_stats": {
+            "mean": 1.58,
+            "std": 0.82,
+            "p5": 0.0,
+            "p95": 2.0,
+            "trend": {
+              "trend": [
+                0.0,
+                0.67,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0
+              ],
+              "window_duration": "10s"
+            }
+          }
+        },
+        {
+          "key": [
+            {
+              "key": "arc",
+              "value": "zero"
+            }
+          ],
+          "gauge_stats": {
+            "mean": 1.5,
+            "std": 0.87,
+            "p5": 0.0,
+            "p95": 2.0,
+            "trend": {
+              "trend": [
+                0.0,
+                0.67,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0
+              ],
+              "window_duration": "10s"
+            }
+          }
+        }
+      ]
+    },
+    "entry_created_count": {
+      "total_count": 3700,
+      "partition_count": 2,
+      "partitions_above_zero": 2,
+      "mean_count": 1850,
+      "max_per_partition": 1852,
+      "min_per_partition": 1848,
+      "trend": [
+        222.5,
+        451.0,
+        366.5,
+        284.5,
+        254.0,
+        230.5,
+        35.0
+      ],
+      "window_duration": "10s"
+    },
+    "recv_count": {
+      "total_count": 3367,
+      "partition_count": 1,
+      "partitions_above_zero": 1,
+      "mean_count": 3367,
+      "max_per_partition": 3367,
+      "min_per_partition": 3367,
+      "trend": [
+        0.0,
+        1254.0,
+        604.0,
+        378.0,
+        393.0,
+        99.0,
+        0.0
+      ],
+      "window_duration": "10s"
+    },
+    "delivery_ratio": 0.91,
+    "error_count": 0,
+    "app_validation_workflow_duration": {
+      "mean": 6.120344,
+      "std": 9.674779,
+      "p50": 0.002757,
+      "p95": 21.441775,
+      "p99": 21.441775,
+      "trend": {
+        "trend": [
+          0.00052,
+          0.002925,
+          21.417499
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "system_validation_workflow_duration": {
+      "mean": 0.020614,
+      "std": 0.233962,
+      "p50": 0.013787,
+      "p95": 0.027376,
+      "p99": 0.035485,
+      "trend": {
+        "trend": [
+          0.000575,
+          0.001744,
+          0.049668,
+          0.015396,
+          0.014601,
+          0.016685,
+          0.019339
+        ],
+        "window_duration": "10s"
+      }
+    },
     "holochain_p2p_metrics": {
-      "handle_incoming_request_count": {
-        "call_remote": 0,
-        "count_links": 0,
-        "countersigning_session_negotiation": 0,
-        "get": 5000,
-        "get_agent_activity": 0,
-        "get_links": 52,
-        "must_get_agent_activity": 0,
-        "publish_counter_sign": 0,
-        "remote_signal": 0,
-        "response": 5000,
-        "send_validation_receipts": 1735
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000425,
+          "std": 0.000165,
+          "p50": 0.000399,
+          "p95": 0.000652,
+          "p99": 0.000861,
+          "trend": {
+            "trend": [
+              0.000359,
+              0.000407,
+              0.000488,
+              0.000503,
+              0.000534
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.018078,
+          "std": 0.012673,
+          "p50": 0.011895,
+          "p95": 0.046185,
+          "p99": 0.047205,
+          "trend": {
+            "trend": [
+              0.007336,
+              0.01244,
+              0.022239,
+              0.037628,
+              0.046695
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.021791,
+          "std": 0.083925,
+          "p50": 0.010607,
+          "p95": 0.052676,
+          "p99": 0.189678,
+          "trend": {
+            "trend": [
+              0.000534,
+              0.006082,
+              0.017102,
+              0.016372,
+              0.280971,
+              1.347197
+            ],
+            "window_duration": "10s"
+          }
+        }
       },
       "handle_incoming_request_duration": {
+        "response": {
+          "mean": 5e-6,
+          "std": 5e-6,
+          "p50": 5e-6,
+          "p95": 8e-6,
+          "p99": 0.000012,
+          "trend": {
+            "trend": [
+              5e-6,
+              6e-6,
+              6e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
         "get": {
           "mean": 0.00022,
+          "std": 0.000111,
           "p50": 0.000198,
           "p95": 0.000388,
           "p99": 0.000523,
-          "std": 0.000111,
           "trend": {
             "trend": [
               0.000185,
@@ -138,10 +299,10 @@
         },
         "get_links": {
           "mean": 0.017267,
+          "std": 0.012206,
           "p50": 0.013438,
           "p95": 0.043609,
           "p99": 0.045377,
-          "std": 0.012206,
           "trend": {
             "trend": [
               0.00646,
@@ -153,27 +314,12 @@
             "window_duration": "10s"
           }
         },
-        "response": {
-          "mean": 5e-6,
-          "p50": 5e-6,
-          "p95": 8e-6,
-          "p99": 0.000012,
-          "std": 5e-6,
-          "trend": {
-            "trend": [
-              5e-6,
-              6e-6,
-              6e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
         "send_validation_receipts": {
           "mean": 0.021481,
+          "std": 0.083892,
           "p50": 0.010317,
           "p95": 0.05232,
           "p99": 0.189437,
-          "std": 0.083892,
           "trend": {
             "trend": [
               0.000354,
@@ -188,172 +334,26 @@
         }
       },
       "request_count": {
-        "call_remote": 0,
-        "count_links": 0,
         "get": 5000,
-        "get_agent_activity": 0,
         "get_links": 27,
+        "count_links": 0,
+        "get_agent_activity": 0,
         "must_get_agent_activity": 0,
-        "send_validation_receipts": 1735
+        "send_validation_receipts": 1735,
+        "call_remote": 0
       },
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000425,
-          "p50": 0.000399,
-          "p95": 0.000652,
-          "p99": 0.000861,
-          "std": 0.000165,
-          "trend": {
-            "trend": [
-              0.000359,
-              0.000407,
-              0.000488,
-              0.000503,
-              0.000534
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_links": {
-          "mean": 0.018078,
-          "p50": 0.011895,
-          "p95": 0.046185,
-          "p99": 0.047205,
-          "std": 0.012673,
-          "trend": {
-            "trend": [
-              0.007336,
-              0.01244,
-              0.022239,
-              0.037628,
-              0.046695
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.021791,
-          "p50": 0.010607,
-          "p95": 0.052676,
-          "p99": 0.189678,
-          "std": 0.083925,
-          "trend": {
-            "trend": [
-              0.000534,
-              0.006082,
-              0.017102,
-              0.016372,
-              0.280971,
-              1.347197
-            ],
-            "window_duration": "10s"
-          }
-        }
-      }
-    },
-    "open_connections": {
-      "partitions": [
-        {
-          "gauge_stats": {
-            "mean": 1.58,
-            "p5": 0.0,
-            "p95": 2.0,
-            "std": 0.82,
-            "trend": {
-              "trend": [
-                0.0,
-                0.67,
-                2.0,
-                2.0,
-                2.0,
-                2.0,
-                2.0
-              ],
-              "window_duration": "10s"
-            }
-          },
-          "key": [
-            {
-              "key": "arc",
-              "value": "full"
-            }
-          ]
-        },
-        {
-          "gauge_stats": {
-            "mean": 1.5,
-            "p5": 0.0,
-            "p95": 2.0,
-            "std": 0.87,
-            "trend": {
-              "trend": [
-                0.0,
-                0.67,
-                2.0,
-                2.0,
-                2.0,
-                2.0,
-                2.0
-              ],
-              "window_duration": "10s"
-            }
-          },
-          "key": [
-            {
-              "key": "arc",
-              "value": "zero"
-            }
-          ]
-        }
-      ]
-    },
-    "recv_count": {
-      "max_per_partition": 3367,
-      "mean_count": 3367,
-      "min_per_partition": 3367,
-      "partition_count": 1,
-      "partitions_above_zero": 1,
-      "total_count": 3367,
-      "trend": [
-        0.0,
-        1254.0,
-        604.0,
-        378.0,
-        393.0,
-        99.0,
-        0.0
-      ],
-      "window_duration": "10s"
-    },
-    "retrieval_errors": {
-      "max_per_partition": 0,
-      "mean_count": 0,
-      "min_per_partition": 0,
-      "partition_count": 1,
-      "partitions_above_zero": 0,
-      "total_count": 0,
-      "trend": [
-        0.0
-      ],
-      "window_duration": "10s"
-    },
-    "system_validation_workflow_duration": {
-      "mean": 0.020614,
-      "p50": 0.013787,
-      "p95": 0.027376,
-      "p99": 0.035485,
-      "std": 0.233962,
-      "trend": {
-        "trend": [
-          0.000575,
-          0.001744,
-          0.049668,
-          0.015396,
-          0.014601,
-          0.016685,
-          0.019339
-        ],
-        "window_duration": "10s"
+      "handle_incoming_request_count": {
+        "response": 5000,
+        "call_remote": 0,
+        "get": 5000,
+        "get_links": 52,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 0,
+        "send_validation_receipts": 1735,
+        "remote_signal": 0,
+        "publish_counter_sign": 0,
+        "countersigning_session_negotiation": 0
       }
     }
   },

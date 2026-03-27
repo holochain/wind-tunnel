@@ -72,11 +72,15 @@ The scenario records several custom metrics:
   observed, tagged with `arc=zero` or `arc=full` to compare propagation times
 - `wt.custom.recv_count`: Tracks the total number of unique code templates discovered by each observer agent, tagged
   with `arc=zero` or `arc=full`
-- `wt.custom.ledger_state`: Captures the final state of the ledger at scenario teardown for analysis
-- `wt.custom.actionable_transactions`: Records the count of actionable proposals, commitments, accepts, and rejects at
-  scenario teardown
-- `wt.custom.completed_transactions`: Records the count of completed transactions, including accepts, spends, and RAVE
-  agreement executions, at scenario teardown
+- `wt.custom.ledger_balance`: Captures the final balance of the ledger at scenario teardown for analysis
+- `wt.custom.ledger_fees`: Captures the final fees of the ledger at scenario teardown for analysis
+- `wt.custom.actionable_transaction_proposals`: Records the count of actionable transaction proposals at scenario teardown
+- `wt.custom.actionable_transaction_commitments`: Records the count of actionable transaction commitments at scenario teardown
+- `wt.custom.actionable_transaction_accepts`: Records the count of actionable transaction accepts at scenario teardown
+- `wt.custom.actionable_transaction_rejects`: Records the count of actionable transaction rejects at scenario teardown
+- `wt.custom.completed_transaction_accepts`: Records the count of completed accept transactions at scenario teardown
+- `wt.custom.completed_transaction_spends`: Records the count of completed spend transactions at scenario teardown
+- `wt.custom.completed_transaction_raves`: Records the count of completed RAVE agreement executions at scenario teardown
 - `wt.custom.parked_spends`: Records the count of parked spends at scenario teardown
 
 Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.

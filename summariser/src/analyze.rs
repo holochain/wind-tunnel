@@ -1,8 +1,8 @@
 use crate::frame::LoadError;
 use crate::model::{
-    ChainHeadStats, CounterStats, Float64Trend, GaugeStats, PartitionGaugeStats, PartitionKey,
-    PartitionedCounterStats, PartitionedGaugeStats, PartitionedRateStats, PartitionedTimingStats,
-    StandardRateStats, StandardTimingsStats,
+    AggregatedSingleValue, ChainHeadStats, CounterStats, Float64Trend, GaugeStats,
+    PartitionGaugeStats, PartitionKey, PartitionedCounterStats, PartitionedGaugeStats,
+    PartitionedRateStats, PartitionedTimingStats, StandardRateStats, StandardTimingsStats,
 };
 use anyhow::Context;
 use itertools::Itertools;
@@ -926,6 +926,30 @@ pub(crate) fn partitioned_rate_stats(
         min_mean: round_to_n_dp(if min_mean == f64::MAX { 0.0 } else { min_mean }, 2),
         trend,
         window_duration: window_duration.to_string(),
+    })
+}
+
+/// Aggregate a metric recorded once per partition (e.g. once per agent at teardown) into
+/// [`AggregatedSingleValue`]. Collapses per-partition values into sum, mean, min, max, and count.
+pub(crate) fn aggregated_single_value(
+    frame: DataFrame,
+    column: &str,
+) -> anyhow::Result<AggregatedSingleValue> {
+    let series = frame.column(column)?.cast(&DataType::Int64)?;
+    let series = series.i64()?;
+
+    let partition_count = series.len();
+    let sum = series.sum().unwrap_or(0);
+    let mean = series.mean().unwrap_or(0.0);
+    let min = series.min().unwrap_or(0);
+    let max = series.max().unwrap_or(0);
+
+    Ok(AggregatedSingleValue {
+        sum,
+        mean: round_to_n_dp(mean, 2),
+        min,
+        max,
+        partition_count,
     })
 }
 

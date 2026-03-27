@@ -6,7 +6,8 @@ use holochain_types::prelude::{ActionHashB64, GetStrategy};
 use holochain_wind_tunnel_runner::prelude::*;
 use rand::seq::IndexedRandom;
 use rave_engine::types::{
-    CreateParkedSpendInput, PermissionSpace, RAVEExecuteInputs, TransactionDetails, UnitMap,
+    AcceptInput, CommitmentInput, CreateParkedSpendInput, PermissionSpace, RAVEExecuteInputs,
+    TransactionDetails, UnitMap,
     entries::{
         AgreementDefInput, CodeTemplate, DataFetchInstruction, EARole, ExecutionEngine,
         ExecutorRules, InputRules, Instruction, ProvidedBy, RoleQualification, SmartAgreement,
@@ -27,11 +28,10 @@ fn env_number_of_links_processed() -> usize {
 
 /// Smart agreements agent behaviour shared across Unyt scenarios.
 ///
-/// When `arc_type` is `Some`, the `global_definition_propagation_time`
-/// metric is tagged with an `arc` key (e.g. `"zero"` for 0-arc agents).
+/// Metrics are tagged with an `arc` key, indicating zero or full arc.
 pub fn agent_behaviour<SV: UnytScenarioValues>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
-    arc_type: Option<ArcType>,
+    arc_type: ArcType,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
     let session_started_at = ctx
@@ -47,12 +47,10 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 "Network initialized for agent {}",
                 ctx.get().cell_id().agent_pubkey()
             );
-            let mut metric = ReportMetric::new("global_definition_propagation_time")
-                .with_field("at", session_started_at.elapsed().as_secs())
-                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string());
-            if let Some(tag) = arc_type {
-                metric = metric.with_tag("arc", tag.as_tag());
-            }
+            let metric = ReportMetric::new("global_definition_propagation_time")
+                .with_tag("arc", arc_type.as_tag())
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+                .with_field("value", session_started_at.elapsed().as_secs());
             reporter.add_custom(metric);
             ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {
@@ -66,9 +64,35 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     }
 
-    // test 2: Accepting incoming transactions
-    // check incoming RAVE transactions
-    log::info!("Checking incoming transactions");
+    // test 2: Accept incoming commitments and create outgoing commitments
+    let actionable_transactions = match ctx.unyt_get_actionable_transactions() {
+        Ok(txs) => txs,
+        Err(err) => {
+            log::warn!("Failed to get actionable transactions (transient DHT issue): {err}");
+            thread::sleep(Duration::from_secs(1));
+            return Ok(());
+        }
+    };
+
+    // Accept incoming commitments
+    if !actionable_transactions.commitment_actionable.is_empty() {
+        log::info!(
+            "Agent {} | accepting {} commitment transactions",
+            ctx.get().cell_id().agent_pubkey(),
+            actionable_transactions.commitment_actionable.len()
+        );
+    }
+    for transaction in actionable_transactions.commitment_actionable {
+        if let Err(err) = ctx.unyt_create_accept(AcceptInput {
+            commitment: transaction.id.clone(),
+            note: None,
+        }) {
+            log::warn!("Failed to accept transaction '{transaction:?}': {err}");
+        };
+    }
+
+    // test 3: Accepting incoming RAVE transactions
+    log::info!("Checking incoming RAVE transactions");
     let incoming_transactions = match ctx.unyt_get_incoming_raves() {
         Ok(txs) => txs,
         Err(err) => {
@@ -77,36 +101,34 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     };
 
-    // Measure sync lag for newly discovered RAVE transactions (zero-arc only)
-    if let Some(tag) = arc_type {
-        let now_us = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
-            .as_micros();
-        let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
-        for tx in &incoming_transactions {
-            if ctx
-                .get()
-                .scenario_values
-                .seen_transactions()
-                .contains(&tx.id)
-            {
-                continue;
-            }
-            let published_at_us = tx.timestamp.as_micros() as u128;
-            let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
-            reporter.add_custom(
-                ReportMetric::new("sync_lag")
-                    .with_tag("agent", agent_key.clone())
-                    .with_tag("arc", tag.as_tag())
-                    .with_tag("tx_type", "rave")
-                    .with_field("value", lag_s),
-            );
-            ctx.get_mut()
-                .scenario_values
-                .seen_transactions_mut()
-                .insert(tx.id.clone());
+    // Measure sync lag for newly discovered RAVE transactions
+    let now_us = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system clock before UNIX epoch")
+        .as_micros();
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+    for tx in &incoming_transactions {
+        if ctx
+            .get()
+            .scenario_values
+            .seen_transactions()
+            .contains(&tx.id)
+        {
+            continue;
         }
+        let published_at_us = tx.timestamp.as_micros() as u128;
+        let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
+        reporter.add_custom(
+            ReportMetric::new("sync_lag")
+                .with_tag("tx_type", "rave")
+                .with_tag("agent", agent_key.clone())
+                .with_tag("arc", arc_type.as_tag())
+                .with_field("value", lag_s),
+        );
+        ctx.get_mut()
+            .scenario_values
+            .seen_transactions_mut()
+            .insert(tx.id.clone());
     }
 
     for transaction in incoming_transactions {
@@ -116,7 +138,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     }
 
-    //test 3
+    // test 4
     // execute any smart agreement that is ready to be executed
     let number_of_links_processed = env_number_of_links_processed();
     log::info!("Getting requests to execute agreements");
@@ -129,35 +151,33 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     };
 
     // Measure sync lag for newly discovered grouped-parked requests (zero-arc only)
-    if let Some(tag) = arc_type {
-        let now_us = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
-            .as_micros();
-        let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
-        for tx in &requests {
-            if ctx
-                .get()
-                .scenario_values
-                .seen_transactions()
-                .contains(&tx.id)
-            {
-                continue;
-            }
-            let published_at_us = tx.timestamp.as_micros() as u128;
-            let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
-            reporter.add_custom(
-                ReportMetric::new("sync_lag")
-                    .with_tag("agent", agent_key.clone())
-                    .with_tag("arc", tag.as_tag())
-                    .with_tag("tx_type", "grouped_parked")
-                    .with_field("value", lag_s),
-            );
-            ctx.get_mut()
-                .scenario_values
-                .seen_transactions_mut()
-                .insert(tx.id.clone());
+    let now_us = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system clock before UNIX epoch")
+        .as_micros();
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+    for tx in &requests {
+        if ctx
+            .get()
+            .scenario_values
+            .seen_transactions()
+            .contains(&tx.id)
+        {
+            continue;
         }
+        let published_at_us = tx.timestamp.as_micros() as u128;
+        let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
+        reporter.add_custom(
+            ReportMetric::new("sync_lag")
+                .with_tag("tx_type", "grouped_parked")
+                .with_tag("agent", agent_key.clone())
+                .with_tag("arc", arc_type.as_tag())
+                .with_field("value", lag_s),
+        );
+        ctx.get_mut()
+            .scenario_values
+            .seen_transactions_mut()
+            .insert(tx.id.clone());
     }
 
     if let Ok(global_definition) = ctx.unyt_get_current_global_definition() {
@@ -190,8 +210,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         log::warn!("Failed to get global definition, skipping RAVE execution");
     }
 
-    // test 4
-    // get ledger and calculate how much you can spend in this round
+    // test 5: Create commitments to build positive balance
     let ledger = match ctx.unyt_get_ledger() {
         Ok(l) => l,
         Err(err) => {
@@ -200,6 +219,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             return Ok(());
         }
     };
+
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees_owed;
     let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
@@ -210,63 +230,82 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             return Ok(());
         }
     };
-    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
-    // from the spend amount lets just use 75 % of it so that we have fees accounted for
-    let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
 
-    // test 5
-    // collect agents and start transacting
-    if spendable_amount > ZFuel::zero() {
+    // Create commitments to other agents to build positive balance (when they accept)
+    let spendable_for_commitments = (balance - fees + credit_limit.get_base_unyt())?;
+    if spendable_for_commitments > ZFuel::zero() {
         ctx.collect_agents()?;
+        let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
 
-        // get the smart agreement hash
-        if let Some(smart_agreement_hash) = generate_smart_agreement(ctx)? {
-            // create a parked link spending transaction
-            // spend with those agents
-            let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
-            if participating_agents.is_empty() {
-                log::warn!("No participating agents to spend with");
-                return Ok(());
-            }
-            // split the spendable_amount into equal amounts for each of the number_of_links_processed transactions
-
-            let fraction = Fraction::new(number_of_links_processed as i64, 1)?;
-            // split the spendable_amount into equal amounts for participating agents
-            let amount_per_agent = (spendable_amount / fraction)?;
-            // calculate expected fees to be paid
-            let amount_per_agent = (amount_per_agent * Fraction::new(98, 100)?)?;
+        if !participating_agents.is_empty() {
+            let spendable = (spendable_for_commitments * Fraction::new(75, 100)?)?;
+            let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
+            let amount_per_agent = (spendable / fraction)?;
             let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
 
-            for i in 0..number_of_links_processed {
-                let agent = &participating_agents[i % participating_agents.len()];
-                // create a parked link spending transaction
-                if let Err(err) = ctx.unyt_create_parked_spend(CreateParkedSpendInput {
-                    ea_id: smart_agreement_hash.clone().into(),
-                    executor: ctx
-                        .get()
-                        .scenario_values
-                        .executor_pubkey()
-                        .cloned()
-                        .map(Into::into),
+            for counterparty in participating_agents.iter().take(2) {
+                // Only send to 2 agents to conserve balance
+                if let Err(err) = ctx.unyt_create_commitment(CommitmentInput {
+                    counterparty: counterparty.clone(),
                     amount: amount.clone(),
-                    spender_payload: json!({
-                        "receiver": agent,
-                        "pos": "...",
-                    }),
-                    ct_role_id: None,
+                    note: None,
                     lane_definitions: Vec::new(),
                 }) {
-                    log::warn!("Failed to create parked spend for agent {agent}: {err}");
+                    log::warn!("Failed to create commitment for {counterparty}: {err}");
                 }
             }
         }
-    } else {
-        log::warn!(
-            "No spendable amount for agent {}, ledger balance: {}",
-            ctx.get().cell_id().agent_pubkey(),
-            balance,
-        );
     }
+
+    // test 6: Create parked spends if we have positive balance
+    if balance > fees {
+        let spendable_amount = (balance - fees)?;
+        let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
+
+        if spendable_amount > ZFuel::zero() {
+            ctx.collect_agents()?;
+            let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
+
+            if let Some(smart_agreement_hash) = generate_smart_agreement(ctx)?
+                && !participating_agents.is_empty()
+            {
+                let fraction = Fraction::new(number_of_links_processed as i64, 1)?;
+                let amount_per_link = (spendable_amount / fraction)?;
+                let amount_per_link = (amount_per_link * Fraction::new(98, 100)?)?;
+                let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_link)]));
+
+                log::info!(
+                    "Agent {} | creating {} parked spends with balance {}",
+                    ctx.get().cell_id().agent_pubkey(),
+                    number_of_links_processed,
+                    balance
+                );
+
+                for i in 0..number_of_links_processed {
+                    let agent = &participating_agents[i % participating_agents.len()];
+                    if let Err(err) = ctx.unyt_create_parked_spend(CreateParkedSpendInput {
+                        ea_id: smart_agreement_hash.clone().into(),
+                        executor: ctx
+                            .get()
+                            .scenario_values
+                            .executor_pubkey()
+                            .cloned()
+                            .map(Into::into),
+                        amount: amount.clone(),
+                        spender_payload: json!({
+                            "receiver": agent,
+                            "pos": "...",
+                        }),
+                        ct_role_id: None,
+                        lane_definitions: Vec::new(),
+                    }) {
+                        log::warn!("Failed to create parked spend for agent {agent}: {err}");
+                    }
+                }
+            }
+        }
+    }
+
     thread::sleep(Duration::from_secs(1));
 
     Ok(())
@@ -324,7 +363,7 @@ fn generate_smart_agreement<SV: UnytScenarioValues>(
                   {
                     "const": {
                       "id": "spender",
-                      "parked_link_type": "ParkedSpendBalance"
+                      "parked_link_type": "ParkedSpendCredit"
                     }
                   }
                 ],
