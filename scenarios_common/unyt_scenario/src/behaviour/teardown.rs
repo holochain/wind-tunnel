@@ -13,9 +13,13 @@ pub fn agent_teardown<SV: UnytScenarioValues>(
     let reporter = ctx.runner_context().reporter();
     if let Ok(ledger) = ctx.unyt_get_ledger() {
         reporter.add_custom(
-            ReportMetric::new("ledger_state")
-                .with_field("ledger_balance", ledger.balance.get_base_unyt().to_string())
-                .with_field("ledger_fees", ledger.fees_owed.to_string())
+            ReportMetric::new("ledger_balance")
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+                .with_field("value", ledger.balance.get_base_unyt().units),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ledger_fees")
+                .with_field("value", ledger.fees_owed.units)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
     };
@@ -29,15 +33,24 @@ pub fn agent_teardown<SV: UnytScenarioValues>(
         });
 
     reporter.add_custom(
-        ReportMetric::new("actionable_transactions")
-            .with_field("proposals", actionable_tx.proposal_actionable.len() as u64)
-            .with_field(
-                "commitments",
-                actionable_tx.commitment_actionable.len() as u64,
-            )
-            .with_field("accepts", actionable_tx.accept_actionable.len() as u64)
-            .with_field("rejects", actionable_tx.reject_actionable.len() as u64)
-            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+        ReportMetric::new("actionable_transaction_proposals")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", actionable_tx.proposal_actionable.len() as u64),
+    );
+    reporter.add_custom(
+        ReportMetric::new("actionable_transaction_commitments")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", actionable_tx.commitment_actionable.len() as u64),
+    );
+    reporter.add_custom(
+        ReportMetric::new("actionable_transaction_accepts")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", actionable_tx.accept_actionable.len() as u64),
+    );
+    reporter.add_custom(
+        ReportMetric::new("actionable_transaction_rejects")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", actionable_tx.reject_actionable.len() as u64),
     );
 
     let mut current_boundary = None;
@@ -70,16 +83,24 @@ pub fn agent_teardown<SV: UnytScenarioValues>(
     }
 
     reporter.add_custom(
-        ReportMetric::new("completed_transactions")
-            .with_field("accepts", accepts)
-            .with_field("spends", commitments)
-            .with_field("raves", raves)
-            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+        ReportMetric::new("completed_transaction_accepts")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", accepts),
+    );
+    reporter.add_custom(
+        ReportMetric::new("completed_transaction_spends")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", commitments),
+    );
+    reporter.add_custom(
+        ReportMetric::new("completed_transaction_raves")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", raves),
     );
     reporter.add_custom(
         ReportMetric::new("parked_spends")
-            .with_field("parked_spends", parked_spend)
-            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_field("value", parked_spend),
     );
 
     log::info!("uninstalling agent {}", ctx.get().cell_id().agent_pubkey());

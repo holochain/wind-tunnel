@@ -16,23 +16,25 @@
     "build_info": null
   },
   "scenario_metrics": {
-    "chain_batch_delay_rate": {
-      "max_mean": 1.67,
-      "mean": 1.67,
-      "min_mean": 1.67,
-      "trend": [
-        2.0,
-        2.0,
-        2.0,
-        1.0,
-        1.0
-      ],
-      "window_duration": "10s"
+    "retrieved_chain_len": {
+      "mean_max": 93.0,
+      "max": 93.0,
+      "write_agent_count": 1,
+      "trend": {
+        "trend": [
+          27.0,
+          49.0,
+          71.0,
+          82.0,
+          93.0
+        ],
+        "window_duration": "10s"
+      }
     },
     "chain_batch_delay_timing": {
-      "max_mean": 0.167125,
       "mean": 0.146708,
       "mean_std_dev": 0.059724,
+      "max_mean": 0.167125,
       "min_mean": 0.130875,
       "trend": [
         0.180333,
@@ -43,36 +45,210 @@
       ],
       "window_duration": "10s"
     },
+    "chain_batch_delay_rate": {
+      "mean": 1.67,
+      "max_mean": 1.67,
+      "min_mean": 1.67,
+      "trend": [
+        2.0,
+        2.0,
+        2.0,
+        1.0,
+        1.0
+      ],
+      "window_duration": "10s"
+    },
     "create_validated_sample_entry_zome_calls": {
-      "max_mean": 0.0,
       "mean": 0.0,
       "mean_std_dev": 0.0,
+      "max_mean": 0.0,
       "min_mean": 0.0,
       "trend": [],
       "window_duration": "10s"
     },
+    "retrieval_errors": {
+      "total_count": 60,
+      "partition_count": 3,
+      "partitions_above_zero": 3,
+      "mean_count": 20,
+      "max_per_partition": 46,
+      "min_per_partition": 3,
+      "trend": [
+        16.6667,
+        0.0,
+        0.6667,
+        0.3333
+      ],
+      "window_duration": "10s"
+    },
+    "open_connections": {
+      "partitions": [
+        {
+          "key": [
+            {
+              "key": "behaviour",
+              "value": "full_write"
+            }
+          ],
+          "gauge_stats": {
+            "mean": 5.0,
+            "std": 0.0,
+            "p5": 5.0,
+            "p95": 5.0,
+            "trend": {
+              "trend": [
+                5.0,
+                5.0,
+                5.0,
+                5.0,
+                5.0
+              ],
+              "window_duration": "10s"
+            }
+          }
+        },
+        {
+          "key": [
+            {
+              "key": "behaviour",
+              "value": "zero_must_get_agent_activity"
+            }
+          ],
+          "gauge_stats": {
+            "mean": 1.58,
+            "std": 0.8,
+            "p5": 0.0,
+            "p95": 2.0,
+            "trend": {
+              "trend": [
+                0.0,
+                0.11,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0
+              ],
+              "window_duration": "10s"
+            }
+          }
+        },
+        {
+          "key": [
+            {
+              "key": "behaviour",
+              "value": "zero_write"
+            }
+          ],
+          "gauge_stats": {
+            "mean": 2.0,
+            "std": 0.0,
+            "p5": 2.0,
+            "p95": 2.0,
+            "trend": {
+              "trend": [
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0
+              ],
+              "window_duration": "10s"
+            }
+          }
+        }
+      ]
+    },
     "error_count": 1170,
     "holochain_p2p_metrics": {
-      "handle_incoming_request_count": {
-        "call_remote": 0,
-        "count_links": 0,
-        "countersigning_session_negotiation": 0,
-        "get": 27,
-        "get_agent_activity": 0,
-        "get_links": 5000,
-        "must_get_agent_activity": 284,
-        "publish_counter_sign": 0,
-        "remote_signal": 0,
-        "response": 5000,
-        "send_validation_receipts": 134
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000323,
+          "std": 0.000075,
+          "p50": 0.000299,
+          "p95": 0.00047,
+          "p99": 0.000519,
+          "trend": {
+            "trend": [
+              0.000305,
+              0.00032,
+              0.000306,
+              0.000386
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "get_links": {
+          "mean": 0.000273,
+          "std": 0.000252,
+          "p50": 0.000259,
+          "p95": 0.000325,
+          "p99": 0.000449,
+          "trend": {
+            "trend": [
+              0.00029,
+              0.000271
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "must_get_agent_activity": {
+          "mean": 0.000437,
+          "std": 0.00029,
+          "p50": 0.000294,
+          "p95": 0.001065,
+          "p99": 0.001348,
+          "trend": {
+            "trend": [
+              0.000294,
+              0.000757,
+              0.000896,
+              0.000895,
+              0.001356
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.00092,
+          "std": 0.001124,
+          "p50": 0.00041,
+          "p95": 0.003117,
+          "p99": 0.006131,
+          "trend": {
+            "trend": [
+              0.001199,
+              0.001612,
+              0.000837,
+              0.000881,
+              0.00076,
+              0.001071
+            ],
+            "window_duration": "10s"
+          }
+        }
       },
       "handle_incoming_request_duration": {
+        "response": {
+          "mean": 4e-6,
+          "std": 7e-6,
+          "p50": 4e-6,
+          "p95": 6e-6,
+          "p99": 8e-6,
+          "trend": {
+            "trend": [
+              5e-6,
+              4e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
         "get": {
           "mean": 0.000137,
+          "std": 0.000045,
           "p50": 0.000121,
           "p95": 0.000244,
           "p99": 0.000263,
-          "std": 0.000045,
           "trend": {
             "trend": [
               0.000132,
@@ -85,10 +261,10 @@
         },
         "get_links": {
           "mean": 0.000115,
+          "std": 0.000146,
           "p50": 0.00011,
           "p95": 0.000144,
           "p99": 0.000184,
-          "std": 0.000146,
           "trend": {
             "trend": [
               0.000115,
@@ -99,10 +275,10 @@
         },
         "must_get_agent_activity": {
           "mean": 0.00029,
+          "std": 0.000247,
           "p50": 0.000195,
           "p95": 0.000856,
           "p99": 0.001065,
-          "std": 0.000247,
           "trend": {
             "trend": [
               0.000172,
@@ -114,26 +290,12 @@
             "window_duration": "10s"
           }
         },
-        "response": {
-          "mean": 4e-6,
-          "p50": 4e-6,
-          "p95": 6e-6,
-          "p99": 8e-6,
-          "std": 7e-6,
-          "trend": {
-            "trend": [
-              5e-6,
-              4e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
         "send_validation_receipts": {
           "mean": 0.000735,
+          "std": 0.001086,
           "p50": 0.000226,
           "p95": 0.002852,
           "p99": 0.005847,
-          "std": 0.001086,
           "trend": {
             "trend": [
               0.001024,
@@ -148,189 +310,27 @@
         }
       },
       "request_count": {
-        "call_remote": 0,
-        "count_links": 0,
         "get": 27,
-        "get_agent_activity": 0,
         "get_links": 5000,
+        "count_links": 0,
+        "get_agent_activity": 0,
         "must_get_agent_activity": 142,
-        "send_validation_receipts": 134
+        "send_validation_receipts": 134,
+        "call_remote": 0
       },
-      "request_roundtrip_duration": {
-        "get": {
-          "mean": 0.000323,
-          "p50": 0.000299,
-          "p95": 0.00047,
-          "p99": 0.000519,
-          "std": 0.000075,
-          "trend": {
-            "trend": [
-              0.000305,
-              0.00032,
-              0.000306,
-              0.000386
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get_links": {
-          "mean": 0.000273,
-          "p50": 0.000259,
-          "p95": 0.000325,
-          "p99": 0.000449,
-          "std": 0.000252,
-          "trend": {
-            "trend": [
-              0.00029,
-              0.000271
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "must_get_agent_activity": {
-          "mean": 0.000437,
-          "p50": 0.000294,
-          "p95": 0.001065,
-          "p99": 0.001348,
-          "std": 0.00029,
-          "trend": {
-            "trend": [
-              0.000294,
-              0.000757,
-              0.000896,
-              0.000895,
-              0.001356
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.00092,
-          "p50": 0.00041,
-          "p95": 0.003117,
-          "p99": 0.006131,
-          "std": 0.001124,
-          "trend": {
-            "trend": [
-              0.001199,
-              0.001612,
-              0.000837,
-              0.000881,
-              0.00076,
-              0.001071
-            ],
-            "window_duration": "10s"
-          }
-        }
+      "handle_incoming_request_count": {
+        "response": 5000,
+        "call_remote": 0,
+        "get": 27,
+        "get_links": 5000,
+        "count_links": 0,
+        "get_agent_activity": 0,
+        "must_get_agent_activity": 284,
+        "send_validation_receipts": 134,
+        "remote_signal": 0,
+        "publish_counter_sign": 0,
+        "countersigning_session_negotiation": 0
       }
-    },
-    "open_connections": {
-      "partitions": [
-        {
-          "gauge_stats": {
-            "mean": 5.0,
-            "p5": 5.0,
-            "p95": 5.0,
-            "std": 0.0,
-            "trend": {
-              "trend": [
-                5.0,
-                5.0,
-                5.0,
-                5.0,
-                5.0
-              ],
-              "window_duration": "10s"
-            }
-          },
-          "key": [
-            {
-              "key": "behaviour",
-              "value": "full_write"
-            }
-          ]
-        },
-        {
-          "gauge_stats": {
-            "mean": 1.58,
-            "p5": 0.0,
-            "p95": 2.0,
-            "std": 0.8,
-            "trend": {
-              "trend": [
-                0.0,
-                0.11,
-                2.0,
-                2.0,
-                2.0,
-                2.0,
-                2.0
-              ],
-              "window_duration": "10s"
-            }
-          },
-          "key": [
-            {
-              "key": "behaviour",
-              "value": "zero_must_get_agent_activity"
-            }
-          ]
-        },
-        {
-          "gauge_stats": {
-            "mean": 2.0,
-            "p5": 2.0,
-            "p95": 2.0,
-            "std": 0.0,
-            "trend": {
-              "trend": [
-                2.0,
-                2.0,
-                2.0,
-                2.0,
-                2.0
-              ],
-              "window_duration": "10s"
-            }
-          },
-          "key": [
-            {
-              "key": "behaviour",
-              "value": "zero_write"
-            }
-          ]
-        }
-      ]
-    },
-    "retrieval_errors": {
-      "max_per_partition": 46,
-      "mean_count": 20,
-      "min_per_partition": 3,
-      "partition_count": 3,
-      "partitions_above_zero": 3,
-      "total_count": 60,
-      "trend": [
-        16.6667,
-        0.0,
-        0.6667,
-        0.3333
-      ],
-      "window_duration": "10s"
-    },
-    "retrieved_chain_len": {
-      "max": 93.0,
-      "mean_max": 93.0,
-      "trend": {
-        "trend": [
-          27.0,
-          49.0,
-          71.0,
-          82.0,
-          93.0
-        ],
-        "window_duration": "10s"
-      },
-      "write_agent_count": 1
     }
   },
   "host_metrics": {

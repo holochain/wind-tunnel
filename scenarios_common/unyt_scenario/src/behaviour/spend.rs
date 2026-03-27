@@ -10,11 +10,10 @@ use zfuel::{fraction::Fraction, fuel::ZFuel};
 
 /// Spend agent behaviour shared across Unyt scenarios.
 ///
-/// When `arc_type` is `Some`, the `global_definition_propagation_time`
-/// metric is tagged with an `arc` key (e.g. `"zero"` for 0-arc agents).
+/// Metrics are tagged with an `arc` key, indicating zero or full arc.
 pub fn agent_behaviour<SV: UnytScenarioValues>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
-    arc_type: Option<ArcType>,
+    arc_type: ArcType,
 ) -> HookResult {
     let reporter = ctx.runner_context().reporter();
     let session_started_at = ctx
@@ -25,18 +24,17 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     let network_initialized = ctx.get().scenario_values.network_initialized();
 
     // Test 1
+    // Agents need to await retrieval of the global definition before transacting.
     if !network_initialized {
         if ctx.is_network_initialized() {
             log::info!(
                 "Network initialized for agent {}",
                 ctx.get().cell_id().agent_pubkey()
             );
-            let mut metric = ReportMetric::new("global_definition_propagation_time")
-                .with_field("at", session_started_at.elapsed().as_secs())
-                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string());
-            if let Some(tag) = arc_type {
-                metric = metric.with_tag("arc", tag.as_tag());
-            }
+            let metric = ReportMetric::new("global_definition_propagation_time")
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+                .with_tag("arc", arc_type.as_tag())
+                .with_field("value", session_started_at.elapsed().as_secs());
             reporter.add_custom(metric);
             ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {
@@ -50,7 +48,8 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     }
 
-    // test 2
+    // Test 2
+    // Agent ready to transact.
     // check incoming transactions and accept them so that you can have more to spend
     let actionable_transactions = match ctx.unyt_get_actionable_transactions() {
         Ok(txs) => txs,
@@ -60,36 +59,34 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             return Ok(());
         }
     };
-    // Measure sync lag for newly discovered commitment transactions (zero-arc only)
-    if let Some(tag) = arc_type {
-        let now_us = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .expect("system clock before UNIX epoch")
-            .as_micros();
-        let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
-        for tx in &actionable_transactions.commitment_actionable {
-            if ctx
-                .get()
-                .scenario_values
-                .seen_transactions()
-                .contains(&tx.id)
-            {
-                continue;
-            }
-            let published_at_us = tx.timestamp.as_micros() as u128;
-            let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
-            reporter.add_custom(
-                ReportMetric::new("sync_lag")
-                    .with_tag("agent", agent_key.clone())
-                    .with_tag("arc", tag.as_tag())
-                    .with_tag("tx_type", "commitment")
-                    .with_field("value", lag_s),
-            );
-            ctx.get_mut()
-                .scenario_values
-                .seen_transactions_mut()
-                .insert(tx.id.clone());
+    // Measure sync lag for newly discovered commitment transactions
+    let now_us = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system clock before UNIX epoch")
+        .as_micros();
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+    for tx in &actionable_transactions.commitment_actionable {
+        if ctx
+            .get()
+            .scenario_values
+            .seen_transactions()
+            .contains(&tx.id)
+        {
+            continue;
         }
+        let published_at_us = tx.timestamp.as_micros() as u128;
+        let lag_s = now_us.saturating_sub(published_at_us) as f64 / 1e6;
+        reporter.add_custom(
+            ReportMetric::new("sync_lag")
+                .with_tag("tx_type", "commitment")
+                .with_tag("agent", agent_key.clone())
+                .with_tag("arc", arc_type.as_tag())
+                .with_field("value", lag_s),
+        );
+        ctx.get_mut()
+            .scenario_values
+            .seen_transactions_mut()
+            .insert(tx.id.clone());
     }
 
     // accept incoming invoices too?
@@ -109,7 +106,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         };
     }
 
-    // test 3
+    // Test 3
     // get ledger and calculate how much you can spend in this round
     let ledger = match ctx.unyt_get_ledger() {
         Ok(l) => l,
@@ -136,7 +133,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     };
     let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
 
-    // test 4
+    // Test 4
     // collect agents and start transacting
     if spendable_amount > ZFuel::zero() {
         log::info!(

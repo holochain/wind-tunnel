@@ -1,0 +1,19 @@
+{{/*
+Render aggregate statistics for a metric recorded once per partition at teardown.
+
+Fields:
+* `sum` (int): Total across all partitions.
+* `mean` (float): Mean per partition.
+* `min` (int): Minimum value across partitions.
+* `max` (int): Maximum value across partitions.
+* `partition_count` (int): Number of partitions observed.
+
+Corresponding Rust type: `AggregatedSingleValue`
+*/}}
+<div class="aggregated-single-value">
+    {{ template "scalar" (dict "label" "sum" "value" .sum) }}
+    {{ template "scalar" (dict "label" "mean" "value" .mean) }}
+    {{ template "scalar" (dict "label" "min" "value" .min) }}
+    {{ template "scalar" (dict "label" "max" "value" .max) }}
+    {{ template "scalar" (dict "label" "n" "value" .partition_count) }}
+</div>

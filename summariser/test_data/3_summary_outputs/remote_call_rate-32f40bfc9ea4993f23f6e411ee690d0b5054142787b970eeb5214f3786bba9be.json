@@ -31,9 +31,9 @@
   },
   "scenario_metrics": {
     "dispatch_timing": {
-      "max_mean": 0.001507,
       "mean": 0.001497,
       "mean_std_dev": 0.003452,
+      "max_mean": 0.001507,
       "min_mean": 0.001487,
       "trend": [
         0.00193,
@@ -41,15 +41,83 @@
       ],
       "window_duration": "10s"
     },
+    "round_trip_timing": {
+      "mean": 0.00334,
+      "mean_std_dev": 0.00405,
+      "max_mean": 0.003356,
+      "min_mean": 0.003325,
+      "trend": [
+        0.003828,
+        0.003263
+      ],
+      "window_duration": "10s"
+    },
     "error_count": 0,
     "holochain_p2p_metrics": {
+      "request_roundtrip_duration": {
+        "get": {
+          "mean": 0.000328,
+          "std": 0.0,
+          "p50": 0.000328,
+          "p95": 0.000328,
+          "p99": 0.000328,
+          "trend": {
+            "trend": [
+              0.000328
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "send_validation_receipts": {
+          "mean": 0.000744,
+          "std": 0.000385,
+          "p50": 0.000558,
+          "p95": 0.00155,
+          "p99": 0.00155,
+          "trend": {
+            "trend": [
+              0.000582,
+              0.00155
+            ],
+            "window_duration": "10s"
+          }
+        },
+        "call_remote": {
+          "mean": 0.001623,
+          "std": 0.004006,
+          "p50": 0.001495,
+          "p95": 0.001785,
+          "p99": 0.002506,
+          "trend": {
+            "trend": [
+              0.002126,
+              0.001543
+            ],
+            "window_duration": "10s"
+          }
+        }
+      },
       "handle_incoming_request_duration": {
+        "response": {
+          "mean": 4e-6,
+          "std": 1e-6,
+          "p50": 4e-6,
+          "p95": 7e-6,
+          "p99": 9e-6,
+          "trend": {
+            "trend": [
+              4e-6,
+              4e-6
+            ],
+            "window_duration": "10s"
+          }
+        },
         "call_remote": {
           "mean": 0.001382,
+          "std": 0.000932,
           "p50": 0.001326,
           "p95": 0.00157,
           "p99": 0.002175,
-          "std": 0.000932,
           "trend": {
             "trend": [
               0.001457,
@@ -60,10 +128,10 @@
         },
         "get": {
           "mean": 0.000133,
+          "std": 0.0,
           "p50": 0.000133,
           "p95": 0.000133,
           "p99": 0.000133,
-          "std": 0.0,
           "trend": {
             "trend": [
               0.000133
@@ -71,26 +139,12 @@
             "window_duration": "10s"
           }
         },
-        "response": {
-          "mean": 4e-6,
-          "p50": 4e-6,
-          "p95": 7e-6,
-          "p99": 9e-6,
-          "std": 1e-6,
-          "trend": {
-            "trend": [
-              4e-6,
-              4e-6
-            ],
-            "window_duration": "10s"
-          }
-        },
         "send_validation_receipts": {
           "mean": 0.000582,
+          "std": 0.000383,
           "p50": 0.000404,
           "p95": 0.001389,
           "p99": 0.001389,
-          "std": 0.000383,
           "trend": {
             "trend": [
               0.00042,
@@ -99,61 +153,7 @@
             "window_duration": "10s"
           }
         }
-      },
-      "request_roundtrip_duration": {
-        "call_remote": {
-          "mean": 0.001623,
-          "p50": 0.001495,
-          "p95": 0.001785,
-          "p99": 0.002506,
-          "std": 0.004006,
-          "trend": {
-            "trend": [
-              0.002126,
-              0.001543
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "get": {
-          "mean": 0.000328,
-          "p50": 0.000328,
-          "p95": 0.000328,
-          "p99": 0.000328,
-          "std": 0.0,
-          "trend": {
-            "trend": [
-              0.000328
-            ],
-            "window_duration": "10s"
-          }
-        },
-        "send_validation_receipts": {
-          "mean": 0.000744,
-          "p50": 0.000558,
-          "p95": 0.00155,
-          "p99": 0.00155,
-          "std": 0.000385,
-          "trend": {
-            "trend": [
-              0.000582,
-              0.00155
-            ],
-            "window_duration": "10s"
-          }
-        }
       }
-    },
-    "round_trip_timing": {
-      "max_mean": 0.003356,
-      "mean": 0.00334,
-      "mean_std_dev": 0.00405,
-      "min_mean": 0.003325,
-      "trend": [
-        0.003828,
-        0.003263
-      ],
-      "window_duration": "10s"
     }
   },
   "host_metrics": {

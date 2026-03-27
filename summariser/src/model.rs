@@ -263,3 +263,21 @@ pub struct PartitionedCounterStats {
     /// Duration of each trend window (e.g. "10s")
     pub window_duration: String,
 }
+
+/// Aggregated statistics for a metric recorded once per partition (e.g. once per agent at teardown).
+///
+/// Per-partition values are collapsed into scalar aggregates so the output size does not
+/// grow with the number of agents.
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AggregatedSingleValue {
+    /// Sum of values across all partitions.
+    pub sum: i64,
+    /// Mean value per partition.
+    pub mean: f64,
+    /// Minimum value observed across partitions; identifies the lowest outlier.
+    pub min: i64,
+    /// Maximum value observed across partitions; identifies the highest outlier.
+    pub max: i64,
+    /// Number of partitions observed.
+    pub partition_count: usize,
+}

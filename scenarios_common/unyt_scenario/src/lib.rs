@@ -6,7 +6,6 @@
 
 pub mod behaviour;
 pub mod durable_object;
-pub mod initiate_network;
 pub mod setup;
 pub mod unyt_agent;
 

@@ -40,9 +40,18 @@ The `smart_agreements` agents are responsible for creating and executing smart a
 The scenario records several custom metrics:
 
 - `wt.custom.global_definition_propagation_time`: Records the time at which the global definition becomes readable for each agent, helping measure network initialization propagation speed
-- `wt.custom.ledger_state`: Captures the final state of the ledger at scenario teardown for analysis
-- `wt.custom.actionable_transactions`: Records the count of actionable invoices and spends at scenario teardown
-- `wt.custom.completed_transactions`: Records the count of completed transactions, including accepts, spends, and RAVE agreement executions, at scenario teardown
+- `wt.custom.ledger_balance`: Captures the final balance of the ledger at scenario teardown for analysis
+- `wt.custom.ledger_fees`: Captures the final fees of the ledger at scenario teardown for analysis
+- `wt.custom.sync_lag_commitment`: Captures the time between commitment creation and discovery by the receiving agent, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
+- `wt.custom.sync_lag_rave`: Captures the time between RAVE creation and discovery by smart_agreements agents, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
+- `wt.custom.sync_lag_grouped_parked`: Captures the time between grouped_parked request creation and discovery, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
+- `wt.custom.actionable_transaction_proposals`: Records the count of actionable transaction proposals at scenario teardown
+- `wt.custom.actionable_transaction_commitments`: Records the count of actionable transaction commitments at scenario teardown
+- `wt.custom.actionable_transaction_accepts`: Records the count of actionable transaction accepts at scenario teardown
+- `wt.custom.actionable_transaction_rejects`: Records the count of actionable transaction rejects at scenario teardown
+- `wt.custom.completed_transaction_accepts`: Records the count of completed accept transactions at scenario teardown
+- `wt.custom.completed_transaction_spends`: Records the count of completed spend transactions at scenario teardown
+- `wt.custom.completed_transaction_raves`: Records the count of completed RAVE agreement executions at scenario teardown
 - `wt.custom.parked_spends`: Records the count of parked spends at scenario teardown
 
 Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.
