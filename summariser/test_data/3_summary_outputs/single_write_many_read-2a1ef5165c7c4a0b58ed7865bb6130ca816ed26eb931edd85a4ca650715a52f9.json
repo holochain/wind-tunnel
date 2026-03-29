@@ -1,8 +1,8 @@
 {
   "run_summary": {
-    "run_id": "bb0c7r2u66x8s-zJ63UWe",
+    "run_id": "mx5OSs8bfDUtGB1Owar_d",
     "scenario_name": "single_write_many_read",
-    "started_at": 1771511314,
+    "started_at": 1774657620,
     "run_duration": 60,
     "peer_count": 1,
     "peer_end_count": 1,
@@ -14,33 +14,31 @@
     "build_info": {
       "info_type": "holochain",
       "info": {
-        "cargo_pkg_version": "0.6.1-rc.0",
+        "cargo_pkg_version": "0.6.1-rc.4",
         "git_info": null,
-        "hdi_version_req": "0.7.1-rc.0",
-        "hdk_version_req": "0.6.1-rc.0",
+        "hdi_version_req": "0.7.1-rc.2",
+        "hdk_version_req": "0.6.1-rc.2",
         "host": "x86_64-unknown-linux-gnu",
         "hostname": "localhost",
         "lair_keystore_version_req": "0.6.3",
         "profile": "release",
-        "rustc_version": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+        "rustc_version": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
         "rustflags": "",
         "target": "x86_64-unknown-linux-gnu",
-        "timestamp": "2026-01-22T16:39:58.108519158Z"
+        "timestamp": "2026-03-25T18:15:05.074913919Z"
       }
     }
   },
   "scenario_metrics": {
-    "error_count": 0,
     "read_call": {
-      "mean": 0.001305,
-      "p50": 0.001265,
-      "p95": 0.001458,
-      "p99": 0.001722,
-      "std": 0.000412,
+      "mean": 0.001362,
+      "std": 0.000269,
+      "p50": 0.001311,
+      "p95": 0.001603,
+      "p99": 0.001888,
       "trend": {
         "trend": [
-          0.001297,
-          0.001314
+          0.001362
         ],
         "window_duration": "10s"
       }
@@ -48,96 +46,659 @@
     "read_rate": {
       "mean": 0.0,
       "trend": [
-        2675,
-        2324
+        4999
       ],
       "window_duration": "10s"
-    }
+    },
+    "error_count": 0
   },
   "holochain_metrics": {
-    "cascade_duration": null,
+    "cascade_duration": {
+      "mean": 0.000104,
+      "std": 1e-6,
+      "p50": 0.000104,
+      "p95": 0.000106,
+      "p99": 0.000106,
+      "trend": {
+        "trend": [
+          0.000106,
+          0.000104,
+          0.000104,
+          0.000104,
+          0.000104
+        ],
+        "window_duration": "10s"
+      }
+    },
     "cascade_fetch_error_count": null,
-    "wasm_usage": null,
-    "zome_call_duration": null,
-    "wasm_call_duration": null,
-    "host_fn_call_duration": null,
+    "wasm_usage": {
+      "crud::create_sample_entry": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 224122
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
+      },
+      "crud::get_sample_entry": {
+        "count": 1396931960,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 224122
+        },
+        "mean_rate_per_second": 34923103.41,
+        "std_rate_per_second": 138233.42,
+        "p5_rate_per_second": 34768504.36,
+        "p95_rate_per_second": 35135704.95,
+        "peak_rate_per_second": 35135704.95,
+        "rate_trend": {
+          "trend": [
+            35135704.95,
+            34840944.45,
+            34768504.36,
+            34947259.87
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "crud::init": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 224122
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
+      },
+      "crud_integrity::entry_defs": {
+        "count": 0,
+        "measurement_duration": {
+          "secs": 40,
+          "nanos": 224122
+        },
+        "mean_rate_per_second": 0.0,
+        "std_rate_per_second": 0.0,
+        "p5_rate_per_second": 0.0,
+        "p95_rate_per_second": 0.0,
+        "peak_rate_per_second": 0.0,
+        "rate_trend": {
+          "trend": [],
+          "window_duration": ""
+        }
+      }
+    },
+    "zome_call_duration": {
+      "crud::create_sample_entry": {
+        "mean": 0.001969,
+        "std": 0.0,
+        "p50": 0.001969,
+        "p95": 0.001969,
+        "p99": 0.001969,
+        "trend": {
+          "trend": [
+            0.001969,
+            0.001969,
+            0.001969,
+            0.001969,
+            0.001969
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "crud::get_sample_entry": {
+        "mean": 0.000897,
+        "std": 4e-6,
+        "p50": 0.000897,
+        "p95": 0.000906,
+        "p99": 0.000906,
+        "trend": {
+          "trend": [
+            0.000906,
+            0.000897,
+            0.000896,
+            0.000897,
+            0.000897
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "wasm_call_duration": {
+      "crud::create_sample_entry": {
+        "mean": 0.001591,
+        "std": 0.0,
+        "p50": 0.001591,
+        "p95": 0.001591,
+        "p99": 0.001591,
+        "trend": {
+          "trend": [
+            0.001591,
+            0.001591,
+            0.001591,
+            0.001591,
+            0.001591
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "crud::get_sample_entry": {
+        "mean": 0.00065,
+        "std": 3e-6,
+        "p50": 0.00065,
+        "p95": 0.000657,
+        "p99": 0.000657,
+        "trend": {
+          "trend": [
+            0.000657,
+            0.000651,
+            0.00065,
+            0.00065,
+            0.000649
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "crud::init": {
+        "mean": 0.000763,
+        "std": 0.0,
+        "p50": 0.000763,
+        "p95": 0.000763,
+        "p99": 0.000763,
+        "trend": {
+          "trend": [
+            0.000763,
+            0.000763,
+            0.000763,
+            0.000763,
+            0.000763
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "crud_integrity::entry_defs": {
+        "mean": 0.000511,
+        "std": 0.0,
+        "p50": 0.000511,
+        "p95": 0.000511,
+        "p99": 0.000511,
+        "trend": {
+          "trend": [
+            0.000511,
+            0.000511,
+            0.000511,
+            0.000511,
+            0.000511
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "host_fn_call_duration": {
+      "__hc__create_1": {
+        "mean": 0.000138,
+        "std": 0.000023,
+        "p50": 0.000161,
+        "p95": 0.000161,
+        "p99": 0.000161,
+        "trend": {
+          "trend": [
+            0.000138,
+            0.000138,
+            0.000138,
+            0.000138,
+            0.000138
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__get_1": {
+        "mean": 0.000115,
+        "std": 1e-6,
+        "p50": 0.000115,
+        "p95": 0.000118,
+        "p99": 0.000118,
+        "trend": {
+          "trend": [
+            0.000118,
+            0.000115,
+            0.000115,
+            0.000115,
+            0.000115
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "__hc__zome_info_1": {
+        "mean": 0.000834,
+        "std": 0.0,
+        "p50": 0.000834,
+        "p95": 0.000834,
+        "p99": 0.000834,
+        "trend": {
+          "trend": [
+            0.000834,
+            0.000834,
+            0.000834,
+            0.000834,
+            0.000834
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
     "emit_signal_count": null,
     "send_remote_signal_count": null,
-    "post_commit_duration": null,
-    "uptime": null,
+    "post_commit_duration": {
+      "mean": 0.000064,
+      "std": 0.0,
+      "p50": 0.000064,
+      "p95": 0.000064,
+      "p99": 0.000064,
+      "trend": {
+        "trend": [
+          0.000064,
+          0.000064,
+          0.000064,
+          0.000064,
+          0.000064
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "uptime": {
+      "mean": 28.85,
+      "std": 14.14,
+      "p5": 8.85,
+      "p95": 48.85,
+      "trend": {
+        "trend": [
+          8.85,
+          18.85,
+          28.85,
+          38.85,
+          48.85
+        ],
+        "window_duration": "10s"
+      }
+    },
     "dropped_signal_count": null,
-    "integrated_ops_count": null,
-    "integration_delay": null,
-    "validation_attempts": null,
-    "workflow_duration": null,
-    "db_connection_use_duration": null,
-    "db_write_txn_duration": null,
-    "lair_request_duration": null,
+    "integrated_ops_count": {
+      "count": 0,
+      "measurement_duration": {
+        "secs": 40,
+        "nanos": 228661
+      },
+      "mean_rate_per_second": 0.0,
+      "std_rate_per_second": 0.0,
+      "p5_rate_per_second": 0.0,
+      "p95_rate_per_second": 0.0,
+      "peak_rate_per_second": 0.0,
+      "rate_trend": {
+        "trend": [],
+        "window_duration": ""
+      }
+    },
+    "integration_delay": {
+      "mean": 0.020624,
+      "std": 0.0,
+      "p50": 0.020624,
+      "p95": 0.020624,
+      "p99": 0.020624,
+      "trend": {
+        "trend": [
+          0.020624,
+          0.020624,
+          0.020624,
+          0.020624,
+          0.020624
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "validation_attempts": {
+      "mean": 1.0,
+      "std": 0.0,
+      "p50": 1.0,
+      "p95": 1.0,
+      "p99": 1.0,
+      "trend": {
+        "trend": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "workflow_duration": {
+      "sys_validation": {
+        "mean": 0.000353,
+        "std": 0.0,
+        "p50": 0.000353,
+        "p95": 0.000353,
+        "p99": 0.000353,
+        "trend": {
+          "trend": [
+            0.000353,
+            0.000353,
+            0.000353,
+            0.000353,
+            0.000353
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "app_validation": {
+        "mean": 0.000313,
+        "std": 0.0,
+        "p50": 0.000313,
+        "p95": 0.000313,
+        "p99": 0.000313,
+        "trend": {
+          "trend": [
+            0.000313,
+            0.000313,
+            0.000313,
+            0.000313,
+            0.000313
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "integrate_dht_ops": {
+        "mean": 0.000248,
+        "std": 0.0,
+        "p50": 0.000248,
+        "p95": 0.000248,
+        "p99": 0.000248,
+        "trend": {
+          "trend": [
+            0.000248,
+            0.000248,
+            0.000248,
+            0.000248,
+            0.000248
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "publish_dht_ops": {
+        "mean": 0.000768,
+        "std": 0.0,
+        "p50": 0.000768,
+        "p95": 0.000768,
+        "p99": 0.000768,
+        "trend": {
+          "trend": [
+            0.000768,
+            0.000768,
+            0.000768,
+            0.000768,
+            0.000768
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "validation_receipt": {
+        "mean": 0.000183,
+        "std": 0.0,
+        "p50": 0.000183,
+        "p95": 0.000183,
+        "p99": 0.000183,
+        "trend": {
+          "trend": [
+            0.000183,
+            0.000183,
+            0.000183,
+            0.000183,
+            0.000183
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "countersigning": {
+        "mean": 0.000306,
+        "std": 0.0,
+        "p50": 0.000306,
+        "p95": 0.000306,
+        "p99": 0.000306,
+        "trend": {
+          "trend": [
+            0.000306,
+            0.000306,
+            0.000306,
+            0.000306,
+            0.000306
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "witnessing": null
+    },
+    "db_connection_use_duration": {
+      "authored": {
+        "mean": 0.000044,
+        "std": 0.0,
+        "p50": 0.000044,
+        "p95": 0.000045,
+        "p99": 0.000045,
+        "trend": {
+          "trend": [
+            0.000045,
+            0.000044,
+            0.000044,
+            0.000044,
+            0.000044
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "dht": {
+        "mean": 0.000088,
+        "std": 4e-6,
+        "p50": 0.000088,
+        "p95": 0.00009,
+        "p99": 0.00009,
+        "trend": {
+          "trend": [
+            0.000078,
+            0.000085,
+            0.000088,
+            0.000089,
+            0.00009
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "conductor": {
+        "mean": 0.000027,
+        "std": 0.0,
+        "p50": 0.000027,
+        "p95": 0.000028,
+        "p99": 0.000028,
+        "trend": {
+          "trend": [
+            0.000028,
+            0.000027,
+            0.000027,
+            0.000027,
+            0.000027
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "cache": {
+        "mean": 0.000093,
+        "std": 1e-6,
+        "p50": 0.000093,
+        "p95": 0.000095,
+        "p99": 0.000095,
+        "trend": {
+          "trend": [
+            0.000095,
+            0.000093,
+            0.000093,
+            0.000093,
+            0.000093
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "wasm": {
+        "mean": 0.000044,
+        "std": 0.0,
+        "p50": 0.000044,
+        "p95": 0.000044,
+        "p99": 0.000044,
+        "trend": {
+          "trend": [
+            0.000044,
+            0.000044,
+            0.000044,
+            0.000044,
+            0.000044
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "peer_meta_store": {
+        "mean": 0.000027,
+        "std": 0.0,
+        "p50": 0.000027,
+        "p95": 0.000027,
+        "p99": 0.000027,
+        "trend": {
+          "trend": [
+            0.000026,
+            0.000027,
+            0.000026,
+            0.000027,
+            0.000027
+          ],
+          "window_duration": "10s"
+        }
+      }
+    },
+    "db_write_txn_duration": {
+      "mean": 0.000068,
+      "std": 0.005713,
+      "p50": 0.000069,
+      "p95": 0.014353,
+      "p99": 0.014353,
+      "trend": {
+        "trend": [
+          0.000071,
+          0.000069,
+          0.000068,
+          0.000068,
+          0.000068
+        ],
+        "window_duration": "10s"
+      }
+    },
+    "lair_request_duration": {
+      "sign": {
+        "mean": 0.000115,
+        "std": 0.0,
+        "p50": 0.000115,
+        "p95": 0.000115,
+        "p99": 0.000115,
+        "trend": {
+          "trend": [
+            0.000115,
+            0.000115,
+            0.000115,
+            0.000115,
+            0.000115
+          ],
+          "window_duration": "10s"
+        }
+      },
+      "shared_secret_encrypt": null,
+      "crypto_box_xsalsa": null
+    },
     "p2p": null
   },
   "host_metrics": {
     "cpu": {
       "total_usage": {
-        "mean": 5.02,
-        "std": 0.09,
-        "p5": 4.9,
-        "p95": 5.17,
+        "mean": 4.98,
+        "std": 0.3,
+        "p5": 4.61,
+        "p95": 5.36,
         "trend": {
           "trend": [
-            4.97,
-            5.03
+            5.0,
+            4.9
           ],
           "window_duration": "60s"
         }
       },
-      "usage_user_mean": 2.59,
-      "usage_system_mean": 2.43,
-      "p50": 5.01,
-      "p95": 5.17,
-      "p99": 5.17,
+      "usage_user_mean": 2.83,
+      "usage_system_mean": 2.15,
+      "p50": 4.9,
+      "p95": 5.36,
+      "p99": 5.36,
       "hosts_above_80_percent": 0,
       "mean_time_above_80_percent_s": 0.0
     },
     "memory": {
       "used_percent": {
-        "mean": 45.61,
-        "std": 0.11,
-        "p5": 45.52,
-        "p95": 45.84,
+        "mean": 42.91,
+        "std": 0.3,
+        "p5": 42.67,
+        "p95": 43.44,
         "trend": {
           "trend": [
-            45.68,
-            45.57
+            42.95,
+            42.72
           ],
           "window_duration": "60s"
         }
       },
       "available_percent": {
-        "mean": 54.39,
-        "std": 0.11,
-        "p5": 54.16,
-        "p95": 54.48,
+        "mean": 57.09,
+        "std": 0.3,
+        "p5": 56.56,
+        "p95": 57.33,
         "trend": {
           "trend": [
-            54.32,
-            54.43
+            57.05,
+            57.28
           ],
           "window_duration": "60s"
         }
       },
-      "max_host_used_percent": 45.61,
-      "swap_used_percent": 0.0,
-      "growth_rate_mb_per_sec": -2.15
+      "max_host_used_percent": 42.91,
+      "swap_used_percent": 45.74,
+      "growth_rate_mb_per_sec": -8.51
     },
     "network": {
       "primary": {
         "bytes_recv": {
-          "count": 17940853,
+          "count": 179612,
           "measurement_duration": {
             "secs": 50,
             "nanos": 0
           },
-          "mean_rate_per_second": 358817.06,
+          "mean_rate_per_second": 3592.24,
           "std_rate_per_second": 0.0,
           "p5_rate_per_second": 0.0,
           "p95_rate_per_second": 0.0,
@@ -148,12 +709,12 @@
           }
         },
         "bytes_sent": {
-          "count": 411607,
+          "count": 184900,
           "measurement_duration": {
             "secs": 50,
             "nanos": 0
           },
-          "mean_rate_per_second": 8232.14,
+          "mean_rate_per_second": 3698.0,
           "std_rate_per_second": 0.0,
           "p5_rate_per_second": 0.0,
           "p95_rate_per_second": 0.0,
@@ -164,27 +725,27 @@
           }
         },
         "recv_rate": {
-          "mean": 358817.06,
-          "std": 116391.23,
-          "p5": 205363.0,
-          "p95": 541471.4,
+          "mean": 3592.24,
+          "std": 1641.33,
+          "p5": 2241.8,
+          "p95": 6754.7,
           "trend": {
             "trend": [
-              541471.4,
-              313153.47
+              3929.85,
+              2241.8
             ],
             "window_duration": "60s"
           }
         },
         "send_rate": {
-          "mean": 8232.14,
-          "std": 2380.78,
-          "p5": 4032.8,
-          "p95": 10671.1,
+          "mean": 3698.0,
+          "std": 1404.66,
+          "p5": 942.8,
+          "p95": 4861.6,
           "trend": {
             "trend": [
-              10304.0,
-              7714.18
+              3613.88,
+              4034.5
             ],
             "window_duration": "60s"
           }
@@ -194,7 +755,7 @@
     "disk": {
       "io_throughput_mbps": {
         "read": 0.0,
-        "write": 24.47
+        "write": 24.67
       },
       "space_utilization": {
         "/": {
@@ -208,29 +769,29 @@
       }
     },
     "system_load": {
-      "load_1min": 3.45,
-      "load_5min": 6.8,
-      "load_15min": 4.58,
+      "load_1min": 4.4,
+      "load_5min": 10.33,
+      "load_15min": 7.89,
       "host_count": 1,
       "overloaded_percent": 0.0
     },
     "pressure": {
       "cpu": {
         "avg10": {
-          "mean": 0.0833,
-          "std": 0.1179,
+          "mean": 0.0483,
+          "std": 0.0722,
           "p5": 0.0,
-          "p95": 0.33,
+          "p95": 0.2,
           "trend": {
             "trend": [
-              0.225,
-              0.0125
+              0.058,
+              0.0
             ],
             "window_duration": "60s"
           }
         },
-        "avg60_mean": 0.6417,
-        "avg300_mean": 1.3617
+        "avg60_mean": 0.8933,
+        "avg300_mean": 2.555
       },
       "memory": {
         "some": {
@@ -283,8 +844,8 @@
               "window_duration": "60s"
             }
           },
-          "avg60_mean": 0.0,
-          "avg300_mean": 0.05
+          "avg60_mean": 0.0083,
+          "avg300_mean": 0.0233
         },
         "full": {
           "avg10": {
@@ -300,47 +861,47 @@
               "window_duration": "60s"
             }
           },
-          "avg60_mean": 0.0,
-          "avg300_mean": 0.0183
+          "avg60_mean": 0.0033,
+          "avg300_mean": 0.0
         }
       }
     },
     "holochain_process": {
       "cpu_usage": {
-        "mean": 1.57,
-        "std": 1.57,
-        "p5": 0.0,
-        "p95": 3.15,
+        "mean": 3.05,
+        "std": 0.0,
+        "p5": 3.05,
+        "p95": 3.05,
         "trend": {
           "trend": [
-            1.58,
-            1.57
+            3.05,
+            3.05
           ],
           "window_duration": "60s"
         }
       },
       "memory_pss": {
-        "mean": 366721.33,
-        "std": 436.96,
-        "p5": 366128.0,
-        "p95": 367596.0,
+        "mean": 361011.67,
+        "std": 2545.79,
+        "p5": 355325.0,
+        "p95": 362301.0,
         "trend": {
           "trend": [
-            366862.0,
-            366651.0
+            362149.0,
+            355325.0
           ],
           "window_duration": "60s"
         }
       },
       "num_threads": {
-        "mean": 27.0,
-        "std": 11.0,
-        "p5": 16.0,
-        "p95": 38.0,
+        "mean": 39.0,
+        "std": 0.0,
+        "p5": 39.0,
+        "p95": 39.0,
         "trend": {
           "trend": [
-            27.0,
-            27.0
+            39.0,
+            39.0
           ],
           "window_duration": "60s"
         }
@@ -370,7 +931,9 @@
         "type": "NotDetected"
       },
       "swap_thrashing": {
-        "type": "NotDetected"
+        "type": "Detected",
+        "severity": "Critical",
+        "description": "Heavy swap usage (45.7% swap used)"
       },
       "system_overload": {
         "type": "NotDetected"

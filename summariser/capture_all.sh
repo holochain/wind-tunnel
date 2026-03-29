@@ -87,6 +87,9 @@ NO_VALIDATION_COMPLETE=1 MIN_AGENTS=10 "$REPO_ROOT"/summariser/capture.sh valida
 MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_get_agent_activity \
   --duration 60 --agents 2 --behaviour write:1 --behaviour get_agent_activity:1
 
+MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_get_agent_activity_volatile \
+  --duration 180 --agents 2 --behaviour write:1 --behaviour get_agent_activity_volatile:1
+
 "$REPO_ROOT"/summariser/capture.sh write_query \
   --duration 60
 

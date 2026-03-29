@@ -1,13 +1,16 @@
 use std::collections::BTreeMap;
 
-use crate::analyze::{counter_stats, standard_timing_stats};
+use crate::analyze::{counter_stats, histogram_timing_stats};
 use crate::frame::LoadError;
 use crate::model::{
     CounterStats, DbConnectionUseTimes, GaugeStats, HolochainMetrics, HolochainWorkflowKind,
     LairRequestDurations, P2pHandleRequestCounts, P2pHandleRequestDurations, P2pMetrics,
     P2pRequestCounts, P2pRequestDurations, StandardTimingsStats, WorkflowDurations,
 };
-use crate::query::{query_count, query_counter, query_duration, query_gauge, query_metrics};
+use crate::query::{
+    query_histogram_duration, query_histogram_total_count, query_metrics_fields,
+    query_otel_counter, query_otel_gauge,
+};
 use anyhow::Context;
 use polars::prelude::*;
 use wind_tunnel_summary_model::RunSummary;
@@ -51,70 +54,75 @@ async fn query_holochain_metrics_inner(
         lair_request_duration,
         p2p,
     ) = futures::join!(
-        query_optional_duration(client, summary, "hc.cascade.duration.s", None),
-        query_optional_counter(client, summary, "hc.cascade.fetch_error", None, "10s"),
-        query_partitioned_counter(
+        query_optional_histogram_duration(client, summary, "hc.cascade.duration", None),
+        query_optional_otel_counter(client, summary, "hc.cascade.fetch_error", None, "10s"),
+        query_partitioned_otel_counter(
             client,
             summary,
             "hc.ribosome.wasm.usage",
             &["zome", "fn"],
             "10s"
         ),
-        query_partitioned_duration(
+        query_partitioned_histogram_duration(
             client,
             summary,
-            "hc.ribosome.zome_call.duration.s",
+            "hc.ribosome.zome_call.duration",
             &["zome", "fn"]
         ),
-        query_partitioned_duration(
+        query_partitioned_histogram_duration(
             client,
             summary,
-            "hc.ribosome.wasm_call.duration.s",
+            "hc.ribosome.wasm_call.duration",
             &["zome", "fn"]
         ),
-        query_partitioned_duration(
+        query_partitioned_histogram_duration(
             client,
             summary,
-            "hc.ribosome.host_fn_call.duration.s",
+            "hc.ribosome.host_fn_call.duration",
             &["host_fn"]
         ),
-        query_optional_counter(
+        query_optional_otel_counter(
             client,
             summary,
             "hc.ribosome.host_fn.emit_signal.count",
             None,
             "10s"
         ),
-        query_optional_counter(
+        query_optional_otel_counter(
             client,
             summary,
             "hc.ribosome.host_fn.send_remote_signal",
             None,
             "10s"
         ),
-        query_optional_duration(client, summary, "hc.conductor.post_commit.duration.s", None),
-        query_optional_gauge(client, summary, "hc.conductor.uptime.s", None, "10s"),
-        query_optional_counter(
+        query_optional_histogram_duration(
+            client,
+            summary,
+            "hc.conductor.post_commit.duration",
+            None
+        ),
+        query_optional_otel_gauge(client, summary, "hc.conductor.uptime", None, "10s"),
+        query_optional_otel_counter(
             client,
             summary,
             "hc.conductor.app_ws.dropped_signal",
             None,
             "10s"
         ),
-        query_optional_counter(
+        query_optional_otel_counter(
             client,
             summary,
             "hc.conductor.workflow.integrated_ops",
             None,
             "10s"
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.conductor.workflow.integration_delay.s",
+            "hc.conductor.workflow.integration_delay",
             None
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
             "hc.conductor.workflow.validation_attempts",
@@ -122,7 +130,7 @@ async fn query_holochain_metrics_inner(
         ),
         query_workflow_durations(client, summary),
         query_db_connection_use_times(client, summary),
-        query_optional_duration(client, summary, "hc.db.write_txn.duration.s", None),
+        query_optional_histogram_duration(client, summary, "hc.db.write_txn.duration", None),
         query_lair_request_durations(client, summary),
         query_p2p_metrics(client, summary),
     );
@@ -156,13 +164,13 @@ async fn query_holochain_metrics_inner(
 // don't discard the entire HolochainMetrics struct.
 // ---------------------------------------------------------------------------
 
-async fn query_optional_duration(
+async fn query_optional_histogram_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
 ) -> Option<StandardTimingsStats> {
-    match query_duration(client, summary, measurement, filter_tag).await {
+    match query_histogram_duration(client, summary, measurement, filter_tag).await {
         Ok(v) => Some(v),
         Err(e) => {
             if !matches!(
@@ -176,14 +184,14 @@ async fn query_optional_duration(
     }
 }
 
-async fn query_optional_counter(
+async fn query_optional_otel_counter(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
     window_duration: &str,
 ) -> Option<CounterStats> {
-    match query_counter(client, summary, measurement, filter_tag, window_duration).await {
+    match query_otel_counter(client, summary, measurement, filter_tag, window_duration).await {
         Ok(v) => Some(v),
         Err(e) => {
             if !matches!(
@@ -197,14 +205,14 @@ async fn query_optional_counter(
     }
 }
 
-async fn query_optional_gauge(
+async fn query_optional_otel_gauge(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
     window_duration: &str,
 ) -> Option<GaugeStats> {
-    match query_gauge(client, summary, measurement, filter_tag, window_duration).await {
+    match query_otel_gauge(client, summary, measurement, filter_tag, window_duration).await {
         Ok(v) => Some(v),
         Err(e) => {
             if !matches!(
@@ -218,13 +226,13 @@ async fn query_optional_gauge(
     }
 }
 
-async fn query_optional_count(
+async fn query_optional_histogram_total_count(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     filter_tag: Option<(&str, &str)>,
 ) -> usize {
-    match query_count(client, summary, measurement, filter_tag).await {
+    match query_histogram_total_count(client, summary, measurement, filter_tag).await {
         Ok(v) => v,
         Err(e) => {
             if !matches!(
@@ -254,18 +262,27 @@ fn composite_key(row: &[AnyValue]) -> String {
         .join("::")
 }
 
-/// Query a duration metric with tag columns included, then partition by unique
+/// Query a pre-aggregated OTel histogram with tag columns, then partition by unique
 /// tag combinations and compute `StandardTimingsStats` for each partition.
 ///
 /// Returns `None` if no data exists. Keys are `"tag1::tag2"` for multi-tag
 /// partitions or just `"tag_value"` for single-tag partitions.
-async fn query_partitioned_duration(
+async fn query_partitioned_histogram_duration(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     tag_columns: &[&str],
 ) -> Option<BTreeMap<String, StandardTimingsStats>> {
-    let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
+    let frame = match query_metrics_fields(
+        client,
+        summary,
+        measurement,
+        &["count", "sum", "min", "max"],
+        tag_columns,
+        None,
+    )
+    .await
+    {
         Ok(f) => f,
         Err(e) => {
             if !matches!(
@@ -278,7 +295,7 @@ async fn query_partitioned_duration(
         }
     };
 
-    match partition_duration_stats(frame, tag_columns) {
+    match partition_histogram_stats(frame, tag_columns) {
         Ok(v) => v,
         Err(e) => {
             log::warn!("Failed to partition Holochain metric {measurement}: {e:#}");
@@ -287,31 +304,33 @@ async fn query_partitioned_duration(
     }
 }
 
-/// Query a counter metric with tag columns included, then partition by unique
-/// tag combinations and compute `CounterStats` for each partition.
+/// Query an OTel counter with tag columns, then partition by unique tag combinations
+/// and compute `CounterStats` for each partition.
 ///
 /// Returns `None` if no data exists.
-async fn query_partitioned_counter(
+async fn query_partitioned_otel_counter(
     client: &influxdb::Client,
     summary: &RunSummary,
     measurement: &str,
     tag_columns: &[&str],
     window_duration: &str,
 ) -> Option<BTreeMap<String, CounterStats>> {
-    let frame = match query_metrics(client, summary, measurement, tag_columns, None).await {
-        Ok(f) => f,
-        Err(e) => {
-            if !matches!(
-                e.downcast_ref::<LoadError>(),
-                Some(LoadError::NoSeriesInResult { .. })
-            ) {
-                log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+    let frame =
+        match query_metrics_fields(client, summary, measurement, &["sum"], tag_columns, None).await
+        {
+            Ok(f) => f,
+            Err(e) => {
+                if !matches!(
+                    e.downcast_ref::<LoadError>(),
+                    Some(LoadError::NoSeriesInResult { .. })
+                ) {
+                    log::warn!("Failed to query Holochain metric {measurement}: {e:#}");
+                }
+                return None;
             }
-            return None;
-        }
-    };
+        };
 
-    match partition_counter_stats(frame, tag_columns, window_duration) {
+    match partition_otel_counter_stats(frame, tag_columns, window_duration) {
         Ok(v) => v,
         Err(e) => {
             log::warn!("Failed to partition Holochain metric {measurement}: {e:#}");
@@ -320,8 +339,9 @@ async fn query_partitioned_counter(
     }
 }
 
-/// Partition a DataFrame by tag columns and compute `StandardTimingsStats` per partition.
-fn partition_duration_stats(
+/// Partition a pre-aggregated histogram DataFrame by tag columns and compute
+/// `StandardTimingsStats` per partition.
+fn partition_histogram_stats(
     frame: DataFrame,
     tag_columns: &[&str],
 ) -> anyhow::Result<Option<BTreeMap<String, StandardTimingsStats>>> {
@@ -333,15 +353,16 @@ fn partition_duration_stats(
     let mut map = BTreeMap::new();
     for (key, filter_values) in &unique_keys {
         let filtered = filter_by_tags(&frame, tag_columns, filter_values)?;
-        let stats = standard_timing_stats(filtered, "value", "10s", None)
-            .with_context(|| format!("Timing stats for partition {key:?}"))?;
+        let stats = histogram_timing_stats(filtered, "10s")
+            .with_context(|| format!("Histogram stats for partition {key:?}"))?;
         map.insert(key.clone(), stats);
     }
     Ok(Some(map))
 }
 
-/// Partition a DataFrame by tag columns and compute `CounterStats` per partition.
-fn partition_counter_stats(
+/// Partition an OTel counter DataFrame by tag columns and compute `CounterStats`
+/// per partition. The counter field is `"sum"` (not `"value"`).
+fn partition_otel_counter_stats(
     frame: DataFrame,
     tag_columns: &[&str],
     window_duration: &str,
@@ -354,7 +375,7 @@ fn partition_counter_stats(
     let mut map = BTreeMap::new();
     for (key, filter_values) in &unique_keys {
         let filtered = filter_by_tags(&frame, tag_columns, filter_values)?;
-        let stats = counter_stats(filtered, "value", window_duration)
+        let stats = counter_stats(filtered, "sum", window_duration)
             .with_context(|| format!("Counter stats for partition {key:?}"))?;
         map.insert(key.clone(), stats);
     }
@@ -422,16 +443,21 @@ async fn query_lair_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> Option<LairRequestDurations> {
-    let m = "hc.keystore.lair_request.duration.s";
+    let m = "hc.keystore.lair_request.duration";
     let (sign, shared_secret_encrypt, crypto_box_xsalsa) = futures::join!(
-        query_optional_duration(client, summary, m, Some(("operation", "sign"))),
-        query_optional_duration(
+        query_optional_histogram_duration(client, summary, m, Some(("operation", "sign"))),
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("operation", "shared_secret_encrypt"))
         ),
-        query_optional_duration(client, summary, m, Some(("operation", "crypto_box_xsalsa"))),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("operation", "crypto_box_xsalsa"))
+        ),
     );
 
     let d = LairRequestDurations {
@@ -461,7 +487,7 @@ async fn query_workflow_durations(
     let sys_validation_tag = HolochainWorkflowKind::SysValidation.to_string();
     let validation_receipt_tag = HolochainWorkflowKind::ValidationReceipt.to_string();
     let witnessing_tag = HolochainWorkflowKind::Witnessing.to_string();
-    let m = "hc.conductor.workflow.duration.s";
+    let m = "hc.conductor.workflow.duration";
 
     let (
         app_validation,
@@ -472,18 +498,33 @@ async fn query_workflow_durations(
         validation_receipt,
         witnessing,
     ) = futures::join!(
-        query_optional_duration(client, summary, m, Some(("workflow", &app_validation_tag))),
-        query_optional_duration(client, summary, m, Some(("workflow", &countersigning_tag))),
-        query_optional_duration(client, summary, m, Some(("workflow", &integrate_tag))),
-        query_optional_duration(client, summary, m, Some(("workflow", &publish_tag))),
-        query_optional_duration(client, summary, m, Some(("workflow", &sys_validation_tag))),
-        query_optional_duration(
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("workflow", &app_validation_tag))
+        ),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("workflow", &countersigning_tag))
+        ),
+        query_optional_histogram_duration(client, summary, m, Some(("workflow", &integrate_tag))),
+        query_optional_histogram_duration(client, summary, m, Some(("workflow", &publish_tag))),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("workflow", &sys_validation_tag))
+        ),
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("workflow", &validation_receipt_tag))
         ),
-        query_optional_duration(client, summary, m, Some(("workflow", &witnessing_tag))),
+        query_optional_histogram_duration(client, summary, m, Some(("workflow", &witnessing_tag))),
     );
 
     let wd = WorkflowDurations {
@@ -519,40 +560,40 @@ async fn query_db_connection_use_times(
     summary: &RunSummary,
 ) -> Option<DbConnectionUseTimes> {
     let (authored, dht, conductor, cache, wasm, peer_meta_store) = futures::join!(
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "authored"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "dht"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "conductor"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "cache"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "wasm"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
-            "hc.db.connections.use_time.s",
+            "hc.db.connections.use_time",
             Some(("kind", "peer_meta_store"))
         ),
     );
@@ -595,14 +636,14 @@ async fn query_p2p_metrics(client: &influxdb::Client, summary: &RunSummary) -> O
         query_p2p_request_counts(client, summary),
         query_p2p_handle_request_durations(client, summary),
         query_p2p_handle_request_counts(client, summary),
-        query_optional_counter(
+        query_optional_otel_counter(
             client,
             summary,
             "hc.holochain_p2p.handle_request.ignored.requests",
             None,
             "10s"
         ),
-        query_optional_counter(
+        query_optional_otel_counter(
             client,
             summary,
             "hc.holochain_p2p.recv_remote_signal",
@@ -637,7 +678,7 @@ async fn query_p2p_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> Option<P2pRequestDurations> {
-    let m = "hc.holochain_p2p.request.duration.s";
+    let m = "hc.holochain_p2p.request.duration";
     let (
         get,
         get_links,
@@ -647,18 +688,23 @@ async fn query_p2p_request_durations(
         send_validation_receipts,
         call_remote,
     ) = futures::join!(
-        query_optional_duration(client, summary, m, Some(("tag", "get"))),
-        query_optional_duration(client, summary, m, Some(("tag", "get_links"))),
-        query_optional_duration(client, summary, m, Some(("tag", "count_links"))),
-        query_optional_duration(client, summary, m, Some(("tag", "get_agent_activity"))),
-        query_optional_duration(client, summary, m, Some(("tag", "must_get_agent_activity"))),
-        query_optional_duration(
+        query_optional_histogram_duration(client, summary, m, Some(("tag", "get"))),
+        query_optional_histogram_duration(client, summary, m, Some(("tag", "get_links"))),
+        query_optional_histogram_duration(client, summary, m, Some(("tag", "count_links"))),
+        query_optional_histogram_duration(client, summary, m, Some(("tag", "get_agent_activity"))),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("tag", "must_get_agent_activity"))
+        ),
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("tag", "send_validation_receipts"))
         ),
-        query_optional_duration(client, summary, m, Some(("tag", "call_remote"))),
+        query_optional_histogram_duration(client, summary, m, Some(("tag", "call_remote"))),
     );
 
     let d = P2pRequestDurations {
@@ -688,7 +734,7 @@ async fn query_p2p_request_counts(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> Option<P2pRequestCounts> {
-    let m = "hc.holochain_p2p.request.duration.s";
+    let m = "hc.holochain_p2p.request.duration";
     let (
         get,
         get_links,
@@ -698,18 +744,28 @@ async fn query_p2p_request_counts(
         send_validation_receipts,
         call_remote,
     ) = futures::join!(
-        query_optional_count(client, summary, m, Some(("tag", "get"))),
-        query_optional_count(client, summary, m, Some(("tag", "get_links"))),
-        query_optional_count(client, summary, m, Some(("tag", "count_links"))),
-        query_optional_count(client, summary, m, Some(("tag", "get_agent_activity"))),
-        query_optional_count(client, summary, m, Some(("tag", "must_get_agent_activity"))),
-        query_optional_count(
+        query_optional_histogram_total_count(client, summary, m, Some(("tag", "get"))),
+        query_optional_histogram_total_count(client, summary, m, Some(("tag", "get_links"))),
+        query_optional_histogram_total_count(client, summary, m, Some(("tag", "count_links"))),
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("tag", "get_agent_activity"))
+        ),
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("tag", "must_get_agent_activity"))
+        ),
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
             Some(("tag", "send_validation_receipts"))
         ),
-        query_optional_count(client, summary, m, Some(("tag", "call_remote"))),
+        query_optional_histogram_total_count(client, summary, m, Some(("tag", "call_remote"))),
     );
 
     let c = P2pRequestCounts {
@@ -740,7 +796,7 @@ async fn query_p2p_handle_request_durations(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> Option<P2pHandleRequestDurations> {
-    let m = "hc.holochain_p2p.handle_request.duration.s";
+    let m = "hc.holochain_p2p.handle_request.duration";
     let (
         response,
         call_remote,
@@ -754,37 +810,52 @@ async fn query_p2p_handle_request_durations(
         publish_counter_sign,
         countersigning_session_negotiation,
     ) = futures::join!(
-        query_optional_duration(client, summary, m, Some(("message_type", "response"))),
-        query_optional_duration(client, summary, m, Some(("message_type", "call_remote"))),
-        query_optional_duration(client, summary, m, Some(("message_type", "get"))),
-        query_optional_duration(client, summary, m, Some(("message_type", "get_links"))),
-        query_optional_duration(client, summary, m, Some(("message_type", "count_links"))),
-        query_optional_duration(
+        query_optional_histogram_duration(client, summary, m, Some(("message_type", "response"))),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("message_type", "call_remote"))
+        ),
+        query_optional_histogram_duration(client, summary, m, Some(("message_type", "get"))),
+        query_optional_histogram_duration(client, summary, m, Some(("message_type", "get_links"))),
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("message_type", "count_links"))
+        ),
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("message_type", "get_agent_activity"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("message_type", "must_get_agent_activity"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("message_type", "send_validation_receipts"))
         ),
-        query_optional_duration(client, summary, m, Some(("message_type", "remote_signal"))),
-        query_optional_duration(
+        query_optional_histogram_duration(
+            client,
+            summary,
+            m,
+            Some(("message_type", "remote_signal"))
+        ),
+        query_optional_histogram_duration(
             client,
             summary,
             m,
             Some(("message_type", "publish_counter_sign"))
         ),
-        query_optional_duration(
+        query_optional_histogram_duration(
             client,
             summary,
             m,
@@ -827,7 +898,7 @@ async fn query_p2p_handle_request_counts(
     client: &influxdb::Client,
     summary: &RunSummary,
 ) -> Option<P2pHandleRequestCounts> {
-    let m = "hc.holochain_p2p.handle_request.duration.s";
+    let m = "hc.holochain_p2p.handle_request.duration";
     let (
         response,
         call_remote,
@@ -841,37 +912,62 @@ async fn query_p2p_handle_request_counts(
         publish_counter_sign,
         countersigning_session_negotiation,
     ) = futures::join!(
-        query_optional_count(client, summary, m, Some(("message_type", "response"))),
-        query_optional_count(client, summary, m, Some(("message_type", "call_remote"))),
-        query_optional_count(client, summary, m, Some(("message_type", "get"))),
-        query_optional_count(client, summary, m, Some(("message_type", "get_links"))),
-        query_optional_count(client, summary, m, Some(("message_type", "count_links"))),
-        query_optional_count(
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("message_type", "response"))
+        ),
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("message_type", "call_remote"))
+        ),
+        query_optional_histogram_total_count(client, summary, m, Some(("message_type", "get"))),
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("message_type", "get_links"))
+        ),
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("message_type", "count_links"))
+        ),
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
             Some(("message_type", "get_agent_activity"))
         ),
-        query_optional_count(
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
             Some(("message_type", "must_get_agent_activity"))
         ),
-        query_optional_count(
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
             Some(("message_type", "send_validation_receipts"))
         ),
-        query_optional_count(client, summary, m, Some(("message_type", "remote_signal"))),
-        query_optional_count(
+        query_optional_histogram_total_count(
+            client,
+            summary,
+            m,
+            Some(("message_type", "remote_signal"))
+        ),
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
             Some(("message_type", "publish_counter_sign"))
         ),
-        query_optional_count(
+        query_optional_histogram_total_count(
             client,
             summary,
             m,
