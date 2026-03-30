@@ -239,15 +239,15 @@ jobs:
       - name: Restructure merged output
         id: restructure
         run: |
-          echo '${{ steps.read.outputs.result }}' | jq -c -R 'fromjson |
-            (.alloc_ids | keys) as $keys |
+          echo '${{ steps.read.outputs.result }}' | jq -c -R '(try fromjson catch {}) |
+            ((.alloc_ids // {}) | keys) as $keys |
             [ $keys[] as $key |
               {
-                job_name: .job_name[$key],
-                run_id: .run_id[$key],
-                started_at: .started_at[$key],
-                duration: .duration[$key],
-                alloc_ids: .alloc_ids[$key]
+                job_name: (.job_name[$key] // ""),
+                run_id: (.run_id[$key] // ""),
+                started_at: (.started_at[$key] // ""),
+                duration: (.duration[$key] // ""),
+                alloc_ids: (.alloc_ids[$key] // "")
               }
             ]' > out.json
 
@@ -264,7 +264,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result) }}
+        include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result || '[]') }}
     steps:
       - uses: actions/checkout@v6
 
