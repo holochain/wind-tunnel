@@ -227,7 +227,6 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
-    #[ignore = "this test is hanging on CI"]
     async fn say_something_to_other_chatter() {
         let _ = env_logger::builder().is_test(true).try_init();
         if CryptoProvider::get_default().is_none() {
