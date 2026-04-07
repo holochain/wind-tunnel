@@ -100,7 +100,7 @@ runs:
         AWS_ENDPOINT_URL: https://hel1.your-objectstorage.com
         S3_BUCKET_NAME: wind-tunnel-public-artifacts
       run: |-
-        OUT_PATH="${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip"
+        OUT_PATH="${S3_BUCKET_NAME}/run-artifacts/${{ github.run_id }}/${{ env.RUN_ID }}/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip"
         nix run .#awscli-s3 cp ./result/${{ steps.read-nomad-vars.outputs.scenario_name }}.zip "s3://${OUT_PATH}"
 
         echo "scenario_download_url=${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_OUTPUT"
