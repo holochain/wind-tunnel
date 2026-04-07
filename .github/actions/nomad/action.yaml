@@ -47,6 +47,7 @@ runs:
         echo "duration=$NOMAD_VAR_DURATION" >> "$GITHUB_OUTPUT"
         echo "scenario_name=$NOMAD_VAR_SCENARIO_NAME" >> "$GITHUB_OUTPUT"
         echo "required_nodes=$REQUIRED_NODES" >> "$GITHUB_OUTPUT"
+        echo "RUN_ID=${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}" >> "$GITHUB_ENV"
 
     - name: Install Nix
       uses: cachix/install-nix-action@v31
@@ -146,8 +147,7 @@ runs:
         NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
         NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
         NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
-        RUN_ID: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
-        NOMAD_VAR_run_id: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_run_id: ${{ env.RUN_ID }}
         NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}
         NOMAD_VAR_wind_tunnel_git_ref: ${{ inputs.commit-hash || github.sha }}
@@ -180,8 +180,7 @@ runs:
         NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
         NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
         NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
-        RUN_ID: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
-        NOMAD_VAR_run_id: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        NOMAD_VAR_run_id: ${{ env.RUN_ID }}
         NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}
         NOMAD_VAR_wind_tunnel_git_ref: ${{ inputs.commit-hash || github.sha }}
@@ -214,7 +213,7 @@ runs:
         matrix-key: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
         outputs: |-
           alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
-          run_id: "${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}"
+          run_id: "${{ env.RUN_ID }}"
           job_name: "${{ steps.run-nomad-job.outputs.job_name }}"
           started_at: "${{ steps.run-nomad-job.outputs.started_at }}"
           duration: "${{ steps.read-nomad-vars.outputs.duration }}"
