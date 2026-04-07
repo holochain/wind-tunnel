@@ -5,10 +5,6 @@ on:
   schedule:
     - cron: "0 0 * * 4" # Run Nomad workflow at 00:00 on Thursdays
 
-concurrency:
-  group: nomad-canonical
-  cancel-in-progress: false
-
 jobs:
   nomad-canonical:
     uses: ./.github/workflows/nomad-common.yaml

@@ -1,5 +1,9 @@
 name: "Run Nomad Scenario"
 
+concurrency:
+  group: nomad
+  cancel-in-progress: false
+
 on:
   workflow_call:
     inputs:
