@@ -210,7 +210,7 @@ runs:
       uses: cloudposse/github-action-matrix-outputs-write@v1
       with:
         matrix-step-name: run-scenarios
-        matrix-key: ${{ inputs.job-name }}_${{ github.run_id }}_${{ github.run_attempt }}
+        matrix-key: ${{ env.RUN_ID }}
         outputs: |-
           alloc_ids: "${{ steps.run-nomad-job.outputs.alloc_ids }}"
           run_id: "${{ env.RUN_ID }}"
