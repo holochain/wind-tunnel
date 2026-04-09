@@ -161,6 +161,11 @@ jobs:
         env:
           THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
         run: |-
+          cleanup() {
+            rm -f ~/.config/.tfgridconfig
+          }
+          trap cleanup EXIT
+
           # Set login config for tf-grid-cmd
           printf '{"mnemonics":"%s","network":"main"}\n' "$THREEFOLD_TFCHAIN_WALLET_MNEMONIC" > ~/.config/.tfgridconfig
 
