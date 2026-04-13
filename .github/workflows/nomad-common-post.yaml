@@ -105,8 +105,10 @@ jobs:
   cancel-nomad-allocations:
     name: Cancel running Nomad allocations
     runs-on: ubuntu-latest
-    needs: collect-github-matrix-outputs
-    if: ${{ cancelled() }}
+    needs:
+      - collect-github-matrix-outputs
+      - wait-for-jobs
+    if: ${{ cancelled() || needs.wait-for-jobs.result == 'failure' }}
     strategy:
       fail-fast: false
       matrix:
