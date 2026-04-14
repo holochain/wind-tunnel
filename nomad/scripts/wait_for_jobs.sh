@@ -91,14 +91,17 @@ function print_failed_tasks_and_logs() {
   echo "Failed task: $failed_tasks"
 }
 
+function get_elapsed() {
+    echo $(( $(date +%s) - START_TIME ))
+}
+
 function wait_for_job() {
     local scenario_name="$1"
     local alloc_id="$2"
 
     echo "Waiting for job: $scenario_name ($alloc_id)"
 
-    ELAPSED_SECS=0
-    # Run until timeout or no scenario is still running
+    # Run until global timeout or no scenario is still running
     while true; do
         local nomad_status
         if ! nomad_status="$(get_nomad_status "$alloc_id")"; then
@@ -111,14 +114,15 @@ function wait_for_job() {
         fi
 
         if is_running "$status"; then
-            echo "Scenario $scenario_name ($alloc_id) is still running (status=$status) (elapsed: $ELAPSED_SECS seconds)."
-            sleep 1
-            ELAPSED_SECS=$((ELAPSED_SECS + 1))
-            if [[ $ELAPSED_SECS -gt $TIMEOUT ]]; then
-                echo "Timeout reached after $TIMEOUT seconds for $scenario_name ($alloc_id). Stopping allocation."
+            local elapsed
+            elapsed="$(get_elapsed)"
+            if [[ $elapsed -gt $TIMEOUT ]]; then
+                echo "Global timeout reached after $TIMEOUT seconds for $scenario_name ($alloc_id). Stopping allocation."
                 stop_nomad_alloc "$alloc_id" || echo "Allocation $alloc_id could not be stopped"
                 return 1
             fi
+            echo "Scenario $scenario_name ($alloc_id) is still running (status=$status) (elapsed: $elapsed seconds)."
+            sleep 1
             continue
         fi
 
@@ -127,11 +131,11 @@ function wait_for_job() {
             break
         fi
 
-        echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $ELAPSED_SECS seconds."
+        echo "Scenario $scenario_name ($alloc_id) failed (status=$status) after $(get_elapsed) seconds."
         print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
         return 1
     done
-    echo "Scenario $scenario_name ($alloc_id) completed successfully in $ELAPSED_SECS seconds."
+    echo "Scenario $scenario_name ($alloc_id) completed successfully in $(get_elapsed) seconds."
 
     return 0
 }
@@ -155,6 +159,8 @@ fi
 SCENARIO_NAME="$1"
 
 shift # Remove the first argument (scenario name)
+
+START_TIME=$(date +%s)
 
 # Process each allocation ID passed as arguments
 FAILURE_COUNT=0
