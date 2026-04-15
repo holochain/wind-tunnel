@@ -45,10 +45,7 @@ The scenario records several custom metrics:
 - `wt.custom.sync_lag_commitment`: Captures the time between commitment creation and discovery by the receiving agent, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
 - `wt.custom.sync_lag_rave`: Captures the time between RAVE creation and discovery by smart_agreements agents, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
 - `wt.custom.sync_lag_grouped_parked`: Captures the time between grouped_parked request creation and discovery, tagged with `arc=zero` or `arc=full` to distinguish between zero-arc and full-arc agents
-- `wt.custom.actionable_transaction_proposals`: Records the count of actionable transaction proposals at scenario teardown
 - `wt.custom.actionable_transaction_commitments`: Records the count of actionable transaction commitments at scenario teardown
-- `wt.custom.actionable_transaction_accepts`: Records the count of actionable transaction accepts at scenario teardown
-- `wt.custom.actionable_transaction_rejects`: Records the count of actionable transaction rejects at scenario teardown
 - `wt.custom.completed_transaction_accepts`: Records the count of completed accept transactions at scenario teardown
 - `wt.custom.completed_transaction_spends`: Records the count of completed spend transactions at scenario teardown
 - `wt.custom.completed_transaction_raves`: Records the count of completed RAVE agreement executions at scenario teardown
@@ -92,5 +89,5 @@ RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_chain_transaction -- --agent
 ```
 
 ```bash
-RUST_LOG=info UNYT_NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
+RUST_LOG=warn UNYT_NUMBER_OF_LINKS_TO_PROCESS=10 cargo run --package unyt_chain_transaction -- --agents 5 --behaviour initiate:1 --behaviour spend:2 --behaviour smart_agreements:2 --duration 300
 ```

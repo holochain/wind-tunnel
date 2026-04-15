@@ -89,12 +89,13 @@ pub trait UnytScenarioValues: UserValuesConstraint {
     /// Returns a mutable reference to the seen templates set.
     fn seen_templates_mut(&mut self) -> &mut HashSet<ActionHashB64>;
 
-    /// Returns the set of transaction hashes already seen by this agent.
-    /// Used by zero-arc spend/smart_agreements behaviours to track sync lag.
-    fn seen_transactions(&self) -> &HashSet<ActionHashB64>;
+    /// Returns the set of (transaction hash, tx_type) pairs already seen by this agent.
+    /// Keyed by both hash and type so the same transaction can be recorded for different
+    /// tx_types (e.g. "commitment", "rave", "grouped_parked") without deduplicating across types.
+    fn seen_transactions(&self) -> &HashSet<(ActionHashB64, &'static str)>;
 
     /// Returns a mutable reference to the seen transactions set.
-    fn seen_transactions_mut(&mut self) -> &mut HashSet<ActionHashB64>;
+    fn seen_transactions_mut(&mut self) -> &mut HashSet<(ActionHashB64, &'static str)>;
 
     /// Returns the list of transaction hashes being watched for completion
     /// via `get_status`. Mirrors the UI "watch list" feature.
@@ -122,10 +123,10 @@ pub struct CommonScenarioValues {
     /// Primarily used by the zero-arc observer behaviour; unused fields
     /// default to an empty set with no runtime cost.
     pub(crate) seen_templates: HashSet<ActionHashB64>,
-    /// Tracks transaction hashes already observed by this agent.
+    /// Tracks (transaction hash, tx_type) pairs already observed by this agent.
     /// Used by zero-arc spend/smart_agreements behaviours for sync lag
     /// measurement; defaults to an empty set with no runtime cost.
-    pub(crate) seen_transactions: HashSet<ActionHashB64>,
+    pub(crate) seen_transactions: HashSet<(ActionHashB64, &'static str)>,
     /// Transaction hashes being watched for completion via `get_status`.
     /// Mirrors the UI "watch list" feature where initiated transactions
     /// are polled until they reach `WatchStatus::Completed`.
@@ -187,10 +188,10 @@ impl UnytScenarioValues for CommonScenarioValues {
     fn seen_templates_mut(&mut self) -> &mut HashSet<ActionHashB64> {
         &mut self.seen_templates
     }
-    fn seen_transactions(&self) -> &HashSet<ActionHashB64> {
+    fn seen_transactions(&self) -> &HashSet<(ActionHashB64, &'static str)> {
         &self.seen_transactions
     }
-    fn seen_transactions_mut(&mut self) -> &mut HashSet<ActionHashB64> {
+    fn seen_transactions_mut(&mut self) -> &mut HashSet<(ActionHashB64, &'static str)> {
         &mut self.seen_transactions
     }
     fn watched_transactions(&self) -> &Vec<ActionHashB64> {
@@ -316,13 +317,15 @@ mod tests {
         let h1 = dummy_action_hash_b64(10);
         let h2 = dummy_action_hash_b64(11);
 
-        sv.seen_transactions_mut().insert(h1.clone());
+        sv.seen_transactions_mut()
+            .insert((h1.clone(), "commitment"));
 
-        assert!(sv.seen_transactions().contains(&h1));
-        assert!(!sv.seen_transactions().contains(&h2));
+        assert!(sv.seen_transactions().contains(&(h1.clone(), "commitment")));
+        assert!(!sv.seen_transactions().contains(&(h2.clone(), "commitment")));
         assert_eq!(sv.seen_transactions().len(), 1);
 
-        sv.seen_transactions_mut().insert(h2.clone());
+        sv.seen_transactions_mut()
+            .insert((h2.clone(), "commitment"));
         assert_eq!(sv.seen_transactions().len(), 2);
     }
 
@@ -331,10 +334,23 @@ mod tests {
         let mut sv = CommonScenarioValues::default();
         let h = dummy_action_hash_b64(12);
 
-        sv.seen_transactions_mut().insert(h.clone());
-        sv.seen_transactions_mut().insert(h);
+        sv.seen_transactions_mut().insert((h.clone(), "commitment"));
+        sv.seen_transactions_mut().insert((h.clone(), "commitment"));
 
         assert_eq!(sv.seen_transactions().len(), 1);
+    }
+
+    #[test]
+    fn seen_transactions_different_types_not_deduped() {
+        let mut sv = CommonScenarioValues::default();
+        let h = dummy_action_hash_b64(13);
+
+        sv.seen_transactions_mut().insert((h.clone(), "commitment"));
+        sv.seen_transactions_mut().insert((h.clone(), "rave"));
+        sv.seen_transactions_mut()
+            .insert((h.clone(), "grouped_parked"));
+
+        assert_eq!(sv.seen_transactions().len(), 3);
     }
 
     #[test]

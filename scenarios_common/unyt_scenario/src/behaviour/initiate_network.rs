@@ -37,7 +37,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     // check if network is initialized, if not initialize it
     if !ctx.is_network_initialized() {
         let progenitor_key = ctx.get().cell_id().agent_pubkey().clone();
-        log::info!("Progenitor agent {} initializing network", &progenitor_key);
+        log::info!("Progenitor agent {progenitor_key} initializing network");
         // create system code templates
         let (credit_limit_smart_agreement, fee_transfer_smart_agreement) = create_agreements(ctx)?;
         //  set global configuration
@@ -75,21 +75,20 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                     compute_transaction_fee: TransactionFeeCompute {
                         agreement: fee_transfer_smart_agreement,
                         fee_trigger: ZFuel::new_with_default_precision(100),
-                        fee_percentage: 0,
+                        fee_percentage: 1,
                     },
                 },
             },
             new_unit_definitions: Vec::new(),
         })?;
-        log::info!("Network should be initialized now");
+        log::info!("Code templates, smart agreements and global definition written");
     } else {
         // else just pause since there is nothing else for this agent to do,
         // since the network is initialized
         let ledger = ctx.unyt_get_ledger()?;
         log::info!(
-            "Progenitor {} | Ledger: {:?}",
+            "Progenitor {} | Ledger: {ledger:?}",
             ctx.get().cell_id().agent_pubkey(),
-            ledger
         );
         log::info!("Network is already initialized, pausing...");
         thread::sleep(Duration::from_secs(20));

@@ -16,23 +16,25 @@
     "build_info": null
   },
   "scenario_metrics": {
-    "chain_batch_delay_rate": {
-      "max_mean": 2.0,
-      "mean": 2.0,
-      "min_mean": 2.0,
-      "trend": [
-        1.0,
-        2.33,
-        2.0,
-        2.0,
-        1.0
-      ],
-      "window_duration": "10s"
+    "retrieved_chain_len": {
+      "mean_max": 93.0,
+      "max": 93.0,
+      "write_agent_count": 2,
+      "trend": {
+        "trend": [
+          16.0,
+          38.0,
+          60.0,
+          82.0,
+          93.0
+        ],
+        "window_duration": "10s"
+      }
     },
     "chain_batch_delay_timing": {
-      "max_mean": 0.668,
       "mean": 0.370417,
       "mean_std_dev": 0.567024,
+      "max_mean": 0.668,
       "min_mean": 0.126125,
       "trend": [
         0.842,
@@ -43,23 +45,56 @@
       ],
       "window_duration": "10s"
     },
+    "chain_batch_delay_rate": {
+      "mean": 2.0,
+      "max_mean": 2.0,
+      "min_mean": 2.0,
+      "trend": [
+        1.0,
+        2.33,
+        2.0,
+        2.0,
+        1.0
+      ],
+      "window_duration": "10s"
+    },
     "create_validated_sample_entry_zome_calls": {
-      "max_mean": 0.0,
       "mean": 0.0,
       "mean_std_dev": 0.0,
+      "max_mean": 0.0,
       "min_mean": 0.0,
       "trend": [],
       "window_duration": "10s"
     },
-    "error_count": 919,
+    "retrieval_errors": {
+      "total_count": 3,
+      "partition_count": 3,
+      "partitions_above_zero": 2,
+      "mean_count": 1,
+      "max_per_partition": 2,
+      "min_per_partition": 0,
+      "trend": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_duration": "10s"
+    },
     "open_connections": {
       "partitions": [
         {
+          "key": [
+            {
+              "key": "behaviour",
+              "value": "full_write"
+            }
+          ],
           "gauge_stats": {
             "mean": 5.0,
+            "std": 0.0,
             "p5": 5.0,
             "p95": 5.0,
-            "std": 0.0,
             "trend": {
               "trend": [
                 5.0,
@@ -70,20 +105,20 @@
               ],
               "window_duration": "10s"
             }
-          },
+          }
+        },
+        {
           "key": [
             {
               "key": "behaviour",
-              "value": "full_write"
+              "value": "zero_must_get_agent_activity"
             }
-          ]
-        },
-        {
+          ],
           "gauge_stats": {
             "mean": 1.53,
+            "std": 0.85,
             "p5": 0.0,
             "p95": 2.0,
-            "std": 0.85,
             "trend": {
               "trend": [
                 0.0,
@@ -95,20 +130,20 @@
               ],
               "window_duration": "10s"
             }
-          },
+          }
+        },
+        {
           "key": [
             {
               "key": "behaviour",
-              "value": "zero_must_get_agent_activity"
+              "value": "zero_write"
             }
-          ]
-        },
-        {
+          ],
           "gauge_stats": {
             "mean": 2.0,
+            "std": 0.0,
             "p5": 2.0,
             "p95": 2.0,
-            "std": 0.0,
             "trend": {
               "trend": [
                 2.0,
@@ -119,46 +154,11 @@
               ],
               "window_duration": "10s"
             }
-          },
-          "key": [
-            {
-              "key": "behaviour",
-              "value": "zero_write"
-            }
-          ]
+          }
         }
       ]
     },
-    "retrieval_errors": {
-      "max_per_partition": 2,
-      "mean_count": 1,
-      "min_per_partition": 0,
-      "partition_count": 3,
-      "partitions_above_zero": 2,
-      "total_count": 3,
-      "trend": [
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      "window_duration": "10s"
-    },
-    "retrieved_chain_len": {
-      "max": 93.0,
-      "mean_max": 93.0,
-      "trend": {
-        "trend": [
-          16.0,
-          38.0,
-          60.0,
-          82.0,
-          93.0
-        ],
-        "window_duration": "10s"
-      },
-      "write_agent_count": 2
-    }
+    "error_count": 919
   },
   "holochain_metrics": {
     "cascade_duration": {

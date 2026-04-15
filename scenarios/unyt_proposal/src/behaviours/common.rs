@@ -318,7 +318,7 @@ pub fn measure_sync_lag(
                 .get()
                 .scenario_values
                 .seen_transactions()
-                .contains(&tx.id)
+                .contains(&(tx.id.clone(), tx_type))
             {
                 continue;
             }
@@ -333,7 +333,7 @@ pub fn measure_sync_lag(
             ctx.get_mut()
                 .scenario_values
                 .seen_transactions_mut()
-                .insert(tx.id.clone());
+                .insert((tx.id.clone(), tx_type));
         }
     }
 }

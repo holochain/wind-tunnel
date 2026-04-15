@@ -25,18 +25,12 @@ pub(crate) struct UnytChainTransactionSummary {
     pub ledger_balance: AggregatedSingleValue,
     /// Final ledger fees owed across all agents at teardown (base unyt units).
     pub ledger_fees: AggregatedSingleValue,
-    /// Remaining actionable transaction proposals at teardown.
-    /// Non-zero sum indicates work left unfinished.
-    pub actionable_transaction_proposals: AggregatedSingleValue,
     /// Remaining actionable transaction commitments at teardown.
     /// Non-zero sum indicates work left unfinished.
     pub actionable_transaction_commitments: AggregatedSingleValue,
     /// Remaining actionable transaction accepts at teardown.
     /// Non-zero sum indicates work left unfinished.
     pub actionable_transaction_accepts: AggregatedSingleValue,
-    /// Remaining actionable transaction rejects at teardown.
-    /// Non-zero sum indicates work left unfinished.
-    pub actionable_transaction_rejects: AggregatedSingleValue,
     /// Completed transaction accepts at teardown.
     pub completed_transaction_accepts: AggregatedSingleValue,
     /// Completed transaction spends at teardown.
@@ -105,15 +99,6 @@ pub(crate) async fn summarize_unyt_chain_transaction(
     .await
     .context("Load ledger_fees data")?;
 
-    let actionable_transaction_proposals = query::query_custom_data(
-        client.clone(),
-        &summary,
-        "wt.custom.actionable_transaction_proposals",
-        &["agent"],
-    )
-    .await
-    .context("Load actionable_transaction_proposals data")?;
-
     let actionable_transaction_commitments = query::query_custom_data(
         client.clone(),
         &summary,
@@ -131,15 +116,6 @@ pub(crate) async fn summarize_unyt_chain_transaction(
     )
     .await
     .context("Load actionable_transaction_accepts data")?;
-
-    let actionable_transaction_rejects = query::query_custom_data(
-        client.clone(),
-        &summary,
-        "wt.custom.actionable_transaction_rejects",
-        &["agent"],
-    )
-    .await
-    .context("Load actionable_transaction_rejects data")?;
 
     let completed_transaction_accepts = query::query_custom_data(
         client.clone(),
@@ -209,11 +185,6 @@ pub(crate) async fn summarize_unyt_chain_transaction(
             .context("Aggregated single value for ledger_balance")?,
         ledger_fees: aggregated_single_value(ledger_fees, "value")
             .context("Aggregated single value for ledger_fees")?,
-        actionable_transaction_proposals: aggregated_single_value(
-            actionable_transaction_proposals,
-            "value",
-        )
-        .context("Aggregated single value for actionable_transaction_proposals")?,
         actionable_transaction_commitments: aggregated_single_value(
             actionable_transaction_commitments,
             "value",
@@ -224,11 +195,6 @@ pub(crate) async fn summarize_unyt_chain_transaction(
             "value",
         )
         .context("Aggregated single value for actionable_transaction_accepts")?,
-        actionable_transaction_rejects: aggregated_single_value(
-            actionable_transaction_rejects,
-            "value",
-        )
-        .context("Aggregated single value for actionable_transaction_rejects")?,
         completed_transaction_accepts: aggregated_single_value(
             completed_transaction_accepts,
             "value",

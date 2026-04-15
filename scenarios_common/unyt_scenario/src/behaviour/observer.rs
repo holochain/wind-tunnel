@@ -26,7 +26,8 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     if !ctx.get().scenario_values.network_initialized() {
         if ctx.is_network_initialized() {
             log::info!(
-                "Network initialized for {arc_type}-arc observer {}",
+                "[agent {}] {arc_type}-arc observer {} network initialized",
+                ctx.agent_index(),
                 ctx.get().cell_id().agent_pubkey()
             );
             reporter.add_custom(
@@ -38,8 +39,8 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             ctx.get_mut().scenario_values.set_network_initialized(true);
         } else {
             log::info!(
-                "Network not initialized for {arc_type}-arc observer {}, waiting...",
-                ctx.get().cell_id().agent_pubkey()
+                "[agent {}] {arc_type}-arc observer network not initialized, waiting",
+                ctx.agent_index()
             );
             thread::sleep(Duration::from_secs(2));
             return Ok(());
@@ -62,6 +63,10 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             continue;
         }
 
+        log::info!(
+            "[agent {}] {arc_type}-arc saw code template {template_id}",
+            ctx.agent_index(),
+        );
         // Measure sync lag using published_at timestamp
         let published_at_us = template.published_at.as_micros() as u128;
         let now_us = now.duration_since(SystemTime::UNIX_EPOCH)?.as_micros();
@@ -74,22 +79,19 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 .with_field("value", lag_s),
         );
 
+        // Report new discovered item
+        reporter.add_custom(
+            ReportMetric::new("recv_count")
+                .with_tag("agent", agent_pub_key.clone())
+                .with_tag("arc", arc_type.as_tag())
+                .with_field("value", 1),
+        );
+
         ctx.get_mut()
             .scenario_values
             .seen_templates_mut()
             .insert(template_id);
     }
-
-    // Report total discovered items
-    reporter.add_custom(
-        ReportMetric::new("recv_count")
-            .with_tag("agent", agent_pub_key)
-            .with_tag("arc", arc_type.as_tag())
-            .with_field(
-                "value",
-                ctx.get().scenario_values.seen_templates().len() as f64,
-            ),
-    );
 
     // Throttle to avoid overwhelming
     thread::sleep(Duration::from_secs(2));

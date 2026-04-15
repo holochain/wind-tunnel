@@ -12,14 +12,16 @@ pub fn agent_teardown<SV: UnytScenarioValues>(
     log::info!("Tearing down agent {}", ctx.get().cell_id().agent_pubkey());
     let reporter = ctx.runner_context().reporter();
     if let Ok(ledger) = ctx.unyt_get_ledger() {
+        let balance = ledger.balance.get_base_unyt();
         reporter.add_custom(
             ReportMetric::new("ledger_balance")
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
-                .with_field("value", ledger.balance.get_base_unyt().units),
+                .with_field("value", balance.units),
         );
+        let fees = ledger.fees_owed;
         reporter.add_custom(
             ReportMetric::new("ledger_fees")
-                .with_field("value", ledger.fees_owed.units)
+                .with_field("value", fees.units)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
     };

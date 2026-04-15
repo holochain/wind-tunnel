@@ -32,23 +32,39 @@
     }
   },
   "scenario_metrics": {
-    "chain_head_delay_rate": {
-      "max_mean": 448.33,
-      "mean": 443.0,
-      "min_mean": 437.67,
+    "entry_created_count": {
+      "total_count": 4997,
+      "partition_count": 3,
+      "partitions_above_zero": 3,
+      "mean_count": 1666,
+      "max_per_partition": 2777,
+      "min_per_partition": 1094,
       "trend": [
-        6.67,
-        785.67,
-        326.0,
-        217.33,
-        151.0
+        11.0,
+        1308.6667,
+        344.0
       ],
       "window_duration": "10s"
     },
+    "highest_observed_action_seq": {
+      "mean_max": 2344.0,
+      "max": 2344.0,
+      "write_agent_count": 1,
+      "trend": {
+        "trend": [
+          11.0,
+          900.0,
+          1453.0,
+          1964.0,
+          2344.0
+        ],
+        "window_duration": "10s"
+      }
+    },
     "chain_head_delay_timing": {
-      "max_mean": 0.016192,
       "mean": 0.015512,
       "mean_std_dev": 0.080301,
+      "max_mean": 0.016192,
       "min_mean": 0.014987,
       "trend": [
         0.46229,
@@ -59,52 +75,53 @@
       ],
       "window_duration": "10s"
     },
-    "entry_created_count": {
-      "max_per_partition": 2777,
-      "mean_count": 1666,
-      "min_per_partition": 1094,
-      "partition_count": 3,
-      "partitions_above_zero": 3,
-      "total_count": 4997,
+    "chain_head_delay_rate": {
+      "mean": 443.0,
+      "max_mean": 448.33,
+      "min_mean": 437.67,
       "trend": [
-        11.0,
-        1308.6667,
-        344.0
+        6.67,
+        785.67,
+        326.0,
+        217.33,
+        151.0
       ],
       "window_duration": "10s"
     },
-    "error_count": 0,
     "get_agent_activity_full_zome_calls": {
-      "max_mean": 0.0,
       "mean": 0.0,
       "mean_std_dev": 0.0,
+      "max_mean": 0.0,
       "min_mean": 0.0,
       "trend": [],
       "window_duration": "10s"
     },
-    "highest_observed_action_seq": {
-      "max": 2344.0,
-      "mean_max": 2344.0,
-      "trend": {
-        "trend": [
-          11.0,
-          900.0,
-          1453.0,
-          1964.0,
-          2344.0
-        ],
-        "window_duration": "10s"
-      },
-      "write_agent_count": 1
+    "retrieval_errors": {
+      "total_count": 0,
+      "partition_count": 3,
+      "partitions_above_zero": 0,
+      "mean_count": 0,
+      "max_per_partition": 0,
+      "min_per_partition": 0,
+      "trend": [
+        0.0
+      ],
+      "window_duration": "10s"
     },
     "open_connections": {
       "partitions": [
         {
+          "key": [
+            {
+              "key": "behaviour",
+              "value": "full_write"
+            }
+          ],
           "gauge_stats": {
             "mean": 5.0,
+            "std": 0.0,
             "p5": 5.0,
             "p95": 5.0,
-            "std": 0.0,
             "trend": {
               "trend": [
                 5.0,
@@ -115,20 +132,20 @@
               ],
               "window_duration": "10s"
             }
-          },
+          }
+        },
+        {
           "key": [
             {
               "key": "behaviour",
-              "value": "full_write"
+              "value": "zero_read"
             }
-          ]
-        },
-        {
+          ],
           "gauge_stats": {
             "mean": 1.61,
+            "std": 0.77,
             "p5": 0.0,
             "p95": 2.0,
-            "std": 0.77,
             "trend": {
               "trend": [
                 0.0,
@@ -140,20 +157,20 @@
               ],
               "window_duration": "10s"
             }
-          },
+          }
+        },
+        {
           "key": [
             {
               "key": "behaviour",
-              "value": "zero_read"
+              "value": "zero_write"
             }
-          ]
-        },
-        {
+          ],
           "gauge_stats": {
             "mean": 2.0,
+            "std": 0.0,
             "p5": 2.0,
             "p95": 2.0,
-            "std": 0.0,
             "trend": {
               "trend": [
                 2.0,
@@ -164,28 +181,11 @@
               ],
               "window_duration": "10s"
             }
-          },
-          "key": [
-            {
-              "key": "behaviour",
-              "value": "zero_write"
-            }
-          ]
+          }
         }
       ]
     },
-    "retrieval_errors": {
-      "max_per_partition": 0,
-      "mean_count": 0,
-      "min_per_partition": 0,
-      "partition_count": 3,
-      "partitions_above_zero": 0,
-      "total_count": 0,
-      "trend": [
-        0.0
-      ],
-      "window_duration": "10s"
-    }
+    "error_count": 0
   },
   "holochain_metrics": {
     "cascade_duration": {

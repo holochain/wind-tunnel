@@ -148,10 +148,9 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     ctx.unyt_init()?;
 
     log::info!(
-        "Agent setup complete for {}, with agent pub key {:?}, dna hash {:?}",
-        ctx.agent_name(),
+        "[agent {}] setup complete, agent pub key {:?}",
+        ctx.agent_index(),
         ctx.get().cell_id().agent_pubkey(),
-        ctx.get().cell_id().dna_hash()
     );
 
     // Every agent creates a code template to flag that they have joined the network
