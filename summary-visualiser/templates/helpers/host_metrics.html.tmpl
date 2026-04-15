@@ -4,108 +4,10 @@ Render host metrics including CPU, memory, network, disk, system load, pressure,
 This template displays system-level performance metrics collected during the scenario run.
 */}}
 
-{{/* host_metrics template */}}
-
-<div class="scenario-subsection">
-    <div class="scenario-subsection-title">Host Metrics</div>
-</div>
-
-{{ with .cpu }}
-    {{ template "scenario_metric" (dict
-        "name" "User CPU usage"
-        "description" "CPU usage by user space"
-        "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .usage_user_mean) "unit" "%"))
-    ) }}
-{{ end }}
-
-{{ with .network }}
-    {{ with .primary }}
-        {{ template "scenario_metric" (dict
-            "name" "Network receive rate (primary)"
-            "description" "Rate of bytes received on primary network interface"
-            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "format" "bytes_rate") .recv_rate))
-        ) }}
-
-        {{ template "scenario_metric" (dict
-            "name" "Network send rate (primary)"
-            "description" "Rate of bytes sent on primary network interface"
-            "content" (tmpl.Exec "min_max_mean_std" (merge (dict "format" "bytes_rate") .send_rate))
-        ) }}
-
-        {{ with .bytes_recv }}
-            {{ template "scenario_metric" (dict
-                "name" "Total bytes received"
-                "description" "Total bytes received on primary network interface"
-                "content" (print
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "count"
-                        "content" (tmpl.Exec "format_bytes" (dict "value" .count))
-                    ))
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "mean"
-                        "content" (tmpl.Exec "format_bytes_rate" (dict "value" .mean_rate_per_second))
-                    ))
-                )
-            ) }}
-        {{ end }}
-
-        {{ with .bytes_sent }}
-            {{ template "scenario_metric" (dict
-                "name" "Total bytes sent"
-                "description" "Total bytes sent on primary network interface"
-                "content" (print
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "count"
-                        "content" (tmpl.Exec "format_bytes" (dict "value" .count))
-                    ))
-                    (tmpl.Exec "scenario_metric_content_item" (dict
-                        "name" "mean"
-                        "content" (tmpl.Exec "format_bytes_rate" (dict "value" .mean_rate_per_second))
-                    ))
-                )
-            ) }}
-        {{ end }}
-    {{ end }}
-{{ end }}
-
-
-{{ with .anomalies }}
-    {{ template "scenario_metric" (dict
-        "name" "CPU spike anomaly"
-        "description" "CPU spike anomaly was detected"
-        "content" (tmpl.Exec "anomaly" .cpu_spike)
-    ) }}
-
-    {{ template "scenario_metric" (dict
-        "name" "Memory leak anomaly"
-        "description" "Memory leak anomaly was detected"
-        "content" (tmpl.Exec "anomaly" .memory_leak)
-    ) }}
-
-    {{ template "scenario_metric" (dict
-        "name" "Disk full anomaly"
-        "description" "Disk full anomaly was detected"
-        "content" (tmpl.Exec "anomaly" .disk_full)
-    ) }}
-
-    {{ template "scenario_metric" (dict
-        "name" "Swap thrashing anomaly"
-        "description" "Swap thrashing anomaly was detected"
-        "content" (tmpl.Exec "anomaly" .swap_thrashing)
-    ) }}
-
-    {{ template "scenario_metric" (dict
-        "name" "System overload anomaly"
-        "description" "System overload anomaly was detected"
-        "content" (tmpl.Exec "anomaly" .system_overload)
-    ) }}
-{{ end }}
-
 <details class="scenario-subsection-hidden">
-    <summary>    
+    <summary>
         <div class="scenario-subsection">
-
-            <div class="scenario-subsection-title">Additional Host Metrics</div>
+            <div class="scenario-subsection-title">Host Metrics</div>
             <div>
                 <div class="scenario-subsection-button">
                     Hidden by default. Click to toggle visibility.
@@ -113,6 +15,99 @@ This template displays system-level performance metrics collected during the sce
             </div>
         </div>
     </summary>
+
+    {{/* host_metrics template */}}
+
+    {{ with .cpu }}
+        {{ template "scenario_metric" (dict
+            "name" "User CPU usage"
+            "description" "CPU usage by user space"
+            "content" (tmpl.Exec "scalar" (dict "value" (printf "%.2f" .usage_user_mean) "unit" "%"))
+        ) }}
+    {{ end }}
+
+    {{ with .network }}
+        {{ with .primary }}
+            {{ template "scenario_metric" (dict
+                "name" "Network receive rate (primary)"
+                "description" "Rate of bytes received on primary network interface"
+                "content" (tmpl.Exec "min_max_mean_std" (merge (dict "format" "bytes_rate") .recv_rate))
+            ) }}
+
+            {{ template "scenario_metric" (dict
+                "name" "Network send rate (primary)"
+                "description" "Rate of bytes sent on primary network interface"
+                "content" (tmpl.Exec "min_max_mean_std" (merge (dict "format" "bytes_rate") .send_rate))
+            ) }}
+
+            {{ with .bytes_recv }}
+                {{ template "scenario_metric" (dict
+                    "name" "Total bytes received"
+                    "description" "Total bytes received on primary network interface"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "count"
+                            "content" (tmpl.Exec "format_bytes" (dict "value" .count))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "mean"
+                            "content" (tmpl.Exec "format_bytes_rate" (dict "value" .mean_rate_per_second))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+
+            {{ with .bytes_sent }}
+                {{ template "scenario_metric" (dict
+                    "name" "Total bytes sent"
+                    "description" "Total bytes sent on primary network interface"
+                    "content" (print
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "count"
+                            "content" (tmpl.Exec "format_bytes" (dict "value" .count))
+                        ))
+                        (tmpl.Exec "scenario_metric_content_item" (dict
+                            "name" "mean"
+                            "content" (tmpl.Exec "format_bytes_rate" (dict "value" .mean_rate_per_second))
+                        ))
+                    )
+                ) }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+
+
+    {{ with .anomalies }}
+        {{ template "scenario_metric" (dict
+            "name" "CPU spike anomaly"
+            "description" "CPU spike anomaly was detected"
+            "content" (tmpl.Exec "anomaly" .cpu_spike)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Memory leak anomaly"
+            "description" "Memory leak anomaly was detected"
+            "content" (tmpl.Exec "anomaly" .memory_leak)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Disk full anomaly"
+            "description" "Disk full anomaly was detected"
+            "content" (tmpl.Exec "anomaly" .disk_full)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Swap thrashing anomaly"
+            "description" "Swap thrashing anomaly was detected"
+            "content" (tmpl.Exec "anomaly" .swap_thrashing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "System overload anomaly"
+            "description" "System overload anomaly was detected"
+            "content" (tmpl.Exec "anomaly" .system_overload)
+        ) }}
+    {{ end }}
 
     {{ with .cpu }}
         {{ template "scenario_metric" (dict

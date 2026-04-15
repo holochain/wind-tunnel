@@ -70,11 +70,11 @@ impl UnytScenarioValues for UnytProposalScenarioValues {
         self.common.seen_templates_mut()
     }
 
-    fn seen_transactions(&self) -> &HashSet<ActionHashB64> {
+    fn seen_transactions(&self) -> &HashSet<(ActionHashB64, &'static str)> {
         self.common.seen_transactions()
     }
 
-    fn seen_transactions_mut(&mut self) -> &mut HashSet<ActionHashB64> {
+    fn seen_transactions_mut(&mut self) -> &mut HashSet<(ActionHashB64, &'static str)> {
         self.common.seen_transactions_mut()
     }
 

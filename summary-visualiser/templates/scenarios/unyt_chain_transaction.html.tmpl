@@ -57,14 +57,6 @@
             ) }}
         {{ end }}
 
-        {{ with .actionable_transaction_proposals.partition_count }}
-            {{ template "scenario_metric" (dict
-                "name" "Actionable transaction proposals"
-                "description" "Remaining actionable transaction proposals at teardown. Non-zero sum indicates work left unfinished."
-                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_proposals)
-            ) }}
-        {{ end }}
-
         {{ with .actionable_transaction_commitments.partition_count }}
             {{ template "scenario_metric" (dict
                 "name" "Actionable transaction commitments"
@@ -78,14 +70,6 @@
                 "name" "Actionable transaction accepts"
                 "description" "Remaining actionable transaction accepts at teardown. Non-zero sum indicates work left unfinished."
                 "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_accepts)
-            ) }}
-        {{ end }}
-
-        {{ with .actionable_transaction_rejects.partition_count }}
-            {{ template "scenario_metric" (dict
-                "name" "Actionable transaction rejects"
-                "description" "Remaining actionable transaction rejects at teardown. Non-zero sum indicates work left unfinished."
-                "content" (tmpl.Exec "aggregated_single_value" $metrics.actionable_transaction_rejects)
             ) }}
         {{ end }}
 
