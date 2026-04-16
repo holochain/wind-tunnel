@@ -21,6 +21,12 @@
             "content" (tmpl.Exec "timings_overall_and_per_agent" .round_trip_timing)
         ) }}
 
+        {{ template "scenario_metric" (dict
+            "name" "Error count"
+            "description" "The total number of errors accumulated during the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
     {{ end }}
 
     {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}

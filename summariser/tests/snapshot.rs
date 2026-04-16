@@ -273,7 +273,7 @@ async fn zero_arc_create_and_read() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn unyt_chain_transaction() -> anyhow::Result<()> {
-    run_snapshot_test!("52be02e52af8cd6540e93d47da881b7bd94799805c10c76c5284ed739072e40f");
+    run_snapshot_test!("f8be04708e5604fbef3fac1083f17907b273436636d6bf6ed8cea8153c145acb");
     Ok(())
 }
 

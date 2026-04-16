@@ -16,12 +16,18 @@
             "content" (tmpl.Exec "timing_and_trend" .remote_signal_round_trip)
         ) }}
 
+        {{ with .remote_signal_timeout }}
+            {{ template "scenario_metric" (dict
+                "name" "Timeouts"
+                "description" "The number of timeouts waiting for the remote side's response signal (default timeout is 20 seconds)."
+                "content" (tmpl.Exec "delta" .)
+            ) }}
+        {{ end }}
+
         {{ template "scenario_metric" (dict
-            "name" "Timeouts"
-            "description" "The number of timeouts waiting for the remote side's response signal (default timeout is 20 seconds)."
-            "content" (tmpl.Exec "scalar" (dict
-                "value" (default 0 .remote_signal_timeout)
-            ))
+            "name" "Timeout rate"
+            "description" "The proportion of remote signal round-trips that timed out."
+            "content" (tmpl.Exec "scalar" (dict "value" .timeout_rate))
         ) }}
 
     {{ end }}

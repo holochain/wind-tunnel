@@ -2,14 +2,12 @@
 We could pass it as a string literal instead, but this is nicer
 because your code editor's syntax highlighter can make it look more legible. */}}
 {{- define "dht_sync_lag_description" }}
-<p>Measure lag time between an agent publishing data and other peers being able to see it. This scenario has two roles:</p>
+<p>Measures the lag time between an agent publishing data and other peers being able to see it. This scenario has two roles:</p>
 
 <ul>
-    <li><b><code>write</code></b>: A simple job that just creates entries with a timestamp field. Those entries are linked to a known base hash. For each write, the metric <code>ws.custom.dht_sync_sent_count</code> is incremented.</li>
-    <li><b><code>record_lag</code></b>: A job that repeatedly queries for links from the known base hash. It keeps track of records that it has seen and when a new record is found, and calculates the time difference between the timestamp of the new record and the current time. That time difference is then recorded as a custom metric called <code>wt.custom.dht_sync_lag</code>.</li>
+    <li><b><code>write</code></b>: Creates entries with a timestamp field, linked to a known base hash so that <code>record_lag</code> agents can discover them.</li>
+    <li><b><code>record_lag</code></b>: Repeatedly queries for links from the known base hash. When a new entry is discovered, it calculates the time difference between the entry's timestamp and the current time, giving the sync lag for that entry.</li>
 </ul>
-
-<p>After each behaviour loop the metric <code>ws.custom.dht_sync_recv_count</code> is incremented.</p>
 {{ end -}}
 
 {{/* SCENARIO START */}}
@@ -38,6 +36,26 @@ because your code editor's syntax highlighter can make it look more legible. */}
             "name" "Sync lag rate"
             "description" (print `The average number of created records discovered per agent.`)
             "content" (tmpl.Exec "rates_overall_and_per_agent" .sync_lag_rate)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Delivery ratio"
+            "description" "The proportion of created entries successfully received by all record_lag agents."
+            "content" (tmpl.Exec "scalar" (dict "value" .delivery_ratio))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Sent count"
+            "description" "The total number of entries sent (created) by write agents, by agent."
+            "content" (tmpl.Exec "partitioned_counter_stats" .sent_count)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Received count"
+            "description" "The total number of entries received by record_lag agents, by agent."
+            "content" (tmpl.Exec "partitioned_counter_stats" .recv_count)
         ) }}
 
         {{ template "scenario_metric" (dict

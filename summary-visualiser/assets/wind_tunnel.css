@@ -25,16 +25,128 @@ This CSS needs the following variables to be defined:
                     amount of space for the numeric value so that whatever comes
                     after it will be lined up row-on-row.
 */
+
+:root {
+    --background: #ffffff;
+    --subtle: rgba(0, 0, 0, 0.5);
+    --more-subtle: rgba(0, 0, 0, 0.35);
+    --smoke: rgba(0, 0, 0, 0.2);
+    --good: rgb(0, 173, 12);
+    --bad: rgb(195, 25, 25);
+    --highlight: rgb(52, 152, 219);
+    --highlight-subtle: rgba(52, 152, 219, 0.5);
+    --grid: 0.5fr 1fr;
+    --grid-gap: 2rem;
+    --numeric-size: 14rem;
+}
+
 html,body {
     min-width: 64rem;
 }
 
-.scenario {
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #323232;
+        --subtle: rgba(255, 255, 255, 0.6);
+        --more-subtle: rgba(255, 255, 255, 0.4);
+        --smoke: rgba(255, 255, 255, 0.12);
+        --good: rgb(52, 199, 89);
+        --bad: rgb(255, 69, 58);
+        --highlight: rgb(64, 156, 255);
+        --highlight-subtle: rgba(64, 156, 255, 0.5);
+    }
+
+    body {
+        color: #f0f0f0;
+        background-color: #1a1a1a;
+    }
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.scenarios-index {
     background-color: var(--background);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+    margin: 2em 0;
+}
+
+.scenarios-index-title {
+    margin: 0 0 0.75em 0;
+    font-size: 1.1em;
+    color: var(--subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.scenarios-index-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1.5em;
+}
+
+.scenarios-index-list a {
+    color: var(--highlight);
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+.scenarios-index-list a:hover {
+    text-decoration: underline;
+}
+
+.scenario {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 30px;
+    margin: 2em 0;
+    background-color: var(--background);
+}
+
+.scenario code {
+    font-size: 1.2em;
 }
 
 .scenario-summary {
     margin-bottom: 4em;
+}
+
+.scenario-summary-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+.scenario-summary-header h1 {
+    margin: 0;
+}
+
+.scenario-summary-back {
+    color: var(--highlight);
+    text-decoration: none;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.scenario-summary-back:hover {
+    text-decoration: underline;
 }
 
 .scenario-summary-description {
@@ -72,43 +184,18 @@ html,body {
 }
 
 /* Scenario Subsection */
-.scenario-subsection {
-    text-align: center;
-
-    padding-top: 1em;
-    border-top-style: solid;
-    border-color: var(--smoke);
-}
-
 .scenario-subsection-title {
   color: var(--subtle);
-  font-size: 1.4em;
+  font-size: 1.2em;
   font-weight: bold;
-  text-align: center;
-  margin: 1em;
-}
-
-.scenario-subsection-button {
-  background-color: var(--subtle);
-  color: white;
-  padding: 0.75em;
-  display: inline-block;
-}
-
-.scenario-subsection-button:hover {
-    opacity: 0.85;
-    cursor: pointer;
+  margin: 1em 1em 1em 0;
 }
 
 details.scenario-subsection-hidden {
+    margin: 1em 0 1em 0;
     padding-top: 1em;
     border-top-style: solid;
     border-color: var(--smoke);
-}
-details.scenario-subsection-hidden > summary > .scenario-subsection {
-    padding-top: 0 !important;
-    border-top-style: none !important;
-    border-color: none !important;
 }
 
 /* Metric structure */
@@ -174,6 +261,7 @@ but for some larger metrics, it's hard to see the label without scrolling. */
 
 .scalar {
     display: inline-block;
+    margin-right: 1em;
 }
 
 .scalar-value {

@@ -3,13 +3,13 @@ Loop through an array of scenarios and render them,
 choosing the proper template for each.
 Use this in your page template to render all the scenarios.
 */}}
-{{ range . }}
+{{ range $i, $_ := . }}
     {{ $scenario_css_class := (strings.ReplaceAll "_" "-" .run_summary.scenario_name) }}
     {{/* The proper scenario-specific template name is a field in the run_summary object.
     Extract that and use `tmpl.Exec` cuz it can take a template name from a pipeline,
     whereas `template` seems to require a string literal. */}}
     {{ if (scenario_template_exists .run_summary.scenario_name) }}
-        <section class="scenario scenario-{{ $scenario_css_class }}">
+        <section id="scenario-{{ $i }}" class="scenario scenario-{{ $scenario_css_class }}">
             {{ tmpl.Exec .run_summary.scenario_name . }}
         </section>
     {{ else }}

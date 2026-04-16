@@ -1,0 +1,12 @@
+{{/*
+Render a navigation index of all scenarios at the top of the page,
+linking to each scenario's section anchor.
+*/}}
+<nav id="scenarios-index" class="scenarios-index">
+    <h2 class="scenarios-index-title">Scenarios</h2>
+    <ul class="scenarios-index-list">
+        {{ range $i, $_ := . }}
+            <li><a href="#scenario-{{ $i }}">{{ .run_summary.scenario_name }}</a></li>
+        {{ end }}
+    </ul>
+</nav>
