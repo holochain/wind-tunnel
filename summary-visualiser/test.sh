@@ -26,7 +26,7 @@ html_output="$("$script_dir/generate.sh" "$temp_dir/summary-visualiser-test-data
 smoke_test_scenario() {
     scenario_class_name_str="${1//_/-}"
     # Test for an expected HTML element that shows it found a template for this scenario.
-    expected_html_tag="<section class=\"scenario scenario-$scenario_class_name_str\">"
+    expected_html_tag="class=\"scenario scenario-$scenario_class_name_str\""
     expected_element_in_output=$(echo "$html_output" | grep "$expected_html_tag")
     if [ -n "$expected_element_in_output" ]; then
         echo "Found expected .scenario-$scenario_class_name_str element in output"

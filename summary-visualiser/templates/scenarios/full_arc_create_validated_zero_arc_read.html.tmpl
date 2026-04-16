@@ -46,6 +46,26 @@
             "content" (tmpl.Exec "rates_overall_and_per_agent" .fetch_rate)
         ) }}
 
+        {{ template "scenario_metric" (dict
+            "name" "Delivery ratio"
+            "description" "The proportion of created entries successfully fetched by all zero-arc nodes."
+            "content" (tmpl.Exec "scalar" (dict "value" .delivery_ratio))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Entry created count"
+            "description" "Total number of entries created by full-arc nodes, by agent."
+            "content" (tmpl.Exec "partitioned_counter_stats" .entry_created_count)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "class" "large"
+            "name" "Received count"
+            "description" "Total number of entries fetched by zero-arc nodes, by agent."
+            "content" (tmpl.Exec "partitioned_counter_stats" .recv_count)
+        ) }}
+
         {{ with .open_connections.partitions }}
             {{ template "scenario_metric" (dict
                 "name" "Open connections"
@@ -75,4 +95,8 @@
     {{ end }}
 
     {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
 </div>
