@@ -1,0 +1,59 @@
+name: Publish scenarios
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish_scenarios:
+    name: Build and publish the scenarios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v5
+        with:
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.28.3/install
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: holochain-ci
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build scenarios
+        run: |
+          set -euxo pipefail
+
+          for scenario_dir in scenarios/*/; do
+            name=$(basename "$scenario_dir")
+            if [ -f "scenarios/$name/Cargo.toml" ]; then
+              nix build ".#packages.x86_64-linux.$name" --out-link "result-$name"
+              cp "result-$name/$name.zip" .
+            fi
+          done
+
+      - name: Upload scenarios to GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          shopt -s nullglob
+          zips=(*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "No scenario zip files were built, nothing to upload."
+            exit 1
+          fi
+          gh release upload "${{ github.event.release.tag_name }}" "${zips[@]}" --clobber
