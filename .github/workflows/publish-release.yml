@@ -7,8 +7,50 @@ on:
       - main-*
 
 jobs:
-  call:
+  full_release:
     uses: holochain/actions/.github/workflows/publish-release.yml@v1.6.0
     secrets:
       HRA2_GITHUB_TOKEN: ${{ secrets.HRA2_GITHUB_TOKEN }}
       HRA2_CRATES_IO_TOKEN: ${{ secrets.HRA2_CRATES_IO_TOKEN }}
+
+  pre_releases:
+    name: Manage pre-releases
+    needs: [full_release]
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-tags: true
+
+      - name: Delete old pre-releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease and (.tagName | startswith("main-"))) | .tagName' \
+            | xargs -r -I % gh release delete % --yes --cleanup-tag
+
+      - name: Check if a full release exists for this commit
+        id: check_release
+        run: |
+          if [[ -n $(git tag --points-at HEAD) ]]; then
+            echo "A tag is on this commit, skipping pre-release creation."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pre-release
+        if: steps.check_release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |-
+          tag="main-$(git rev-parse --short HEAD)"
+          gh release create "$tag" \
+            --prerelease \
+            --title "Scenarios pre-release ($tag)" \
+            --notes "Scenario binaries built from commit $(git rev-parse HEAD) on branch ${REF_NAME}."
