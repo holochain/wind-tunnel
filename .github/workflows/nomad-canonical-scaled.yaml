@@ -2,6 +2,12 @@ name: "Run canonical scaled performance tests on Nomad cluster and Threefold nod
 
 on:
   workflow_dispatch:
+    inputs:
+      rebuild-all-scenarios:
+        description: "Force a rebuild of all scenarios even if no relevant files have changed"
+        type: boolean
+        required: false
+        default: false
   schedule:
     - cron: "0 0 * * 5" # Run Nomad workflow at 00:00 on Fridays
 
@@ -124,6 +130,7 @@ jobs:
           holochain-bin-url: https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.4/holochain-unstable-x86_64-unknown-linux-gnu
           nomad-job-variant-directory: "nomad/job-variants/canonical-scaled"
           include-threefold-node-pool: "true"
+          force-rebuild: ${{ inputs.rebuild-all-scenarios }}
 
   post-run-scenarios:
     needs: run-scenarios
