@@ -28,6 +28,10 @@ inputs:
     required: true
   cachix-auth-token:
     required: true
+  force-rebuild:
+    description: "Force a rebuild of the scenario even if no relevant files have changed"
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -101,13 +105,13 @@ runs:
           zomes/**
 
     - name: Build scenario
-      if: steps.needs-rebuild.outputs.any_changed == 'true'
+      if: steps.needs-rebuild.outputs.any_changed == 'true' || inputs.force-rebuild == 'true'
       shell: bash
       run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
 
     - name: Upload scenario to bucket
       id: upload-scenario
-      if: steps.needs-rebuild.outputs.any_changed == 'true'
+      if: steps.needs-rebuild.outputs.any_changed == 'true' || inputs.force-rebuild == 'true'
       shell: bash
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.hetzner-buckets-access }}
@@ -127,11 +131,12 @@ runs:
       shell: bash
       env:
         NEEDS_REBUILD: ${{ steps.needs-rebuild.outputs.any_changed }}
+        FORCE_REBUILD: ${{ inputs.force-rebuild }}
         NEW_SCENARIO_URL: ${{ steps.upload-scenario.outputs.scenario_download_url }}
         SCENARIO_NAME: ${{ steps.read-nomad-vars.outputs.scenario_name }}
         GH_TOKEN: ${{ github.token }}
       run: |-
-        if [[ "$NEEDS_REBUILD" == 'true' ]]; then
+        if [[ "$NEEDS_REBUILD" == 'true' || "$FORCE_REBUILD" == 'true' ]]; then
           echo "Using newly built scenario from ${NEW_SCENARIO_URL}"
           echo "scenario_download_url=${NEW_SCENARIO_URL}" >> "$GITHUB_OUTPUT"
         else

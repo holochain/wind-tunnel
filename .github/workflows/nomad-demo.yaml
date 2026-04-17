@@ -9,6 +9,11 @@ on:
       commit-hash:
         description: "The commit hash to checkout before running the tests"
         required: false
+      rebuild-all-scenarios:
+        description: "Force a rebuild of all scenarios even if no relevant files have changed"
+        type: boolean
+        required: false
+        default: false
   pull_request:
     paths:
       - ".github/workflows/nomad*.yaml"
@@ -70,6 +75,7 @@ jobs:
           commit-hash: ${{ inputs.commit-hash }}
           nomad-job-variant-directory: "nomad/job-variants/demo"
           include-threefold-node-pool: "false"
+          force-rebuild: ${{ inputs.rebuild-all-scenarios }}
 
   post-run-scenarios:
     needs: run-scenarios
