@@ -84,12 +84,52 @@ runs:
       run: |
         nix run .#generate-nomad-jobs -- --job-name ${{ inputs.job-name }} --job-variant-path ${{ inputs.nomad-job-variant-directory }}
 
+    - name: Check if need to rebuild the scenario
+      id: needs-rebuild
+      shell: bash
+      env:
+        SCENARIO_NAME: ${{ steps.read-nomad-vars.outputs.scenario_name }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        drv_path=$(nix path-info --derivation ".#packages.x86_64-linux.${SCENARIO_NAME}")
+        current_hash=$(basename "$drv_path" .drv | cut -d'-' -f1)
+        echo "Current Nix drv hash: $current_hash"
+
+        TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+
+        if [[ -z "$TAG" ]]; then
+          echo "No release found, rebuilding"
+          echo "needs_rebuild=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        stored_hash=$(gh release download "$TAG" --repo "${GITHUB_REPOSITORY}" \
+          --pattern "${SCENARIO_NAME}.hash" --output - 2>/dev/null || true)
+
+        if [[ -z "$stored_hash" ]]; then
+          echo "No hash file found in release '$TAG', rebuilding"
+          echo "needs_rebuild=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        if [[ "$stored_hash" != "$current_hash" ]]; then
+          echo "Hash changed (stored: $stored_hash, current: $current_hash), rebuilding"
+          echo "needs_rebuild=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "Hash matches ($current_hash), skipping rebuild — using release '$TAG'"
+        echo "needs_rebuild=false" >> "$GITHUB_OUTPUT"
+        echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
+
     - name: Build scenario
+      if: steps.needs-rebuild.outputs.needs_rebuild == 'true'
       shell: bash
       run: nix build .#packages.x86_64-linux.${{ steps.read-nomad-vars.outputs.scenario_name }}
 
     - name: Upload scenario to bucket
       id: upload-scenario
+      if: steps.needs-rebuild.outputs.needs_rebuild == 'true'
       shell: bash
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.hetzner-buckets-access }}
@@ -103,6 +143,23 @@ runs:
 
         echo "scenario_download_url=${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_OUTPUT"
         echo "Uploaded run scenario artifact to ${AWS_ENDPOINT_URL}/${OUT_PATH}" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Get scenario URL
+      id: get-scenario-url
+      shell: bash
+      env:
+        NEEDS_REBUILD: ${{ steps.needs-rebuild.outputs.needs_rebuild }}
+        NEW_SCENARIO_URL: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+        SCENARIO_NAME: ${{ steps.read-nomad-vars.outputs.scenario_name }}
+        RELEASE_TAG: ${{ steps.needs-rebuild.outputs.release_tag }}
+      run: |-
+        if [[ "$NEEDS_REBUILD" == 'true' ]]; then
+          echo "Using newly built scenario from ${NEW_SCENARIO_URL}"
+          echo "scenario_download_url=${NEW_SCENARIO_URL}" >> "$GITHUB_OUTPUT"
+        else
+          echo "Using latest release of scenario from tag '${RELEASE_TAG}'"
+          echo "scenario_download_url=https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${SCENARIO_NAME}.zip" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Wait For Minimum Free Nodes
       shell: bash
@@ -144,7 +201,7 @@ runs:
         NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
         NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
         NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
-        NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+        NOMAD_VAR_scenario_url: ${{ steps.get-scenario-url.outputs.scenario_download_url }}
         NOMAD_VAR_run_id: ${{ env.RUN_ID }}
         NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}
@@ -177,7 +234,7 @@ runs:
         NOMAD_ADDR: https://nomad-server-01.holochain.org:4646
         NOMAD_CACERT: "${{ github.workspace }}/nomad/server-ca-cert.pem"
         NOMAD_TOKEN: ${{ inputs.nomad-access-token }}
-        NOMAD_VAR_scenario_url: ${{ steps.upload-scenario.outputs.scenario_download_url }}
+        NOMAD_VAR_scenario_url: ${{ steps.get-scenario-url.outputs.scenario_download_url }}
         NOMAD_VAR_run_id: ${{ env.RUN_ID }}
         NOMAD_VAR_holochain_bin_url: ${{ inputs.holochain-bin-url }}
         NOMAD_VAR_include_threefold_node_pool: ${{ inputs.include-threefold-node-pool }}

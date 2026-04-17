@@ -57,6 +57,10 @@ jobs:
             if [ -f "scenarios/$name/Cargo.toml" ]; then
               nix build ".#packages.x86_64-linux.$name" --out-link "result-$name"
               cp "result-$name/$name.zip" .
+              # Store the Nix derivation hash alongside the zip so the nomad
+              # action can skip rebuilds when inputs haven't changed.
+              drv_path=$(nix path-info --derivation ".#packages.x86_64-linux.$name")
+              basename "$drv_path" .drv | cut -d'-' -f1 > "$name.hash"
             fi
           done
 
@@ -70,4 +74,5 @@ jobs:
             echo "No scenario zip files were built, nothing to upload."
             exit 1
           fi
-          gh release upload "${{ inputs.tag || github.event.release.tag_name }}" "${zips[@]}" --clobber
+          hashes=(*.hash)
+          gh release upload "${{ inputs.tag || github.event.release.tag_name }}" "${zips[@]}" "${hashes[@]}" --clobber
