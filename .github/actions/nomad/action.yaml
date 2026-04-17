@@ -140,7 +140,14 @@ runs:
           echo "Using newly built scenario from ${NEW_SCENARIO_URL}"
           echo "scenario_download_url=${NEW_SCENARIO_URL}" >> "$GITHUB_OUTPUT"
         else
-          TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+          TAG=$(gh api "/repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
+            | jq -r --arg name "${SCENARIO_NAME}.zip" \
+              '.[] | select(any(.assets[]; .name == $name)) | .tag_name' \
+            | head -1)
+          if [[ -z "$TAG" ]]; then
+            echo "::error::Could not find a release containing ${SCENARIO_NAME}.zip"
+            exit 1
+          fi
           echo "Using latest release of scenario from tag '$TAG'"
           echo "scenario_download_url=https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${SCENARIO_NAME}.zip" >> "$GITHUB_OUTPUT"
         fi
