@@ -18,6 +18,9 @@ jobs:
     needs: [full_release]
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: pre-release
+      cancel-in-progress: true
     permissions:
       contents: write
     steps:
