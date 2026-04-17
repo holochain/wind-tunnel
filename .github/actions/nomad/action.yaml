@@ -28,6 +28,10 @@ inputs:
     required: true
   cachix-auth-token:
     required: true
+  force-rebuild:
+    description: "Force a rebuild of the scenario even if its input hash hasn't changed"
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -89,8 +93,15 @@ runs:
       shell: bash
       env:
         SCENARIO_NAME: ${{ steps.read-nomad-vars.outputs.scenario_name }}
+        FORCE_REBUILD: ${{ inputs.force-rebuild }}
         GH_TOKEN: ${{ github.token }}
       run: |
+        if [[ "$FORCE_REBUILD" == 'true' ]]; then
+          echo "Force rebuild requested"
+          echo "needs_rebuild=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
         drv_path=$(nix path-info --derivation ".#packages.x86_64-linux.${SCENARIO_NAME}")
         current_hash=$(basename "$drv_path" .drv | cut -d'-' -f1)
         echo "Current Nix drv hash: $current_hash"
