@@ -82,6 +82,25 @@ The scenario records several custom metrics:
 - `wt.custom.completed_transaction_spends`: Records the count of completed spend transactions at scenario teardown
 - `wt.custom.completed_transaction_raves`: Records the count of completed RAVE agreement executions at scenario teardown
 - `wt.custom.parked_spends`: Records the count of parked spends at scenario teardown
+- `wt.custom.check_agent_exists_duration_s`: Duration of the `check_agent_exists` loop per behaviour iteration
+- `wt.custom.check_agent_exists_total_calls`: Total `check_agent_exists` calls made per iteration (one per participating agent)
+- `wt.custom.check_agent_exists_failed_calls`: Total `check_agent_exists` calls that returned an error per iteration
+- `wt.custom.check_agent_exists_missing_calls`: Total `check_agent_exists` calls that reported a missing agent per iteration
+- `wt.custom.ui_action_list_refresh_duration_s`: Duration of the parallel action list refresh per behaviour iteration
+- `wt.custom.ui_action_list_refresh_failed_calls`: Number of sub-calls that failed during the action list refresh per iteration
+- `wt.custom.ui_routine_refresh_duration_s`: Duration of the full UI routine refresh per behaviour iteration, covering all UI-mirroring zome calls
+- `wt.custom.ui_routine_refresh_watchlist_count`: Number of transactions on the watchlist at the time of each iteration
+- `wt.custom.ui_transaction_detail_item_refresh_duration_s`: Duration of refreshing a single watched transaction's detail per iteration
+- `wt.custom.ui_transaction_detail_item_refresh_primary_transaction_total_calls`: Primary transaction fetches made per watched item per iteration
+- `wt.custom.ui_transaction_detail_item_refresh_primary_transaction_failed_calls`: Primary transaction fetches that failed per watched item per iteration
+- `wt.custom.ui_transaction_detail_item_refresh_related_transaction_total_calls`: Related transaction fetches made per watched item per iteration
+- `wt.custom.ui_transaction_detail_item_refresh_related_transaction_failed_calls`: Related transaction fetches that failed per watched item per iteration
+- `wt.custom.ui_transaction_detail_refresh_duration_s`: Duration of refreshing all watched transaction details per behaviour iteration
+- `wt.custom.ui_transaction_detail_refresh_transactions_processed`: Number of watched transactions processed in the detail refresh per iteration
+- `wt.custom.ui_transaction_detail_refresh_primary_transaction_total_calls`: Total primary transaction fetches across all watched items per iteration
+- `wt.custom.ui_transaction_detail_refresh_primary_transaction_failed_calls`: Total primary transaction fetches that failed across all watched items per iteration
+- `wt.custom.ui_transaction_detail_refresh_related_transaction_total_calls`: Total related transaction fetches across all watched items per iteration
+- `wt.custom.ui_transaction_detail_refresh_related_transaction_failed_calls`: Total related transaction fetches that failed across all watched items per iteration
 
 Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.
 
@@ -125,5 +144,5 @@ of `UNYT_DURABLE_OBJECTS_SECRET`.
 Then, in another terminal pane, run the scenario with the following command:
 
 ```bash
-RUST_LOG=warn cargo run --package unyt_chain_transaction_zero_arc -- --agents 7 --behaviour initiate:1 --behaviour zero_spend:2 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1 --duration 300
+RUST_LOG=wind_tunnel_unyt_scenario=warn,warn cargo run --package unyt_chain_transaction_zero_arc -- --agents 7 --behaviour initiate:1 --behaviour zero_spend:2 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1 --duration 300
 ```

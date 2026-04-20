@@ -6,17 +6,25 @@
 
 use crate::UnytScenarioValues;
 use holochain_types::prelude::*;
-use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};
+use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
     AcceptInput, Actionable, CommitmentInput, CreateParkedSpendInput, History,
-    InitializeGlobalDefinition, Ledger, Pagination, PermissionSpace, RAVEExecuteInputs, State,
-    Transaction, UnitMap,
+    InitializeGlobalDefinition, Ledger, NotificationLinks, Pagination, PermissionSpace,
+    RAVEExecuteInputs, State, Transaction, UnitDefinitionExt, UnitMap, ZomeFnInput,
     entries::{
         AgreementDefInput, CodeTemplateExt, CommitmentToProposalInput, CounterProposalInput,
         ExecutionEngine, GlobalDefinitionExt, ProposalInput, RAVE, ReceiptInput, ReclaimInput,
         RejectInput, SmartAgreement, SmartAgreementExt, code_template::CodeTemplate,
     },
 };
+
+#[derive(Debug)]
+pub struct UnytActionListRefreshResults {
+    pub actionable_transactions: anyhow::Result<Option<Actionable>>,
+    pub incoming_raves: anyhow::Result<Vec<Transaction>>,
+    pub requests_to_execute_agreements: anyhow::Result<Vec<Transaction>>,
+    pub sorted_requests_to_spend: anyhow::Result<Vec<Transaction>>,
+}
 
 /// Typed helpers for calling the Unyt transactor zome.
 ///
@@ -91,6 +99,28 @@ pub trait UnytAgentExt {
     fn unyt_get_history(&mut self, pagination: Pagination) -> Result<History, anyhow::Error>;
 
     fn unyt_get_status(&mut self, hash: ActionHashB64) -> Result<State, anyhow::Error>;
+
+    fn unyt_get_transaction(&mut self, hash: ActionHashB64) -> Result<Transaction, anyhow::Error>;
+
+    fn unyt_whoami(&mut self) -> Result<AgentPubKey, anyhow::Error>;
+
+    fn unyt_get_smart_agreement(
+        &mut self,
+        hash: ActionHashB64,
+    ) -> Result<SmartAgreementExt, anyhow::Error>;
+
+    fn unyt_get_all_notification_links(&mut self) -> Result<NotificationLinks, anyhow::Error>;
+
+    fn unyt_check_agent_exists(&mut self, agent: AgentPubKey) -> Result<bool, anyhow::Error>;
+
+    fn unyt_get_global_units_details(&mut self) -> Result<Vec<UnitDefinitionExt>, anyhow::Error>;
+
+    fn unyt_get_sorted_requests_to_spend(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
+
+    fn unyt_action_list_refresh(
+        &mut self,
+        notification_links: NotificationLinks,
+    ) -> UnytActionListRefreshResults;
 
     /// Lists incoming RAVE transactions.
     fn unyt_get_incoming_raves(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
@@ -317,7 +347,84 @@ impl<SV: UnytScenarioValues> UnytAgentExt
     }
 
     fn unyt_get_status(&mut self, hash: ActionHashB64) -> Result<State, anyhow::Error> {
+        let hash: ActionHash = hash.into();
         self.call_zome_alliance("get_status", hash)
+    }
+
+    fn unyt_get_transaction(&mut self, hash: ActionHashB64) -> Result<Transaction, anyhow::Error> {
+        let hash: ActionHash = hash.into();
+        self.call_zome_alliance("get_transaction", hash)
+    }
+
+    fn unyt_whoami(&mut self) -> Result<AgentPubKey, anyhow::Error> {
+        self.call_zome_alliance("whoami", ())
+    }
+
+    fn unyt_get_smart_agreement(
+        &mut self,
+        hash: ActionHashB64,
+    ) -> Result<SmartAgreementExt, anyhow::Error> {
+        let hash: ActionHash = hash.into();
+        self.call_zome_alliance("get_smart_agreement", hash)
+    }
+
+    fn unyt_get_all_notification_links(&mut self) -> Result<NotificationLinks, anyhow::Error> {
+        self.call_zome_alliance("get_all_notification_links", Option::<GetStrategy>::None)
+    }
+
+    fn unyt_check_agent_exists(&mut self, agent: AgentPubKey) -> Result<bool, anyhow::Error> {
+        self.call_zome_alliance("check_agent_exists", agent)
+    }
+
+    fn unyt_get_global_units_details(&mut self) -> Result<Vec<UnitDefinitionExt>, anyhow::Error> {
+        self.call_zome_alliance("get_global_units_details", ())
+    }
+
+    fn unyt_get_sorted_requests_to_spend(&mut self) -> Result<Vec<Transaction>, anyhow::Error> {
+        self.call_zome_alliance("get_sorted_requests_to_spend", ())
+    }
+
+    /// Mirror the UI behavior when refreshing the actions list
+    /// by making the same set of zome calls the UI makes.
+    fn unyt_action_list_refresh(
+        &mut self,
+        notification_links: NotificationLinks,
+    ) -> UnytActionListRefreshResults {
+        let actionable_links = [
+            notification_links.proposal,
+            notification_links.commitment,
+            notification_links.accept,
+            notification_links.reject,
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+        let actionable_transactions = self
+            .call_zome_alliance::<_, Actionable>(
+                "get_actionable_transactions",
+                ZomeFnInput::with_local(actionable_links, false),
+            )
+            .map(Some);
+        let incoming_raves = self.call_zome_alliance(
+            "get_incoming_raves",
+            ZomeFnInput::with_local(notification_links.incoming_collect_requests, false),
+        );
+        let requests_to_execute_agreements = self.call_zome_alliance(
+            "get_requests_to_execute_agreements",
+            ZomeFnInput::with_local(notification_links.requests_to_execute_agreements, false),
+        );
+        let sorted_requests_to_spend = self.call_zome_alliance(
+            "get_sorted_requests_to_spend",
+            ZomeFnInput::with_local(notification_links.requests_to_commit, false),
+        );
+
+        UnytActionListRefreshResults {
+            actionable_transactions,
+            incoming_raves,
+            requests_to_execute_agreements,
+            sorted_requests_to_spend,
+        }
     }
 
     fn unyt_get_incoming_raves(&mut self) -> Result<Vec<Transaction>, anyhow::Error> {
@@ -410,10 +517,6 @@ impl<SV: UnytScenarioValues> ZomeTransactorExt
         O: std::fmt::Debug + serde::de::DeserializeOwned,
         I: serde::Serialize + std::fmt::Debug,
     {
-        let reporter = self.runner_context().reporter();
-        let operation_record = wind_tunnel_prelude::OperationRecord::new(fn_name.to_string());
-        let result = call_zome(self, "transactor", fn_name, payload);
-        wind_tunnel_prelude::report_operation(reporter.clone(), operation_record, &result);
-        result
+        call_zome(self, "transactor", fn_name, payload)
     }
 }

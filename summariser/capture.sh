@@ -7,8 +7,8 @@
 #
 # Examples:
 #   ./summariser/capture.sh write_read
-#   ./summariser/capture.sh app_install -- --behaviour minimal
-#   ./summariser/capture.sh two_party_countersigning -- --agents 5 --behaviour initiate:2 --behaviour participate:3
+#   ./summariser/capture.sh app_install --behaviour minimal
+#   ./summariser/capture.sh two_party_countersigning --agents 5 --behaviour initiate:2 --behaviour participate:3
 
 set -euo pipefail
 

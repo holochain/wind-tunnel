@@ -3,10 +3,23 @@ use crate::ArcType;
 use crate::UnytScenarioValues;
 use crate::unyt_agent::UnytAgentExt;
 use anyhow::anyhow;
+use holochain_types::prelude::ActionHashB64;
 use holochain_wind_tunnel_runner::prelude::*;
-use rave_engine::types::{AcceptInput, CommitmentInput, Pagination, UnitMap, WatchStatus};
+use rave_engine::types::{
+    AcceptInput, Actionable, CommitmentInput, Pagination, UnitMap, WatchStatus,
+};
+use std::str::FromStr;
+use std::time::Instant;
 use std::{collections::BTreeMap, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
+
+#[derive(Debug, Default)]
+struct TransactionDetailRefreshOutcome {
+    primary_transaction_total_calls: u64,
+    primary_transaction_failed_calls: u64,
+    related_transaction_total_calls: u64,
+    related_transaction_failed_calls: u64,
+}
 
 /// Spend agent behaviour shared across Unyt scenarios.
 ///
@@ -47,20 +60,227 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     }
 
-    // Test 2
-    // Agent ready to transact.
-    // check incoming transactions and accept them so that you can have more to spend
-    let actionable_transactions = match ctx.unyt_get_actionable_transactions() {
-        Ok(txs) => txs,
+    // test 2
+    // Refresh calls triggered in the UI
+    let ui_routine_started = Instant::now();
+
+    // Call whoami
+    if let Err(err) = ctx.unyt_whoami() {
+        log::warn!("whoami failed: {err}");
+    }
+
+    // Call get_smart_agreement
+    if let Some(smart_agreement_hash) = ctx.get().scenario_values.smart_agreement_hash().cloned()
+        && let Err(err) = ctx.unyt_get_smart_agreement(smart_agreement_hash)
+    {
+        log::warn!("get_smart_agreement failed: {err}");
+    }
+
+    // Call check_agent_exists for each participating agent
+    let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
+    let mut check_agent_exists_total = 0_u64;
+    let mut check_agent_exists_failed = 0_u64;
+    let mut check_agent_exists_missing = 0_u64;
+    let check_agent_exists_started = Instant::now();
+    for agent in &participating_agents {
+        check_agent_exists_total += 1;
+        match ctx.unyt_check_agent_exists(agent.clone().into()) {
+            Ok(true) => {}
+            Ok(false) => {
+                check_agent_exists_missing += 1;
+                log::warn!("check_agent_exists reported missing agent: {agent}");
+            }
+            Err(err) => {
+                check_agent_exists_failed += 1;
+                log::warn!("check_agent_exists failed for {agent}: {err}");
+            }
+        }
+    }
+    if check_agent_exists_total > 0 {
+        log::info!(
+            "Agent {} | check_agent_exists total={}, failed={}, missing={}",
+            ctx.get().cell_id().agent_pubkey(),
+            check_agent_exists_total,
+            check_agent_exists_failed,
+            check_agent_exists_missing
+        );
+    }
+    reporter.add_custom(
+        ReportMetric::new("check_agent_exists_duration_s")
+            .with_field("value", check_agent_exists_started.elapsed().as_secs_f64()),
+    );
+    reporter.add_custom(
+        ReportMetric::new("check_agent_exists_total_calls")
+            .with_field("value", check_agent_exists_total),
+    );
+    reporter.add_custom(
+        ReportMetric::new("check_agent_exists_failed_calls")
+            .with_field("value", check_agent_exists_failed),
+    );
+    reporter.add_custom(
+        ReportMetric::new("check_agent_exists_missing_calls")
+            .with_field("value", check_agent_exists_missing),
+    );
+
+    // Call get global units
+    if let Err(err) = ctx.unyt_get_global_units_details() {
+        log::warn!("get_global_units_details failed: {err}");
+    }
+
+    // Refresh actions lists
+    let notification_links = match ctx.unyt_get_all_notification_links() {
+        Ok(links) => Some(links),
         Err(err) => {
-            log::warn!(
-                "[agent {}] failed to get actionable transactions (transient DHT issue): {err}",
-                ctx.agent_index()
-            );
-            thread::sleep(Duration::from_secs(1));
-            return Ok(());
+            log::warn!("get_all_notification_links failed: {err}");
+            None
         }
     };
+
+    let mut action_list_actionable: Option<Actionable> = None;
+    if let Some(notification_links) = notification_links {
+        let action_refresh_started = Instant::now();
+        let refresh_results = ctx.unyt_action_list_refresh(notification_links);
+        let mut failed_calls = 0_u64;
+        if let Err(err) = &refresh_results.actionable_transactions {
+            failed_calls = failed_calls.saturating_add(1);
+            log::warn!("get_actionable_transactions failed during action list refresh: {err}");
+        }
+        if let Err(err) = &refresh_results.incoming_raves {
+            failed_calls = failed_calls.saturating_add(1);
+            log::warn!("get_incoming_raves failed during parallel list refresh: {err}");
+        }
+        if let Err(err) = &refresh_results.requests_to_execute_agreements {
+            failed_calls = failed_calls.saturating_add(1);
+            log::warn!(
+                "get_requests_to_execute_agreements failed during action list refresh: {err}"
+            );
+        }
+        if let Err(err) = &refresh_results.sorted_requests_to_spend {
+            failed_calls = failed_calls.saturating_add(1);
+            log::warn!("get_sorted_requests_to_spend failed during action list refresh: {err}");
+        }
+
+        action_list_actionable = refresh_results.actionable_transactions.ok().flatten();
+
+        reporter.add_custom(
+            ReportMetric::new("ui_action_list_refresh_failed_calls")
+                .with_field("value", failed_calls),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_action_list_refresh_duration_s")
+                .with_field("value", action_refresh_started.elapsed().as_secs_f64()),
+        );
+    }
+
+    // test 3
+    // check incoming transactions and accept them so that you can have more to spend
+    let actionable_transactions = action_list_actionable.unwrap_or(Actionable {
+        proposal_actionable: vec![],
+        commitment_actionable: vec![],
+        accept_actionable: vec![],
+        reject_actionable: vec![],
+    });
+
+    // Refresh watched transactions list
+    let watched_transactions = ctx.get().scenario_values.watched_transactions().clone();
+    let watchlist_count = watched_transactions.len() as u64;
+    if !watched_transactions.is_empty() {
+        let detail_refresh_started = Instant::now();
+        let mut detail_outcome = TransactionDetailRefreshOutcome::default();
+
+        for transaction_hash in &watched_transactions {
+            let detail_item_started = Instant::now();
+            let outcome = run_transaction_detail_refresh(ctx, transaction_hash.clone());
+            reporter.add_custom(
+                ReportMetric::new("ui_transaction_detail_item_refresh_duration_s")
+                    .with_field("value", detail_item_started.elapsed().as_secs_f64()),
+            );
+            reporter.add_custom(
+                ReportMetric::new(
+                    "ui_transaction_detail_item_refresh_primary_transaction_total_calls",
+                )
+                .with_field("value", outcome.primary_transaction_total_calls),
+            );
+            reporter.add_custom(
+                ReportMetric::new(
+                    "ui_transaction_detail_item_refresh_primary_transaction_failed_calls",
+                )
+                .with_field("value", outcome.primary_transaction_failed_calls),
+            );
+            reporter.add_custom(
+                ReportMetric::new(
+                    "ui_transaction_detail_item_refresh_related_transaction_total_calls",
+                )
+                .with_field("value", outcome.related_transaction_total_calls),
+            );
+            reporter.add_custom(
+                ReportMetric::new(
+                    "ui_transaction_detail_item_refresh_related_transaction_failed_calls",
+                )
+                .with_field("value", outcome.related_transaction_failed_calls),
+            );
+            detail_outcome.primary_transaction_total_calls +=
+                outcome.primary_transaction_total_calls;
+            detail_outcome.primary_transaction_failed_calls +=
+                outcome.primary_transaction_failed_calls;
+            detail_outcome.related_transaction_total_calls +=
+                outcome.related_transaction_total_calls;
+            detail_outcome.related_transaction_failed_calls +=
+                outcome.related_transaction_failed_calls;
+        }
+
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_duration_s")
+                .with_field("value", detail_refresh_started.elapsed().as_secs_f64()),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_transactions_processed")
+                .with_field("value", watchlist_count),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_primary_transaction_total_calls")
+                .with_field("value", detail_outcome.primary_transaction_total_calls),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_primary_transaction_failed_calls")
+                .with_field("value", detail_outcome.primary_transaction_failed_calls),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_related_transaction_total_calls")
+                .with_field("value", detail_outcome.related_transaction_total_calls),
+        );
+        reporter.add_custom(
+            ReportMetric::new("ui_transaction_detail_refresh_related_transaction_failed_calls")
+                .with_field("value", detail_outcome.related_transaction_failed_calls),
+        );
+    }
+
+    // Refresh history list
+    match ctx.unyt_get_history(Pagination {
+        high_boundary: None,
+        per_page: 10,
+    }) {
+        Ok(history) => {
+            log::info!(
+                "Agent {} | get_history returned {} items",
+                ctx.get().cell_id().agent_pubkey(),
+                history.items.len()
+            );
+        }
+        Err(err) => {
+            log::warn!("Failed to get history: {err}");
+        }
+    }
+
+    reporter.add_custom(
+        ReportMetric::new("ui_routine_refresh_duration_s")
+            .with_field("value", ui_routine_started.elapsed().as_secs_f64()),
+    );
+    reporter.add_custom(
+        ReportMetric::new("ui_routine_refresh_watchlist_count")
+            .with_field("value", watchlist_count),
+    );
+
     // Measure sync lag for newly discovered commitment transactions
     record_sync_lag(
         ctx,
@@ -93,7 +313,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         }
     }
 
-    // Test 3
+    // test 4
     // get ledger and calculate how much you can spend in this round
     let ledger = match ctx.unyt_get_ledger() {
         Ok(l) => l,
@@ -129,7 +349,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
         spendable_amount
     );
 
-    // Test 4
+    // test 5
     // collect agents and start transacting
     if spendable_amount > ZFuel::zero() {
         ctx.collect_agents()?;
@@ -187,25 +407,6 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 }
             }
         }
-
-        // test 5
-        // call get_history to confirm that the latest created transactions are returned
-        // (mirrors the UI calling get_history after a create)
-        match ctx.unyt_get_history(Pagination {
-            high_boundary: None,
-            per_page: 10,
-        }) {
-            Ok(history) => {
-                log::info!(
-                    "[agent {}] get_history returned {} items",
-                    ctx.agent_index(),
-                    history.items.len()
-                );
-            }
-            Err(err) => {
-                log::warn!("[agent {}] failed to get history: {err}", ctx.agent_index());
-            }
-        }
     } else {
         log::warn!(
             "[agent {}] no spendable amount, balance: {}, fees: {}, credit_limit: {}",
@@ -258,4 +459,65 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     thread::sleep(Duration::from_secs(5));
 
     Ok(())
+}
+
+fn run_transaction_detail_refresh<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    transaction_hash: ActionHashB64,
+) -> TransactionDetailRefreshOutcome {
+    let mut outcome = TransactionDetailRefreshOutcome::default();
+
+    outcome.primary_transaction_total_calls += 1;
+    let transaction = match ctx.unyt_get_transaction(transaction_hash.clone()) {
+        Ok(transaction) => Some(transaction),
+        Err(err) => {
+            outcome.primary_transaction_failed_calls += 1;
+            log::warn!(
+                "get_transaction failed during detail refresh for {transaction_hash}: {err}"
+            );
+            None
+        }
+    };
+
+    outcome.primary_transaction_total_calls += 1;
+    let state = match ctx.unyt_get_status(transaction_hash.clone()) {
+        Ok(state) => Some(state),
+        Err(err) => {
+            outcome.primary_transaction_failed_calls += 1;
+            log::warn!("get_status failed during detail refresh for {transaction_hash}: {err}");
+            None
+        }
+    };
+
+    let related_hash = state
+        .as_ref()
+        .and_then(first_related_transaction_hash)
+        .or_else(|| {
+            transaction
+                .as_ref()
+                .and_then(first_related_transaction_hash)
+        });
+
+    if let Some(related_hash) = related_hash {
+        outcome.related_transaction_total_calls += 1;
+        if let Err(err) = ctx.unyt_get_transaction(related_hash.clone()) {
+            outcome.related_transaction_failed_calls += 1;
+            log::warn!(
+                "related get_transaction failed during detail refresh for {related_hash}: {err}"
+            );
+        }
+    }
+
+    outcome
+}
+
+fn first_related_transaction_hash<T: serde::Serialize>(value: &T) -> Option<ActionHashB64> {
+    let value = serde_json::to_value(value).ok()?;
+    let first_related = value
+        .get("related_transaction")?
+        .as_array()?
+        .first()?
+        .clone();
+    let related_hash = first_related.get("id")?.as_str()?;
+    ActionHashB64::from_str(related_hash).ok()
 }
