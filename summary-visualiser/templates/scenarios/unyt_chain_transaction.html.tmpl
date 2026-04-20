@@ -106,6 +106,120 @@
         {{ end }}
 
         {{ template "scenario_metric" (dict
+            "name" "Check agent exists: Duration"
+            "description" "Duration of the check_agent_exists loop per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .check_agent_exists_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Check agent exists: Total calls"
+            "description" "Total check_agent_exists calls made across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .check_agent_exists_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Check agent exists: Failed calls"
+            "description" "Total check_agent_exists calls that failed across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .check_agent_exists_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Check agent exists: Missing agents"
+            "description" "Total check_agent_exists calls that reported a missing agent across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .check_agent_exists_missing_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI action list refresh: Duration"
+            "description" "Duration of the UI action list refresh per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_action_list_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI action list refresh: Failed calls"
+            "description" "Total UI action list refresh calls that failed across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_action_list_refresh_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI routine refresh: Duration"
+            "description" "Duration of the full UI routine refresh per behaviour iteration (seconds), including check_agent_exists, action list refresh, and transaction detail refresh."
+            "content" (tmpl.Exec "timing_and_trend" .ui_routine_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI routine refresh: Watchlist count"
+            "description" "Watchlist size (number of transactions being tracked) per behaviour iteration. Indicates how many transactions agents are actively monitoring."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_routine_refresh_watchlist_count)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Duration"
+            "description" "Duration of refreshing a single transaction detail item per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_transaction_detail_item_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Primary transaction total calls"
+            "description" "Total primary transaction fetches made during per-item detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_item_refresh_primary_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Primary transaction failed calls"
+            "description" "Total primary transaction fetches that failed during per-item detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_item_refresh_primary_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Related transaction total calls"
+            "description" "Total related transaction fetches made during per-item detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_item_refresh_related_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Related transaction failed calls"
+            "description" "Total related transaction fetches that failed during per-item detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_item_refresh_related_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Duration"
+            "description" "Duration of refreshing all watched transaction details per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_transaction_detail_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Transactions processed"
+            "description" "Total number of transactions processed during the detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_refresh_transactions_processed)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Primary transaction total calls"
+            "description" "Total primary transaction fetches made during the full detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_refresh_primary_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Primary transaction failed calls"
+            "description" "Total primary transaction fetches that failed during the full detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_refresh_primary_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Related transaction total calls"
+            "description" "Total related transaction fetches made during the full detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_refresh_related_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Related transaction failed calls"
+            "description" "Total related transaction fetches that failed during the full detail refresh across all agents and iterations."
+            "content" (tmpl.Exec "aggregated_single_value" .ui_transaction_detail_refresh_related_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
             "name" "Error count"
             "description" "The total number of errors accumulated across all agents over the run."
             "content" (tmpl.Exec "scalar" (dict "value" .error_count))
