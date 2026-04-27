@@ -75,7 +75,7 @@ function generate_run_summary() {
     declare -A peer_end_count_by_run
     while IFS=',' read -r _job_name _scenario_name alloc_id _run_id _started_at _duration _peer_count _behaviours; do
         local this_alloc_peer_end_count
-        this_alloc_peer_end_count=$(fetch_peer_end_count "$alloc_id" "$_peer_count")
+        this_alloc_peer_end_count=$(fetch_peer_end_count "$alloc_id")
         peer_end_count_by_run["$_run_id"]="$(( ${peer_end_count_by_run["$_run_id"]:-0} + this_alloc_peer_end_count ))"
     done < "$allocs_csv_file"
 
@@ -149,12 +149,11 @@ function holochain_build_info() {
 
 function fetch_peer_end_count() {
     local alloc_id="$1"
-    local fallback_peer_count="$2"
     local result
     result=$(nomad alloc fs "$alloc_id" alloc/run_summary.jsonl 2>/dev/null | jq --slurp 'last | .peer_end_count') || result=""
     if [[ -z "$result" || "$result" == "null" ]]; then
-        echo "Warning: could not fetch peer_end_count for alloc $alloc_id, falling back to configured peer_count ($fallback_peer_count)" >&2
-        echo "$fallback_peer_count"
+        echo "Warning: could not fetch peer_end_count for alloc $alloc_id, assuming 0 peers completed" >&2
+        echo 0
         return
     fi
     echo "Fetched peer_end_count for alloc $alloc_id: $result" >&2
