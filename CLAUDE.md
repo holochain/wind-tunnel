@@ -137,3 +137,7 @@ When reviewing pull requests:
 ## Code Hygiene
 
 - Generated Rust and TOML must always be properly formatted, if you're not sure then run `cargo fmt` or `taplo format` on the relevant files.
+
+## New Scenario Checklist
+
+When a PR adds a new scenario (a Rust project under `scenarios/`), verify that every applicable item from [`docs/new-scenario-checklist.md`](docs/new-scenario-checklist.md) is addressed. The checklist covers core implementation, CI smoke tests, Nomad deployment (`canonical`, `demo`, and optionally `canonical-scaled` variants plus their workflow `job-name` matrices), summariser integration, and summary visualiser templates. Summariser and summary visualiser items are optional only if a tracking issue is linked from the PR; otherwise they are required.
