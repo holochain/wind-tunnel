@@ -141,3 +141,27 @@ When reviewing pull requests:
 ## New Scenario Checklist
 
 When a PR adds a new scenario (a Rust project under `scenarios/`), verify that every applicable item from [`docs/new-scenario-checklist.md`](docs/new-scenario-checklist.md) is addressed. The checklist covers core implementation, CI smoke tests, Nomad deployment (`canonical`, `demo`, and optionally `canonical-scaled` variants plus their workflow `job-name` matrices), summariser integration, and summary visualiser templates. Summariser and summary visualiser items are optional only if a tracking issue is linked from the PR; otherwise they are required.
+
+## Upgrading to a new Holochain release
+
+Start by gathering version and tag information. The user should have supplied a Holochain version to update to like `0.6.1`.
+
+- There should be a corresponding Holochain tag on the repository https://github.com/holochain/holochain with a matching tag `holochain-0.6.1`.
+- Read the file `Cargo.lock` at the corresponding Holochain tag, at the root of the repository. Look for `name = "kitsune2"` and check its version. This is the version of Kitsune2 to use in this repository.
+- Find the Kitsune2 tag on the repository `https://github.com/holochain/kitsune2`. For a Kitsune2 version like `0.4.1`, there will be a `v0.4.1` tag.
+- Read the file `./rust-toolchain.toml` at the corresponding Holochain tag, at the root of the repository. Look for the Rust version that Holochain is using.
+
+These are the steps to be followed to update to a new Holochain release:
+
+1. Update the root `./Cargo.toml` file with new versions of Holochain crates in the section labeled "Deps for Holochain".
+2. Update the root `./Cargo.toml` file with new versions of Kitsune2 crates in the section labeled "Deps for Kitsune".
+3. Update `./rust-toolchain.toml` to use the same Rust version that Holochain is using.
+4. Run `cargo update` and handle any changes to feature flags or dependency conflicts.
+5. Build the workspace with `cargo build` and address any code changes from Holochain. Iterate until the workspace builds successfully.
+6. Ensure the `./flake.nix` points at the matching branch of Holonix. E.g. `main-0.6` for Holochain 0.6.x, or `main` for the upcoming release of Holochain that is currently producing `-dev.X` pre-release versions. Therefore, this only needs to change if the minor version of Holochain is changing, patch and preleases stay on the same Holonix branch.
+7. Run `nix flake update` and verify that the `flake.lock` now points to the right Holochain and Kitsune2 tags.
+8. Ensure the Nix development shell is functional by running `nix develop -c echo "shell builds"`.
+9. Run a smoke test with `nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress`. This ensures that at least one scenario runs.
+10. Update the `./README.md` which contains download URLs for Holochain binaries. These can be found with `grep -n 'holochain/releases/download/holochain-' README.md`. Update the Holochain tag in each URL.
+11. Just like the `./README.md`, there are download URLs in each of `./.github/workflows/nomad-demo.yaml`, `./.github/workflows/nomad-canonical.yaml` and `./.github/workflows/nomad-canonical-scaled.yaml`. These can be found with `grep -rn 'holochain/releases/download/holochain-' .github/workflows/` and also need updating to the corresponding Holochain tag.
+12. Verify static checks are passing for Rust and TOML sources using the command `nix develop -c bash -c "source scripts/checks.sh && check_all"`.
