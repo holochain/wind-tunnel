@@ -71,7 +71,7 @@ jobs:
           hetzner-buckets-secret: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
           job-name: ${{ matrix.job-name }}
-          holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.4/holochain-unstable-x86_64-unknown-linux-gnu' }}
+          holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1/holochain-unstable-x86_64-unknown-linux-gnu' }}
           commit-hash: ${{ inputs.commit-hash }}
           nomad-job-variant-directory: "nomad/job-variants/demo"
           include-threefold-node-pool: "false"
@@ -88,7 +88,7 @@ jobs:
       HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET: ${{ secrets.HETZNER_HOLOCHAIN_INFRA_BUCKETS_SECRET }}
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     with:
-      holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1-rc.4/holochain-unstable-x86_64-unknown-linux-gnu' }}
+      holochain-bin-url: ${{ inputs.holochain-bin-url != '' && inputs.holochain-bin-url || 'https://github.com/holochain/holochain/releases/download/holochain-0.6.1/holochain-unstable-x86_64-unknown-linux-gnu' }}
       commit-hash: ${{ inputs.commit-hash }}
       enable-summary-uploads: false
       ignore-summary-errors: false
