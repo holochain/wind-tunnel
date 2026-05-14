@@ -41,7 +41,7 @@ jobs:
           extra_nix_config: |
             accept-flake-config = true
 
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         with:
           name: holochain-ci
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -405,7 +405,7 @@ jobs:
           extra_nix_config: |
             accept-flake-config = true
 
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         if: steps.filter.outputs.any_changed == 'true'
         with:
           name: holochain-ci
