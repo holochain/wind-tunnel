@@ -748,7 +748,13 @@ If your bootstrap and signal servers run under a different port, adapt the comma
 
 At each run of the `Run performance tests on Nomad cluster` workflow the run summary is published within the [GitHub Pages](https://holochain.github.io/wind-tunnel/) of this repository.
 
-### Published crates
+### Pinned runs
+
+- For Holochain [0.5.0](https://holochain.github.io/wind-tunnel/run.20260112165922.7f9dab55acb1cbb6c61d7f0cff7d14a043120b8e.html) with 10 nodes
+- For Holochain [0.6.0](https://holochain.github.io/wind-tunnel/run.20260122014235.fa30db8abb9fab46fac38a108f7892e9100adfd0.html) with 10 nodes
+- For Holochain [0.6.1](https://holochain.github.io/wind-tunnel/run.20260604063033.777341572bfb4ab046d8be15d52017459b2fc5d6.html) with 30 nodes
+
+## Published crates
 
 Framework crates:
 
