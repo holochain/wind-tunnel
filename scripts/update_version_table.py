@@ -59,7 +59,7 @@ def find_section_bounds(lines):
         return None, None
     end = len(lines)
     for i in range(start, len(lines)):
-        if lines[i].startswith("## "):
+        if lines[i].startswith("## ") or lines[i].startswith("### "):
             end = i
             break
     return start, end

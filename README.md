@@ -756,17 +756,17 @@ At each run of the `Run performance tests on Nomad cluster` workflow the run sum
 
 ### Version compatibility
 
-| Wind Tunnel   | Holochain         | Kitsune2     |
-|---------------|-------------------|--------------|
-| v0.6.0        | 0.6.0             | 0.3.0        |
-| v0.5.0        | 0.5.6             | 0.1.16       |
-| v0.5.0-dev.0  | 0.5.3             | 0.1.9        |
-| v0.4.0-dev.1  | 0.4.2             | 0.0.1-alpha9 |
-| 0.2.0-alpha.2 | 0.3.1-rc.0        | N/A          |
-| 0.2.0-alpha.1 | 0.3.0-beta-dev.43 | N/A          |
-| 0.1.0-alpha.3 | 0.2.6             | N/A          |
-| 0.1.0-alpha.2 | 0.2.6             | N/A          |
-| 0.1.0-alpha.1 | 0.2.6             | N/A          |
+| Wind Tunnel | Holochain | Kitsune2 |
+|-------------|-----------|----------|
+| v0.6.0 | 0.6.0 | 0.3.0 |
+| v0.5.0 | 0.5.6 | 0.1.16 |
+| v0.5.0-dev.0 | 0.5.3 | 0.1.9 |
+| v0.4.0-dev.1 | 0.4.2 | 0.0.1-alpha9 |
+| 0.2.0-alpha.2 | 0.3.1-rc.0 | N/A |
+| 0.2.0-alpha.1 | 0.3.0-beta-dev.43 | N/A |
+| 0.1.0-alpha.3 | 0.2.6 | N/A |
+| 0.1.0-alpha.2 | 0.2.6 | N/A |
+| 0.1.0-alpha.1 | 0.2.6 | N/A |
 
 ## Published crates
 
