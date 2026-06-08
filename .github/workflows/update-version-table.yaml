@@ -1,0 +1,32 @@
+name: Update version compatibility table
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+jobs:
+  update-version-table:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.HRA2_GITHUB_TOKEN }}
+
+      - name: Update README version table
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 scripts/update_version_table.py --tag "$TAG"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.HRA2_GITHUB_TOKEN }}
+          branch: chore/version-table-${{ github.ref_name }}
+          commit-message: "chore: add ${{ github.ref_name }} to version compatibility table"
+          title: "chore: add ${{ github.ref_name }} to version compatibility table"
+          body: "Automatically generated version compatibility table update for tag `${{ github.ref_name }}`."
+          base: main
