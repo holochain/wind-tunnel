@@ -4,6 +4,274 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.7.0](https://github.com/holochain/wind-tunnel/compare/v0.6.0...v0.7.0)\] - 2026-06-10
+
+### Features
+
+- Add seed script for version compatibility table by @ThetaSinner
+- Add a version table and automation to update it by @ThetaSinner
+- Upgrade to Holochain 0.6.1 by @ThetaSinner
+- Include zome calls made in unyt UI in transactor loop of both unyt wind tunnel scenarios by @jost-s in [#603](https://github.com/holochain/wind-tunnel/pull/603)
+- Review summary visualiser by @jost-s in [#617](https://github.com/holochain/wind-tunnel/pull/617)
+- Notify team via mattermost message if threefold node cancellation fails by @mattyg
+- Use custom threefold deployment tool, not tfrobot, for dynamic deployments based on available nodes, prioritized by region by @mattyg
+- Nomad job download github hosted artifacts from commit sha that they were deployed from by @mattyg
+- Deploy 4 VMs per threefold node to increase likelihood of finding enough available by @mattyg
+- Only use threefold node pool for canonical-scaled variants by @mattyg
+- Avoid flaky failures of upload_metrics due to server 500 timeout errors by adding jitter, retry and splitting metrics into smaller chunks by @mattyg
+- Canonical-scaled scenario variant for deploying to large scale of nodes with threefold by @mattyg
+- *(readme)* `unyt_proposal` scenario by @veeso in [#601](https://github.com/holochain/wind-tunnel/pull/601)
+- *(summariser)* Upgrade Holochain metrics with all available metrics accurately summarised for every scenario (#573) by @ThetaSinner in [#604](https://github.com/holochain/wind-tunnel/pull/604)
+- Summarize and visualize unyt chain transaction scenarios by @jost-s in [#593](https://github.com/holochain/wind-tunnel/pull/593)
+- Retry downloads of holochain bin and scenario bin by @mattyg in [#596](https://github.com/holochain/wind-tunnel/pull/596)
+- *(nomad)* Support arbitrary env vars in scenario vars.json files (#540) by @veeso in [#577](https://github.com/holochain/wind-tunnel/pull/577)
+  - Replace the hardcoded MIN_AGENTS template variable with a generic env object in vars.json files. Each key-value pair in the env object is injected into the Nomad task's env block via a gomplate range loop.
+  - Add env object support to gomplate template (run_scenario.tpl.hcl) - Migrate unyt_chain_transaction: move min_agents to env.MIN_AGENTS,   add NUMBER_OF_LINKS_TO_PROCESS with default value - Add env vars to write_get_agent_activity_volatile (CONDUCTOR_* vars) - Add env object to validation_receipts (empty, supports NO_VALIDATION_COMPLETE) - Add env vars to remote_signals (SIGNAL_INTERVAL_MS, RESPONSE_TIMEOUT_MS) - Update README documentation with env object syntax and example
+- *(nomad)* Get `peer_end_count` by summing `peer_end_count` from run summaries inside of allocations by their run_id by @veeso in [#581](https://github.com/holochain/wind-tunnel/pull/581)
+- Improve debugging of summariser query failures by @ThetaSinner
+- Update canonical scenario variables to increase the testing scale by @ThetaSinner
+- Get Unyt durable object store URL and secret from env vars by @cdunster
+- Use UNYT_ prefix on Unyt-only env var by @cdunster
+- Add subdirectory for the Cloudflare durable object store by @cdunster
+- Add a 0-arc scenario for the Unyt app by @veeso in [#554](https://github.com/holochain/wind-tunnel/pull/554)
+- *(summary-visualizer)* Convert bytes to bytes unit (e.g. KB,MB,GB...) by @veeso in [#572](https://github.com/holochain/wind-tunnel/pull/572)
+  - Added new gomplate helpers to fomrat bytes and bytes rate. Then I've added the template use to all of the bytes units in the current templates
+- Add basic dashboard for write_get_agent_activity_volatile by @mattyg in [#535](https://github.com/holochain/wind-tunnel/pull/535)
+- Basic summary visualiser for write_get_agent_activity_volatile scenario by @mattyg
+- Summariser for write_get_agent_activity_volatile scenario by @mattyg
+- Write_get_agent_activity_volatile scenario by @mattyg
+- Shutdown and restart conductor functions for holochain binding by @mattyg
+- Upgrade scenario metrics to provide better insights by @ThetaSinner
+- Add host metrics to all scenario visualiser templates by @mattyg in [#566](https://github.com/holochain/wind-tunnel/pull/566)
+- Serialize AnomalyStatus with 'type' field for enum tag by @mattyg in [#530](https://github.com/holochain/wind-tunnel/pull/530)
+- Display host metrics for dht_sync_lag in summary-visualiser by @mattyg
+- Summary visualiser template helper for host metrics data by @mattyg
+- Add unyt_chain_transaction scenario by @cdunster
+  - This scenario tests the basic transactions of a Unyt network.
+- Add install_app_custom for fine-grained hApp installation by @cdunster
+  - The existing install_app function now just calls this with default values.
+- Add a script for removing unused summariser test files by @ThetaSinner
+- Report host metrics in parallel with scenario metrics by @ThetaSinner
+- Do not exclude first and last window for trend in standard_rate stats by @mattyg in [#531](https://github.com/holochain/wind-tunnel/pull/531)
+- Do not exclude first and last element from each window in standard_timing_stats by @mattyg
+- *(summariser)* Add P2P metrics to arc-related scenarios by @veeso in [#511](https://github.com/holochain/wind-tunnel/pull/511)
+  - Collect hc.holochain_p2p.handle_request.duration and hc.holochain_p2p.request.duration metrics in mixed_arc and zero_arc scenario summarizers. Adds overall and partitioned (by tag/message_type) P2P performance statistics to enable analysis of network behavior.
+  - Updated scenarios: - mixed_arc_get_agent_activity - mixed_arc_must_get_agent_activity - full_arc_create_validated_zero_arc_read - zero_arc_create_and_read - zero_arc_create_data - zero_arc_create_data_validated
+- Use rust build script to build hApps in Nix derivations by @cdunster
+  - Instead of repeating the code to build hApps in Nix, just rely on the rust build script to do it for us and copy the hApps from the happs dir.
+- Constrain Nomad job to only run on clients with Nomad >= v1.11.0 by @cdunster in [#519](https://github.com/holochain/wind-tunnel/pull/519)
+- Use the new secret block in Nomad job instead of template block by @cdunster
+- Use new restricted InfluxDB token, providing only access to windtunnel bucket by @lucksus in [#509](https://github.com/holochain/wind-tunnel/pull/509)
+- Add influx dashboard for holochain_p2p metrics by @mattyg
+- If test data file in 2_query_results cannot be loaded, return a 'NoSeriesInResult' so it is treated as if the influx query was empty by @mattyg
+- Set HOLOCHAIN_INFLUXIVE env variable on holochain conductor process by @mattyg
+- Update summary-visualizer templates to include newly added holochain_p2p metrics by @mattyg
+- Include holochain_p2p metrics in relevent scenario summarizers by @mattyg
+- Summariser functions for querying holochain_p2p metrics by @mattyg
+- Scenario template for `mixed_arc_get_agent_activity` by @lucksus
+- Scenario template for `full_arc_create_validated_zero_arc_read` by @lucksus
+- Map API errors to potential agent bail errors in admin_websocket by @cdunster in [#490](https://github.com/holochain/wind-tunnel/pull/490)
+  - Meaning that any calls to the admin websocket that result in an error that should bail and stop the Wind Tunnel agent will now do so.
+- Map API errors to potential agent bail errors in app_websocket by @cdunster
+  - Meaning that any calls to the app websocket that result in an error that should bail and stop the Wind Tunnel agent will now do so.
+- \[**BREAKING**\] Improve the behaviours field in the nomad template variable files (#487) by @veeso in [#487](https://github.com/holochain/wind-tunnel/pull/487)
+  - Feat!: Improved the behaviours field in the Nomad template variable files
+  - **Breaking Change**: Scenarios must migrated. In the PR a Python3 script to execute the migration has been provided
+- Use Iroh in Kitsune2 by @cdunster
+- Add support for fetching happs from url (#471) by @veeso in [#471](https://github.com/holochain/wind-tunnel/pull/471)
+  - Feat: add support for fetching happs from url.
+
+### Bug Fixes
+
+- Address PR review comments by @ThetaSinner
+- *(nomad)* Fallback failed `fetch_peer_end_count` to zero by @veeso in [#624](https://github.com/holochain/wind-tunnel/pull/624)
+  - Instead of fallbacking on the `peer_count` value, which leads to wrong `end_peer_count`, we just fallback to zero if the fetch fails
+- Filter query of nomad jobs to only actively running jobs to avoid massive json response which crashes the runner by @mattyg
+- Handle collecting github run artifacts from matrix even when only one instance in matrix by @mattyg
+- Run scenario binaries with nix-ld wrapper by @mattyg
+- Unyt chain transaction scenario by @jost-s in [#611](https://github.com/holochain/wind-tunnel/pull/611)
+- *(nomad)* Handle "No running jobs" text output from nomad job status by @veeso in [#586](https://github.com/holochain/wind-tunnel/pull/586)
+  - Nomad ignores the -json flag when there are no jobs and returns plain text instead of an empty JSON array, which caused jq parse failures in count_eligible_nodes.sh. Treat this case as zero busy nodes.
+- Don't assume the number of scenarios that ran when visualising by @ThetaSinner
+- Framework runner does not exit if tasks fail to cooperate with the shutdown by @ThetaSinner in [#575](https://github.com/holochain/wind-tunnel/pull/575)
+- Invalid metric logic and type in scenario `full_arc_create_validated_zero_arc_read` for metric `retrieval_error_count` by @ThetaSinner in [#569](https://github.com/holochain/wind-tunnel/pull/569)
+- Metrics from last page of history in unyt scenario were not sent by @cdunster in [#549](https://github.com/holochain/wind-tunnel/pull/549)
+- Avoid rounding issues in `standard_timing_stats` by @ThetaSinner in [#533](https://github.com/holochain/wind-tunnel/pull/533)
+- Busy loops in `mixed_arc_must_get_agent_activity` and `write_validated_must_get_agent_activity`. by @ThetaSinner
+- Snapshot test should only load exected output when asserting it by @mattyg in [#534](https://github.com/holochain/wind-tunnel/pull/534)
+- Dont round column values before selecting those within 2std and 3std by @mattyg in [#532](https://github.com/holochain/wind-tunnel/pull/532)
+- `write_validated_must_get_agent_activity` scenario failed to produce `write_validated_must_get_agent_activity_chain_len` metrics by @veeso in [#506](https://github.com/holochain/wind-tunnel/pull/506)
+- HApps fetched from URL are placed in correct directory by @cdunster in [#513](https://github.com/holochain/wind-tunnel/pull/513)
+  - Fetched hApps were placed in a sub-directory in the `happs/` directory under the hApp's name but they should be placed under the package name.
+- Build_info field structure that is generated in CI to run_summary.jsonl by @mattyg in [#515](https://github.com/holochain/wind-tunnel/pull/515)
+- HOLOCHAIN_BIN_URL env variable was not set in CI by @mattyg
+- Warning and error in telegraf log resolved by @ThetaSinner
+- HApps fetched from URL are now placed in a directory as required by @cdunster in [#510](https://github.com/holochain/wind-tunnel/pull/510)
+  - Fetched hApps were placed directly in the `happs/` directory but then looked for in a sub-directory.
+- Influxql queries wrap the tag name in quotes, to avoid conflicting with influxql syntax elements. Rename test data query results files, as the query hash has changed. by @mattyg in [#499](https://github.com/holochain/wind-tunnel/pull/499)
+- Ensure local_signals metrics written on early exit (#496) by @lucksus in [#496](https://github.com/holochain/wind-tunnel/pull/496)
+  - Fix: ensure local_signals metrics written on early exit
+  - The local_signals scenario was failing in CI because metrics were only written at the end of the agent_behaviour function. If the scenario duration ended while waiting for signals (30s timeout), the function would be interrupted and metrics would never be written.
+  - This fix implements a MetricsGuard using Rust's RAII pattern with Drop to ensure recv metrics are always written when the function exits, whether normally or through early termination. The send metric is now written immediately after the zome call completes.
+- Use_influx script properly parses influx token (#497) by @mattyg in [#497](https://github.com/holochain/wind-tunnel/pull/497)
+
+### Miscellaneous Tasks
+
+- Reduce canonical node targets from 65 to 30 by @ThetaSinner in [#631](https://github.com/holochain/wind-tunnel/pull/631)
+  - Several machines used for canonical runs are no longer available. Scale the 65-node variants down to 30 while preserving each documented behaviour ratio.
+- Update flake.lock file by @ThetaSinner in [#627](https://github.com/holochain/wind-tunnel/pull/627)
+- Update the CONTRIBUTING.md with shared content in [#620](https://github.com/holochain/wind-tunnel/pull/620)
+- Fix the timeout in the wait_for_jobs script by @cdunster in [#576](https://github.com/holochain/wind-tunnel/pull/576)
+  - The timeout was reset on every allocation so the total timeout became TIMOUT*number_of_allocations.
+- *(deps)* Upgrade Holochain to 0.6.1-rc.4 by @ThetaSinner
+  - Pre-requisite for #573. Updates CI workflows, README, flake.lock, and Cargo dependencies to holochain 0.6.1-rc.4.
+- *(nomad)* Add a job_name to the job JSON files to separate jobs by @cdunster
+  - The canonical and demo runs had the same job names so were overwriting each other causing allocations to be superseded or ignored when both CI jobs were run at the same time.
+- Go back to the INFLUX_TOKEN secret as that has changed in Nomad by @cdunster in [#602](https://github.com/holochain/wind-tunnel/pull/602)
+- Add require durable objects env vars to nix packages by @cdunster in [#570](https://github.com/holochain/wind-tunnel/pull/570)
+- Add Unyt Durable Object store URL and secret to the Nomad jobs by @cdunster
+- Add bash function to run a local Durable Objects store by @cdunster
+- Add Unyt durable object store URL and secret to devShell by @cdunster
+- Add nodeJS and wrangler to Nix devShell by @cdunster
+  - Required for the Durable Object store.
+- Update to Holochain 0.6.1-rc.3 by @ThetaSinner
+- Update the Unyt hApp in the Unyt Chain Transaction scenario by @cdunster in [#560](https://github.com/holochain/wind-tunnel/pull/560)
+- Add InfluxDB dashboard for unyt_chain_transaction scenario by @cdunster in [#512](https://github.com/holochain/wind-tunnel/pull/512)
+- Add unyt_chain_transaction scenario to Nomad jobs by @cdunster
+- Remove unused summariser test data files by @ThetaSinner in [#541](https://github.com/holochain/wind-tunnel/pull/541)
+- Remove openssl static packages from Nix workspace by @cdunster
+- Fetch required hApps in Nix code with fetchurl by @cdunster
+  - Nix derivations cannot access the internet so the scenario_build script fails to fetch the required hApps. The script first checks if they exist so by fetching them with Nix we avoid the need to fetch them again in the build script.
+- Move Nix workspace-specific fields outside of the commonArgs by @cdunster
+- Remove unnecessary pkg-config from Nix workspace build by @cdunster
+- Use v1.11.1 of the Nomad package by @cdunster
+- Add new flake input for nixpkgs-unstable channel by @cdunster
+- Nix flake update by @cdunster
+- Clean up template code by @lucksus in [#476](https://github.com/holochain/wind-tunnel/pull/476)
+- Remove precise requirement for `kitsune2_bootstrap_srv` version by @cdunster
+  - The invalid verson of `0.4.0` has now been yanked so it won't be used by default.
+- Flake update to a patched version of Kitsune2 by @cdunster
+- Update to Holochain `v0.6.1-rc.0` and Kitsune2 `v0.4.0-dev.2` by @cdunster
+
+### Build System
+
+- Update kitsune to 0.4.0-dev7 by @veeso in [#607](https://github.com/holochain/wind-tunnel/pull/607)
+- Use bootstrap-srv provided by holonix by @mattyg in [#525](https://github.com/holochain/wind-tunnel/pull/525)
+- Upgraded to edition 2024 (#485) by @veeso in [#485](https://github.com/holochain/wind-tunnel/pull/485)
+
+### CI
+
+- Update Holochain actions by @ThetaSinner in [#640](https://github.com/holochain/wind-tunnel/pull/640)
+- Remove the Claude PR review workflow by @cdunster in [#639](https://github.com/holochain/wind-tunnel/pull/639)
+- Also rebuild scenarios if cannot be found in a release by @cdunster in [#613](https://github.com/holochain/wind-tunnel/pull/613)
+- Search for scenario in latest 10 releases instead of just one by @cdunster
+  - This means that if the latest release doesn't have the scenario then use the next latest with it.
+- Allow forcing a rebuild of all scenarios when running manually by @cdunster
+- Only rebuild scenarios if their applicable files have changed by @cdunster
+  - Otherwise, use the scenario zip from the latest (pre-)release.
+- Use PAT token when creating pre-release to trigger other workflows by @cdunster
+- Cancel pre-release scenario build when new release overrides it by @cdunster in [#618](https://github.com/holochain/wind-tunnel/pull/618)
+- Create pre-releases on pushes to main that aren't full releases by @cdunster
+- Allow manually running workflow to publish scenarios to a release by @cdunster
+- Publish all scenario zip files to new releases by @cdunster
+- Cancel Nomad allocations if wait-for-jobs fails by @cdunster
+- Remove unused influx-token input from composite action by @cdunster
+- Cleanup Threefold wallet mnemonic by @cdunster
+- Also use the global RUN_ID for matrix output key by @cdunster
+- Also use the global RUN_ID for uploading artifacts by @cdunster
+- Set RUN_ID once in Nomad actions using GITHUB_ENV by @cdunster
+- Add log of how many Threefold nodes are available by @cdunster
+- Specify scenarios to run in parent workflow, not in nomad-common, so different scenario variants can specify difference scenarios to run by @mattyg
+- Set nomad CI concurrency group to a shared name to prevent concurrent run between canonical and demo workflows by @veeso in [#610](https://github.com/holochain/wind-tunnel/pull/610)
+- Add defaults when saving and loading the matrix in case of cancel by @cdunster in [#590](https://github.com/holochain/wind-tunnel/pull/590)
+- Cancel Nomad allocation after timeout by @cdunster
+- Append the run_attempt to the RUN_ID by @cdunster
+  - When re-running a CI workflow the run ID will change so a new Nomad allocation should always be created.
+- Add step to cancel running Nomad allocations if CI is cancelled by @cdunster
+- Add nomad dry-run step before running by @cdunster
+- Log summariser run RAM usage with `time -v` by @veeso in [#594](https://github.com/holochain/wind-tunnel/pull/594)
+- Use latest 0.6.1 RC release by @ThetaSinner in [#568](https://github.com/holochain/wind-tunnel/pull/568)
+- Always run the wait jobs after running scenarios, don't skip if a scenario failed by @ThetaSinner
+- Always wait for all allocations to finish by @ThetaSinner
+- Run the Durable Objects store locally in Unyt smoke tests by @cdunster
+- *(claude)* Fixed usage of sticky_comments by removing the github token. Added directives for claude reviewer to only report errors, bugs, etc very concisely by @veeso in [#571](https://github.com/holochain/wind-tunnel/pull/571)
+- Run write_get_agent_activity_volatile scenario in CI by @mattyg
+- Test influx scripts by @veeso in [#536](https://github.com/holochain/wind-tunnel/pull/536)
+- Add unyt_chain_transaction scenario to Nomad jobs by @cdunster
+- Add unyt_chain_transaction scenario to smoke tests by @cdunster
+- Do not reschedule failed nomad jobs by @mattyg in [#544](https://github.com/holochain/wind-tunnel/pull/544)
+- Nomad-common.yaml is reading `behaviours` from the scenario file, but it should actually read `assignments` by @veeso in [#537](https://github.com/holochain/wind-tunnel/pull/537)
+- Claude code PR reviews by @mattyg in [#538](https://github.com/holochain/wind-tunnel/pull/538)
+- Print wind tunnel version and holochain build info in ci by @mattyg
+- Cleanup 2 smoke test scripts to follow pattern of other scenario smoke tests (#494) by @mattyg in [#494](https://github.com/holochain/wind-tunnel/pull/494)
+
+### Testing
+
+- Enable `say_something_to_other_chatter` since fixed with kitsune 0.4.0-dev.6 by @veeso
+- Temporarily disable `say_something_to_other_chatter` because it's hanging in ci by @veeso in [#580](https://github.com/holochain/wind-tunnel/pull/580)
+- Stable ordering in snapshot tests by @ThetaSinner
+- Update summariser test data with new fields, but empty contents by @mattyg
+- Re-enable summary-visualiser smoke test for validation_receipts scenario by @mattyg in [#507](https://github.com/holochain/wind-tunnel/pull/507)
+- Fix potential error if crypto provider installed multiple times by @cdunster
+  - Check if a default `CryptoProvider` is already installed before installing one in the Kitsune2 client unit test.
+- Use unit test init pattern for `env_logger` in Kitsune2 client by @cdunster
+
+### Refactor
+
+- Format byte units by passing values directly to scalar template, rather than re-implementing its html by @mattyg
+- Move the fetch hApp logic into a module by @cdunster in [#526](https://github.com/holochain/wind-tunnel/pull/526)
+- Reduce the Nix path to the commonArgs src by @cdunster
+- Remove unused Nix module arguments by @cdunster
+
+### Styling
+
+- Consistent width for all metric label columns by @mattyg in [#598](https://github.com/holochain/wind-tunnel/pull/598)
+- Expand charts to fill available width, while keeping the pixels per second in the x axis consistent for all charts in a scenario by @mattyg
+- Ensure y axis labels are not clipped by @mattyg
+- Cleanup styling on p50, p95, p99 display and fix html linting issues by @mattyg
+- All byte units use 'bibyte' unit labels rather than byte unit labels, i.e. MB -> MiB by @mattyg
+- All scalar labels left-align by @mattyg
+- Scalar label on separate line, SD label consistent with all others by @mattyg
+- Format Nix code by @cdunster
+
+### Documentation
+
+- Link to important runs by @ThetaSinner in [#632](https://github.com/holochain/wind-tunnel/pull/632)
+- Add upgrade steps for Holochain to the CLAUDE.md by @ThetaSinner in [#626](https://github.com/holochain/wind-tunnel/pull/626)
+- Add new-scenario checklist to PR template and CLAUDE.md by @veeso in [#625](https://github.com/holochain/wind-tunnel/pull/625)
+- Add job_name to the readme by @cdunster
+- Update the readmes for Unyt scenarios to include durable objects by @cdunster
+- Improve claude.md by @ThetaSinner in [#550](https://github.com/holochain/wind-tunnel/pull/550)
+- Add CLAUDE.md by @ThetaSinner in [#545](https://github.com/holochain/wind-tunnel/pull/545)
+- Update readme with the correct relay-url by @cdunster in [#483](https://github.com/holochain/wind-tunnel/pull/483)
+
+### Automated Changes
+
+- *(deps)* Bump cachix/cachix-action from 16 to 17 by @dependabot[bot] in [#589](https://github.com/holochain/wind-tunnel/pull/589)
+- *(deps)* Bump holochain/actions/.github/workflows/changelog-preview-comment.yml by @dependabot[bot] in [#616](https://github.com/holochain/wind-tunnel/pull/616)
+- *(deps)* Bump holochain/actions/.github/workflows/prepare-release.yml by @dependabot[bot] in [#615](https://github.com/holochain/wind-tunnel/pull/615)
+- *(deps)* Bump holochain/actions/.github/workflows/publish-release.yml by @dependabot[bot] in [#614](https://github.com/holochain/wind-tunnel/pull/614)
+- *(deps)* Bump holochain/actions/.github/workflows/prepare-release.yml by @dependabot[bot] in [#559](https://github.com/holochain/wind-tunnel/pull/559)
+- *(deps)* Bump holochain/actions/.github/workflows/publish-release.yml by @dependabot[bot] in [#558](https://github.com/holochain/wind-tunnel/pull/558)
+- *(deps)* Bump actions/upload-artifact from 6 to 7 by @dependabot[bot] in [#557](https://github.com/holochain/wind-tunnel/pull/557)
+- *(deps)* Bump actions/download-artifact from 7 to 8 by @dependabot[bot] in [#556](https://github.com/holochain/wind-tunnel/pull/556)
+- *(deps)* Bump holochain/actions/.github/workflows/changelog-preview-comment.yml by @dependabot[bot] in [#555](https://github.com/holochain/wind-tunnel/pull/555)
+- *(deps)* Bump holochain/actions/.github/workflows/publish-release.yml by @dependabot[bot] in [#491](https://github.com/holochain/wind-tunnel/pull/491)
+- *(deps)* Bump holochain/actions/.github/workflows/prepare-release.yml by @dependabot[bot] in [#493](https://github.com/holochain/wind-tunnel/pull/493)
+- *(deps)* Bump holochain/actions/.github/workflows/changelog-preview-comment.yml by @dependabot[bot] in [#492](https://github.com/holochain/wind-tunnel/pull/492)
+
+### Other Changes
+
+- Remove seed script by @ThetaSinner in [#634](https://github.com/holochain/wind-tunnel/pull/634)
+- # This is a combination of 2 commits. by @ThetaSinner
+- Update telegraf/telegraf.host.conf by @ThetaSinner in [#523](https://github.com/holochain/wind-tunnel/pull/523)
+- Test/summary visualiser test uses snapshot data (#498) by @mattyg in [#498](https://github.com/holochain/wind-tunnel/pull/498)
+
+### First-time Contributors
+
+- @ made their first contribution in [#620](https://github.com/holochain/wind-tunnel/pull/620)
+- @lucksus made their first contribution in [#509](https://github.com/holochain/wind-tunnel/pull/509)
+
 ## \[[0.6.0](https://github.com/holochain/wind-tunnel/compare/v0.5.0...v0.6.0)\] - 2026-01-23
 
 ### Features
