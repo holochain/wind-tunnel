@@ -1,7 +1,7 @@
 use super::WtOpStore;
 use crate::{op_store::WtOp, tests::test_reporter};
 use bytes::Bytes;
-use kitsune2_api::{AgentId, DhtArc, Id, OpStore, Timestamp};
+use kitsune2_api::{AgentId, DhtArc, Id, IncomingOp, OpStore, Timestamp};
 use std::time::Duration;
 
 async fn test_op_store() -> WtOpStore {
@@ -11,6 +11,14 @@ async fn test_op_store() -> WtOpStore {
     )));
     let reporter = test_reporter();
     WtOpStore::new(agent_id, reporter)
+}
+
+fn test_op(wt_op: WtOp) -> IncomingOp {
+    IncomingOp {
+        op_id: wt_op.compute_op_id(),
+        op_data: Bytes::from(wt_op),
+        metadata: None,
+    }
 }
 
 #[test]
@@ -46,7 +54,7 @@ async fn process_incoming_ops_and_retrieve() {
         created_at: Timestamp::from_micros(0),
         op_data: vec![2],
     };
-    let op_list = vec![Bytes::from(op_1.clone()), Bytes::from(op_2.clone())];
+    let op_list = vec![test_op(op_1.clone()), test_op(op_2.clone())];
 
     op_store
         .process_incoming_ops(op_list.clone())
@@ -57,7 +65,7 @@ async fn process_incoming_ops_and_retrieve() {
     let ops = op_store.retrieve_ops(op_ids).await.unwrap();
     assert_eq!(
         ops.into_iter().map(|op| op.op_data).collect::<Vec<_>>(),
-        op_list
+        op_list.into_iter().map(|op| op.op_data).collect::<Vec<_>>()
     );
 }
 
@@ -85,10 +93,10 @@ async fn op_hashes_in_time_slice() {
 
     let _ = op_store
         .process_incoming_ops(vec![
-            included_op_1.clone().into(),
-            included_op_2.clone().into(),
-            excluded_op_1.into(),
-            excluded_op_2.into(),
+            test_op(included_op_1.clone()),
+            test_op(included_op_2.clone()),
+            test_op(excluded_op_1),
+            test_op(excluded_op_2),
         ])
         .await
         .unwrap();
@@ -129,7 +137,7 @@ async fn bounded_op_ids() {
 
     // Store op to be excluded first.
     let _ = op_store
-        .process_incoming_ops(vec![excluded_op_1.into()])
+        .process_incoming_ops(vec![test_op(excluded_op_1)])
         .await
         .unwrap();
     // Then wait some to produce a different `stored_at` timestamp and store the rest.
@@ -137,9 +145,9 @@ async fn bounded_op_ids() {
     let timestamp = Timestamp::now();
     let _ = op_store
         .process_incoming_ops(vec![
-            included_op_1.clone().into(),
-            excess_op_1.clone().into(),
-            excluded_op_2.into(),
+            test_op(included_op_1.clone()),
+            test_op(excess_op_1.clone()),
+            test_op(excluded_op_2),
         ])
         .await
         .unwrap();

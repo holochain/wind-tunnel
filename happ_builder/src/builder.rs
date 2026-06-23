@@ -140,7 +140,7 @@ impl HappBuilder<'_> {
         }
         let dna_manifest_path = dna_manifest_workdir.clone().join("dna.yaml");
         let dna_manifest_str =
-            serde_yaml::to_string(&manifest).context("Failed to serialize DNA manifest")?;
+            yaml_serde::to_string(&manifest).context("Failed to serialize DNA manifest")?;
         std::fs::write(dna_manifest_path, dna_manifest_str)
             .context("Failed to write DNA manifest")?;
 

@@ -56,7 +56,10 @@ fn record_open_connections_if_necessary(
 
         let metric = ReportMetric::new("open_connections")
             .with_tag("arc", arc)
-            .with_field("value", network_stats.connections.len() as u32);
+            .with_field(
+                "value",
+                network_stats.transport_stats.connections.len() as u32,
+            );
         ctx.runner_context().reporter().clone().add_custom(metric);
 
         ctx.get_mut().scenario_values.open_connections_last_recorded = Some(now);

@@ -219,7 +219,7 @@ where
 ///             let agent_pubkey = admin_client.generate_agent_pub_key().await?;
 ///             Ok(agent_pubkey)
 ///         })?;
-///     let dna_properties = serde_yaml::to_value(HashMap::from([(
+///     let dna_properties = yaml_serde::to_value(HashMap::from([(
 ///         "some_agent_pubkey".to_string(),
 ///         some_agent_pubkey.to_string(),
 ///     )]))?;
@@ -305,6 +305,7 @@ where
                     roles_settings,
                     network_seed: Some(run_id),
                     ignore_genesis_failure: false,
+                    restore_from_dht: false,
                 })
                 .await?;
             log::debug!("Installed app: {installed_app_id}");
