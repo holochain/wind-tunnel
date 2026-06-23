@@ -849,7 +849,7 @@ impl HostMetricsAggregator<'_> {
         let ncpus_vals = ncpus_series.f64()?;
         let ncpus_by_host: HashMap<String, f64> = ncpus_hosts
             .into_iter()
-            .zip(ncpus_vals.into_iter())
+            .zip(ncpus_vals)
             .filter_map(|(h, n)| Some((h?.to_string(), n?)))
             .collect();
 

@@ -3,9 +3,9 @@ use holochain_client::{
     AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload,
     EnableAppResponse, InstallAppPayload, SigningCredentials,
 };
-use holochain_types::prelude::{CellId, DeleteCloneCellPayload, Record};
+use holochain_types::network::HolochainTransportStats;
+use holochain_types::prelude::{CellId, DeleteCloneCellPayload};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
-use kitsune2_api::ApiTransportStats;
 use std::sync::Arc;
 
 use crate::ToSocketAddr;
@@ -142,22 +142,9 @@ impl AdminWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn dump_network_stats(&self) -> anyhow::Result<ApiTransportStats> {
+    pub async fn dump_network_stats(&self) -> anyhow::Result<HolochainTransportStats> {
         self.inner
             .dump_network_stats()
-            .await
-            .map_err(handle_api_err)
-    }
-
-    #[wind_tunnel_instrument(prefix = "admin_")]
-    pub async fn graft_records(
-        &self,
-        cell_id: CellId,
-        validate: bool,
-        records: Vec<Record>,
-    ) -> anyhow::Result<()> {
-        self.inner
-            .graft_records(cell_id, validate, records)
             .await
             .map_err(handle_api_err)
     }

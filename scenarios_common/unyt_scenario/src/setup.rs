@@ -28,7 +28,7 @@ use std::time::Duration;
 pub fn create_role_settings(
     progenitor_agent_pubkey: &AgentPubKey,
 ) -> anyhow::Result<HashMap<String, RoleSettings>> {
-    let dna_properties = serde_yaml::to_value(HashMap::from([(
+    let dna_properties = yaml_serde::to_value(HashMap::from([(
         "progenitor_agent_pubkey".to_string(),
         progenitor_agent_pubkey.to_string(),
     )]))?;
@@ -224,12 +224,12 @@ mod tests {
 
         if let RoleSettings::Provisioned { modifiers, .. } = alliance {
             let props = modifiers.as_ref().unwrap().properties.as_ref().unwrap();
-            let yaml_value: serde_yaml::Value =
-                serde_yaml::from_str(&serde_yaml::to_string(props).unwrap()).unwrap();
+            let yaml_value: yaml_serde::Value =
+                yaml_serde::from_str(&yaml_serde::to_string(props).unwrap()).unwrap();
 
             let mapping = yaml_value.as_mapping().expect("should be a mapping");
             let stored = mapping
-                .get(serde_yaml::Value::String(
+                .get(yaml_serde::Value::String(
                     "progenitor_agent_pubkey".to_string(),
                 ))
                 .expect("should contain progenitor_agent_pubkey");

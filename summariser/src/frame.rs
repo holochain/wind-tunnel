@@ -99,7 +99,7 @@ pub(crate) fn load_from_response(
             }
             let obj: serde_json::Map<String, serde_json::Value> = columns
                 .iter()
-                .zip(row_arr.into_iter())
+                .zip(row_arr)
                 .map(|(col, val)| (col.clone(), val))
                 .collect();
             serde_json::to_writer(&mut writer, &serde_json::Value::Object(obj))?;

@@ -14,7 +14,7 @@
     };
 
     holonix = {
-      url = "github:holochain/holonix?ref=main-0.6";
+      url = "github:holochain/holonix?ref=main";
     };
 
     crane = {
@@ -62,7 +62,7 @@
           };
 
           # Enable unstable and non-default features that Wind Tunnel tests.
-          cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
+          cargoExtraArgs = "--features unstable-functions,unstable-countersigning";
           # Override arguments passed in to Holochain build with above feature arguments.
           customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
 

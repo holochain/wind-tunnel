@@ -2,8 +2,8 @@
 
 use bytes::Bytes;
 use kitsune2_api::{
-    AgentId, BoxFut, Builder, Config, DhtArc, DynOpStore, K2Error, K2Result, MetaOp, Op, OpId,
-    OpStore, OpStoreFactory, SpaceId, StoredOp, Timestamp,
+    AgentId, BoxFut, Builder, Config, DhtArc, DynOpStore, IncomingOp, K2Error, K2Result, MetaOp,
+    Op, OpId, OpStore, OpStoreFactory, SpaceId, StoredOp, Timestamp,
 };
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
@@ -194,12 +194,12 @@ pub(crate) struct WtOpStoreInner {
 }
 
 impl OpStore for WtOpStore {
-    fn process_incoming_ops(&self, op_list: Vec<Bytes>) -> BoxFut<'_, K2Result<Vec<OpId>>> {
+    fn process_incoming_ops(&self, op_list: Vec<IncomingOp>) -> BoxFut<'_, K2Result<Vec<OpId>>> {
         Box::pin(async move {
             let ops_to_add = op_list
                 .iter()
                 .map(|op| -> serde_json::Result<(OpId, WtOpRecord)> {
-                    let op = WtOpRecord::from(op.clone());
+                    let op = WtOpRecord::from(op.op_data.clone());
                     Ok((op.op_id.clone(), op))
                 })
                 .collect::<Result<Vec<_>, _>>()
@@ -316,7 +316,7 @@ impl OpStore for WtOpStore {
                 .collect::<Vec<_>>();
 
             // Sort the ops by the time they were stored
-            candidate_ops.sort_by(|a, b| a.stored_at.cmp(&b.stored_at));
+            candidate_ops.sort_by_key(|a| a.stored_at);
 
             // Now take as many ops as we can up to the limit
             let mut total_bytes = 0;
@@ -354,8 +354,8 @@ impl OpStore for WtOpStore {
                 .read()
                 .await
                 .op_list
-                .iter()
-                .filter_map(|(_, op)| {
+                .values()
+                .filter_map(|op| {
                     if arc.contains(op.op_id.loc()) {
                         Some(op.created_at)
                     } else {

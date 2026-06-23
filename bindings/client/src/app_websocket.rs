@@ -5,11 +5,11 @@ use holo_hash::DnaHash;
 use holochain_client::{AgentSigner, AppWebsocket, CallZomeOptions, ZomeCallTarget};
 use holochain_conductor_api::{AppAuthenticationToken, AppInfo};
 use holochain_types::app::{DisableCloneCellPayload, EnableCloneCellPayload};
+use holochain_types::network::HolochainTransportStats;
 use holochain_types::prelude::{
     CreateCloneCellPayload, ExternIO, FunctionName, Kitsune2NetworkMetrics, Signal, ZomeName,
 };
 use holochain_zome_types::clone::ClonedCell;
-use kitsune2_api::TransportStats;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use wind_tunnel_instruments::{OperationRecord, Reporter};
@@ -105,7 +105,7 @@ impl AppWebsocketInstrumented {
     }
 
     #[wind_tunnel_instrument(prefix = "app_")]
-    pub async fn dump_network_stats(&self) -> anyhow::Result<TransportStats> {
+    pub async fn dump_network_stats(&self) -> anyhow::Result<HolochainTransportStats> {
         self.inner
             .dump_network_stats()
             .await
