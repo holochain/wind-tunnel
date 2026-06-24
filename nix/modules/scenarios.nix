@@ -2,7 +2,8 @@
 
 { config, lib, ... }:
 let
-  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name)) (builtins.attrNames (builtins.readDir ../../scenarios));
+  # Temporarily exclude unyt scenarios, until they're upgraded to Holochain v0.7.
+  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name) && !(lib.strings.hasPrefix "unyt_" name)) (builtins.attrNames (builtins.readDir ../../scenarios));
 
   scenarios = map
     (name: {
