@@ -204,7 +204,15 @@ impl HappBuilder<'_> {
             .env_remove("RUSTFLAGS")
             .env_remove("CARGO_BUILD_RUSTFLAGS")
             .env_remove("CARGO_ENCODED_RUSTFLAGS")
-            .env("RUSTFLAGS", "--cfg getrandom_backend=\"custom\"")
+            // `--import-undefined` tells `wasm-ld` to emit unresolved symbols as
+            // wasm imports rather than erroring. As of Rust 1.96 it no longer does
+            // this by default, so the Holochain host functions declared by
+            // `holochain_wasmer_guest`'s `host_externs!` macro (`__hc__*`) would
+            // otherwise fail to link as "undefined symbol".
+            .env(
+                "RUSTFLAGS",
+                "--cfg getrandom_backend=\"custom\" -C link-arg=--import-undefined",
+            )
             .arg("build")
             .arg("--target-dir")
             .arg(target_dir)

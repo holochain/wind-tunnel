@@ -45,7 +45,10 @@ fn agent_behaviour_zero(
 
     let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "zero")
-        .with_field("value", network_stats.connections.len() as u32);
+        .with_field(
+            "value",
+            network_stats.transport_stats.connections.len() as u32,
+        );
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     let _: ActionHash = call_zome(
@@ -129,7 +132,10 @@ fn agent_behaviour_full(
 
     let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "full")
-        .with_field("value", network_stats.connections.len() as u32);
+        .with_field(
+            "value",
+            network_stats.transport_stats.connections.len() as u32,
+        );
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
