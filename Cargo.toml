@@ -28,6 +28,10 @@ members = [
   "scenarios/remote_signals",
   "scenarios/single_write_many_read",
   "scenarios/two_party_countersigning",
+  # "scenarios/unyt_chain_transaction",
+  # "scenarios/unyt_chain_transaction_zero_arc",
+  # "scenarios/unyt_proposal",
+  # "scenarios_common/unyt_scenario",
   "scenarios/validation_receipts",
   "scenarios/write_get_agent_activity",
   "scenarios/write_get_agent_activity_volatile",
@@ -39,11 +43,6 @@ members = [
   "scenarios/zero_arc_create_data_validated",
   "scenarios/zero_arc_create_and_read",
   "scenarios/zome_call_single_value",
-  "scenarios/unyt_chain_transaction",
-  "scenarios/unyt_chain_transaction_zero_arc",
-  "scenarios/unyt_proposal",
-
-  "scenarios_common/unyt_scenario",
 
   "zomes/return_single_value/coordinator",
   "zomes/crud/coordinator",
@@ -68,6 +67,15 @@ members = [
   "zomes/agent_activity/integrity",
   "zomes/validated_must_get_agent_activity/coordinator",
   "zomes/validated_must_get_agent_activity/integrity",
+]
+
+# Temporarily excluded: these depend on `rave_engine`, which pins
+# hdk 0.6.1 and holo_hash 0.6.1.
+exclude = [
+  "scenarios/unyt_chain_transaction",
+  "scenarios/unyt_chain_transaction_zero_arc",
+  "scenarios/unyt_proposal",
+  "scenarios_common/unyt_scenario",
 ]
 
 # By default, don't build the scenarios or zomes.

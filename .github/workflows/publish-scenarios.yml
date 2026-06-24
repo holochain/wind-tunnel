@@ -54,6 +54,8 @@ jobs:
 
           for scenario_dir in scenarios/*/; do
             name=$(basename "$scenario_dir")
+            # Temporarily exclude unyt scenarios (see nix/modules/scenarios.nix).
+            case "$name" in unyt_*) continue ;; esac
             if [ -f "scenarios/$name/Cargo.toml" ]; then
               nix build ".#packages.x86_64-linux.$name" --out-link "result-$name"
               cp "result-$name/$name.zip" .
