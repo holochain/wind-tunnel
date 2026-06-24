@@ -63,7 +63,10 @@ fn agent_behaviour_zero_write(
 
     let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "zero")
-        .with_field("value", network_stats.connections.len() as u32);
+        .with_field(
+            "value",
+            network_stats.transport_stats.connections.len() as u32,
+        );
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
@@ -129,7 +132,10 @@ fn agent_behaviour_zero_read(
 
     let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "zero")
-        .with_field("value", network_stats.connections.len() as u32);
+        .with_field(
+            "value",
+            network_stats.transport_stats.connections.len() as u32,
+        );
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
@@ -150,7 +156,10 @@ fn agent_behaviour_full(
 
     let metric = ReportMetric::new("open_connections")
         .with_tag("arc", "full")
-        .with_field("value", network_stats.connections.len() as u32);
+        .with_field(
+            "value",
+            network_stats.transport_stats.connections.len() as u32,
+        );
     ctx.runner_context().reporter().clone().add_custom(metric);
 
     Ok(())
