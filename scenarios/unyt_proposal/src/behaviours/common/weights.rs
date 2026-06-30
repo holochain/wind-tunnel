@@ -11,15 +11,9 @@ pub struct ProposalWeights {
 }
 
 impl ProposalWeights {
-    pub fn get_proposer_weights_from_env() -> anyhow::Result<Self> {
+    pub fn get_weights_from_env() -> anyhow::Result<Self> {
         let value =
-            std::env::var("UNYT_PROPOSER_WEIGHTS").unwrap_or_else(|_| "60,20,20".to_string());
-        ProposalWeights::from_str(&value)
-    }
-
-    pub fn get_responder_weights_from_env() -> anyhow::Result<Self> {
-        let value =
-            std::env::var("UNYT_RESPONDER_WEIGHTS").unwrap_or_else(|_| "60,20,20".to_string());
+            std::env::var("UNYT_PROPOSAL_WEIGHTS").unwrap_or_else(|_| "60,20,20".to_string());
         ProposalWeights::from_str(&value)
     }
 }
