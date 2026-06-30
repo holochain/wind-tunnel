@@ -71,6 +71,13 @@ job "{{ (ds "vars").job_name }}" {
     value     = ">= 1.11.0"
   }
 
+  # Soft preference: weight toward nodes where the meta is set
+  affinity {
+    attribute = "${meta.unyt_agent_id}"
+    operator  = "is_set"
+    weight    = 100
+  }
+
   secret "job_secrets" {
     provider = "nomad"
     path     = "nomad/jobs"
