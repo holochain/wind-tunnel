@@ -167,7 +167,7 @@ fn create_proposals(
         return Ok(());
     }
 
-    // Use 75% of spendable amount to leave room for fees
+    // Use 75 % of spendable amount to leave room for fees
     let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
     let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
     let amount_per_agent = (spendable_amount / fraction)?;
@@ -187,6 +187,7 @@ fn create_proposals(
             note: None,
         }) {
             Ok(proposal_hash) => {
+                log::info!("Created proposal {proposal_hash} for {peer}");
                 ctx.get_mut()
                     .scenario_values
                     .pending_proposals
