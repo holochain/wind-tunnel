@@ -119,16 +119,32 @@ pub fn handle_proposals(
     let to_counter: Vec<_> = iter.by_ref().take(counter_end - accept_end).collect();
     let to_reject: Vec<_> = iter.collect();
 
+    // How much this agent can still spend before reaching its credit limit. Committing to
+    // a proposal spends its amount, so only commit while it can be afforded and leave the
+    // rest for a later iteration, once earlier spends have settled and freed up credit.
+    // Re-read after a commit, since nothing else here changes the balance.
+    let mut available = get_spendable_amount(ctx)?.unwrap_or_else(ZFuel::zero);
+
     let reporter = ctx.runner_context().reporter();
     let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
 
     // Accept: commit to the proposal
     for tx in &to_accept {
+        // Committing for this agent means spending a positive amount.
+        let spend = tx.amount.get_base_unyt();
+        if available < spend {
+            log::info!(
+                "Deferring commit to proposal {}: spend {spend:?} exceeds remaining credit {available:?}",
+                tx.id
+            );
+            continue;
+        }
         match ctx.unyt_create_commit_to_proposal(CommitmentToProposalInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
             Ok(commitment_hash) => {
+                available = get_spendable_amount(ctx)?.unwrap_or_else(ZFuel::zero);
                 log::info!(
                     "Committed to proposal {} after {} negotiation round(s)",
                     tx.id,
@@ -256,6 +272,10 @@ pub fn get_spendable_amount(
     );
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees_owed;
+    // proposed_balance is value the agent has already promised to spend, but
+    // that hasn't settled yet. It has to be counted here to prevent pushing
+    // the agent over its credit limit.
+    let proposed_balance = ledger.proposed_balance.get_base_unyt();
     let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
         Ok(cl) => cl,
         Err(err) => {
@@ -264,7 +284,7 @@ pub fn get_spendable_amount(
             return Ok(None);
         }
     };
-    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
+    let spendable_amount = (balance - fees + proposed_balance + credit_limit.get_base_unyt())?;
 
     Ok(Some(spendable_amount))
 }
