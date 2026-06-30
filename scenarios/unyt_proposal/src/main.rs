@@ -23,15 +23,17 @@ fn main() -> WindTunnelResult<()> {
         "initiate",
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
     )
-    .use_named_agent_behaviour("propose", self::behaviours::propose::agent_behaviour)
-    .use_named_agent_behaviour("respond", self::behaviours::respond::agent_behaviour)
+    .use_named_agent_behaviour(
+        "participate",
+        self::behaviours::participate::agent_behaviour,
+    )
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
-    .add_capture_env("UNYT_PROPOSER_WEIGHTS")
-    .add_capture_env("UNYT_RESPONDER_WEIGHTS")
+    .add_capture_env("UNYT_PROPOSAL_WEIGHTS")
     .add_capture_env("UNYT_COMMITMENT_ACCEPT_PCT")
     .add_capture_env("UNYT_COUNTER_ADJUSTMENT_PCT")
     .add_capture_env("UNYT_MAX_NEGOTIATION_ROUNDS")
+    .add_capture_env("UNYT_SPEND_FRACTION_PCT")
     .add_capture_env("MIN_AGENTS");
 
     run(builder)?;
