@@ -108,5 +108,5 @@ of `UNYT_DURABLE_OBJECTS_SECRET`.
 Then, in another terminal pane, run the scenario with the following command:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 300
+RUST_LOG=warn cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 300
 ```

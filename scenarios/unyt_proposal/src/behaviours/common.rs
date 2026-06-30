@@ -26,11 +26,12 @@ pub fn create_reclaim_balance(
     rejected_txs: Vec<Transaction>,
 ) {
     for tx in rejected_txs {
-        if let Err(err) = ctx.unyt_create_reclaim_balance(ReclaimInput {
+        match ctx.unyt_create_reclaim_balance(ReclaimInput {
             rejection: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reclaim balance for {}: {err}", tx.id);
+            Ok(_) => log::info!("Reclaimed balance for {}", tx.id),
+            Err(err) => log::warn!("Failed to reclaim balance for {}: {err}", tx.id),
         }
     }
 }
@@ -41,11 +42,12 @@ pub fn create_receipt_for_accept(
     accepted_txs: Vec<Transaction>,
 ) {
     for tx in accepted_txs {
-        if let Err(err) = ctx.unyt_create_receipt_for_accept(ReceiptInput {
+        match ctx.unyt_create_receipt_for_accept(ReceiptInput {
             hash: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to create receipt for {}: {err}", tx.id);
+            Ok(_) => log::info!("Created receipt for accept {}", tx.id),
+            Err(err) => log::warn!("Failed to create receipt for {}: {err}", tx.id),
         }
     }
 }
@@ -65,12 +67,16 @@ pub fn counter_proposals(
 
     for tx in transactions {
         let adjusted_amount = adjust_amount(&tx.amount, pct)?;
-        if let Err(err) = ctx.unyt_create_counter_proposal(CounterProposalInput {
+        match ctx.unyt_create_counter_proposal(CounterProposalInput {
             previous_proposal: tx.id.clone(),
             amount: adjusted_amount,
             note: None,
         }) {
-            log::warn!("Failed to create counter-proposal for {}: {err}", tx.id);
+            Ok(_) => log::info!(
+                "Created counter-proposal for {} (adjusted by {pct}%)",
+                tx.id
+            ),
+            Err(err) => log::warn!("Failed to create counter-proposal for {}: {err}", tx.id),
         }
     }
 
@@ -101,8 +107,11 @@ pub fn handle_proposals(
         .partition(|tx| tx.history.len() >= max_rounds);
 
     let total = within_limit.len();
-    let accept_end = total * weights.accept as usize / 100;
-    let counter_end = accept_end + total * weights.counter as usize / 100;
+    // Round up values, which will favor accepts over rejections. Otherwise
+    // rejections will dominate when number of proposals are small.
+    let accept_end = (total * weights.accept as usize).div_ceil(100);
+    let counter_end = (total * (weights.accept as usize + weights.counter as usize)).div_ceil(100);
+    println!("total {total} accept_end {accept_end} counter_end {counter_end}");
 
     let mut iter = within_limit.into_iter();
     let mut to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();
@@ -120,6 +129,11 @@ pub fn handle_proposals(
             note: None,
         }) {
             Ok(commitment_hash) => {
+                log::info!(
+                    "Committed to proposal {} after {} negotiation round(s)",
+                    tx.id,
+                    tx.history.len()
+                );
                 // Emit negotiation_rounds: history length = number of counter-proposal rounds
                 reporter.add_custom(
                     ReportMetric::new("negotiation_rounds")
@@ -139,11 +153,12 @@ pub fn handle_proposals(
 
     // Reject: reject the proposal
     for tx in &to_reject {
-        if let Err(err) = ctx.unyt_create_reject_proposal(RejectInput {
+        match ctx.unyt_create_reject_proposal(RejectInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reject proposal {}: {err}", tx.id);
+            Ok(_) => log::info!("Rejected proposal {}", tx.id),
+            Err(err) => log::warn!("Failed to reject proposal {}: {err}", tx.id),
         }
     }
 
@@ -169,8 +184,10 @@ pub fn handle_commitments(
         anyhow::bail!("UNYT_COMMITMENT_ACCEPT_PCT must be between 0 and 100, got {accept_pct}");
     }
 
+    // Round up values, which will favor accepts over rejections. Otherwise
+    // rejections will dominate when number of proposals are small.
     let total = commitments.len();
-    let accept_end = total * accept_pct as usize / 100;
+    let accept_end = (total * accept_pct as usize).div_ceil(100);
 
     let mut iter = commitments.into_iter();
     let to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();
@@ -182,6 +199,7 @@ pub fn handle_commitments(
             note: None,
         }) {
             Ok(accept_hash) => {
+                log::info!("Accepted commitment {}", tx.id);
                 ctx.get_mut()
                     .scenario_values
                     .watched_transactions_mut()
@@ -194,11 +212,12 @@ pub fn handle_commitments(
     }
 
     for tx in &to_reject {
-        if let Err(err) = ctx.unyt_create_reject_proposal(RejectInput {
+        match ctx.unyt_create_reject_proposal(RejectInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reject commitment {}: {err}", tx.id);
+            Ok(_) => log::info!("Rejected commitment {}", tx.id),
+            Err(err) => log::warn!("Failed to reject commitment {}: {err}", tx.id),
         }
     }
 
