@@ -14,6 +14,10 @@ use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
 
+/// A participant both makes proposals to its peers and responds to the proposals and
+/// commitments it receives. Because every agent plays both sides, value flows in both
+/// directions and balances stay within the credit limit over a long run. With fixed
+/// proposer and responder roles, one side only ever spends and runs out of credit.
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
@@ -44,10 +48,10 @@ pub fn agent_behaviour(
         common::create_reclaim_balance(ctx, actionable_transactions.reject_actionable);
         // for each accept actionable, call `create_receipt_for_accept`
         common::create_receipt_for_accept(ctx, actionable_transactions.accept_actionable);
-        // handle counter-proposals from responders
-        let weights = ProposalWeights::get_proposer_weights_from_env()?;
+        // handle incoming proposals (and counter-proposals)
+        let weights = ProposalWeights::get_weights_from_env()?;
         common::handle_proposals(ctx, actionable_transactions.proposal_actionable, &weights)?;
-        // handle commitments from responders who committed directly to our proposals
+        // handle incoming commitments
         common::handle_commitments(ctx, actionable_transactions.commitment_actionable)?;
     }
 
@@ -160,6 +164,16 @@ fn create_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     spendable_amount: ZFuel,
 ) -> anyhow::Result<()> {
+    // Spend only a small slice of the spendable amount per round. A single proposal must
+    // be small enough that several can be in flight at once without any one agent's spend
+    // reaching its credit limit, so keep this well below 100.
+    let spend_pct: u8 = std::env::var("UNYT_SPEND_FRACTION_PCT")
+        .unwrap_or_else(|_| "10".to_string())
+        .parse()?;
+    if spend_pct > 100 {
+        anyhow::bail!("UNYT_SPEND_FRACTION_PCT must be between 0 and 100, got {spend_pct}");
+    }
+
     ctx.collect_agents()?;
     let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
     if participating_agents.is_empty() {
@@ -167,8 +181,7 @@ fn create_proposals(
         return Ok(());
     }
 
-    // Use 75 % of spendable amount to leave room for fees
-    let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
+    let spendable_amount = (spendable_amount * Fraction::new(spend_pct as i64, 100)?)?;
     let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
     let amount_per_agent = (spendable_amount / fraction)?;
     let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
