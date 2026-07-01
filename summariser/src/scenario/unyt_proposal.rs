@@ -53,7 +53,7 @@ pub(crate) struct UnytProposalSummary {
     create_proposal_zome_call: PartitionedTimingStats,
 
     /// Duration of `create_counter_proposal` zome calls per agent (seconds).
-    /// `None` when no counter-proposals were created (e.g. `UNYT_PROPOSER_WEIGHTS=100,0,0`).
+    /// `None` when no counter-proposals were created (e.g. `UNYT_PROPOSAL_WEIGHTS=100,0,0`).
     create_counter_proposal_zome_call: Option<PartitionedTimingStats>,
 
     /// Duration of `create_commit_to_proposal` zome calls per agent (seconds).
