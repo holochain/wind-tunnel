@@ -75,7 +75,8 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                     compute_transaction_fee: TransactionFeeCompute {
                         agreement: fee_transfer_smart_agreement,
                         fee_trigger: ZFuel::new_with_default_precision(100),
-                        fee_percentage: 1,
+                        // Do not collect fees, because there's a bug at the moment.
+                        fee_percentage: 0,
                     },
                 },
             },
