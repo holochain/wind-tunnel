@@ -7,6 +7,7 @@ use holochain_wind_tunnel_runner::prelude::{
 use rave_engine::types::Actionable;
 use rave_engine::types::{ProposalInput, Transaction, TransactionType, UnitMap};
 use std::collections::BTreeMap;
+use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
@@ -184,7 +185,15 @@ fn create_proposals(
     let spendable_amount = (spendable_amount * Fraction::new(spend_pct as i64, 100)?)?;
     let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
     let amount_per_agent = (spendable_amount / fraction)?;
-    let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
+    // Bidirectional exchange: the proposer receives `unit 0` and sends a small amount of
+    // `unit 1`. Sending value to the counterparty is what makes them create a receipt after
+    // accepting, so this exercises the full commit -> accept -> receipt process. A proposal
+    // that only receives never produces a receipt.
+    let unit_1_sent = ZFuel::from_str("-1")?;
+    let amount = UnitMap::load(BTreeMap::from([
+        ("0".to_string(), amount_per_agent),
+        ("1".to_string(), unit_1_sent),
+    ]));
 
     log::info!(
         "Agent {} | creating proposals to {} agents",
