@@ -1,13 +1,14 @@
 mod weights;
 
 use crate::ScenarioValues;
+use holochain_types::prelude::ActionHashB64;
 use holochain_wind_tunnel_runner::prelude::{
     AgentContext, HolochainAgentContext, HolochainRunnerContext, ReportMetric,
 };
 use rave_engine::types::Actionable;
 use rave_engine::types::{
     AcceptInput, CommitmentToProposalInput, CounterProposalInput, Pagination, ReceiptInput,
-    ReclaimInput, RejectInput, Transaction, UnitMap, WatchStatus,
+    ReclaimInput, RejectInput, Transaction, TransactionType, UnitMap, WatchStatus,
 };
 use std::collections::BTreeMap;
 use std::thread;
@@ -209,6 +210,12 @@ pub fn handle_commitments(
     let to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();
     let to_reject: Vec<_> = iter.collect();
 
+    let reporter = ctx.runner_context().reporter();
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+
+    // This agent's proposals that reached acceptance in this pass, removed
+    // from tracking below.
+    let mut accepted_proposals = Vec::new();
     for tx in &to_accept {
         match ctx.unyt_create_accept(AcceptInput {
             commitment: tx.id.clone(),
@@ -216,6 +223,24 @@ pub fn handle_commitments(
         }) {
             Ok(accept_hash) => {
                 log::info!("Accepted commitment {}", tx.id);
+                // The proposer never sees this through `accept_actionable` (that
+                // is delivered to the committer, who creates the receipt), so we record the
+                // accepted round-trip here instead.
+                if let Some(proposal_hash) = find_root_proposal(tx)
+                    && let Some(created_at) = ctx
+                        .get()
+                        .scenario_values
+                        .pending_proposals
+                        .get(&proposal_hash)
+                {
+                    reporter.add_custom(
+                        ReportMetric::new("proposal_round_trip_time")
+                            .with_tag("agent", agent_key.clone())
+                            .with_tag("outcome", "accepted")
+                            .with_field("value", created_at.elapsed().as_secs_f64()),
+                    );
+                    accepted_proposals.push(proposal_hash);
+                }
                 ctx.get_mut()
                     .scenario_values
                     .watched_transactions_mut()
@@ -225,6 +250,9 @@ pub fn handle_commitments(
                 log::warn!("Failed to accept commitment {}: {err}", tx.id);
             }
         }
+    }
+    for id in &accepted_proposals {
+        ctx.get_mut().scenario_values.pending_proposals.remove(id);
     }
 
     for tx in &to_reject {
@@ -238,6 +266,25 @@ pub fn handle_commitments(
     }
 
     Ok(())
+}
+
+/// Walk a transaction's history tree to find the root proposal hash.
+///
+/// Accept, reject and commitment transactions carry their own action hash as `id`, not the
+/// original proposal hash. The negotiation history is stored in `tx.history` as a chain of
+/// `Transaction` entries. This function recursively searches for the deepest `Proposal`
+/// entry, which is the original proposal that started the negotiation.
+pub fn find_root_proposal(tx: &Transaction) -> Option<ActionHashB64> {
+    // Depth-first: check children first so we find the *root* (earliest) proposal
+    for child in &tx.history {
+        if let Some(hash) = find_root_proposal(child) {
+            return Some(hash);
+        }
+    }
+    if tx.tx_type == TransactionType::Proposal {
+        return Some(tx.id.clone());
+    }
+    None
 }
 
 /// Reduces each unit in the `UnitMap` by `pct` percent.
