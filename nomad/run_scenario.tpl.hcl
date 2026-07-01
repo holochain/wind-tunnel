@@ -74,7 +74,8 @@ job "{{ (ds "vars").job_name }}" {
   # Soft preference: weight toward nodes where the meta is set
   affinity {
     attribute = "${meta.unyt_agent_id}"
-    operator  = "is_set"
+    operator  = "regexp"
+    value     = ".+"
     weight    = 100
   }
 
