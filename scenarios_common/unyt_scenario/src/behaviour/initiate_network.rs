@@ -84,7 +84,9 @@ pub fn agent_behaviour_with_units<SV: UnytScenarioValues>(
                     compute_credit_limit: credit_limit_smart_agreement,
                     compute_transaction_fee: TransactionFeeCompute {
                         agreement: fee_transfer_smart_agreement,
-                        unit_fees: Vec::new(),
+                        fee_trigger: ZFuel::new_with_default_precision(100),
+                        // Do not collect fees, because there's a bug at the moment.
+                        fee_percentage: 0,
                     },
                 },
                 migration: Default::default(),
