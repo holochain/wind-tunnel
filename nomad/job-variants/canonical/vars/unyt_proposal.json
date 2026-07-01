@@ -1,5 +1,5 @@
 {
-  "description": "1 progenitor initialises the network; 15 propose and 14 respond agents run concurrent proposal flows. Target 50/50 propose/respond; actual 51.7/48.3 at 29 proposal agents (30 nodes total).",
+  "description": "1 progenitor initialises the network; 29 participate agents run concurrent proposal flows. Each participant both proposes to peers and responds to incoming proposals/commitments (30 nodes total).",
   "job_name": "unyt_proposal_canonical",
   "scenario_name": "unyt_proposal",
   "duration": 900,
@@ -8,21 +8,16 @@
       "behaviour": "initiate"
     },
     {
-      "behaviour": "propose",
-      "nodes": 15
-    },
-    {
-      "behaviour": "respond",
-      "nodes": 14
+      "behaviour": "participate",
+      "nodes": 29
     }
   ],
   "env": {
     "MIN_AGENTS": "30",
-    "UNYT_NUMBER_OF_LINKS_TO_PROCESS": "10",
-    "UNYT_PROPOSER_WEIGHTS": "60,20,20",
-    "UNYT_RESPONDER_WEIGHTS": "60,20,20",
+    "UNYT_PROPOSAL_WEIGHTS": "60,20,20",
     "UNYT_COMMITMENT_ACCEPT_PCT": "80",
     "UNYT_COUNTER_ADJUSTMENT_PCT": "10",
-    "UNYT_MAX_NEGOTIATION_ROUNDS": "5"
+    "UNYT_MAX_NEGOTIATION_ROUNDS": "5",
+    "UNYT_SPEND_FRACTION_PCT": "10"
   }
 }

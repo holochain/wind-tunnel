@@ -112,7 +112,6 @@ pub fn handle_proposals(
     // rejections will dominate when number of proposals are small.
     let accept_end = (total * weights.accept as usize).div_ceil(100);
     let counter_end = (total * (weights.accept as usize + weights.counter as usize)).div_ceil(100);
-    println!("total {total} accept_end {accept_end} counter_end {counter_end}");
 
     let mut iter = within_limit.into_iter();
     let mut to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();

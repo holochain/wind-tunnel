@@ -362,8 +362,12 @@ jobs:
           # Need to re-direct stdin otherwise the wrangler terminates when running in background.
           nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
 
-          # Run the scenario
-          nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 30 --no-progress
+          # Run the scenario. Weights favour rejections (accept + counter <= 50 %) and a 50 %
+          # commitment-accept rate so that the smoke test exercises the full lifecycle: commit,
+          # counter, reject, reclaim, accept, and receipt.
+          # Network initialization takes up to a minute, which is why the test has to run for
+          # more than 30 seconds.
+          UNYT_PROPOSAL_WEIGHTS=30,20,50 UNYT_COMMITMENT_ACCEPT_PCT=50 nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour participate:2 --behaviour zero_participate:2 --duration 120 --no-progress
 
           echo "==> Available space after step"
           echo
