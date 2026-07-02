@@ -15,11 +15,21 @@ concurrency:
   group: nomad # This is the same group as all other Nomad workflows
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy-threefold-nodes:
     runs-on: ubuntu-latest
+    outputs:
+      threefold_address: ${{ steps.tf-balance-before.outputs.address }}
+      threefold_free_tft_before: ${{ steps.tf-balance-before.outputs.free_tft }}
+      threefold_reserved_tft_before: ${{ steps.tf-balance-before.outputs.reserved_tft }}
+      threefold_spendable_tft_before: ${{ steps.tf-balance-before.outputs.spendable_tft }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Install nix
         uses: cachix/install-nix-action@v31
@@ -29,6 +39,18 @@ jobs:
         with:
           name: holochain-ci
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Snapshot ThreeFold balance before run
+        id: tf-balance-before
+        env:
+          THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
+        run: |
+          set -euo pipefail
+
+          nix develop .#ci --command deployer account-snapshot \
+            --mnemonic "$THREEFOLD_TFCHAIN_WALLET_MNEMONIC" \
+            --network main \
+            --format github >> "$GITHUB_OUTPUT"
 
       - name: Check available nodes in nomad
         id: check-available-nomad-nodes
@@ -49,6 +71,7 @@ jobs:
         timeout-minutes: 120
         env:
           THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
+          AVAILABLE_NOMAD_NODES: ${{ steps.check-available-nomad-nodes.outputs.count }}
 
           # Additional nodes provisioned in case some fail to deploy. In practice this seems to happen infrequently.
           THREEFOLD_NODES_BUFFER_COUNT: 20
@@ -60,7 +83,7 @@ jobs:
             nomad/job-variants/canonical-scaled/vars/*.json)
 
           # Determine number of additional nodes needed
-          AVAILABLE_NODES="${{ steps.check-available-nomad-nodes.outputs.count }}"
+          AVAILABLE_NODES="$AVAILABLE_NOMAD_NODES"
           MIN_THREEFOLD_NODES_COUNT=$(( MAX_SCENARIO_NODES_COUNT - AVAILABLE_NODES ))
 
           echo "Available nodes: $AVAILABLE_NODES"
@@ -120,6 +143,8 @@ jobs:
     timeout-minutes: 480
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/nomad
         with:
@@ -150,10 +175,14 @@ jobs:
 
   remove-threefold-nodes:
     runs-on: ubuntu-latest
-    needs: post-run-scenarios
+    needs:
+      - deploy-threefold-nodes
+      - post-run-scenarios
     if: ${{ always() }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Install nix
         uses: cachix/install-nix-action@v31
@@ -178,6 +207,62 @@ jobs:
 
           # Cancel all threefold deployment contracts
           nix develop .#ci --command tf-grid-cmd cancel contracts -a
+
+      - name: Snapshot ThreeFold balance after cleanup
+        id: tf-balance-after
+        if: ${{ always() }}
+        env:
+          THREEFOLD_TFCHAIN_WALLET_MNEMONIC: ${{ secrets.THREEFOLD_TFCHAIN_WALLET_MNEMONIC }}
+        run: |
+          set -euo pipefail
+
+          nix develop .#ci --command deployer account-snapshot \
+            --mnemonic "$THREEFOLD_TFCHAIN_WALLET_MNEMONIC" \
+            --network main \
+            --format github >> "$GITHUB_OUTPUT"
+
+      - name: Report ThreeFold credit usage
+        if: ${{ always() }}
+        env:
+          THREEFOLD_ADDRESS: ${{ needs.deploy-threefold-nodes.outputs.threefold_address }}
+          BEFORE_FREE_TFT: ${{ needs.deploy-threefold-nodes.outputs.threefold_free_tft_before }}
+          BEFORE_RESERVED_TFT: ${{ needs.deploy-threefold-nodes.outputs.threefold_reserved_tft_before }}
+          BEFORE_SPENDABLE_TFT: ${{ needs.deploy-threefold-nodes.outputs.threefold_spendable_tft_before }}
+          AFTER_FREE_TFT: ${{ steps.tf-balance-after.outputs.free_tft }}
+          AFTER_RESERVED_TFT: ${{ steps.tf-balance-after.outputs.reserved_tft }}
+          AFTER_SPENDABLE_TFT: ${{ steps.tf-balance-after.outputs.spendable_tft }}
+        run: |
+          set -euo pipefail
+
+          numeric_re='^[0-9]+([.][0-9]+)?$'
+          cost_tft="unknown"
+          remaining_weeks="unknown"
+          remaining_months="unknown"
+
+          if [[ "$BEFORE_FREE_TFT" =~ $numeric_re && "$AFTER_FREE_TFT" =~ $numeric_re ]]; then
+            cost_tft="$(awk -v before="$BEFORE_FREE_TFT" -v after="$AFTER_FREE_TFT" 'BEGIN { printf "%.7f", before - after }')"
+            if awk -v cost="$cost_tft" 'BEGIN { exit !(cost > 0) }'; then
+              remaining_weeks="$(awk -v balance="$AFTER_FREE_TFT" -v cost="$cost_tft" 'BEGIN { printf "%.2f", balance / cost }')"
+              remaining_months="$(awk -v weeks="$remaining_weeks" 'BEGIN { printf "%.2f", weeks / 4.345 }')"
+            fi
+          fi
+
+          {
+            echo "## ThreeFold credit"
+            echo ""
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            echo "| Wallet address | ${THREEFOLD_ADDRESS:-unknown} |"
+            echo "| Spendable balance before run | ${BEFORE_SPENDABLE_TFT:-unknown} TFT |"
+            echo "| Spendable balance after cleanup | ${AFTER_SPENDABLE_TFT:-unknown} TFT |"
+            echo "| Estimated run cost | ${cost_tft} TFT |"
+            echo "| Estimated remaining weekly runs | ${remaining_weeks} |"
+            echo "| Estimated remaining months | ${remaining_months} |"
+            echo "| Free balance before run | ${BEFORE_FREE_TFT:-unknown} TFT |"
+            echo "| Free balance after cleanup | ${AFTER_FREE_TFT:-unknown} TFT |"
+            echo "| Reserved balance before run | ${BEFORE_RESERVED_TFT:-unknown} TFT |"
+            echo "| Reserved balance after cleanup | ${AFTER_RESERVED_TFT:-unknown} TFT |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify team via Mattermost if cancellation failed
         uses: holochain/actions/mattermost-notify@v1.12.0

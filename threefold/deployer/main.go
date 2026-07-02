@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/big"
 	"net"
 	"os"
 	"regexp"
@@ -14,6 +15,8 @@ import (
 	"strings"
 	"sync"
 
+	gsrpcTypes "github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	substrate "github.com/threefoldtech/tfchain/clients/tfchain-client-go"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/zos"
@@ -37,6 +40,8 @@ const (
 	deploymentNameSuffix = "_dl_"
 	vmNameSuffix         = "_vm_"
 	networkNameSuffix    = "_net_"
+	githubOutputFormat   = "github"
+	textOutputFormat     = "text"
 )
 
 var prefixPattern = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
@@ -53,6 +58,21 @@ type deployConfig struct {
 	prefix         string
 	maxConcurrency int
 	regionOrder    []string
+}
+
+type accountSnapshotConfig struct {
+	mnemonic string
+	network  string
+	format   string
+}
+
+type accountSnapshot struct {
+	address       string
+	freeTFT       string
+	reservedTFT   string
+	miscFrozenTFT string
+	freeFrozenTFT string
+	spendableTFT  string
 }
 
 type nodePlacement struct {
@@ -77,17 +97,43 @@ type deployJob struct {
 	assigned int
 }
 
+type substrateStorageGetter interface {
+	GetClient() (substrate.Conn, substrate.Meta, error)
+}
+
+type nodeDeployabilityChecker interface {
+	isOptedOutNodeAllowed(nodeID uint32) (bool, error)
+}
+
+type tfchainNodeDeployabilityChecker struct {
+	storageGetter      substrateStorageGetter
+	accountID          substrate.AccountID
+	isAllowedTwinAdmin bool
+}
+
 func main() {
-	cfg, err := parseCliArgs(os.Args[1:])
-	if err != nil {
+	if err := run(os.Args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return
 		}
 		log.Fatal(err)
 	}
-	if err := deploy(cfg); err != nil {
-		log.Fatal(err)
+}
+
+func run(args []string) error {
+	if len(args) > 0 && args[0] == "account-snapshot" {
+		cfg, err := parseAccountSnapshotCliArgs(args[1:])
+		if err != nil {
+			return err
+		}
+		return printAccountSnapshot(cfg)
 	}
+
+	cfg, err := parseCliArgs(args)
+	if err != nil {
+		return err
+	}
+	return deploy(cfg)
 }
 
 // Parse and validate cli
@@ -160,6 +206,30 @@ func parseCliArgs(args []string) (deployConfig, error) {
 	return cfg, nil
 }
 
+func parseAccountSnapshotCliArgs(args []string) (accountSnapshotConfig, error) {
+	fs := flag.NewFlagSet("account-snapshot", flag.ContinueOnError)
+	cfg := accountSnapshotConfig{
+		network: "main",
+		format:  textOutputFormat,
+	}
+
+	fs.StringVar(&cfg.mnemonic, "mnemonic", "", "ThreeFold wallet mnemonic")
+	fs.StringVar(&cfg.network, "network", "main", "ThreeFold network")
+	fs.StringVar(&cfg.format, "format", textOutputFormat, "Output format: text or github")
+
+	if err := fs.Parse(args); err != nil {
+		return cfg, err
+	}
+	if strings.TrimSpace(cfg.mnemonic) == "" {
+		return cfg, fmt.Errorf("--mnemonic is required")
+	}
+	if cfg.format != textOutputFormat && cfg.format != githubOutputFormat {
+		return cfg, fmt.Errorf("--format must be %q or %q", textOutputFormat, githubOutputFormat)
+	}
+
+	return cfg, nil
+}
+
 // Orchestrates deployment of nodes, vms and networks as follows:
 // - Query for nodes that meet minimum capacity requirements, one region at a time, ordered by `regions` list
 // - Calculate total number of VMs that could be deployed to those nodes, based on our VM hardware requirements
@@ -181,11 +251,16 @@ func deploy(cfg deployConfig) error {
 	}
 	defer tf.Close()
 
+	checker, err := newNodeDeployabilityChecker(tf)
+	if err != nil {
+		return err
+	}
+
 	// Determine the number of VM placements available per region
 	candidates := make([]nodePlacement, 0)
 	totalCandidateCapacity := 0
 	for _, region := range cfg.regionOrder {
-		placements, err := placementsForRegion(ctx, tf, region, cfg)
+		placements, err := placementsForRegion(ctx, tf, region, cfg, checker)
 		if err != nil {
 			return err
 		}
@@ -379,7 +454,7 @@ func deployNode(ctx context.Context, tf deployer.TFPluginClient, cfg deployConfi
 // VM capacity based on the configured hardware requirements.
 //
 // Returns potential nodes sorted by descending capacity, then by node ID.
-func placementsForRegion(ctx context.Context, tf deployer.TFPluginClient, region string, cfg deployConfig) ([]nodePlacement, error) {
+func placementsForRegion(ctx context.Context, tf deployer.TFPluginClient, region string, cfg deployConfig, checker nodeDeployabilityChecker) ([]nodePlacement, error) {
 	regionFilter := region
 	freeMRU := cfg.vmMemGB * gib
 	freeSRU := cfg.vmDiskGB * gib
@@ -400,8 +475,38 @@ func placementsForRegion(ctx context.Context, tf deployer.TFPluginClient, region
 	}
 	log.Printf("region=%s candidates=%d (status=up free_mru>=%dGiB free_sru>=%dGiB)", region, len(nodes), cfg.vmMemGB, cfg.vmDiskGB)
 
+	placements, filteredOptOutNodes, err := placementsForNodes(region, nodes, cfg, checker)
+	if err != nil {
+		return nil, err
+	}
+
+	// Report only the nodes that passed the grid-proxy capacity filter but were
+	// excluded because TFChain would reject contract creation for this wallet.
+	if filteredOptOutNodes > 0 {
+		log.Printf("region=%s filtered_opted_out_nodes=%d", region, filteredOptOutNodes)
+	}
+
+	return placements, nil
+}
+
+func placementsForNodes(region string, nodes []types.Node, cfg deployConfig, checker nodeDeployabilityChecker) ([]nodePlacement, int, error) {
 	placements := make([]nodePlacement, 0, len(nodes))
+	filteredOptOutNodes := 0
 	for _, n := range nodes {
+		allowed, err := checker.isOptedOutNodeAllowed(uint32(n.NodeID))
+		if err != nil {
+			log.Printf("region=%s node_id=%d skipped: failed to check V3 billing opt-out status: %v", region, n.NodeID, err)
+			continue
+		}
+		if !allowed {
+			filteredOptOutNodes++
+			// V3 billing opt-out is a migration/admin path. Non-admin wallets
+			// cannot deploy on these nodes, so preflight must not count their
+			// capacity as usable.
+			log.Printf("region=%s node_id=%d skipped: node is V3 billing opted-out and wallet is not an allowed twin admin", region, n.NodeID)
+			continue
+		}
+
 		cap, byCPU, byMem, byDisk := capacityForNode(n, cfg)
 		if cap <= 0 {
 			continue
@@ -430,7 +535,7 @@ func placementsForRegion(ctx context.Context, tf deployer.TFPluginClient, region
 		log.Printf("region=%s node_id=%d node_capacity=%d limits(cpu=%d mem=%d disk=%d)", region, p.nodeID, p.capacity, p.byCPU, p.byMem, p.byDisk)
 	}
 
-	return placements, nil
+	return placements, filteredOptOutNodes, nil
 }
 
 // Calculate the maxmimum number of VMs that can be deployed to a single node,
@@ -458,4 +563,178 @@ func capacityForNode(n types.Node, cfg deployConfig) (int, int64, int64, int64) 
 		return 0, byCPU, byMem, byDisk
 	}
 	return int(minCap), byCPU, byMem, byDisk
+}
+
+func newNodeDeployabilityChecker(tf deployer.TFPluginClient) (nodeDeployabilityChecker, error) {
+	storageGetter, ok := tf.SubstrateConn.(substrateStorageGetter)
+	if !ok {
+		return nil, fmt.Errorf("substrate connection does not expose storage access")
+	}
+
+	accountID, err := substrate.FromAddress(tf.Identity.Address())
+	if err != nil {
+		return nil, fmt.Errorf("decode deployer account address: %w", err)
+	}
+
+	checker := &tfchainNodeDeployabilityChecker{
+		storageGetter: storageGetter,
+		accountID:     accountID,
+	}
+
+	checker.isAllowedTwinAdmin, err = checker.fetchAllowedTwinAdmin()
+	if err != nil {
+		return nil, fmt.Errorf("check allowed twin admin status: %w", err)
+	}
+	// This reports whether TFChain lists the deployer wallet as an allowed twin
+	// admin. Only those wallets may create contracts on nodes that farmers have
+	// opted out of normal V3 billing for migration.
+	if checker.isAllowedTwinAdmin {
+		log.Printf("deployer wallet is an allowed twin admin; V3 billing opted-out ThreeFold nodes are allowed")
+	} else {
+		log.Printf("deployer wallet is not an allowed twin admin; V3 billing opted-out ThreeFold nodes will be skipped")
+	}
+
+	return checker, nil
+}
+
+func (c *tfchainNodeDeployabilityChecker) isOptedOutNodeAllowed(nodeID uint32) (bool, error) {
+	optedOut, err := c.nodeHasV3BillingOptOut(nodeID)
+	if err != nil {
+		return false, err
+	}
+	return !optedOut || c.isAllowedTwinAdmin, nil
+}
+
+func (c *tfchainNodeDeployabilityChecker) nodeHasV3BillingOptOut(nodeID uint32) (bool, error) {
+	cl, meta, err := c.storageGetter.GetClient()
+	if err != nil {
+		return false, err
+	}
+
+	nodeIDBytes, err := substrate.Encode(nodeID)
+	if err != nil {
+		return false, fmt.Errorf("encode node id: %w", err)
+	}
+	key, err := gsrpcTypes.CreateStorageKey(meta, "TfgridModule", "NodeV3BillingOptOut", nodeIDBytes)
+	if err != nil {
+		return false, fmt.Errorf("create NodeV3BillingOptOut storage key: %w", err)
+	}
+
+	var optedOutAt gsrpcTypes.U64
+	ok, err := cl.RPC.State.GetStorageLatest(key, &optedOutAt)
+	if err != nil {
+		return false, fmt.Errorf("query NodeV3BillingOptOut storage: %w", err)
+	}
+	return ok, nil
+}
+
+func (c *tfchainNodeDeployabilityChecker) fetchAllowedTwinAdmin() (bool, error) {
+	cl, meta, err := c.storageGetter.GetClient()
+	if err != nil {
+		return false, err
+	}
+
+	key, err := gsrpcTypes.CreateStorageKey(meta, "TfgridModule", "AllowedTwinAdmins")
+	if err != nil {
+		return false, fmt.Errorf("create AllowedTwinAdmins storage key: %w", err)
+	}
+
+	var admins []substrate.AccountID
+	ok, err := cl.RPC.State.GetStorageLatest(key, &admins)
+	if err != nil {
+		return false, fmt.Errorf("query AllowedTwinAdmins storage: %w", err)
+	}
+	if !ok {
+		return false, nil
+	}
+
+	for _, admin := range admins {
+		if admin == c.accountID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func printAccountSnapshot(cfg accountSnapshotConfig) error {
+	pluginOpts := []deployer.PluginOpt{deployer.WithNetwork(cfg.network)}
+	tf, err := deployer.NewTFPluginClient(cfg.mnemonic, pluginOpts...)
+	if err != nil {
+		return fmt.Errorf("create tf plugin client: %w", err)
+	}
+	defer tf.Close()
+
+	balance, err := tf.SubstrateConn.GetBalance(tf.Identity)
+	if err != nil {
+		return fmt.Errorf("get account balance: %w", err)
+	}
+
+	snapshot := snapshotFromBalance(tf.Identity.Address(), balance)
+	switch cfg.format {
+	case githubOutputFormat:
+		fmt.Printf("address=%s\n", snapshot.address)
+		fmt.Printf("free_tft=%s\n", snapshot.freeTFT)
+		fmt.Printf("reserved_tft=%s\n", snapshot.reservedTFT)
+		fmt.Printf("misc_frozen_tft=%s\n", snapshot.miscFrozenTFT)
+		fmt.Printf("free_frozen_tft=%s\n", snapshot.freeFrozenTFT)
+		fmt.Printf("spendable_tft=%s\n", snapshot.spendableTFT)
+	case textOutputFormat:
+		fmt.Printf("address: %s\n", snapshot.address)
+		fmt.Printf("free_tft: %s\n", snapshot.freeTFT)
+		fmt.Printf("reserved_tft: %s\n", snapshot.reservedTFT)
+		fmt.Printf("misc_frozen_tft: %s\n", snapshot.miscFrozenTFT)
+		fmt.Printf("free_frozen_tft: %s\n", snapshot.freeFrozenTFT)
+		fmt.Printf("spendable_tft: %s\n", snapshot.spendableTFT)
+	default:
+		return fmt.Errorf("unsupported output format %q", cfg.format)
+	}
+
+	return nil
+}
+
+func snapshotFromBalance(address string, balance substrate.Balance) accountSnapshot {
+	return accountSnapshot{
+		address:       address,
+		freeTFT:       formatTFT(balance.Free),
+		reservedTFT:   formatTFT(balance.Reserved),
+		miscFrozenTFT: formatTFT(balance.MiscFrozen),
+		freeFrozenTFT: formatTFT(balance.FreeFrozen),
+		spendableTFT:  formatMicroTFT(spendableMicroTFT(balance)),
+	}
+}
+
+func spendableMicroTFT(balance substrate.Balance) *big.Int {
+	free := u128Int(balance.Free)
+	frozen := u128Int(balance.MiscFrozen)
+	if freeFrozen := u128Int(balance.FreeFrozen); freeFrozen.Cmp(frozen) > 0 {
+		frozen = freeFrozen
+	}
+
+	spendable := new(big.Int).Sub(free, frozen)
+	if spendable.Sign() < 0 {
+		return big.NewInt(0)
+	}
+	return spendable
+}
+
+func formatTFT(amount gsrpcTypes.U128) string {
+	return formatMicroTFT(u128Int(amount))
+}
+
+func formatMicroTFT(amount *big.Int) string {
+	unitsPerTFT := big.NewInt(substrate.TFT)
+	whole, fractional := new(big.Int), new(big.Int)
+	whole.QuoRem(amount, unitsPerTFT, fractional)
+	fractionalText := fractional.String()
+	if len(fractionalText) < 7 {
+		fractionalText = strings.Repeat("0", 7-len(fractionalText)) + fractionalText
+	}
+	return fmt.Sprintf("%s.%s", whole.String(), fractionalText)
+}
+
+func u128Int(amount gsrpcTypes.U128) *big.Int {
+	if amount.Int == nil {
+		return big.NewInt(0)
+	}
+	return new(big.Int).Set(amount.Int)
 }
