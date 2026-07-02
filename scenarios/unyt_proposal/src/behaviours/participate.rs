@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
+use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
 use wind_tunnel_unyt_scenario::behaviour::common as shared;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
@@ -21,9 +22,10 @@ use zfuel::fuel::ZFuel;
 /// proposer and responder roles, one side only ever spends and runs out of credit.
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+    arc_type: ArcType,
 ) -> HookResult {
     // step 1 - wait for network init
-    if !common::is_network_initialized(ctx)? {
+    if !common::is_network_initialized(ctx, &arc_type)? {
         // return and wait for next iteration
         return Ok(());
     }
@@ -33,11 +35,23 @@ pub fn agent_behaviour(
         // Refresh the action list like the UI does.
         let actionable_transactions = shared::ui_action_list_refresh(ctx);
 
+        // Log what this agent actually received, tagged with arc type. Zero-arc agents
+        // that never see any actionables here can publish proposals but never observe
+        // responses, so this is the first place to look when an arc type stays idle.
+        log::info!(
+            "[{arc_type}-arc] Agent {} | action list: {} proposals, {} commitments, {} accepts, {} rejects",
+            ctx.get().cell_id().agent_pubkey(),
+            actionable_transactions.proposal_actionable.len(),
+            actionable_transactions.commitment_actionable.len(),
+            actionable_transactions.accept_actionable.len(),
+            actionable_transactions.reject_actionable.len(),
+        );
+
         // measure sync lag for all newly seen transactions
-        common::measure_sync_lag(ctx, &actionable_transactions);
+        common::measure_sync_lag(ctx, &actionable_transactions, &arc_type);
 
         // emit proposal_round_trip_time for proposals that reached a terminal state
-        measure_rejected_round_trip_time(ctx, &actionable_transactions);
+        measure_rejected_round_trip_time(ctx, &actionable_transactions, &arc_type);
 
         // for each reject actionable, call `create_reclaim_balance`
         common::create_reclaim_balance(ctx, actionable_transactions.reject_actionable);
@@ -45,9 +59,18 @@ pub fn agent_behaviour(
         common::create_receipt_for_accept(ctx, actionable_transactions.accept_actionable);
         // handle incoming proposals (and counter-proposals)
         let weights = ProposalWeights::get_weights_from_env()?;
-        common::handle_proposals(ctx, actionable_transactions.proposal_actionable, &weights)?;
+        common::handle_proposals(
+            ctx,
+            actionable_transactions.proposal_actionable,
+            &weights,
+            &arc_type,
+        )?;
         // handle incoming commitments
-        common::handle_commitments(ctx, actionable_transactions.commitment_actionable)?;
+        common::handle_commitments(
+            ctx,
+            actionable_transactions.commitment_actionable,
+            &arc_type,
+        )?;
     }
 
     // step 3 - check ledger and calculate spendable amount
@@ -58,10 +81,10 @@ pub fn agent_behaviour(
 
     // step 4 - create proposals
     if spendable_amount > ZFuel::zero() {
-        create_proposals(ctx, spendable_amount)?;
+        create_proposals(ctx, spendable_amount, &arc_type)?;
     } else {
         log::warn!(
-            "No spendable amount for agent {}",
+            "[{arc_type}-arc] No spendable amount for agent {}",
             ctx.get().cell_id().agent_pubkey(),
         );
     }
@@ -88,6 +111,7 @@ pub fn agent_behaviour(
 fn measure_rejected_round_trip_time(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     actionable: &Actionable,
+    arc_type: &ArcType,
 ) {
     let reporter = ctx.runner_context().reporter();
     let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
@@ -105,6 +129,7 @@ fn measure_rejected_round_trip_time(
                 ReportMetric::new("proposal_round_trip_time")
                     .with_tag("agent", agent_key.clone())
                     .with_tag("outcome", "rejected")
+                    .with_tag("arc", arc_type.as_tag())
                     .with_field("value", created_at.elapsed().as_secs_f64()),
             );
             resolved.push(proposal_hash);
@@ -119,6 +144,7 @@ fn measure_rejected_round_trip_time(
 fn create_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     spendable_amount: ZFuel,
+    arc_type: &ArcType,
 ) -> anyhow::Result<()> {
     // Spend only a small slice of the spendable amount per round. A single proposal must
     // be small enough that several can be in flight at once without any one agent's spend
@@ -133,7 +159,10 @@ fn create_proposals(
     ctx.collect_agents()?;
     let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
     if participating_agents.is_empty() {
-        log::warn!("No participating agents to propose to");
+        log::warn!(
+            "[{arc_type}-arc] Agent {} | no participating agents to propose to",
+            ctx.get().cell_id().agent_pubkey(),
+        );
         return Ok(());
     }
 
@@ -151,7 +180,7 @@ fn create_proposals(
     ]));
 
     log::info!(
-        "Agent {} | creating proposals to {} agents",
+        "[{arc_type}-arc] Agent {} | creating proposals to {} agents",
         ctx.get().cell_id().agent_pubkey(),
         participating_agents.len()
     );
@@ -164,14 +193,14 @@ fn create_proposals(
             note: None,
         }) {
             Ok(proposal_hash) => {
-                log::info!("Created proposal {proposal_hash} for {peer}");
+                log::info!("[{arc_type}-arc] Created proposal {proposal_hash} for {peer}");
                 ctx.get_mut()
                     .scenario_values
                     .pending_proposals
                     .insert(proposal_hash, std::time::Instant::now());
             }
             Err(err) => {
-                log::warn!("Failed to create proposal for {peer}: {err}");
+                log::warn!("[{arc_type}-arc] Failed to create proposal for {peer}: {err}");
             }
         }
     }
