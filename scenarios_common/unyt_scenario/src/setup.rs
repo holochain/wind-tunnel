@@ -41,6 +41,7 @@ pub fn create_role_settings(
                 network_seed: None,
                 properties: Some(YamlProperties::new(dna_properties)),
             }),
+            init_properties: None,
         },
     )]);
 
@@ -198,6 +199,7 @@ mod tests {
         if let RoleSettings::Provisioned {
             membrane_proof,
             modifiers,
+            ..
         } = alliance
         {
             assert!(membrane_proof.is_none(), "membrane_proof should be None");
