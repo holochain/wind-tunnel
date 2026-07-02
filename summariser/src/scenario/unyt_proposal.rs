@@ -80,6 +80,33 @@ pub(crate) struct UnytProposalSummary {
     /// This is called every iteration, so high latency here directly impacts loop throughput.
     get_actionable_transactions_zome_call: PartitionedTimingStats,
 
+    /// Duration of the UI action list refresh per behaviour iteration (seconds).
+    ui_action_list_refresh_duration_s: StandardTimingsStats,
+    /// Total UI action list refresh calls that failed across all agents and iterations.
+    ui_action_list_refresh_failed_calls: AggregatedSingleValue,
+    /// Duration of refreshing a single transaction detail item per behaviour iteration (seconds).
+    ui_transaction_detail_item_refresh_duration_s: StandardTimingsStats,
+    /// Total primary transaction fetches made during per-item detail refresh across all agents and iterations.
+    ui_transaction_detail_item_refresh_primary_transaction_total_calls: AggregatedSingleValue,
+    /// Total primary transaction fetches that failed during per-item detail refresh across all agents and iterations.
+    ui_transaction_detail_item_refresh_primary_transaction_failed_calls: AggregatedSingleValue,
+    /// Total related transaction fetches made during per-item detail refresh across all agents and iterations.
+    ui_transaction_detail_item_refresh_related_transaction_total_calls: AggregatedSingleValue,
+    /// Total related transaction fetches that failed during per-item detail refresh across all agents and iterations.
+    ui_transaction_detail_item_refresh_related_transaction_failed_calls: AggregatedSingleValue,
+    /// Duration of refreshing all watched transaction details per behaviour iteration (seconds).
+    ui_transaction_detail_refresh_duration_s: StandardTimingsStats,
+    /// Total number of transactions processed during the detail refresh across all agents and iterations.
+    ui_transaction_detail_refresh_transactions_processed: AggregatedSingleValue,
+    /// Total primary transaction fetches made during the full detail refresh across all agents and iterations.
+    ui_transaction_detail_refresh_primary_transaction_total_calls: AggregatedSingleValue,
+    /// Total primary transaction fetches that failed during the full detail refresh across all agents and iterations.
+    ui_transaction_detail_refresh_primary_transaction_failed_calls: AggregatedSingleValue,
+    /// Total related transaction fetches made during the full detail refresh across all agents and iterations.
+    ui_transaction_detail_refresh_related_transaction_total_calls: AggregatedSingleValue,
+    /// Total related transaction fetches that failed during the full detail refresh across all agents and iterations.
+    ui_transaction_detail_refresh_related_transaction_failed_calls: AggregatedSingleValue,
+
     /// Number of zome call errors observed during the run
     error_count: usize,
 
@@ -215,6 +242,129 @@ pub(crate) async fn summarize_unyt_proposal(
     )
     .await;
 
+    // --- UI refresh metrics ---
+
+    let ui_action_list_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_action_list_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_action_list_refresh_duration_s data")?;
+
+    let ui_action_list_refresh_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_action_list_refresh_failed_calls",
+        &[],
+    )
+    .await
+    .context("Load ui_action_list_refresh_failed_calls data")?;
+
+    let ui_transaction_detail_item_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_item_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_item_refresh_duration_s data")?;
+
+    let ui_transaction_detail_item_refresh_primary_transaction_total_calls =
+        query::query_custom_data(
+            client.clone(),
+            &summary,
+            "wt.custom.ui_transaction_detail_item_refresh_primary_transaction_total_calls",
+            &[],
+        )
+        .await
+        .context("Load ui_transaction_detail_item_refresh_primary_transaction_total_calls data")?;
+
+    let ui_transaction_detail_item_refresh_primary_transaction_failed_calls =
+        query::query_custom_data(
+            client.clone(),
+            &summary,
+            "wt.custom.ui_transaction_detail_item_refresh_primary_transaction_failed_calls",
+            &[],
+        )
+        .await
+        .context("Load ui_transaction_detail_item_refresh_primary_transaction_failed_calls data")?;
+
+    let ui_transaction_detail_item_refresh_related_transaction_total_calls =
+        query::query_custom_data(
+            client.clone(),
+            &summary,
+            "wt.custom.ui_transaction_detail_item_refresh_related_transaction_total_calls",
+            &[],
+        )
+        .await
+        .context("Load ui_transaction_detail_item_refresh_related_transaction_total_calls data")?;
+
+    let ui_transaction_detail_item_refresh_related_transaction_failed_calls =
+        query::query_custom_data(
+            client.clone(),
+            &summary,
+            "wt.custom.ui_transaction_detail_item_refresh_related_transaction_failed_calls",
+            &[],
+        )
+        .await
+        .context("Load ui_transaction_detail_item_refresh_related_transaction_failed_calls data")?;
+
+    let ui_transaction_detail_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_duration_s data")?;
+
+    let ui_transaction_detail_refresh_transactions_processed = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_transactions_processed",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_transactions_processed data")?;
+
+    let ui_transaction_detail_refresh_primary_transaction_total_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_primary_transaction_total_calls",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_primary_transaction_total_calls data")?;
+
+    let ui_transaction_detail_refresh_primary_transaction_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_primary_transaction_failed_calls",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_primary_transaction_failed_calls data")?;
+
+    let ui_transaction_detail_refresh_related_transaction_total_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_related_transaction_total_calls",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_related_transaction_total_calls data")?;
+
+    let ui_transaction_detail_refresh_related_transaction_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_related_transaction_failed_calls",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_related_transaction_failed_calls data")?;
+
     // --- Compute round-trip stats by outcome ---
 
     let (round_trip_accepted, round_trip_rejected) = match round_trip_data {
@@ -299,6 +449,99 @@ pub(crate) async fn summarize_unyt_proposal(
         create_receipt_for_accept_zome_call: optional_zome_call_stats("create_receipt_for_accept")?,
         create_reclaim_balance_zome_call: optional_zome_call_stats("create_reclaim_balance")?,
         get_actionable_transactions_zome_call: zome_call_stats("get_actionable_transactions")?,
+        ui_action_list_refresh_duration_s: standard_timing_stats(
+            ui_action_list_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_action_list_refresh_duration_s")?,
+        ui_action_list_refresh_failed_calls: aggregated_single_value(
+            ui_action_list_refresh_failed_calls,
+            "value",
+        )
+        .context("Aggregated single value for ui_action_list_refresh_failed_calls")?,
+        ui_transaction_detail_item_refresh_duration_s: standard_timing_stats(
+            ui_transaction_detail_item_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_transaction_detail_item_refresh_duration_s")?,
+        ui_transaction_detail_item_refresh_primary_transaction_total_calls:
+            aggregated_single_value(
+                ui_transaction_detail_item_refresh_primary_transaction_total_calls,
+                "value",
+            )
+            .context(
+                "Aggregated single value for ui_transaction_detail_item_refresh_primary_transaction_total_calls",
+            )?,
+        ui_transaction_detail_item_refresh_primary_transaction_failed_calls:
+            aggregated_single_value(
+                ui_transaction_detail_item_refresh_primary_transaction_failed_calls,
+                "value",
+            )
+            .context(
+                "Aggregated single value for ui_transaction_detail_item_refresh_primary_transaction_failed_calls",
+            )?,
+        ui_transaction_detail_item_refresh_related_transaction_total_calls:
+            aggregated_single_value(
+                ui_transaction_detail_item_refresh_related_transaction_total_calls,
+                "value",
+            )
+            .context(
+                "Aggregated single value for ui_transaction_detail_item_refresh_related_transaction_total_calls",
+            )?,
+        ui_transaction_detail_item_refresh_related_transaction_failed_calls:
+            aggregated_single_value(
+                ui_transaction_detail_item_refresh_related_transaction_failed_calls,
+                "value",
+            )
+            .context(
+                "Aggregated single value for ui_transaction_detail_item_refresh_related_transaction_failed_calls",
+            )?,
+        ui_transaction_detail_refresh_duration_s: standard_timing_stats(
+            ui_transaction_detail_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_transaction_detail_refresh_duration_s")?,
+        ui_transaction_detail_refresh_transactions_processed: aggregated_single_value(
+            ui_transaction_detail_refresh_transactions_processed,
+            "value",
+        )
+        .context(
+            "Aggregated single value for ui_transaction_detail_refresh_transactions_processed",
+        )?,
+        ui_transaction_detail_refresh_primary_transaction_total_calls: aggregated_single_value(
+            ui_transaction_detail_refresh_primary_transaction_total_calls,
+            "value",
+        )
+        .context(
+            "Aggregated single value for ui_transaction_detail_refresh_primary_transaction_total_calls",
+        )?,
+        ui_transaction_detail_refresh_primary_transaction_failed_calls: aggregated_single_value(
+            ui_transaction_detail_refresh_primary_transaction_failed_calls,
+            "value",
+        )
+        .context(
+            "Aggregated single value for ui_transaction_detail_refresh_primary_transaction_failed_calls",
+        )?,
+        ui_transaction_detail_refresh_related_transaction_total_calls: aggregated_single_value(
+            ui_transaction_detail_refresh_related_transaction_total_calls,
+            "value",
+        )
+        .context(
+            "Aggregated single value for ui_transaction_detail_refresh_related_transaction_total_calls",
+        )?,
+        ui_transaction_detail_refresh_related_transaction_failed_calls: aggregated_single_value(
+            ui_transaction_detail_refresh_related_transaction_failed_calls,
+            "value",
+        )
+        .context(
+            "Aggregated single value for ui_transaction_detail_refresh_related_transaction_failed_calls",
+        )?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         completed_transaction_accepts: optional_aggregated_single_value(
             completed_transaction_accepts,
