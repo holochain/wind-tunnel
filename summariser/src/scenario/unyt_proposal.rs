@@ -3,8 +3,10 @@ use crate::frame::LoadError;
 use crate::model::{AggregatedSingleValue, PartitionedTimingStats, StandardTimingsStats};
 use crate::query;
 use anyhow::Context;
+use polars::frame::DataFrame;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use wind_tunnel_summary_model::RunSummary;
 
 /// Summary of a `unyt_proposal` scenario run.
@@ -15,39 +17,45 @@ use wind_tunnel_summary_model::RunSummary;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct UnytProposalSummary {
     /// Time (seconds since session start) at which each agent first detects network
-    /// initialization. Higher values indicate slower global-definition propagation.
-    global_definition_propagation_time: StandardTimingsStats,
+    /// initialization, keyed by arc type (e.g. "full", "zero"). Higher values indicate
+    /// slower global-definition propagation. Comparing arc types shows whether zero-arc
+    /// agents take longer to see the network initialized.
+    global_definition_propagation_time: BTreeMap<String, StandardTimingsStats>,
 
-    /// Duration of proposal round trips that ended in acceptance, per agent (seconds).
-    /// Measures time from initial proposal creation to final acceptance/receipt.
+    /// Duration of proposal round trips that ended in acceptance, per agent (seconds),
+    /// keyed by arc type (e.g. "full", "zero"). Measures time from initial proposal
+    /// creation to final acceptance/receipt.
     /// `None` when no proposals completed acceptance during the run.
-    proposal_round_trip_accepted: Option<PartitionedTimingStats>,
+    proposal_round_trip_accepted: Option<BTreeMap<String, PartitionedTimingStats>>,
 
-    /// Duration of proposal round trips that ended in rejection, per agent (seconds).
-    /// Measures time from initial proposal creation to rejection/reclaim.
+    /// Duration of proposal round trips that ended in rejection, per agent (seconds),
+    /// keyed by arc type (e.g. "full", "zero"). Measures time from initial proposal
+    /// creation to rejection/reclaim.
     /// `None` when no proposals were rejected during the run.
-    proposal_round_trip_rejected: Option<PartitionedTimingStats>,
+    proposal_round_trip_rejected: Option<BTreeMap<String, PartitionedTimingStats>>,
 
-    /// Distribution of counter-proposal rounds before a proposal reaches commitment.
-    /// Lower values indicate faster negotiation convergence. A value of 0 means the
-    /// first proposal was committed to directly without counter-proposals.
-    negotiation_rounds: StandardTimingsStats,
+    /// Distribution of counter-proposal rounds before a proposal reaches commitment,
+    /// keyed by arc type (e.g. "full", "zero"). Lower values indicate faster negotiation
+    /// convergence. A value of 0 means the first proposal was committed to directly
+    /// without counter-proposals.
+    negotiation_rounds: BTreeMap<String, StandardTimingsStats>,
 
     /// Delay between transaction publish and first observation for proposal-type
-    /// transactions (seconds). Indicates DHT propagation speed for new proposals.
-    sync_lag_proposal: Option<PartitionedTimingStats>,
+    /// transactions (seconds), keyed by arc type (e.g. "full", "zero"). Indicates DHT
+    /// propagation speed for new proposals; zero-arc agents may see higher lag.
+    sync_lag_proposal: Option<BTreeMap<String, PartitionedTimingStats>>,
 
     /// Delay between transaction publish and first observation for commitment-type
-    /// transactions (seconds).
-    sync_lag_commitment: Option<PartitionedTimingStats>,
+    /// transactions (seconds), keyed by arc type (e.g. "full", "zero").
+    sync_lag_commitment: Option<BTreeMap<String, PartitionedTimingStats>>,
 
     /// Delay between transaction publish and first observation for accept-type
-    /// transactions (seconds).
-    sync_lag_accept: Option<PartitionedTimingStats>,
+    /// transactions (seconds), keyed by arc type (e.g. "full", "zero").
+    sync_lag_accept: Option<BTreeMap<String, PartitionedTimingStats>>,
 
     /// Delay between transaction publish and first observation for reject-type
-    /// transactions (seconds).
-    sync_lag_reject: Option<PartitionedTimingStats>,
+    /// transactions (seconds), keyed by arc type (e.g. "full", "zero").
+    sync_lag_reject: Option<BTreeMap<String, PartitionedTimingStats>>,
 
     /// Duration of `create_proposal` zome calls per agent (seconds)
     create_proposal_zome_call: PartitionedTimingStats,
@@ -148,7 +156,7 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.global_definition_propagation_time",
-        &["agent"],
+        &["agent", "arc"],
     )
     .await
     .context("Load global_definition_propagation_time")?;
@@ -157,7 +165,7 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.proposal_round_trip_time",
-        &["agent", "outcome"],
+        &["agent", "outcome", "arc"],
     )
     .await;
 
@@ -165,7 +173,7 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.negotiation_rounds",
-        &["agent"],
+        &["agent", "arc"],
     )
     .await
     .context("Load negotiation_rounds")?;
@@ -174,7 +182,7 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.sync_lag",
-        &["agent", "tx_type"],
+        &["agent", "tx_type", "arc"],
     )
     .await;
 
@@ -418,24 +426,19 @@ pub(crate) async fn summarize_unyt_proposal(
         };
 
     Ok(UnytProposalSummary {
-        global_definition_propagation_time: standard_timing_stats(
-            propagation_time,
-            "value",
-            "10s",
-            None,
-        )
-        .context("Stats for global_definition_propagation_time")?,
+        global_definition_propagation_time: standard_stats_by_arc(propagation_time)
+            .context("Stats for global_definition_propagation_time")?,
         proposal_round_trip_accepted: round_trip_accepted
-            .filter(|f| f.height() > 0)
-            .map(|f| partitioned_timing_stats(f, "value", "10s", &["agent"]))
+            .map(|f| partitioned_stats_by_arc(&f))
             .transpose()
-            .context("Round-trip timing (accepted)")?,
+            .context("Round-trip timing (accepted)")?
+            .flatten(),
         proposal_round_trip_rejected: round_trip_rejected
-            .filter(|f| f.height() > 0)
-            .map(|f| partitioned_timing_stats(f, "value", "10s", &["agent"]))
+            .map(|f| partitioned_stats_by_arc(&f))
             .transpose()
-            .context("Round-trip timing (rejected)")?,
-        negotiation_rounds: standard_timing_stats(negotiation_data, "value", "10s", None)
+            .context("Round-trip timing (rejected)")?
+            .flatten(),
+        negotiation_rounds: standard_stats_by_arc(negotiation_data)
             .context("Stats for negotiation_rounds")?,
         sync_lag_proposal,
         sync_lag_commitment,
@@ -574,14 +577,15 @@ pub(crate) async fn summarize_unyt_proposal(
     })
 }
 
-/// Filters sync lag data by `tx_type` and computes partitioned timing stats.
+/// Filters sync lag data by `tx_type` and computes partitioned timing stats per arc type.
 ///
 /// Returns `None` when the sync lag query itself failed (no data) or when no rows
-/// match the given `tx_type`.
+/// match the given `tx_type`. Otherwise returns a map keyed by arc tag (e.g. "full",
+/// "zero").
 fn filter_sync_lag(
-    sync_lag_result: &anyhow::Result<polars::frame::DataFrame>,
+    sync_lag_result: &anyhow::Result<DataFrame>,
     tx_type: &str,
-) -> Option<PartitionedTimingStats> {
+) -> Option<BTreeMap<String, PartitionedTimingStats>> {
     let frame = match sync_lag_result {
         Ok(f) => f,
         Err(_) => return None,
@@ -592,10 +596,70 @@ fn filter_sync_lag(
         .filter(col("tx_type").eq(lit(tx_type)))
         .collect()
         .ok()?;
-    if filtered.height() == 0 {
-        return None;
+    partitioned_stats_by_arc(&filtered).ok().flatten()
+}
+
+/// Distinct values of the `arc` tag column, sorted for stable output ordering.
+fn arc_values(frame: &DataFrame) -> anyhow::Result<Vec<String>> {
+    let mut values: Vec<String> = frame
+        .column("arc")?
+        .str()?
+        .into_iter()
+        .flatten()
+        .map(|v| v.to_string())
+        .collect();
+    values.sort();
+    values.dedup();
+    Ok(values)
+}
+
+/// Splits `frame` by the `arc` tag and computes partitioned (per-agent) timing stats for
+/// each arc type present. Returns a map keyed by arc tag, or `None` when the frame is
+/// empty (metric never recorded).
+fn partitioned_stats_by_arc(
+    frame: &DataFrame,
+) -> anyhow::Result<Option<BTreeMap<String, PartitionedTimingStats>>> {
+    if frame.height() == 0 {
+        return Ok(None);
     }
-    partitioned_timing_stats(filtered, "value", "10s", &["agent"]).ok()
+    let mut by_arc = BTreeMap::new();
+    for arc in arc_values(frame)? {
+        let filtered = frame
+            .clone()
+            .lazy()
+            .filter(col("arc").eq(lit(arc.clone())))
+            .collect()?;
+        if filtered.height() == 0 {
+            continue;
+        }
+        by_arc.insert(
+            arc.clone(),
+            partitioned_timing_stats(filtered, "value", "10s", &["agent"])
+                .context(format!("Partitioned timing stats for arc {arc}"))?,
+        );
+    }
+    Ok((!by_arc.is_empty()).then_some(by_arc))
+}
+
+/// Splits `frame` by the `arc` tag and computes standard timing stats for each arc type
+/// present. Returns a map keyed by arc tag (empty when the metric was never recorded).
+fn standard_stats_by_arc(
+    frame: DataFrame,
+) -> anyhow::Result<BTreeMap<String, StandardTimingsStats>> {
+    let mut by_arc = BTreeMap::new();
+    for arc in arc_values(&frame)? {
+        let filtered = frame
+            .clone()
+            .lazy()
+            .filter(col("arc").eq(lit(arc.clone())))
+            .collect()?;
+        by_arc.insert(
+            arc.clone(),
+            standard_timing_stats(filtered, "value", "10s", None)
+                .context(format!("Standard timing stats for arc {arc}"))?,
+        );
+    }
+    Ok(by_arc)
 }
 
 /// Returns an [`AggregatedSingleValue`] from a query result, defaulting to zero when the

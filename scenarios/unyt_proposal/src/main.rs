@@ -3,13 +3,18 @@ mod values;
 
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
+use wind_tunnel_unyt_scenario::ArcType;
 
 use self::values::ScenarioValues;
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &[])
+    wind_tunnel_unyt_scenario::setup::common_agent_setup(
+        ctx,
+        happ_path!("unyt"),
+        &["zero_participate"],
+    )
 }
 
 fn main() -> WindTunnelResult<()> {
@@ -23,10 +28,12 @@ fn main() -> WindTunnelResult<()> {
         "initiate",
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
     )
-    .use_named_agent_behaviour(
-        "participate",
-        self::behaviours::participate::agent_behaviour,
-    )
+    .use_named_agent_behaviour("participate", |ctx| {
+        self::behaviours::participate::agent_behaviour(ctx, ArcType::Full)
+    })
+    .use_named_agent_behaviour("zero_participate", |ctx| {
+        self::behaviours::participate::agent_behaviour(ctx, ArcType::Zero)
+    })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
     .add_capture_env("UNYT_PROPOSAL_WEIGHTS")
