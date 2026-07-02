@@ -157,14 +157,19 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     // Every agent creates a code template to flag that they have joined the network
     ctx.unyt_create_flag_template()?;
 
+    // Start the propagation clock at the same point for every agent right after
+    // joining the network, so `global_definition_propagation_time` is comparable across
+    // arc types. This must happen before the wait below, otherwise 0-arc agents
+    // would start their clock later and appear to observe the network almost instantly.
+    ctx.get_mut()
+        .scenario_values
+        .set_session_start_time(tokio::time::Instant::now());
+
     // Wait for full-arc peer if this agent is 0-arc
     if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
         try_wait_until_full_arc_peer_discovered(ctx)?;
     }
 
-    ctx.get_mut()
-        .scenario_values
-        .set_session_start_time(tokio::time::Instant::now());
     Ok(())
 }
 

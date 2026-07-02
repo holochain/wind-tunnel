@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
+use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
@@ -97,6 +98,7 @@ pub fn handle_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     proposals: Vec<Transaction>,
     weights: &ProposalWeights,
+    arc_type: &ArcType,
 ) -> anyhow::Result<()> {
     let max_rounds: usize = std::env::var("UNYT_MAX_NEGOTIATION_ROUNDS")
         .unwrap_or_else(|_| "5".to_string())
@@ -146,7 +148,7 @@ pub fn handle_proposals(
             Ok(commitment_hash) => {
                 available = get_spendable_amount(ctx)?.unwrap_or_else(ZFuel::zero);
                 log::info!(
-                    "Committed to proposal {} after {} negotiation round(s)",
+                    "[{arc_type}-arc] Committed to proposal {} after {} negotiation round(s)",
                     tx.id,
                     tx.history.len()
                 );
@@ -154,6 +156,7 @@ pub fn handle_proposals(
                 reporter.add_custom(
                     ReportMetric::new("negotiation_rounds")
                         .with_tag("agent", agent_key.clone())
+                        .with_tag("arc", arc_type.as_tag())
                         .with_field("value", tx.history.len() as u64),
                 );
                 ctx.get_mut()
@@ -173,7 +176,7 @@ pub fn handle_proposals(
             proposal: tx.id.clone(),
             note: None,
         }) {
-            Ok(_) => log::info!("Rejected proposal {}", tx.id),
+            Ok(_) => log::info!("[{arc_type}-arc] Rejected proposal {}", tx.id),
             Err(err) => log::warn!("Failed to reject proposal {}: {err}", tx.id),
         }
     }
@@ -191,6 +194,7 @@ pub fn handle_proposals(
 pub fn handle_commitments(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     commitments: Vec<Transaction>,
+    arc_type: &ArcType,
 ) -> anyhow::Result<()> {
     let accept_pct: u8 = std::env::var("UNYT_COMMITMENT_ACCEPT_PCT")
         .unwrap_or_else(|_| "80".to_string())
@@ -221,7 +225,7 @@ pub fn handle_commitments(
             note: None,
         }) {
             Ok(accept_hash) => {
-                log::info!("Accepted commitment {}", tx.id);
+                log::info!("[{arc_type}-arc] Accepted commitment {}", tx.id);
                 // The proposer never sees this through `accept_actionable` (that
                 // is delivered to the committer, who creates the receipt), so we record the
                 // accepted round-trip here instead.
@@ -236,6 +240,7 @@ pub fn handle_commitments(
                         ReportMetric::new("proposal_round_trip_time")
                             .with_tag("agent", agent_key.clone())
                             .with_tag("outcome", "accepted")
+                            .with_tag("arc", arc_type.as_tag())
                             .with_field("value", created_at.elapsed().as_secs_f64()),
                     );
                     accepted_proposals.push(proposal_hash);
@@ -259,7 +264,7 @@ pub fn handle_commitments(
             proposal: tx.id.clone(),
             note: None,
         }) {
-            Ok(_) => log::info!("Rejected commitment {}", tx.id),
+            Ok(_) => log::info!("[{arc_type}-arc] Rejected commitment {}", tx.id),
             Err(err) => log::warn!("Failed to reject commitment {}: {err}", tx.id),
         }
     }
@@ -382,6 +387,7 @@ pub fn poll_watched_transactions(
 pub fn measure_sync_lag(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     actionable: &Actionable,
+    arc_type: &ArcType,
 ) {
     let reporter = ctx.runner_context().reporter();
     let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
@@ -413,6 +419,7 @@ pub fn measure_sync_lag(
                 ReportMetric::new("sync_lag")
                     .with_tag("agent", agent_key.clone())
                     .with_tag("tx_type", tx_type)
+                    .with_tag("arc", arc_type.as_tag())
                     .with_field("value", lag_s),
             );
             ctx.get_mut()
@@ -446,6 +453,7 @@ pub fn poll_history(
 
 pub fn is_network_initialized(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+    arc_type: &ArcType,
 ) -> anyhow::Result<bool> {
     let session_started_at = ctx
         .get()
@@ -463,20 +471,21 @@ pub fn is_network_initialized(
     // check if network is initialized
     if ctx.is_network_initialized() {
         log::info!(
-            "Network initialized for agent {}",
+            "[{arc_type}-arc] Network initialized for agent {}",
             ctx.get().cell_id().agent_pubkey()
         );
         reporter.add_custom(
             ReportMetric::new("global_definition_propagation_time")
                 .with_field("value", session_started_at.elapsed().as_secs())
-                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+                .with_tag("arc", arc_type.as_tag()),
         );
         ctx.get_mut().scenario_values.set_network_initialized(true);
         Ok(true)
     } else {
         // if the network is not initialized do not proceed with further testing without waiting for it to be initialized
         log::info!(
-            "Network not initialized for agent {}, waiting for it to be initialized",
+            "[{arc_type}-arc] Network not initialized for agent {}, waiting for it to be initialized",
             ctx.get().cell_id().agent_pubkey()
         );
         thread::sleep(Duration::from_secs(2));
