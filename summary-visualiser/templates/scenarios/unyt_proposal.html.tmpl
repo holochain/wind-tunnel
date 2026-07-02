@@ -2,9 +2,38 @@
 <p>This scenario tests the performance of the Unyt negotiated transaction flow.
 Agents create proposals, exchange counter-proposals, commit to agreed terms, and
 finalize or reject transactions. There are three roles:
-<b><code>initiate</code></b> (progenitor),
-<b><code>propose</code></b> (proposer agents), and
-<b><code>respond</code></b> (responder agents).</p>
+<b><code>initiate</code></b> (progenitor that bootstraps the network),
+<b><code>participate</code></b> (full-arc agents), and
+<b><code>zero_participate</code></b> (zero-arc agents).
+Negotiation metrics are broken down by arc type to compare full-arc and zero-arc behaviour.</p>
+{{ end }}
+
+{{/*
+Render a per-arc map of `StandardTimingsStats`, keyed by arc (e.g. "full", "zero").
+Field `data` is the map; `unit` is the value unit passed through to `timing_and_trend`.
+Each arc becomes its own labelled line.
+*/}}
+{{ define "unyt_proposal_timings_by_arc" }}
+    {{ $unit := .unit }}
+    {{ range $arc, $stats := .data }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (printf "%s arc" $arc)
+            "content" (tmpl.Exec "timing_and_trend" (merge $stats (dict "unit" $unit)))
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{/*
+Render a per-arc map of `PartitionedTimingStats`, keyed by arc (e.g. "full", "zero").
+Each arc becomes its own labelled line.
+*/}}
+{{ define "unyt_proposal_partitioned_by_arc" }}
+    {{ range $arc, $stats := . }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" (printf "%s arc" $arc)
+            "content" (tmpl.Exec "timings_overall_and_per_agent" $stats)
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ template "scenario_summary" (dict
@@ -18,61 +47,61 @@ finalize or reject transactions. There are three roles:
         {{ $metrics := . }}
         {{ template "scenario_metric" (dict
             "name" "Global definition propagation time"
-            "description" "Time (seconds since session start) at which each agent first detects network initialization."
-            "content" (tmpl.Exec "timing_and_trend" .global_definition_propagation_time)
+            "description" "Time (seconds since session start) at which each agent first detects network initialization, per arc type."
+            "content" (tmpl.Exec "unyt_proposal_timings_by_arc" (dict "data" .global_definition_propagation_time "unit" "s"))
         ) }}
 
         {{ with .proposal_round_trip_accepted }}
             {{ template "scenario_metric" (dict
                 "name" "Proposal round-trip time (accepted)"
-                "description" "Duration from proposal creation to final acceptance/receipt, per agent."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Duration from proposal creation to final acceptance/receipt, per agent, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
         {{ with .proposal_round_trip_rejected }}
             {{ template "scenario_metric" (dict
                 "name" "Proposal round-trip time (rejected)"
-                "description" "Duration from proposal creation to rejection/reclaim, per agent."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Duration from proposal creation to rejection/reclaim, per agent, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
         {{ template "scenario_metric" (dict
             "name" "Negotiation rounds"
-            "description" "Number of counter-proposal rounds before a proposal reaches commitment. Lower values indicate faster convergence."
-            "content" (tmpl.Exec "timing_and_trend" (merge .negotiation_rounds (dict "unit" "")))
+            "description" "Number of counter-proposal rounds before a proposal reaches commitment, per arc type. Lower values indicate faster convergence."
+            "content" (tmpl.Exec "unyt_proposal_timings_by_arc" (dict "data" .negotiation_rounds "unit" ""))
         ) }}
 
         {{ with .sync_lag_proposal }}
             {{ template "scenario_metric" (dict
                 "name" "Sync lag — proposals"
-                "description" "Delay between proposal publish and first observation by the counterparty."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Delay between proposal publish and first observation by the counterparty, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
         {{ with .sync_lag_commitment }}
             {{ template "scenario_metric" (dict
                 "name" "Sync lag — commitments"
-                "description" "Delay between commitment publish and first observation by the counterparty."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Delay between commitment publish and first observation by the counterparty, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
         {{ with .sync_lag_accept }}
             {{ template "scenario_metric" (dict
                 "name" "Sync lag — accepts"
-                "description" "Delay between accept publish and first observation by the counterparty."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Delay between accept publish and first observation by the counterparty, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
         {{ with .sync_lag_reject }}
             {{ template "scenario_metric" (dict
                 "name" "Sync lag — rejects"
-                "description" "Delay between reject publish and first observation by the counterparty."
-                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+                "description" "Delay between reject publish and first observation by the counterparty, per arc type."
+                "content" (tmpl.Exec "unyt_proposal_partitioned_by_arc" .)
             ) }}
         {{ end }}
 
