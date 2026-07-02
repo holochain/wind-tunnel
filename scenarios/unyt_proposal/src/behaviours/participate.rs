@@ -10,6 +10,7 @@ use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
+use wind_tunnel_unyt_scenario::behaviour::common as shared;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
@@ -29,14 +30,8 @@ pub fn agent_behaviour(
 
     // step 2 - handle incoming transactions
     {
-        let actionable_transactions = match ctx.unyt_get_actionable_transactions() {
-            Ok(txs) => txs,
-            Err(err) => {
-                log::warn!("Failed to get actionable transactions (transient DHT issue): {err}");
-                thread::sleep(Duration::from_secs(1));
-                return Ok(());
-            }
-        };
+        // Refresh the action list like the UI does.
+        let actionable_transactions = shared::ui_action_list_refresh(ctx);
 
         // measure sync lag for all newly seen transactions
         common::measure_sync_lag(ctx, &actionable_transactions);
@@ -71,7 +66,9 @@ pub fn agent_behaviour(
         );
     }
 
-    // step 5 - poll transaction status
+    // step 5 - refresh watched transaction details (like the UI) and poll their status
+    let watched = ctx.get().scenario_values.watched_transactions().clone();
+    shared::ui_transaction_detail_refresh(ctx, &watched);
     common::poll_watched_transactions(ctx);
 
     // step 6 - get history
