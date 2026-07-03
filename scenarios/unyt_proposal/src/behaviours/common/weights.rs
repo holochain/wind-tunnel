@@ -3,6 +3,7 @@ use std::str::FromStr;
 /// Percentage weights to be used on `proposal_actionable`.
 ///
 /// The sum of the weights must sum to `100`.
+#[derive(Debug, Clone, Copy)]
 pub struct ProposalWeights {
     pub accept: u8,
     pub counter: u8,
