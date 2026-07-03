@@ -1,3 +1,4 @@
+mod config;
 mod weights;
 
 use crate::ScenarioValues;
@@ -20,7 +21,7 @@ use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
 
-pub use self::weights::ProposalWeights;
+pub use self::config::ProposalConfig;
 
 /// For each reject actionable, call `unyt_create_reclaim_balance`.
 pub fn create_reclaim_balance(
@@ -59,13 +60,7 @@ pub fn counter_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     transactions: Vec<Transaction>,
 ) -> anyhow::Result<()> {
-    let pct: u8 = std::env::var("UNYT_COUNTER_ADJUSTMENT_PCT")
-        .unwrap_or_else(|_| "10".to_string())
-        .parse()?;
-
-    if pct > 100 {
-        anyhow::bail!("UNYT_COUNTER_ADJUSTMENT_PCT must be between 0 and 100, got {pct}");
-    }
+    let pct = ctx.get().scenario_values.config().counter_adjustment_pct;
 
     for tx in transactions {
         let adjusted_amount = adjust_amount(&tx.amount, pct)?;
@@ -97,12 +92,11 @@ pub fn counter_proposals(
 pub fn handle_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     proposals: Vec<Transaction>,
-    weights: &ProposalWeights,
     arc_type: &ArcType,
 ) -> anyhow::Result<()> {
-    let max_rounds: usize = std::env::var("UNYT_MAX_NEGOTIATION_ROUNDS")
-        .unwrap_or_else(|_| "5".to_string())
-        .parse()?;
+    let config = ctx.get().scenario_values.config();
+    let weights = &config.weights;
+    let max_rounds = config.max_negotiation_rounds;
 
     // Separate proposals that exceeded max rounds — these are force-accepted
     let (over_limit, within_limit): (Vec<_>, Vec<_>) = proposals
@@ -196,13 +190,7 @@ pub fn handle_commitments(
     commitments: Vec<Transaction>,
     arc_type: &ArcType,
 ) -> anyhow::Result<()> {
-    let accept_pct: u8 = std::env::var("UNYT_COMMITMENT_ACCEPT_PCT")
-        .unwrap_or_else(|_| "80".to_string())
-        .parse()?;
-
-    if accept_pct > 100 {
-        anyhow::bail!("UNYT_COMMITMENT_ACCEPT_PCT must be between 0 and 100, got {accept_pct}");
-    }
+    let accept_pct = ctx.get().scenario_values.config().commitment_accept_pct;
 
     // Round up values, which will favor accepts over rejections. Otherwise
     // rejections will dominate when number of proposals are small.

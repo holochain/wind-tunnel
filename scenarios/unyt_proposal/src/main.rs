@@ -5,11 +5,15 @@ use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
 use wind_tunnel_unyt_scenario::ArcType;
 
+use self::behaviours::common::ProposalConfig;
 use self::values::ScenarioValues;
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    // Parse and validate the environment configuration first.
+    ctx.get_mut().scenario_values.config = Some(ProposalConfig::from_env()?);
+
     wind_tunnel_unyt_scenario::setup::common_agent_setup(
         ctx,
         happ_path!("unyt"),
