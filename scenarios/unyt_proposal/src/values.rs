@@ -1,3 +1,4 @@
+use crate::behaviours::common::ProposalConfig;
 use holochain_types::prelude::{ActionHashB64, AgentPubKeyB64};
 use holochain_wind_tunnel_runner::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -9,6 +10,16 @@ pub struct UnytProposalScenarioValues {
     pub common: CommonScenarioValues,
     /// Tracks proposal created by this agent with their creation time, for round-trip measurement
     pub pending_proposals: HashMap<ActionHashB64, Instant>,
+    /// Environment-derived configuration, parsed and validated once in agent setup.
+    pub config: Option<ProposalConfig>,
+}
+
+impl UnytProposalScenarioValues {
+    /// The scenario configuration. Panics if accessed before agent setup has populated it.
+    pub fn config(&self) -> ProposalConfig {
+        self.config
+            .expect("proposal config accessed before agent setup populated it")
+    }
 }
 
 impl UserValuesConstraint for UnytProposalScenarioValues {}

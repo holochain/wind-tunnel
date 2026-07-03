@@ -58,13 +58,7 @@ pub fn agent_behaviour(
         // for each accept actionable, call `create_receipt_for_accept`
         common::create_receipt_for_accept(ctx, actionable_transactions.accept_actionable);
         // handle incoming proposals (and counter-proposals)
-        let weights = ProposalWeights::get_weights_from_env()?;
-        common::handle_proposals(
-            ctx,
-            actionable_transactions.proposal_actionable,
-            &weights,
-            &arc_type,
-        )?;
+        common::handle_proposals(ctx, actionable_transactions.proposal_actionable, &arc_type)?;
         // handle incoming commitments
         common::handle_commitments(
             ctx,
@@ -149,12 +143,7 @@ fn create_proposals(
     // Spend only a small slice of the spendable amount per round. A single proposal must
     // be small enough that several can be in flight at once without any one agent's spend
     // reaching its credit limit, so keep this well below 100.
-    let spend_pct: u8 = std::env::var("UNYT_SPEND_FRACTION_PCT")
-        .unwrap_or_else(|_| "10".to_string())
-        .parse()?;
-    if spend_pct > 100 {
-        anyhow::bail!("UNYT_SPEND_FRACTION_PCT must be between 0 and 100, got {spend_pct}");
-    }
+    let spend_pct = ctx.get().scenario_values.config().spend_fraction_pct;
 
     ctx.collect_agents()?;
     let participating_agents = ctx.get().scenario_values.participating_agents().to_vec();
