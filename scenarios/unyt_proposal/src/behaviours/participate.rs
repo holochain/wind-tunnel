@@ -1,5 +1,5 @@
 use crate::ScenarioValues;
-use crate::behaviours::common::{self, ProposalWeights};
+use crate::behaviours::common;
 use holochain_wind_tunnel_runner::prelude::{
     AgentContext, HolochainAgentContext, HolochainRunnerContext, HookResult, ReportMetric,
 };
@@ -27,6 +27,7 @@ pub fn agent_behaviour(
     // step 1 - wait for network init
     if !common::is_network_initialized(ctx, &arc_type)? {
         // return and wait for next iteration
+        thread::sleep(Duration::from_secs(1));
         return Ok(());
     }
 
@@ -91,6 +92,7 @@ pub fn agent_behaviour(
     // step 6 - get history
     common::poll_history(ctx);
 
+    // Give other agents time to receive and respond to proposals.
     thread::sleep(Duration::from_secs(3));
 
     Ok(())
