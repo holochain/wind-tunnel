@@ -1,5 +1,6 @@
 use crate::ScenarioValues;
 use crate::behaviours::common;
+use crate::behaviours::ui_refresh;
 use holochain_wind_tunnel_runner::prelude::{
     AgentContext, HolochainAgentContext, HolochainRunnerContext, HookResult, ReportMetric,
 };
@@ -11,7 +12,6 @@ use std::thread;
 use std::time::Duration;
 use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
-use wind_tunnel_unyt_scenario::behaviour::common as shared;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
@@ -34,7 +34,7 @@ pub fn agent_behaviour(
     // step 2 - handle incoming transactions
     {
         // Refresh the action list like the UI does.
-        let actionable_transactions = shared::ui_action_list_refresh(ctx);
+        let actionable_transactions = ui_refresh::ui_action_list_refresh(ctx);
 
         // Log what this agent actually received, tagged with arc type. Zero-arc agents
         // that never see any actionables here can publish proposals but never observe
@@ -86,7 +86,7 @@ pub fn agent_behaviour(
 
     // step 5 - refresh watched transaction details (like the UI) and poll their status
     let watched = ctx.get().scenario_values.watched_transactions().clone();
-    shared::ui_transaction_detail_refresh(ctx, &watched);
+    ui_refresh::ui_transaction_detail_refresh(ctx, &watched);
     common::poll_watched_transactions(ctx);
 
     // step 6 - get history
