@@ -166,6 +166,60 @@ Each arc becomes its own labelled line.
         ) }}
 
         {{ template "scenario_metric" (dict
+            "name" "UI action list refresh: Duration"
+            "description" "Duration of the UI action list refresh per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_action_list_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI action list refresh: Failed calls"
+            "description" "UI action list refresh sub-calls that failed, as a per-agent counter. Total is the run-wide count across all agents."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_action_list_refresh_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail item refresh: Duration"
+            "description" "Duration of refreshing a single transaction detail item per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_transaction_detail_item_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Duration"
+            "description" "Duration of refreshing all watched transaction details per behaviour iteration (seconds)."
+            "content" (tmpl.Exec "timing_and_trend" .ui_transaction_detail_refresh_duration_s)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Transactions processed"
+            "description" "Transactions processed during the full detail refresh, as a per-agent counter."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_transaction_detail_refresh_transactions_processed)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Primary transaction total calls"
+            "description" "Primary transaction fetches made during the full detail refresh, as a per-agent counter."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_transaction_detail_refresh_primary_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Primary transaction failed calls"
+            "description" "Primary transaction fetches that failed during the full detail refresh, as a per-agent counter."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_transaction_detail_refresh_primary_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Related transaction total calls"
+            "description" "Related transaction fetches made during the full detail refresh, as a per-agent counter."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_transaction_detail_refresh_related_transaction_total_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "UI transaction detail refresh: Related transaction failed calls"
+            "description" "Related transaction fetches that failed during the full detail refresh, as a per-agent counter."
+            "content" (tmpl.Exec "partitioned_counter_stats" .ui_transaction_detail_refresh_related_transaction_failed_calls)
+        ) }}
+
+        {{ template "scenario_metric" (dict
             "name" "Zome call errors"
             "description" "Total number of zome call errors observed during the run."
             "content" (tmpl.Exec "scalar" (dict "value" .error_count))
