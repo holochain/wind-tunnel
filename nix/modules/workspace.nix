@@ -2,7 +2,7 @@
 let
   inherit (config.rustHelper) craneLib;
 
-  nonCargoBuildFiles = path: _type: builtins.match ".*(conductor-config.yaml|conductor-config-ci.yaml|summariser/test_data/.*.json)$" path != null;
+  nonCargoBuildFiles = path: _type: builtins.match ".*(conductor-config.yaml|conductor-config-ci.yaml|summariser/test_data/.*.json|scenarios/unyt_swap/src/lane/.*.(json|rhai))$" path != null;
   includeFilesFilter = path: type: (craneLib.filterCargoSources path type) || (nonCargoBuildFiles path type);
 
   commonArgs = {

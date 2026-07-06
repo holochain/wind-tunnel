@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "expected_roles": {
+      "type": "array",
+      "items": [
+        {
+          "const": {
+            "id": "bridging_agent",
+            "parked_link_type": "ParkedSpendCredit"
+          }
+        },
+        {
+          "const": {
+            "id": "withdrawer",
+            "parked_link_type": "ParkedSpendBalance"
+          }
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "ui_properties": {
+      "type": "object",
+      "properties": {
+        "transfer_out": {
+          "type": "blockchain_bridging",
+          "description": "This is used to transfer Mirror HOT into the Sepolia Blockchain (Eth TestNet)",
+          "network_name": "Sepolia Blockchain (Eth TestNet)",
+          "ct_role_id": "withdrawer",
+          "contract_address": "0xe3e064e3c2eef66cb93da8d8114f5084e92f48d6",
+          "bridging_unit": {
+            "description": "Since the units are from this network, the index is 0",
+            "index": 1,
+            "name": "Hot Token",
+            "symbol": "HOT"
+          }
+        },
+        "transfer_in": {
+          "type": "blockchain_bridging",
+          "description": "This is used to request HOT from the Sepolia Blockchain (Eth TestNet)",
+          "network_name": "Sepolia Blockchain (Eth TestNet)",
+          "source_bridging_link": "https://hot-bridge.unyt.dev/lock",
+          "bridging_unit": {
+            "description": "Since the units are from this network, the index is 0",
+            "index": 1,
+            "name": "Hot Token",
+            "symbol": "HOT"
+          }
+        }
+      }
+    }
+  },
+  "required": ["expected_roles"],
+  "additionalProperties": false
+}

@@ -3,6 +3,8 @@ mod values;
 
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
+use rave_engine::types::UnitDefinition;
+use rave_engine::types::UnytType;
 use wind_tunnel_unyt_scenario::ArcType;
 
 use self::behaviours::common::ProposalConfig;
@@ -24,10 +26,33 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .use_agent_setup(agent_setup)
-    .use_named_agent_behaviour(
-        "initiate",
-        wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
-    )
+    .use_named_agent_behaviour("initiate", |ctx| {
+        wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour(
+            ctx,
+            // Define two service units globally, so proposals can be bidirectional. The happ
+            // adds these to the global definition's `service_units` at indices
+            // ("0", "1"). Unit 0 mirrors the base unit the happ would create by default.
+            // Unit 1 lets a proposal send value, which is what makes
+            // the acceptor create a receipt, exercising the full commit -> accept -> receipt
+            // flow.
+            vec![
+                UnitDefinition {
+                    unit_type: UnytType::default(),
+                    unit_symbol: "ZF".to_string(),
+                    unit_name: "Fuel".to_string(),
+                    unit_description: "Base Unit".to_string(),
+                    unit_color: "#02b4b3".to_string(),
+                },
+                UnitDefinition {
+                    unit_type: UnytType::default(),
+                    unit_symbol: "SU1".to_string(),
+                    unit_name: "Service Unit 1".to_string(),
+                    unit_description: "Secondary unit for bidirectional proposals".to_string(),
+                    unit_color: "#02b4b3".to_string(),
+                },
+            ],
+        )
+    })
     .use_named_agent_behaviour("user", |ctx| {
         self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })

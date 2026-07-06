@@ -206,6 +206,12 @@ async fn unyt_proposal() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn unyt_swap() -> anyhow::Result<()> {
+    run_snapshot_test!("932e400eddec7ef89ddea8f59cd173bac8cc8bbde0d8798d879d2a87919d1305");
+    Ok(())
+}
+
+#[tokio::test]
 async fn validation_receipts() -> anyhow::Result<()> {
     run_snapshot_test!("d8e2bf9989e959ca9116ef9f3d6ec6a6912e0eb042e4a90b2d520c1ed9dd199b");
     Ok(())
