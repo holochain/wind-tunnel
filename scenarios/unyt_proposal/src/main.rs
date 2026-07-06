@@ -14,11 +14,7 @@ fn agent_setup(
     // Parse and validate the environment configuration first.
     ctx.get_mut().scenario_values.config = Some(ProposalConfig::from_env()?);
 
-    wind_tunnel_unyt_scenario::setup::common_agent_setup(
-        ctx,
-        happ_path!("unyt"),
-        &["zero_participate"],
-    )
+    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &["zero_user"])
 }
 
 fn main() -> WindTunnelResult<()> {
@@ -32,11 +28,11 @@ fn main() -> WindTunnelResult<()> {
         "initiate",
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
     )
-    .use_named_agent_behaviour("participate", |ctx| {
-        self::behaviours::participate::agent_behaviour(ctx, ArcType::Full)
+    .use_named_agent_behaviour("user", |ctx| {
+        self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })
-    .use_named_agent_behaviour("zero_participate", |ctx| {
-        self::behaviours::participate::agent_behaviour(ctx, ArcType::Zero)
+    .use_named_agent_behaviour("zero_user", |ctx| {
+        self::behaviours::user::agent_behaviour(ctx, ArcType::Zero)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
