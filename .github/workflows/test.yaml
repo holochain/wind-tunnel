@@ -373,6 +373,26 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - unyt_swap
+        run: |
+          set -euo pipefail
+          cleanup() {
+            cat local-durable-objects.log || true
+            pkill -f wrangler || true
+          }
+          trap cleanup EXIT
+
+          # Start a local Durable Objects store.
+          # Need to re-direct stdin otherwise the wrangler terminates when running in background.
+          nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
+
+          # Run the scenario exercising both conversions (bridging + swap).
+          nix run .#rust-smoke-test -- --package unyt_swap -- --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2 --duration 120 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - scenario summary HTML visualiser
         run: |
           nix run .#summary-visualiser-smoke-test

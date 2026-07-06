@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "consumed_inputs": {
+      "type": "object",
+      "properties": {
+        "proof_of_deposit": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "method_fn": { "type": "string" },
+                "name": { "type": "string" },
+                "contract_address": { "type": "string" },
+                "amount": { "type": "string" },
+                "depositor_wallet_address": { "type": "string" }
+              },
+              "required": ["method_fn", "name", "contract_address", "amount", "depositor_wallet_address"]
+            }
+          }
+        }
+      },
+      "required": ["proof_of_deposit"]
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "previous_execution": { "type": "object" },
+        "unyt_index": { "type": "string" }
+      }
+    }
+  },
+  "required": ["consumed_inputs", "inputs"]
+}

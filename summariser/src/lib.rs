@@ -138,6 +138,11 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_unyt_proposal
         )),
+        "unyt_swap" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_unyt_swap
+        )),
         "validation_receipts" => Some(execute_report_with_common_metrics!(
             client,
             summary,
