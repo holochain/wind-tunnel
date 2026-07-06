@@ -92,9 +92,6 @@ pub fn agent_behaviour(
     // step 6 - get history
     common::poll_history(ctx);
 
-    // Give other agents time to receive and respond to proposals.
-    thread::sleep(Duration::from_secs(3));
-
     Ok(())
 }
 
