@@ -33,6 +33,17 @@ use zfuel::{fraction::Fraction, fuel::ZFuel};
 /// Returns an error if any zome call during initialization fails.
 pub fn agent_behaviour<SV: UnytScenarioValues>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    new_unit_definitions: Vec<UnitDefinition>,
+) -> HookResult {
+    agent_behaviour_with_units(ctx, new_unit_definitions)
+}
+
+/// Like [`agent_behaviour`], but registers the given service units in the
+/// global definition. Units are assigned indices in order (the first becomes
+/// index 0, the base unit). When empty, the happ creates only the base unit.
+pub fn agent_behaviour_with_units<SV: UnytScenarioValues>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    new_unit_definitions: Vec<UnitDefinition>,
 ) -> HookResult {
     // check if network is initialized, if not initialize it
     if !ctx.is_network_initialized() {
@@ -80,16 +91,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 migration: Default::default(),
                 hf_swapper: None,
             },
-            new_unit_definitions: vec![NewUnit {
-                definition: UnitDefinition::base_unit(),
-                fee: Some(FeeTerms {
-                    spender_pay_percent: Fraction::new(1, 100)?,
-                    fee_cap: None,
-                    fee_trigger: ZFuel::new_with_default_precision(100),
-                    exempt_agents: Vec::new(),
-                }),
-            }],
-            migration: None,
+            new_unit_definitions,
         })?;
         log::info!("Code templates, smart agreements and global definition written");
     } else {
@@ -175,7 +177,8 @@ fn create_agreements<SV: UnytScenarioValues>(
             name: "credit_limit".to_string(),
             instruction: Instruction::Fixed(json!({
               "0": "1000000",
-              "1": "1000000"
+              "1": "1000000",
+              "2": "1000000"
             })),
         }]),
         roles: vec![],

@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "unyt_allocation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "receiver": { "type": "string" },
+          "amounts": { "type": "object", "additionalProperties": { "type": "string" } },
+          "sources": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["receiver", "amounts", "sources"]
+      }
+    },
+    "carryover": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "computed_values": {
+      "type": "object",
+      "properties": {
+        "coupons": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  },
+  "required": ["unyt_allocation", "carryover"]
+}

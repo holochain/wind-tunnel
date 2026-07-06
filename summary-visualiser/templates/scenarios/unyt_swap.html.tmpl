@@ -1,0 +1,164 @@
+{{ define "unyt_swap_description" }}
+<p>This scenario exercises Unyt's bridging flow, converting an external
+blockchain token (HOT) into Unyt's internal wrapped credit (wHOT), and the
+follow-on wHOT &rarr; HF swap. The roles are:
+<b><code>initiate</code></b> (progenitor that bootstraps the network and lane),
+<b><code>bridge_agent</code></b> (oracle + bridging agent that drives deposits),
+<b><code>bridge</code></b> (depositor that collects the deposit RAVE to receive
+wHOT, then swaps that wHOT for HF), and
+<b><code>swap_agent</code></b> (HoloFuel counterparty that accepts swap
+commitments).</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Unyt Swap"
+    "description" (tmpl.Exec "unyt_swap_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ $metrics := . }}
+
+        {{ with .create_parked_link_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_parked_link"
+                "description" "Duration of the bridge agent's oracle step recording a proof of deposit, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_parked_spend_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_parked_spend"
+                "description" "Duration of the bridging agent's step parking the spend on the bridging agreement, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .execute_rave_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — execute_rave"
+                "description" "Duration of the bridging agent's step executing the credit-limit and bridging agreements into a deposit RAVE, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .get_incoming_raves_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — get_incoming_raves"
+                "description" "Duration of the bridge's poll for incoming deposit RAVEs, per agent. Called every iteration."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .collect_from_rave_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_collect_from_rave"
+                "description" "Duration of the bridge's collect step receiving wHOT, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_commitment_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_commitment"
+                "description" "Duration of the bridge's commitment (wHOT -> HF), per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_accept_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_accept"
+                "description" "Duration of the swap agent accepting a commitment, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .create_receipt_for_accept_zome_call }}
+            {{ template "scenario_metric" (dict
+                "name" "Zome call — create_receipt_for_accept"
+                "description" "Duration of the bridge finalizing an accepted commitment, per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ with .swap_completion_duration_s }}
+            {{ template "scenario_metric" (dict
+                "name" "Swap completion time"
+                "description" "End-to-end time from the bridge creating a commitment to finalizing the accept with a receipt (wall-clock, includes propagation and poll gap), per agent."
+                "content" (tmpl.Exec "timings_overall_and_per_agent" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Zome call errors"
+            "description" "Total number of zome call errors observed during the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+        ) }}
+
+        {{ with .bridge_parked_links_completed.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Proof-of-deposit links completed"
+                "description" "Proof-of-deposit parked links the bridge agent completed across the run (deposit volume offered), as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.bridge_parked_links_completed)
+            ) }}
+        {{ end }}
+
+        {{ with .bridge_parked_links_failed.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Proof-of-deposit links failed"
+                "description" "Proof-of-deposit parked links that failed across the run (deposit volume offered), as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.bridge_parked_links_failed)
+            ) }}
+        {{ end }}
+
+        {{ with .deposit_raves_collected.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Deposit RAVEs collected"
+                "description" "Deposit RAVEs the bridge collected — completed HOT → wHOT conversions, as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.deposit_raves_collected)
+            ) }}
+        {{ end }}
+
+        {{ with .completed_transaction_raves.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Completed transaction RAVEs"
+                "description" "Total RAVE agreement executions across all agents at teardown."
+                "content" (tmpl.Exec "aggregated_single_value" $metrics.completed_transaction_raves)
+            ) }}
+        {{ end }}
+
+        {{ with .swap_commitments_created.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Swap commitments created"
+                "description" "Swap commitments the bridge created (wHOT → HF offered), as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.swap_commitments_created)
+            ) }}
+        {{ end }}
+
+        {{ with .commitments_accepted.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Commitments accepted"
+                "description" "Swap commitments the swap agent accepted across the run, as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.commitments_accepted)
+            ) }}
+        {{ end }}
+
+        {{ with .swap_receipts_created.partition_count }}
+            {{ template "scenario_metric" (dict
+                "name" "Swap receipts created"
+                "description" "Receipts the bridge created for accepted commitments (completed wHOT → HF), as a per-agent counter."
+                "content" (tmpl.Exec "partitioned_counter_stats" $metrics.swap_receipts_created)
+            ) }}
+        {{ end }}
+
+    {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
+</div>
