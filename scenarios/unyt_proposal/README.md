@@ -23,9 +23,9 @@ The `initiate` agent is responsible for initializing the network. This involves:
 - Establishing the foundational smart agreements that govern the network
 - Staying idle once the network is properly initialized
 
-#### `participate` (Participant Agents)
+#### `user` (User Agents)
 
-Each `participate` agent plays both sides of the negotiation: it originates proposals to its peers *and* responds to the
+Each `user` agent plays both sides of the negotiation: it originates proposals to its peers *and* responds to the
 proposals and commitments it receives. Because every agent both spends and receives, value flows in both directions and
 balances stay within the credit limit over a long run (a fixed proposer/responder split would drive one side's credit to
 its limit). Each agent:
@@ -107,7 +107,7 @@ of `UNYT_DURABLE_OBJECTS_SECRET`.
 Then, in another terminal pane, run the scenario with the following command:
 
 ```bash
-RUST_LOG=warn,unyt_proposal=info cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour participate:4 --duration 300
+RUST_LOG=warn,unyt_proposal=info cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour user:4 --duration 300
 ```
 
 #### Exercising rejections at small scale
@@ -122,5 +122,5 @@ a small local run, weight rejections more heavily so the reject bucket fills at 
 ```bash
 UNYT_PROPOSAL_WEIGHTS=30,20,50 UNYT_COMMITMENT_ACCEPT_PCT=50 \
   RUST_LOG=warn,unyt_proposal=info cargo run --package unyt_proposal -- \
-  --agents 5 --behaviour initiate:1 --behaviour participate:4 --duration 300
+  --agents 5 --behaviour initiate:1 --behaviour user:4 --duration 300
 ```

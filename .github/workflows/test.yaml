@@ -367,7 +367,7 @@ jobs:
           # counter, reject, reclaim, accept, and receipt.
           # Network initialization takes up to a minute, which is why the test has to run for
           # more than 30 seconds.
-          UNYT_PROPOSAL_WEIGHTS=30,20,50 UNYT_COMMITMENT_ACCEPT_PCT=50 nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour participate:2 --behaviour zero_participate:2 --duration 120 --no-progress
+          UNYT_PROPOSAL_WEIGHTS=30,20,50 UNYT_COMMITMENT_ACCEPT_PCT=50 nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour user:4 --duration 120 --no-progress
 
           echo "==> Available space after step"
           echo
