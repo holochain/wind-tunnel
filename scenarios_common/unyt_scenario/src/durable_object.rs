@@ -69,31 +69,21 @@ impl DurableObject {
         }
     }
 
-    /// Posts the progenitor key to the Durable Object.
+    /// Posts a value to the Durable Object under `key`.
     ///
-    /// Called once by the progenitor agent so that other agents can
-    /// later retrieve the key via [`Self::get_progenitor_key`].
+    /// `key` is used verbatim as the Durable Object's storage key, so
+    /// callers namespace per run and role (e.g. `"{run_id}:bridge"`).
     ///
     /// # Errors
     ///
     /// Returns an error if the HTTP request fails or the response
     /// cannot be parsed.
-    pub async fn post_progenitor_key(
-        &self,
-        run_id: &str,
-        progenitor_key: &str,
-    ) -> anyhow::Result<bool> {
+    async fn post(&self, key: &str, value: &str) -> anyhow::Result<bool> {
         let post_data = PostData {
-            run_id: run_id.to_string(),
-            value: progenitor_key.to_string(),
+            run_id: key.to_string(),
+            value: value.to_string(),
             secret: self.secret.clone(),
         };
-
-        log::info!(
-            "Posting progenitor key to DurableObject: run_id={}, key={}",
-            run_id,
-            progenitor_key
-        );
 
         let response = self
             .client
@@ -117,37 +107,27 @@ impl DurableObject {
         Ok(post_response.success)
     }
 
-    /// Fetches the progenitor key from the Durable Object.
+    /// Fetches the value stored under `key`, blocking the current agent.
     ///
-    /// Polls the endpoint every 2 seconds until the key is available
-    /// or a 120-second timeout expires. The result is cached in
-    /// [`UnytScenarioValues`] so subsequent calls return immediately.
+    /// Polls the endpoint every 2 seconds until the value is available
+    /// or a 120-second timeout expires.
     ///
     /// # Errors
     ///
-    /// Returns an error if the key is not available within the
+    /// Returns an error if the value is not available within the
     /// timeout, or the HTTP request/parsing fails.
-    pub fn get_progenitor_key<SV: UnytScenarioValues>(
+    fn fetch_blocking<SV: UnytScenarioValues>(
         &self,
         ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
-    ) -> anyhow::Result<AgentPubKey> {
-        if let Some(progenitor_agent_pubkey) = ctx.get().scenario_values.progenitor_agent_pubkey() {
-            return Ok(progenitor_agent_pubkey.clone().into());
-        }
-        // Use the same run_id as used in setup_progenitor
-        let run_id = ctx.runner_context().get_run_id().to_string();
-        let url = format!("{}?run_id={}", self.base_url, run_id);
-        // Get the progenitor key using the executor
-        let progenitor_key_str = ctx
-            .runner_context()
+        key: &str,
+    ) -> anyhow::Result<String> {
+        let url = format!("{}?run_id={}", self.base_url, key);
+        ctx.runner_context()
             .executor()
             .execute_in_place(async {
                 timeout(Duration::from_secs(120), async {
                     loop {
-                        log::debug!(
-                            "Attempting to get progenitor key from DurableObject: run_id={}",
-                            run_id
-                        );
+                        log::debug!("Attempting to get value from DurableObject: key={}", key);
 
                         let response = self
                             .client
@@ -162,15 +142,10 @@ impl DurableObject {
                                 .await
                                 .context("Failed to parse GET response")?;
 
-                            log::debug!(
-                                "Successfully retrieved progenitor key: {}",
-                                get_response.value
-                            );
+                            log::debug!("Successfully retrieved value: {}", get_response.value);
                             return Ok(get_response.value);
                         } else if response.status() == 404 {
-                            log::info!(
-                                "Progenitor key not yet available, retrying in 2 seconds..."
-                            );
+                            log::info!("Value not yet available, retrying in 2 seconds...");
                             tokio::time::sleep(Duration::from_secs(2)).await;
                             continue;
                         } else {
@@ -180,9 +155,48 @@ impl DurableObject {
                 })
                 .await?
             })
-            .context("Failed to fetch progenitor key from DurableObject")?;
+            .context("Failed to fetch value from DurableObject")
+    }
 
-        // Parse the string back to AgentPubKey using try_from
+    /// Posts the progenitor key so other agents can retrieve it via
+    /// [`Self::get_progenitor_key`]. Called once by the progenitor.
+    pub async fn post_progenitor_key(
+        &self,
+        run_id: &str,
+        progenitor_key: &str,
+    ) -> anyhow::Result<bool> {
+        log::info!(
+            "Posting progenitor key to DurableObject: run_id={run_id}, key={progenitor_key}"
+        );
+        self.post(run_id, progenitor_key).await
+    }
+
+    /// Posts the bridge agent's key so the progenitor can authorize it
+    /// as oracle and bridging_agent when building the lane's agreements.
+    /// Called once by the bridge agent.
+    pub async fn post_bridge_agent_key(
+        &self,
+        run_id: &str,
+        bridge_agent_key: &str,
+    ) -> anyhow::Result<bool> {
+        log::info!(
+            "Posting bridge agent key to DurableObject: run_id={run_id}, key={bridge_agent_key}"
+        );
+        self.post(&format!("{run_id}:bridge_agent"), bridge_agent_key)
+            .await
+    }
+
+    /// Fetches the progenitor key from the Durable Object, caching it in
+    /// [`UnytScenarioValues`] so subsequent calls return immediately.
+    pub fn get_progenitor_key<SV: UnytScenarioValues>(
+        &self,
+        ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    ) -> anyhow::Result<AgentPubKey> {
+        if let Some(progenitor_agent_pubkey) = ctx.get().scenario_values.progenitor_agent_pubkey() {
+            return Ok(progenitor_agent_pubkey.clone().into());
+        }
+        let run_id = ctx.runner_context().get_run_id().to_string();
+        let progenitor_key_str = self.fetch_blocking(ctx, &run_id)?;
         let progenitor_pubkey: AgentPubKey = AgentPubKey::try_from(progenitor_key_str)
             .context("Failed to parse progenitor key from DurableObject")?;
 
@@ -192,6 +206,44 @@ impl DurableObject {
 
         log::debug!("Fetched progenitor agent pubkey: {:?}", progenitor_pubkey);
         Ok(progenitor_pubkey)
+    }
+
+    /// Fetches the bridge agent's key from the Durable Object. Called by
+    /// the progenitor while setting up the lane's agreements.
+    pub fn get_bridge_agent_key<SV: UnytScenarioValues>(
+        &self,
+        ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    ) -> anyhow::Result<AgentPubKey> {
+        let run_id = ctx.runner_context().get_run_id().to_string();
+        let bridge_agent_key_str = self.fetch_blocking(ctx, &format!("{run_id}:bridge_agent"))?;
+        AgentPubKey::try_from(bridge_agent_key_str)
+            .context("Failed to parse bridge agent key from DurableObject")
+    }
+
+    /// Posts the swap agent's key so swappers can address commitments to it.
+    /// Called once by the swap agent.
+    pub async fn post_swap_agent_key(
+        &self,
+        run_id: &str,
+        swap_agent_key: &str,
+    ) -> anyhow::Result<bool> {
+        log::info!(
+            "Posting swap agent key to DurableObject: run_id={run_id}, key={swap_agent_key}"
+        );
+        self.post(&format!("{run_id}:swap_agent"), swap_agent_key)
+            .await
+    }
+
+    /// Fetches the swap agent's key from the Durable Object. Called by
+    /// swappers to set the commitment counterparty.
+    pub fn get_swap_agent_key<SV: UnytScenarioValues>(
+        &self,
+        ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    ) -> anyhow::Result<AgentPubKey> {
+        let run_id = ctx.runner_context().get_run_id().to_string();
+        let swap_agent_key_str = self.fetch_blocking(ctx, &format!("{run_id}:swap_agent"))?;
+        AgentPubKey::try_from(swap_agent_key_str)
+            .context("Failed to parse swap agent key from DurableObject")
     }
 }
 
