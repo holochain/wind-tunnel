@@ -201,7 +201,7 @@ async fn single_write_many_read() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn unyt_proposal() -> anyhow::Result<()> {
-    run_snapshot_test!("61efa07e6feb2c76d0fef775b9f5513dff91718797c242db769aed476091f8c1");
+    run_snapshot_test!("4750bc86f236dcb9f37a2039bf7e07084d200612d4f9270d07db1a0d75f530e0");
     Ok(())
 }
 
