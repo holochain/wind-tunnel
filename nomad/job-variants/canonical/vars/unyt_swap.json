@@ -1,0 +1,28 @@
+{
+  "description": "1 progenitor, 1 bridge agent, and 1 swap agent set up the network and lane; 14 user agents run HOT -> wHOT deposits and 13 swap agents run wHOT -> HF swaps concurrently (30 nodes total).",
+  "job_name": "unyt_swap_canonical",
+  "scenario_name": "unyt_swap",
+  "duration": 900,
+  "assignments": [
+    {
+      "behaviour": "initiate"
+    },
+    {
+      "behaviour": "bridge_agent"
+    },
+    {
+      "behaviour": "swap_agent"
+    },
+    {
+      "behaviour": "user",
+      "nodes": 14
+    },
+    {
+      "behaviour": "swap",
+      "nodes": 13
+    }
+  ],
+  "env": {
+    "MIN_AGENTS": "30"
+  }
+}

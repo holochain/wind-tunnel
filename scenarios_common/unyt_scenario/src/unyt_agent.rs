@@ -8,9 +8,10 @@ use crate::UnytScenarioValues;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
-    AcceptInput, Actionable, CommitmentInput, CreateParkedSpendInput, History,
-    InitializeGlobalDefinition, Ledger, NotificationLinks, Pagination, PermissionSpace,
-    RAVEExecuteInputs, State, Transaction, UnitDefinitionExt, UnitMap, ZomeFnInput,
+    AcceptInput, Actionable, BridgingAgentInitiateDepositInput, CommitmentInput,
+    CreateParkedLinkInput, CreateParkedSpendInput, History, InitializeGlobalDefinition, LaneExt,
+    LaneInit, Ledger, NotificationLinks, Pagination, PermissionSpace, RAVEExecuteInputs, State,
+    Transaction, UnitDefinitionExt, UnitMap, ZomeFnInput,
     entries::{
         AgreementDefInput, CodeTemplateExt, CommitmentToProposalInput, CounterProposalInput,
         ExecutionEngine, GlobalDefinitionExt, ProposalInput, RAVE, ReceiptInput, ReclaimInput,
@@ -183,6 +184,28 @@ pub trait UnytAgentExt {
         &mut self,
         reclaim: ReclaimInput,
     ) -> Result<ActionHashB64, anyhow::Error>;
+
+    /// Creates a parked link, e.g. an oracle's proof-of-deposit record.
+    /// Returns the link's action hash and the target executor's key.
+    fn unyt_create_parked_link(
+        &mut self,
+        input: CreateParkedLinkInput,
+    ) -> Result<(ActionHash, AgentPubKey), anyhow::Error>;
+
+    /// Runs the bridging agent's deposit step, turning oracle-posted
+    /// proof-of-deposit links into a RAVE that credits the depositor.
+    fn unyt_blockchain_bridging_agent_initiate_deposit(
+        &mut self,
+        input: BridgingAgentInitiateDepositInput,
+    ) -> Result<String, anyhow::Error>;
+
+    /// Lists all lanes known to this agent.
+    fn unyt_get_all_lane(&mut self) -> Result<Vec<LaneExt>, anyhow::Error>;
+
+    /// Initializes a new lane from its definition.
+    fn unyt_initialize_lane(&mut self, input: LaneInit) -> Result<ActionHashB64, anyhow::Error>;
+
+    fn progenitor_init_alpha_env(&mut self) -> Result<(), anyhow::Error>;
 }
 
 impl<SV: UnytScenarioValues> UnytAgentExt
@@ -498,6 +521,32 @@ impl<SV: UnytScenarioValues> UnytAgentExt
         reclaim: ReclaimInput,
     ) -> Result<ActionHashB64, anyhow::Error> {
         self.call_zome_alliance("create_reclaim_balance", reclaim)
+    }
+
+    fn unyt_create_parked_link(
+        &mut self,
+        input: CreateParkedLinkInput,
+    ) -> Result<(ActionHash, AgentPubKey), anyhow::Error> {
+        self.call_zome_alliance("create_parked_link", input)
+    }
+
+    fn unyt_blockchain_bridging_agent_initiate_deposit(
+        &mut self,
+        input: BridgingAgentInitiateDepositInput,
+    ) -> Result<String, anyhow::Error> {
+        self.call_zome_alliance("blockchain_bridging_agent_initiate_deposit", input)
+    }
+
+    fn unyt_get_all_lane(&mut self) -> Result<Vec<LaneExt>, anyhow::Error> {
+        self.call_zome_alliance("get_all_lane", ())
+    }
+
+    fn unyt_initialize_lane(&mut self, input: LaneInit) -> Result<ActionHashB64, anyhow::Error> {
+        self.call_zome_alliance("initialize_lane", input)
+    }
+
+    fn progenitor_init_alpha_env(&mut self) -> Result<(), anyhow::Error> {
+        self.call_zome_alliance("progenitor_init_alpha_env", ())
     }
 }
 

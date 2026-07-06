@@ -21,10 +21,9 @@ fn main() -> WindTunnelResult<()> {
         HolochainAgentContext<ScenarioValues>,
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .use_agent_setup(agent_setup)
-    .use_named_agent_behaviour(
-        "initiate",
-        wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
-    )
+    .use_named_agent_behaviour("initiate", |ctx| {
+        wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour(ctx, Vec::new())
+    })
     .use_named_agent_behaviour("zero_spend", |ctx| {
         wind_tunnel_unyt_scenario::behaviour::spend::agent_behaviour(ctx, ArcType::Zero)
     })
