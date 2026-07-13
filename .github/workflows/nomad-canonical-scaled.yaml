@@ -268,8 +268,8 @@ jobs:
         uses: holochain/actions/mattermost-notify@v1.12.0
         if: ${{ failure() }}
         with:
-          mattermost_personal_access_token: ${{ secrets.HOLOCHAIN_NOTIFIER_MATTERMOST_PERSONAL_ACCESS_TOKEN }}
-          channel_id: cxskxqhb37rtjp5w8myri3pdhh # HCF Tech channel
+          mattermost_personal_access_token: ${{ secrets.HOLOCHAIN_NOTIFIER_MATTERMOST_BOT_PERSONAL_ACCESS_TOKEN }}
+          channel_id: w3wnjwotkty9fbuo1qa5aqq86a # dev/wind-tunnel
           message: |-
             ALERT! A nomad canonical-scaled workflow run *failed* to cancel all Threefold node contracts.
             You may need to visit the [Threefold grid dashboard](https://dashboard.grid.tf/) to cancel all contracts manually.
