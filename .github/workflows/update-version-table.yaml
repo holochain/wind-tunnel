@@ -23,7 +23,7 @@ jobs:
         run: python3 scripts/update_version_table.py --tag "$TAG"
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.HRA2_GITHUB_TOKEN }}
           branch: chore/version-table-${{ github.ref_name }}
