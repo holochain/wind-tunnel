@@ -1,5 +1,4 @@
 use holochain_types::prelude::ActionHash;
-use holochain_types::prelude::AgentActivity;
 use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
@@ -51,7 +50,7 @@ fn agent_behaviour_get_agent_activity(
 
     match ctx.get().scenario_values.write_peer.clone() {
         Some(write_peer) => {
-            let activity: AgentActivity = call_zome(
+            let activity: holochain_zome_types::query::AgentActivity = call_zome(
                 ctx,
                 "agent_activity",
                 "get_agent_activity_full",
