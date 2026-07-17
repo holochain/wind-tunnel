@@ -41,7 +41,11 @@
         git-hooks.flakeModule
       ];
 
-      systems = builtins.attrNames inputs.holonix.devShells;
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
 
       perSystem =
         { inputs'
