@@ -40,7 +40,7 @@ macro_rules! handle_error {
 #[hdk_extern]
 fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     match op.flattened()? {
-        FlatOp::StoreEntry(OpEntry::CreateEntry { app_entry, .. }) => match app_entry {
+        FlatOp::CreateEntry(OpEntry::CreateEntry { app_entry, .. }) => match app_entry {
             EntryTypes::SampleEntry(entry) => {
                 if entry.value.len() > 10 {
                     Ok(ValidateCallbackResult::Valid)
@@ -51,7 +51,7 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
             }
         },
-        FlatOp::StoreEntry(OpEntry::UpdateEntry { app_entry, .. }) => match app_entry {
+        FlatOp::CreateEntry(OpEntry::UpdateEntry { app_entry, .. }) => match app_entry {
             EntryTypes::SampleEntry(entry) => {
                 if entry.value.len() > 15 && &entry.value[0..7] == "update:" {
                     Ok(ValidateCallbackResult::Valid)
@@ -63,13 +63,13 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
             }
         },
-        FlatOp::RegisterCreateLink {
+        FlatOp::Link(OpLink::CreateLink {
             link_type,
             action,
             base_address,
             target_address,
             ..
-        } => {
+        }) => {
             match link_type {
                 LinkTypes::SampleLink => {
                     let base = must_get_valid_record(handle_error!(base_address.try_into()))?;
@@ -77,8 +77,8 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
 
                     let sample_entry_type: AppEntryDef =
                         handle_error!(UnitEntryTypes::SampleEntry.try_into());
-                    match base.action() {
-                        Action::Create(create)
+                    match &base.action().data {
+                        ActionData::Create(create)
                             if create.entry_type == EntryType::App(sample_entry_type.clone()) =>
                         {
                             // Okay, base should be a create, sample entry
@@ -90,8 +90,8 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                     }
 
-                    match target.action() {
-                        Action::Update(update)
+                    match &target.action().data {
+                        ActionData::Update(update)
                             if update.entry_type == EntryType::App(sample_entry_type) =>
                         {
                             // Okay, target should be an update, sample entry
@@ -103,7 +103,7 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                     }
 
-                    if &action.author != base.action().author()
+                    if action.author() != base.action().author()
                         || base.action().author() != target.action().author()
                     {
                         return Ok(ValidateCallbackResult::Invalid(
