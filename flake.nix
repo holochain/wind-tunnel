@@ -4,8 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-26.05";
 
-    nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     git-hooks = {
@@ -33,7 +31,6 @@
     , crane
     , rust-overlay
     , nixpkgs
-    , nixpkgsUnstable
     , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -53,10 +50,6 @@
         , ...
         }:
         let
-          unfreeUnstablePkgs = import nixpkgsUnstable {
-            inherit system;
-            config.allowUnfree = true;
-          };
           rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix {
             inherit crane rust-overlay nixpkgs;
           };
@@ -148,6 +141,7 @@
 
           _module.args.pkgs = import nixpkgs {
             inherit system;
+            config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nomad" ];
             overlays = [ rust-overlay.overlays.default ];
           };
 
@@ -212,7 +206,7 @@
                   pkgs.jq
                   pkgs.nodejs
                   pkgs.wrangler
-                  unfreeUnstablePkgs.nomad_1_11
+                  pkgs.nomad_1_11
                   inputs'.holonix.packages.hn-introspect
                 ];
 
@@ -475,7 +469,7 @@
               name = "validate-all-nomad-jobs";
               runtimeInputs = [
                 pkgs.gomplate
-                unfreeUnstablePkgs.nomad_1_11
+                pkgs.nomad_1_11
                 pkgs.getopt
               ];
               text = ''

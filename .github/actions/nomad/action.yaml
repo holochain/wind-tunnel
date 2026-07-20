@@ -70,7 +70,7 @@ runs:
         REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
         INCLUDE_THREEFOLD_NODE_POOL: ${{ inputs.include-threefold-node-pool }}
       run: |
-        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgs#nomad_1_11)/bin/nomad"
         count_args=(--eligible-only)
         if [[ "$INCLUDE_THREEFOLD_NODE_POOL" == "true" ]]; then
           count_args+=(--include-threefold-node-pool)
@@ -172,7 +172,7 @@ runs:
         REQUIRED_NODES: ${{ steps.read-nomad-vars.outputs.required_nodes }}
         INCLUDE_THREEFOLD_NODE_POOL: ${{ inputs.include-threefold-node-pool }}
       run: |
-        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+        nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgs#nomad_1_11)/bin/nomad"
         count_args=()
         if [[ "$INCLUDE_THREEFOLD_NODE_POOL" == "true" ]]; then
           count_args+=(--include-threefold-node-pool)
@@ -211,7 +211,7 @@ runs:
         set -exuo pipefail
         JOB_NAME="${{ inputs.job-name }}"
         nomad_rc=0
-        nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job plan -no-color ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+        nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad_1_11 -- job plan -no-color ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
         echo "$nomad_output"
         if [ "$nomad_rc" -eq 255 ]; then
             echo "Planning Nomad job failed"
@@ -244,7 +244,7 @@ runs:
         set -exuo pipefail
         JOB_NAME="${{ inputs.job-name }}"
         nomad_rc=0
-        nomad_output=$(nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
+        nomad_output=$(nix run --impure --inputs-from . nixpkgs#nomad_1_11 -- job run ${{ inputs.nomad-job-variant-directory }}/jobs/${JOB_NAME}.nomad.hcl) || nomad_rc="$?"
         if [ "$nomad_rc" -ne 0 ]; then
             echo "Nomad job submission failed with exit code $nomad_rc"
             echo "$nomad_output"
