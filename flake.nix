@@ -2,7 +2,7 @@
   description = "Flake for Holochain testing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-26.05";
 
     nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
@@ -185,14 +185,13 @@
                 pkgs.netcat-gnu
                 pkgs.perl
                 pkgs.rustPlatform.bindgenHook
-                config.pre-commit.settings.enabledPackages
                 config.rustHelper.rust
                 customHolochain
                 inputs'.holonix.packages.lair-keystore
                 inputs'.holonix.packages.hc
                 inputs'.holonix.packages.bootstrap-srv
                 pkgs.cargo-nextest
-              ];
+              ] ++ config.pre-commit.settings.enabledPackages;
             in
             {
               default = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
