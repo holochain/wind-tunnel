@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[[0.7.1](https://github.com/holochain/wind-tunnel/compare/v0.7.0...v0.7.1)\] - 2026-07-21
+
+### Features
+
+- Include new metrics in proposal summary visualizer template
+- Enable full and zero arc setting for proposal scenario
+- Add UI polls to proposal scenario
+- Output infos about actions taken in proposal scenario
+- Update Holochain to `v0.6.2`
+
+### Bug Fixes
+
+- Analyze metrics by arc and agent
+- Pause before rechecking network init in proposal scenario
+- Record accept and reject round trips
+- Collect 0 fees while there is a bug with rejecting proposals and fee collection
+- Include promised spends into spendable amount & only commit when possible
+
+### Miscellaneous Tasks
+
+- Update Holochain to v0.6.3
+- Remove nixpkgsUnstable input
+  - Nomad v1.11.x is in nixpkgs-26.05 so the unstable channel is no longer required.
+- Update the stable nixpkgs channel to 26.05
+- Remove unnecessary visualiser smoke test pre-commit check
+  - This check is done in CI and shouldn't be done on every commit.
+- Update flake lock
+
+### Build System
+
+- Upgrade to unyt happ v0.92
+- Update flake lock
+
+### CI
+
+- Run unyt proposal with proper weights in small scale tests
+
+### Testing
+
+- Update unyt_proposal test data snapshot
+
+### Refactor
+
+- Rename behavior participate to user in proposal scenario
+- Remove sleep from participate scenario
+- Use counter metric for ui refreshes in proposal scenario
+- Read env vars into scenario values in proposal scenario
+- Add second service unit to enable bi-directional proposals
+- Combine propose and respond behaviors into one participate behavior
+
+### Documentation
+
+- Update unyt proposal scenario readme with bidirectional flow
+
+### Automated Changes
+
+- Add v0.7.0 to version compatibility table by @holochain-release-automation2 in [#642](https://github.com/holochain/wind-tunnel/pull/642)
+
+### First-time Contributors
+
+- @holochain-release-automation2 made their first contribution in [#642](https://github.com/holochain/wind-tunnel/pull/642)
+
 ## \[[0.7.0](https://github.com/holochain/wind-tunnel/compare/v0.6.0...v0.7.0)\] - 2026-06-10
 
 ### Features
