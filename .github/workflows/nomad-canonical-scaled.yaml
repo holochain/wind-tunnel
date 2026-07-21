@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgsUnstable#nomad_1_11)/bin/nomad"
+          nomad_bin="$(nix build --no-link --print-out-paths --impure --inputs-from . nixpkgs#nomad_1_11)/bin/nomad"
           COUNT="$(NOMAD_BIN="$nomad_bin" ./nomad/scripts/count_eligible_nodes.sh --eligible-only --include-threefold-node-pool)"
 
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"

@@ -134,7 +134,7 @@ jobs:
         run: |
           for alloc_id in ${{ matrix.alloc_ids }}; do
             echo "Stopping allocation: $alloc_id"
-            nix run --impure --inputs-from . nixpkgsUnstable#nomad_1_11 -- alloc stop -detach "$alloc_id" || echo "Allocation $alloc_id could not be stopped"
+            nix run --impure --inputs-from . nixpkgs#nomad_1_11 -- alloc stop -detach "$alloc_id" || echo "Allocation $alloc_id could not be stopped"
           done
 
   run-summary:

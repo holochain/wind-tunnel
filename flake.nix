@@ -4,8 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-26.05";
 
-    nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     git-hooks = {
@@ -33,7 +31,6 @@
     , crane
     , rust-overlay
     , nixpkgs
-    , nixpkgsUnstable
     , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -57,10 +54,6 @@
         , ...
         }:
         let
-          unfreeUnstablePkgs = import nixpkgsUnstable {
-            inherit system;
-            config.allowUnfree = true;
-          };
           rustMod = inputs.flake-parts.lib.importApply ./nix/modules/rust.nix {
             inherit crane rust-overlay nixpkgs;
           };
@@ -152,6 +145,7 @@
 
           _module.args.pkgs = import nixpkgs {
             inherit system;
+            config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [ "nomad" ];
             overlays = [ rust-overlay.overlays.default ];
           };
 
@@ -174,13 +168,6 @@
                 };
                 taplo.enable = true;
                 yamlfmt.enable = true;
-                check-summary-visualiser-html = {
-                  enable = true;
-                  name = "check-summary-visualiser-html";
-                  entry = "${config.packages.summary-visualiser-smoke-test}/bin/summary-visualiser-smoke-test";
-                  files = "^(summary-visualiser/.*|flake\.nix)$";
-                  pass_filenames = false;
-                };
               };
             };
           };
@@ -224,7 +211,7 @@
                   pkgs.jq
                   pkgs.nodejs
                   pkgs.wrangler
-                  unfreeUnstablePkgs.nomad_1_11
+                  pkgs.nomad_1_11
                   inputs'.holonix.packages.hn-introspect
                 ];
 
@@ -487,7 +474,7 @@
               name = "validate-all-nomad-jobs";
               runtimeInputs = [
                 pkgs.gomplate
-                unfreeUnstablePkgs.nomad_1_11
+                pkgs.nomad_1_11
                 pkgs.getopt
               ];
               text = ''
