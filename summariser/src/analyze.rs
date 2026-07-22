@@ -1061,14 +1061,20 @@ pub(crate) fn aggregated_single_value(
 }
 
 pub fn round_to_n_dp(value: f64, n: u32) -> f64 {
+    // Polars sums in parallel over chunks, so the last few significant digits of
+    // an aggregate can differ between machines depending on how the work was
+    // split. When the result lands exactly on a rounding boundary, that noise is
+    // what decides which way it rounds, and the same data gives different answers
+    // on different machines. Round to 12 significant figures first so every
+    // machine rounds an identical value.
+    let value = round_to_significant(value, 12);
+
     // f64 has ~15.9 significant decimal digits. For very large values the
-    // requested decimal places fall below representable precision, and Polars'
-    // parallel aggregation can cause the last few significant digits to vary
-    // between runs. In that regime, round to 12 significant figures instead of
-    // N decimal places to absorb the noise while preserving meaningful precision.
+    // requested decimal places fall below representable precision, so the 12
+    // significant figures above are already as precise as we can be.
     let magnitude = value.abs();
     if magnitude >= 10.0_f64.powi(12_i32.saturating_sub(n as i32)) {
-        round_to_significant(value, 12)
+        value
     } else {
         let places = 10.0_f64.powi(n as i32);
         (value * places).round() / places
