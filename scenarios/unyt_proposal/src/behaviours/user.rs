@@ -8,8 +8,6 @@ use rave_engine::types::Actionable;
 use rave_engine::types::{ProposalInput, UnitMap};
 use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
 use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
@@ -24,57 +22,48 @@ pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     arc_type: ArcType,
 ) -> HookResult {
-    // step 1 - wait for network init
-    if !common::is_network_initialized(ctx, &arc_type)? {
-        // return and wait for next iteration
-        thread::sleep(Duration::from_secs(1));
-        return Ok(());
-    }
+    // Handle incoming transactions
+    // Refresh the action list like the UI does.
+    let actionable_transactions = ui_refresh::ui_action_list_refresh(ctx);
 
-    // step 2 - handle incoming transactions
-    {
-        // Refresh the action list like the UI does.
-        let actionable_transactions = ui_refresh::ui_action_list_refresh(ctx);
+    // Log what this agent actually received, tagged with arc type. Zero-arc agents
+    // that never see any actionables here can publish proposals but never observe
+    // responses, so this is the first place to look when an arc type stays idle.
+    log::info!(
+        "[{arc_type}-arc] Agent {} | action list: {} proposals, {} commitments, {} accepts, {} rejects",
+        ctx.get().cell_id().agent_pubkey(),
+        actionable_transactions.proposal_actionable.len(),
+        actionable_transactions.commitment_actionable.len(),
+        actionable_transactions.accept_actionable.len(),
+        actionable_transactions.reject_actionable.len(),
+    );
 
-        // Log what this agent actually received, tagged with arc type. Zero-arc agents
-        // that never see any actionables here can publish proposals but never observe
-        // responses, so this is the first place to look when an arc type stays idle.
-        log::info!(
-            "[{arc_type}-arc] Agent {} | action list: {} proposals, {} commitments, {} accepts, {} rejects",
-            ctx.get().cell_id().agent_pubkey(),
-            actionable_transactions.proposal_actionable.len(),
-            actionable_transactions.commitment_actionable.len(),
-            actionable_transactions.accept_actionable.len(),
-            actionable_transactions.reject_actionable.len(),
-        );
+    // measure sync lag for all newly seen transactions
+    common::measure_sync_lag(ctx, &actionable_transactions, &arc_type);
 
-        // measure sync lag for all newly seen transactions
-        common::measure_sync_lag(ctx, &actionable_transactions, &arc_type);
+    // emit proposal_round_trip_time for proposals that reached a terminal state
+    measure_rejected_round_trip_time(ctx, &actionable_transactions, &arc_type);
 
-        // emit proposal_round_trip_time for proposals that reached a terminal state
-        measure_rejected_round_trip_time(ctx, &actionable_transactions, &arc_type);
+    // for each reject actionable, call `create_reclaim_balance`
+    common::create_reclaim_balance(ctx, actionable_transactions.reject_actionable);
+    // for each accept actionable, call `create_receipt_for_accept`
+    common::create_receipt_for_accept(ctx, actionable_transactions.accept_actionable);
+    // handle incoming proposals (and counter-proposals)
+    common::handle_proposals(ctx, actionable_transactions.proposal_actionable, &arc_type)?;
+    // handle incoming commitments
+    common::handle_commitments(
+        ctx,
+        actionable_transactions.commitment_actionable,
+        &arc_type,
+    )?;
 
-        // for each reject actionable, call `create_reclaim_balance`
-        common::create_reclaim_balance(ctx, actionable_transactions.reject_actionable);
-        // for each accept actionable, call `create_receipt_for_accept`
-        common::create_receipt_for_accept(ctx, actionable_transactions.accept_actionable);
-        // handle incoming proposals (and counter-proposals)
-        common::handle_proposals(ctx, actionable_transactions.proposal_actionable, &arc_type)?;
-        // handle incoming commitments
-        common::handle_commitments(
-            ctx,
-            actionable_transactions.commitment_actionable,
-            &arc_type,
-        )?;
-    }
-
-    // step 3 - check ledger and calculate spendable amount
+    // Check ledger and calculate spendable amount
     let spendable_amount = match common::get_spendable_amount(ctx)? {
         Some(amount) => amount,
         None => return Ok(()),
     };
 
-    // step 4 - create proposals
+    // Create proposals
     if spendable_amount > ZFuel::zero() {
         create_proposals(ctx, spendable_amount, &arc_type)?;
     } else {
@@ -84,12 +73,12 @@ pub fn agent_behaviour(
         );
     }
 
-    // step 5 - refresh watched transaction details (like the UI) and poll their status
+    // Refresh watched transaction details (like the UI) and poll their status
     let watched = ctx.get().scenario_values.watched_transactions().clone();
     ui_refresh::ui_transaction_detail_refresh(ctx, &watched);
     common::poll_watched_transactions(ctx);
 
-    // step 6 - get history
+    // Get history
     common::poll_history(ctx);
 
     Ok(())
