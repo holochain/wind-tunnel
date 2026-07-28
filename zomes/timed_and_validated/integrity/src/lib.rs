@@ -58,21 +58,19 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             }
         },
         FlatOp::Link(OpLink::CreateLink {
-            link_type,
-            action,
-            base_address,
-            target_address,
-            ..
+            link_type, action, ..
         }) => {
             match link_type {
                 LinkTypes::FixedToTimedEntry => {
-                    if base_address != fixed_base() {
+                    if action.data.base_address != fixed_base() {
                         return Ok(ValidateCallbackResult::Invalid(
                             "Links must point away from fixed base".to_string(),
                         ));
                     }
 
-                    let target = must_get_valid_record(handle_error!(target_address.try_into()))?;
+                    let target = must_get_valid_record(handle_error!(
+                        action.data.target_address.clone().try_into()
+                    ))?;
 
                     let sample_entry_type: AppEntryDef =
                         handle_error!(UnitEntryTypes::TimedSampleEntry.try_into());

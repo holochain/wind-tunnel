@@ -13,9 +13,7 @@ fn create_sample_entry(value: String) -> ExternResult<ActionHash> {
 }
 
 #[hdk_extern]
-fn get_agent_activity_full(
-    agent: AgentPubKey,
-) -> ExternResult<holochain_zome_types::query::AgentActivity> {
+fn get_agent_activity_full(agent: AgentPubKey) -> ExternResult<AgentActivityStatus> {
     get_agent_activity(
         agent,
         ChainQueryFilter::new(),
