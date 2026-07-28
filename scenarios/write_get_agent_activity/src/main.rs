@@ -2,6 +2,7 @@ use holochain_types::prelude::ActionHash;
 use holochain_types::prelude::AgentPubKey;
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
+use holochain_zome_types::prelude::AgentActivityStatus;
 use std::time::Duration;
 
 #[derive(Debug, Default)]
@@ -50,7 +51,7 @@ fn agent_behaviour_get_agent_activity(
 
     match ctx.get().scenario_values.write_peer.clone() {
         Some(write_peer) => {
-            let activity: holochain_zome_types::query::AgentActivity = call_zome(
+            let activity: AgentActivityStatus = call_zome(
                 ctx,
                 "agent_activity",
                 "get_agent_activity_full",

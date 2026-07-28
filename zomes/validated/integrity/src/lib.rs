@@ -64,16 +64,16 @@ fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             }
         },
         FlatOp::Link(OpLink::CreateLink {
-            link_type,
-            action,
-            base_address,
-            target_address,
-            ..
+            link_type, action, ..
         }) => {
             match link_type {
                 LinkTypes::SampleLink => {
-                    let base = must_get_valid_record(handle_error!(base_address.try_into()))?;
-                    let target = must_get_valid_record(handle_error!(target_address.try_into()))?;
+                    let base = must_get_valid_record(handle_error!(
+                        action.data.base_address.clone().try_into()
+                    ))?;
+                    let target = must_get_valid_record(handle_error!(
+                        action.data.target_address.clone().try_into()
+                    ))?;
 
                     let sample_entry_type: AppEntryDef =
                         handle_error!(UnitEntryTypes::SampleEntry.try_into());
