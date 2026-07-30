@@ -104,20 +104,57 @@ runs:
           scenarios_common/**
           zomes/**
 
+    # Reuse a published scenario build only if it was built against the same
+    # Holochain minor line as the conductor this run deploys. Releases are cut
+    # from both `main` and the `main-*` maintenance branches, so "most recent
+    # release containing <scenario>.zip" is not on its own a safe choice: a
+    # 0.6 run would happily pick up a 0.7 pre-release built from `main`, and
+    # every agent would then fail against the 0.6 conductor, producing a run
+    # with no metrics at all.
     - name: Check if release exists
       id: check-release
       if: steps.needs-rebuild.outputs.any_changed != 'true' && inputs.force-rebuild != 'true'
       shell: bash
       env:
         SCENARIO_NAME: ${{ steps.read-nomad-vars.outputs.scenario_name }}
+        HOLOCHAIN_BIN_URL: ${{ inputs.holochain-bin-url }}
         GH_TOKEN: ${{ github.token }}
       run: |-
-        TAG=$(gh api "/repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
+        set -euo pipefail
+
+        # Reduce a Holochain version to its minor line, e.g. 0.7.0-rc.1 -> 0.7
+        holochain_line() { sed -nE 's/^([0-9]+\.[0-9]+).*/\1/p'; }
+
+        # The conductor being deployed is the ground truth for compatibility.
+        WANT_LINE="$(basename "$(dirname "$HOLOCHAIN_BIN_URL")" | sed -E 's/^holochain-//' | holochain_line)"
+        if [[ -z "$WANT_LINE" ]]; then
+          echo "::error::Could not determine the Holochain version from holochain-bin-url '${HOLOCHAIN_BIN_URL}'"
+          exit 1
+        fi
+        echo "Conductor Holochain line: ${WANT_LINE}"
+
+        mapfile -t CANDIDATES < <(gh api "/repos/${GITHUB_REPOSITORY}/releases?per_page=30" \
           | jq -r --arg name "${SCENARIO_NAME}.zip" \
-            '.[] | select(any(.assets[]; .name == $name)) | .tag_name' \
-          | head -1)
+            '.[] | select(any(.assets[]?; .name == $name)) | .tag_name')
+
+        # Releases are newest first, so the first line match is the freshest
+        # build that can actually run against this conductor.
+        TAG=""
+        for candidate in ${CANDIDATES[@]+"${CANDIDATES[@]}"}; do
+          got_line="$(gh api "/repos/${GITHUB_REPOSITORY}/contents/Cargo.toml?ref=${candidate}" \
+              -H "Accept: application/vnd.github.raw" 2>/dev/null \
+            | grep -m1 -oP '^\s*holochain_zome_types\s*=.*version\s*=\s*"\K[^"]+' \
+            | holochain_line)" || true
+          if [[ "$got_line" == "$WANT_LINE" ]]; then
+            TAG="$candidate"
+            echo "Accepted release tag '${TAG}' (Holochain ${got_line})"
+            break
+          fi
+          echo "Rejected release tag '${candidate}' (Holochain ${got_line:-unknown}, need ${WANT_LINE})"
+        done
+
         if [[ -z "$TAG" ]]; then
-          echo "::warning::No release found containing ${SCENARIO_NAME}.zip, falling back to a rebuild"
+          echo "::warning::No release found containing ${SCENARIO_NAME}.zip built for Holochain ${WANT_LINE}, falling back to a rebuild"
           echo "found=false" >> "$GITHUB_OUTPUT"
         else
           echo "Found release tag '$TAG' containing ${SCENARIO_NAME}.zip"
