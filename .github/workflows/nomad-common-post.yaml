@@ -73,7 +73,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result || '[]') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -114,7 +114,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.collect-github-matrix-outputs.outputs.result || '[]') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -145,7 +145,7 @@ jobs:
       - wait-for-jobs
     if: ${{ !cancelled() }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -241,7 +241,7 @@ jobs:
 
       - name: Checkout latest runs list from GitHub Pages
         if: inputs.enable-summary-uploads
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: site
@@ -299,7 +299,7 @@ jobs:
     needs: wait-for-jobs
     if: ${{ always() }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
