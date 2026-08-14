@@ -27,7 +27,7 @@ jobs:
       threefold_reserved_tft_before: ${{ steps.tf-balance-before.outputs.reserved_tft }}
       threefold_spendable_tft_before: ${{ steps.tf-balance-before.outputs.spendable_tft }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 480
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -180,7 +180,7 @@ jobs:
       - post-run-scenarios
     if: ${{ always() }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
