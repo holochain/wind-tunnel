@@ -247,6 +247,23 @@
                   inputs'.holonix.packages.bootstrap-srv
                 ];
               };
+
+              peerkit =
+                let
+                  # Newest @peerkit/cli version published to npm (under the `next` dist-tag;
+                  # the npm `latest` tag is stale, so pin exactly). Keep in sync with
+                  # nomad/peerkit_scenario.tpl.hcl and .github/workflows/test.yaml.
+                  peerkitCliVersion = "0.1.0-alpha.15";
+                  peerkitCli = pkgs.writeShellScriptBin "peerkit" ''
+                    exec ${pkgs.nodejs}/bin/npx --yes "@peerkit/cli@${peerkitCliVersion}" "$@"
+                  '';
+                in
+                pkgs.mkShell {
+                  packages = [
+                    pkgs.nodejs
+                    peerkitCli
+                  ];
+                };
             };
 
           packages = {
@@ -462,6 +479,7 @@
               runtimeInputs = [
                 pkgs.gomplate
                 pkgs.getopt
+                pkgs.jq
               ];
               text = ''
                 set -euo pipefail
@@ -476,6 +494,7 @@
                 pkgs.gomplate
                 pkgs.nomad_1_11
                 pkgs.getopt
+                pkgs.jq
               ];
               text = ''
                 set -euo pipefail

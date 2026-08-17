@@ -5,8 +5,17 @@ set -euo pipefail
 generate_job() {
     local var_file="$1"
     local job_file="$2"
+    # Each vars file may declare which runtime template renders it via the
+    # optional "runtime" key. Defaults to "holochain" for compatibility.
+    local runtime
+    runtime=$(jq -r '.runtime // "holochain"' "$var_file")
+    local template="nomad/${runtime}_scenario.tpl.hcl"
+    if [ ! -f "$template" ]; then
+        echo "Error: unknown runtime '$runtime' in $var_file (missing template: $template)"
+        exit 1
+    fi
     gomplate \
-        -f "nomad/run_scenario.tpl.hcl" \
+        -f "$template" \
         -o "$job_file" \
         -d vars="$var_file"
 
@@ -23,6 +32,11 @@ validate_job() {
 if ! command -v gomplate &> /dev/null; then
     echo "gomplate is not installed. Please install it to generate Nomad jobs."
     echo "You can install gomplate from the release page: <https://github.com/hairyhenderson/gomplate/releases>"
+    exit 1
+fi
+
+if ! command -v jq &> /dev/null; then
+    echo "jq is not installed. Please install it to generate Nomad jobs."
     exit 1
 fi
 

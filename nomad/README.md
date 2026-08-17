@@ -68,6 +68,9 @@ The following variables are available:
   Each key-value pair is injected into the Nomad task's `env` block. This can be used to configure scenario-specific
   behavior. For example, `MIN_AGENTS` controls the minimum number of agents each agent will wait for before running.
   See individual scenario documentation for available environment variables.
+- `runtime`: Selects which job template renders the vars file. (_optional_, defaults to `holochain`)
+  The value must match a template `nomad/<runtime>_scenario.tpl.hcl`, currently either `holochain` (default) or
+  `peerkit`.
 
 ## Generate Nomad Jobs
 
@@ -82,11 +85,12 @@ nix run .#generate-nomad-jobs --job-variant-path nomad/job-variants/canonical-sc
 This will generate the nomad job files in the `nomad/job-variants/demo`, `nomad/job-variants/canonical`, and `nomad/job-variants/canonical-scaled` directories.
 The job files will be named after the scenario name, with the `.nomad.hcl` extension.
 
-Mind that in order to generate the jobs, you need to have `gomplate` installed. You can use the one provided by nix
-shell in this repository or download the latest version from
+Mind that in order to generate the jobs, you need to have `gomplate` and `jq` installed. You can use the ones provided
+by the nix shell in this repository or download the latest `gomplate` from
 the [gomplate releases page](https://github.com/hairyhenderson/gomplate/releases).
 
 ## Jobs template
 
-Currently, all the jobs are generated from the same template, which is located in `nomad/run_scenario.tpl.hcl`. This
-template uses the variables defined in the vars file to generate the Nomad job file.
+By default, jobs are generated from the Holochain template, located in `nomad/holochain_scenario.tpl.hcl`. This
+template uses the variables defined in the vars file to generate the Nomad job file. Vars files can select a
+different template by setting the `runtime` key (see above).
