@@ -5058,6 +5058,46 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "peerkit_client_instrumented"
+version = "0.7.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "tempfile",
+ "tokio",
+ "wind_tunnel_core",
+ "wind_tunnel_instruments",
+ "wind_tunnel_instruments_derive",
+]
+
+[[package]]
+name = "peerkit_first_connection"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "peerkit_wind_tunnel_runner",
+ "tokio",
+]
+
+[[package]]
+name = "peerkit_wind_tunnel_runner"
+version = "0.7.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ed25519-dalek 2.2.0",
+ "env_logger",
+ "hex",
+ "peerkit_client_instrumented",
+ "serde",
+ "serde_json",
+ "sha3",
+ "which",
+ "wind_tunnel_runner",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"

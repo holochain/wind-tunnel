@@ -236,6 +236,43 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - peerkit_first_connection
+        run: |
+          set -x
+
+          relay_log="$(mktemp)"
+
+          # Shared access secret for relay and nodes. A throwaway value is fine
+          # here: the relay only lives for this step. No effect while the pinned
+          # CLI predates PEERKIT_NETWORK_ACCESS support (relay stays open).
+          export PEERKIT_NETWORK_ACCESS="ci-smoke-$RANDOM"
+
+          # Start a local Peerkit relay (also warms the npx cache)
+          nix develop .#peerkit -c bash -c "peerkit relay 127.0.0.1:9910 > $relay_log 2>&1 &"
+
+          # Wait for the relay to print its dial address
+          for _ in $(seq 1 120); do
+            grep -q 'Relay address: ' "$relay_log" && break
+            sleep 1
+          done
+          relay_addr="$(sed -n 's/^Relay address: //p' "$relay_log" | head -n 1)"
+          test -n "$relay_addr"
+
+          # Run the scenario against the local relay
+          peerkit_bin="$(nix develop .#peerkit -c bash -c 'command -v peerkit')"
+          WT_PEERKIT_PATH="$peerkit_bin" nix run .#rust-smoke-test -- \
+            --package peerkit_first_connection -- \
+            --relay-dial-addr "$relay_addr" \
+            --agents 2 --behaviour initiator:1 --behaviour responder:1 \
+            --duration 15 --no-progress
+
+          # Stop the relay
+          pkill -f '@peerkit/cli' || true
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       - name: Smoke test - write_get_agent_activity
         run: |
           MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Features
+
+- Add `peerkit_client_instrumented` and `peerkit_wind_tunnel_runner` crates, providing a Peerkit binding for wind-tunnel alongside the existing Holochain and Kitsune bindings.
+- Add `peerkit_first_connection` scenario, exercising a first connection between two Peerkit peers via a deployed relay.
+- Add a `peerkit` Nix devShell for local development against the Peerkit binding and scenario.
+
+### Changed
+
+- **BREAKING**: Rename the Nomad job template `nomad/run_scenario.tpl.hcl` to `nomad/holochain_scenario.tpl.hcl` and introduce a new `runtime` vars key to select the scenario runtime. Anything that renders Nomad job templates by path must be updated to the new filename.
+
 ## \[[0.7.0](https://github.com/holochain/wind-tunnel/compare/v0.6.0...v0.7.0)\] - 2026-06-10
 
 ### Features

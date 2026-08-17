@@ -11,6 +11,8 @@ members = [
   "bindings/runner",
   "bindings/kitsune_client",
   "bindings/kitsune_runner",
+  "bindings/peerkit_client",
+  "bindings/peerkit_runner",
 
   "summariser",
 
@@ -24,6 +26,7 @@ members = [
   "scenarios/local_signals",
   "scenarios/mixed_arc_get_agent_activity",
   "scenarios/mixed_arc_must_get_agent_activity",
+  "scenarios/peerkit_first_connection",
   "scenarios/remote_call_rate",
   "scenarios/remote_signals",
   "scenarios/single_write_many_read",
@@ -91,6 +94,8 @@ default-members = [
   "bindings/runner",
   "bindings/kitsune_client",
   "bindings/kitsune_runner",
+  "bindings/peerkit_client",
+  "bindings/peerkit_runner",
 
   "summariser",
 
@@ -115,6 +120,7 @@ parking_lot = "0.12.1"
 log = "0.4.20"
 env_logger = "0.11.2"
 derive_more = { version = "2", features = ["error", "display", "debug"] }
+ed25519-dalek = "2"
 opentelemetry_api = { version = "0.20.0", features = ["metrics"] }
 toml = "0.8.10"
 serde = "1"
@@ -195,6 +201,8 @@ holochain_client_instrumented = { path = "./bindings/client", version = "0.7.0" 
 holochain_wind_tunnel_runner = { path = "./bindings/runner", version = "0.7.0" }
 kitsune_client_instrumented = { path = "./bindings/kitsune_client", version = "0.7.0" }
 kitsune_wind_tunnel_runner = { path = "./bindings/kitsune_runner", version = "0.7.0" }
+peerkit_client_instrumented = { path = "./bindings/peerkit_client", version = "0.7.0" }
+peerkit_wind_tunnel_runner = { path = "./bindings/peerkit_runner", version = "0.7.0" }
 serial_test = "3.2"
 
 # hApp Manager

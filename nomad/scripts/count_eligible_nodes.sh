@@ -7,7 +7,7 @@
 #   --include-threefold-node-pool Include threefold pool nodes; default excludes them.
 #
 # Eligibility criteria:
-#   - Nomad version >= 1.11.0 (matches the constraint in run_scenario.tpl.hcl)
+#   - Nomad version >= 1.11.0 (matches the constraint in holochain_scenario.tpl.hcl)
 #   - Status: ready
 #   - Scheduling eligibility: eligible
 #   - Pool filter: exclude `threefold` unless explicitly included
@@ -53,7 +53,7 @@ echo "Found total nodes: $(<<< "$nodes_json" jq length)" >&2
 
 include_threefold_json="$INCLUDE_THREEFOLD_NODE_POOL"
 
-# Filter for eligible nodes with version >= 1.11.0 (matching run_scenario.tpl.hcl)
+# Filter for eligible nodes with version >= 1.11.0 (matching holochain_scenario.tpl.hcl)
 # and pool policy (exclude threefold by default).
 eligible_nodes_json=$(<<< "$nodes_json" jq --argjson include_threefold "$include_threefold_json" '[.[] | select(
     .Status == "ready" and
