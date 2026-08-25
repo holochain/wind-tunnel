@@ -1,5 +1,5 @@
 use kitsune_wind_tunnel_runner::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 use std::time::Duration;
 
 fn agent_setup(ctx: &mut AgentContext<KitsuneRunnerContext, KitsuneAgentContext>) -> HookResult {
