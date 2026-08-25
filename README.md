@@ -754,6 +754,7 @@ At each run of the `Run performance tests on Nomad cluster` workflow the run sum
 - For Holochain [0.6.0](https://holochain.github.io/wind-tunnel/run.20260122014235.fa30db8abb9fab46fac38a108f7892e9100adfd0.html) with 10 nodes
 - For Holochain [0.6.1](https://holochain.github.io/wind-tunnel/run.20260604063033.777341572bfb4ab046d8be15d52017459b2fc5d6.html) with 30 nodes
 - For Holochain [0.7.0](https://holochain.github.io/wind-tunnel/run.20260827111415.a758c587e7f95ed00d49d3ecf98d0e53952f2b9c.html) with 30 nodes
+- For Holochain [0.7.0-rc.1](https://holochain.github.io/wind-tunnel/run.20260728210601.705fb1a3cc6c63838e558f98a034b72aac36f9df.html) with 30 nodes
 
 ### Version compatibility
 
