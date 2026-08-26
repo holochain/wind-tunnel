@@ -93,7 +93,10 @@ async fn drives_the_repl_end_to_end() {
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let messages = node.take_messages().await;
-            if messages.contains(&("1".to_string(), "pong".to_string())) {
+            if messages
+                .iter()
+                .any(|message| message.alias == "1" && message.text_prefix == "pong")
+            {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(50)).await;

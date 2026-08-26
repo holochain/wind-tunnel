@@ -1,10 +1,10 @@
-use crate::event::{PeerkitEvent, parse_line, short_agent_id};
+use crate::event::{PeerStatus, PeerkitEvent, parse_line, short_agent_id};
 use anyhow::{Context, bail};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, Notify};
@@ -22,15 +22,49 @@ pub struct PeerkitNodeConfig {
     pub identity_path: PathBuf,
 }
 
+/// One message received from a peer, as observed on this node's stdout.
+#[derive(Debug, Clone)]
+pub struct ReceivedMessage {
+    /// CLI alias of the sender.
+    pub alias: String,
+    /// First 64 characters of the message text (enough for scenario headers;
+    /// full payloads are not retained to bound memory).
+    pub text_prefix: String,
+    /// Full byte length of the message text.
+    pub len: usize,
+    /// When the message line was read from the CLI's stdout.
+    pub received_at: Instant,
+}
+
+/// Snapshot of one row of the `peers` command output.
+#[derive(Debug, Clone)]
+pub struct PeerInfo {
+    /// CLI alias assigned to the peer.
+    pub alias: String,
+    /// Truncated `first8…last4` form of the peer's agent ID.
+    pub short_agent_id: String,
+    /// `None` when connected but the type is not yet known (e.g. straight
+    /// after a `[Peer connected]` event, before the next `peers` poll).
+    pub status: Option<PeerStatus>,
+}
+
 #[derive(Debug, Default)]
 struct NodeState {
     agent_id: Option<String>,
-    relay_connected: bool,
+    relay_connected_at: Option<Instant>,
+    /// Seconds from relay connection to each `[Peer discovered]` event.
+    discovery_times_s: Vec<f64>,
     discovered: HashSet<String>,
     /// short agent ID -> alias, refreshed by `peers` output.
     aliases: HashMap<String, String>,
-    messages: Vec<(String, String)>,
+    /// alias -> latest known peer info, refreshed by `peers` output and
+    /// connect/disconnect events.
+    peers: HashMap<String, PeerInfo>,
+    messages: Vec<ReceivedMessage>,
+    /// Count of async `Send failed:` lines since the last drain.
+    send_failures: u64,
     last_connect: Option<PeerkitEvent>,
+    last_disconnect: Option<PeerkitEvent>,
     exited: bool,
 }
 
@@ -145,7 +179,7 @@ impl PeerkitNode {
 
     /// Wait until the node has a circuit address on the relay.
     pub async fn wait_for_relay(&self, timeout: Duration) -> anyhow::Result<()> {
-        self.wait_for(timeout, |state| state.relay_connected)
+        self.wait_for(timeout, |state| state.relay_connected_at.is_some())
             .await
             .context("relay connection not established")
     }
@@ -206,9 +240,20 @@ impl PeerkitNode {
         self.write_command(&format!("send {alias} {text}")).await
     }
 
-    /// Drain messages received since the last call. Pairs of (alias, text).
-    pub async fn take_messages(&self) -> Vec<(String, String)> {
+    /// Drain messages received since the last call.
+    pub async fn take_messages(&self) -> Vec<ReceivedMessage> {
         std::mem::take(&mut self.state.0.lock().await.messages)
+    }
+
+    /// Drain discovery times (seconds from relay connection to each peer
+    /// discovery) recorded since the last call.
+    pub async fn take_discovery_times(&self) -> Vec<f64> {
+        std::mem::take(&mut self.state.0.lock().await.discovery_times_s)
+    }
+
+    /// Drain the count of asynchronous `Send failed:` lines since the last call.
+    pub async fn take_send_failures(&self) -> u64 {
+        std::mem::take(&mut self.state.0.lock().await.send_failures)
     }
 
     /// Ask the CLI to exit and wait for the process to stop.
@@ -229,29 +274,76 @@ impl PeerkitNode {
 }
 
 fn apply_event(state: &mut NodeState, event: PeerkitEvent) {
+    let now = Instant::now();
     match event {
         PeerkitEvent::SessionStarted { agent_id } => state.agent_id = Some(agent_id),
-        PeerkitEvent::RelayConnected { .. } => state.relay_connected = true,
+        PeerkitEvent::RelayConnected { .. } => {
+            state.relay_connected_at.get_or_insert(now);
+        }
         PeerkitEvent::PeerDiscovered { agent_id } => {
-            state.discovered.insert(agent_id);
+            if state.discovered.insert(agent_id)
+                && let Some(relay_at) = state.relay_connected_at
+            {
+                state
+                    .discovery_times_s
+                    .push(now.duration_since(relay_at).as_secs_f64());
+            }
         }
         PeerkitEvent::PeerConnected { alias, agent_id } => {
             state.discovered.insert(agent_id.clone());
-            state.aliases.insert(short_agent_id(&agent_id), alias);
+            let short = short_agent_id(&agent_id);
+            state.aliases.insert(short.clone(), alias.clone());
+            state.peers.insert(
+                alias.clone(),
+                PeerInfo {
+                    alias,
+                    short_agent_id: short,
+                    status: None,
+                },
+            );
+        }
+        PeerkitEvent::PeerDisconnected { alias } => {
+            if let Some(info) = state.peers.get_mut(&alias) {
+                info.status = Some(PeerStatus::NotConnected);
+            }
         }
         PeerkitEvent::PeersEntry {
             alias,
             short_agent_id,
+            status,
         } => {
-            state.aliases.insert(short_agent_id, alias);
+            state.aliases.insert(short_agent_id.clone(), alias.clone());
+            state.peers.insert(
+                alias.clone(),
+                PeerInfo {
+                    alias,
+                    short_agent_id,
+                    status,
+                },
+            );
         }
-        PeerkitEvent::MessageReceived { alias, text } => state.messages.push((alias, text)),
+        PeerkitEvent::MessageReceived { alias, text } => state.messages.push(ReceivedMessage {
+            alias,
+            text_prefix: text.chars().take(64).collect(),
+            len: text.len(),
+            received_at: now,
+        }),
         event @ (PeerkitEvent::ConnectSucceeded { .. } | PeerkitEvent::ConnectFailed { .. }) => {
             state.last_connect = Some(event)
         }
+        event @ (PeerkitEvent::DisconnectSucceeded { .. }
+        | PeerkitEvent::DisconnectFailed { .. }) => {
+            if let PeerkitEvent::DisconnectSucceeded { alias } = &event
+                && let Some(info) = state.peers.get_mut(alias)
+            {
+                info.status = Some(PeerStatus::NotConnected);
+            }
+            state.last_disconnect = Some(event)
+        }
         PeerkitEvent::SendFailed { reason } => {
             log::warn!("peerkit send failed: {reason}");
+            state.send_failures += 1;
         }
-        PeerkitEvent::PeerDisconnected { .. } | PeerkitEvent::Other(_) => {}
+        PeerkitEvent::Other(_) => {}
     }
 }
