@@ -108,14 +108,14 @@ function generate_run_summary() {
           --arg behaviours "${behaviours:-}" \
           --arg wind_tunnel_version "$wind_tunnel_version" \
           --argjson holochain_build_info "$holochain_build_info" \
-          --argjson duration "$duration" '
+          --argjson run_duration "$duration" '
             # Split behaviours field; default to [""]
             ($behaviours | if . == "" then [""] else split(" ") end) as $bs
             | {
                 run_id: $run_id,
                 scenario_name: $scenario_name,
                 started_at: $started_at,
-                duration: $duration,
+                run_duration: $run_duration,
                 assigned_behaviours: (reduce $bs[] as $b ({}; .[$b] += 1)),
                 peer_count: $peer_count,
                 peer_end_count: $peer_end_count,
