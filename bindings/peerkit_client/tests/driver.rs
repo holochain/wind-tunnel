@@ -1,4 +1,4 @@
-use peerkit_client_instrumented::{PeerkitNode, PeerkitNodeConfig};
+use peerkit_client_instrumented::{PeerStatus, PeerkitNode, PeerkitNodeConfig};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -20,13 +20,19 @@ echo "2026-08-12T10:00:01.000Z [Peer discovered]: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 while IFS= read -r line; do
   case "$line" in
     peers)
-      echo "1   [not connected] 0 blob(s)  bbbbbbbb…bbbb"
+      echo "1   [direct]   0 blob(s)  bbbbbbbb…bbbb"
       ;;
     "conn 1")
       echo "Connected to 1"
       ;;
     "send 1 "*)
       echo "2026-08-12T10:00:05.000Z [Message from 1]: pong"
+      ;;
+    "dsct 1")
+      echo "Disconnected from 1"
+      ;;
+    "dsct 9")
+      echo "Disconnecting from 9 failed: Error: Unknown alias: 9"
       ;;
     exit)
       exit 0
@@ -104,6 +110,20 @@ async fn drives_the_repl_end_to_end() {
     })
     .await
     .unwrap();
+
+    let peers = node.list_peers().await.unwrap();
+    assert_eq!(peers.len(), 1);
+    assert_eq!(peers[0].alias, "1");
+    assert_eq!(peers[0].status, Some(PeerStatus::Direct));
+
+    node.disconnect("1").await.unwrap();
+    assert!(node.disconnect("9").await.is_err());
+
+    let times = node.take_discovery_times().await;
+    assert_eq!(times.len(), 1);
+
+    let messages = node.take_messages().await;
+    assert!(messages.iter().all(|m| m.text_prefix.len() <= 64));
 
     node.shutdown().await.unwrap();
 }

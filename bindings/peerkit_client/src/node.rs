@@ -231,6 +231,38 @@ impl PeerkitNode {
         }
     }
 
+    /// Disconnect from a connected peer by alias.
+    #[wind_tunnel_instrument]
+    pub async fn disconnect(&self, alias: &str) -> anyhow::Result<()> {
+        self.state.0.lock().await.last_disconnect = None;
+        self.write_command(&format!("dsct {alias}")).await?;
+        self.wait_for(Duration::from_secs(30), |state| {
+            state.last_disconnect.is_some()
+        })
+        .await
+        .context("no response to dsct command")?;
+        match self.state.0.lock().await.last_disconnect.clone() {
+            Some(PeerkitEvent::DisconnectSucceeded { .. }) => Ok(()),
+            Some(PeerkitEvent::DisconnectFailed { reason, .. }) => {
+                bail!("disconnect failed: {reason}")
+            }
+            _ => bail!("no response to dsct command"),
+        }
+    }
+
+    /// Refresh and return the peer table by running the `peers` command.
+    ///
+    /// The CLI prints one row per peer with no terminator, so this waits a
+    /// fixed 300ms for the rows to arrive before taking a snapshot. Rows for
+    /// peers that have expired from the CLI's agent store are never removed
+    /// by the CLI, so departed peers keep showing as `[not connected]`.
+    pub async fn list_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
+        self.write_command("peers").await?;
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let state = self.state.0.lock().await;
+        Ok(state.peers.values().cloned().collect())
+    }
+
     /// Send a text message to a peer by alias.
     ///
     /// The CLI prints nothing on success, so this only measures the command
