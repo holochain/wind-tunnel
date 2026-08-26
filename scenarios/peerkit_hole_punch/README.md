@@ -96,7 +96,11 @@ WT_PEERKIT_PATH="$peerkit_bin" PEERKIT_MESSAGES_PER_PEER=5 PEERKIT_MESSAGE_BYTES
 - `PEERKIT_MESSAGES_PER_PEER` — the number of messages sent to each peer
   connected in a cycle. Defaults to 100.
 - `PEERKIT_MESSAGE_BYTES` — the size in bytes of each message payload.
-  Defaults to 262144 (256 KiB).
+  Defaults to 32768 (32 KiB). This is temporarily lower than the 256 KiB
+  originally requested in [holochain/wind-tunnel#692][issue-692], because the
+  `peerkit` CLI crashes under the full 256 KiB x 100 message workload; see
+  [holochain/wind-tunnel#704][issue-704] for the investigation tracking
+  issue. Raise this back to 262144 once that issue is resolved.
 - `PEERKIT_CYCLE_INTERVAL_MS` — the delay in milliseconds between behaviour
   cycles. Defaults to 1000.
 - `PEERKIT_NETWORK_ACCESS` — the relay's access secret. When set, it is
@@ -108,3 +112,6 @@ WT_PEERKIT_PATH="$peerkit_bin" PEERKIT_MESSAGES_PER_PEER=5 PEERKIT_MESSAGE_BYTES
   in the suggested command above; read automatically when the flag is not
   passed. Set by the Nomad job template as the relay dial address for the
   scenario task. The flag takes precedence when both are set.
+
+[issue-692]: https://github.com/holochain/wind-tunnel/issues/692
+[issue-704]: https://github.com/holochain/wind-tunnel/issues/704

@@ -47,7 +47,7 @@ fn node_behaviour(
 ) -> anyhow::Result<()> {
     let max_peers = env_u64("PEERKIT_MAX_PEERS", 10)? as usize;
     let messages_per_peer = env_u64("PEERKIT_MESSAGES_PER_PEER", 100)?;
-    let message_bytes = env_u64("PEERKIT_MESSAGE_BYTES", 262_144)? as usize;
+    let message_bytes = env_u64("PEERKIT_MESSAGE_BYTES", 32_768)? as usize;
 
     let cycle = ctx.get().cycle;
     ctx.get_mut().cycle += 1;
