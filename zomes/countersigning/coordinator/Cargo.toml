@@ -11,7 +11,8 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hdk = { workspace = true }
+# This zome is the one place that needs the countersigning host functions.
+hdk = { workspace = true, features = ["unstable-countersigning"] }
 countersigning_integrity = { workspace = true }
 
 [lints]

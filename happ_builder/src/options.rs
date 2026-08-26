@@ -10,6 +10,7 @@ pub struct HappManagerOptions {
     pub zomes_dir: PathBuf,
     pub dna_target_dir: PathBuf,
     pub happ_target_dir: PathBuf,
+    pub workspace_root: PathBuf,
 }
 
 impl Default for HappManagerOptions {
@@ -20,6 +21,7 @@ impl Default for HappManagerOptions {
         let zomes_dir = manifest_dir.join("../../zomes");
         let dna_target_dir = manifest_dir.join("../../dnas");
         let happ_target_dir = manifest_dir.join("../../happs");
+        let workspace_root = manifest_dir.join("../..");
 
         HappManagerOptions {
             package_name: env::var("CARGO_PKG_NAME").expect("CARGO_PKG_NAME not set"),
@@ -29,6 +31,7 @@ impl Default for HappManagerOptions {
             zomes_dir,
             dna_target_dir,
             happ_target_dir,
+            workspace_root,
         }
     }
 }
@@ -73,6 +76,12 @@ impl HappManagerOptions {
     /// Set `happ_target_dir` option
     pub fn happ_target_dir(mut self, path: PathBuf) -> Self {
         self.happ_target_dir = path;
+        self
+    }
+
+    /// Set `workspace_root` option
+    pub fn workspace_root(mut self, path: PathBuf) -> Self {
+        self.workspace_root = path;
         self
     }
 }
