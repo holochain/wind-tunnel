@@ -93,18 +93,22 @@ fn node_behaviour(
     // Send the message batch to every connected peer.
     for alias in &connected {
         let started = Instant::now();
+        let mut sent: u64 = 0;
         for seq in 1..=messages_per_peer {
             let payload = message_payload(cycle, seq, message_bytes);
-            if let Err(e) = send_text(ctx, alias, &payload) {
-                log::warn!("send to {alias} failed: {e:#}");
-                report_error(ctx, "send", 1);
+            match send_text(ctx, alias, &payload) {
+                Ok(()) => sent += 1,
+                Err(e) => {
+                    log::warn!("send to {alias} failed: {e:#}");
+                    report_error(ctx, "send", 1);
+                }
             }
         }
         ctx.runner_context().reporter().add_custom(
             ReportMetric::new("peerkit_send_batch")
                 .with_field("duration_s", started.elapsed().as_secs_f64())
-                .with_field("messages", messages_per_peer)
-                .with_field("bytes", messages_per_peer * message_bytes as u64),
+                .with_field("messages", sent)
+                .with_field("bytes", sent * message_bytes as u64),
         );
     }
 
