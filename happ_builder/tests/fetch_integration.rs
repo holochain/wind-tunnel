@@ -39,6 +39,7 @@ fn should_fetch_happ() {
         zomes_dir: tempdir.path().join("zomes"),
         dna_target_dir: tempdir.path().join("dnas"),
         happ_target_dir: happ_target_dir.clone(),
+        workspace_root: tempdir.path().to_path_buf(),
     };
 
     let manager = HappManager::from(options);
@@ -76,6 +77,7 @@ fn should_refetch_if_hash_mismatch() {
         zomes_dir: tempdir.path().join("zomes"),
         dna_target_dir: tempdir.path().join("dnas"),
         happ_target_dir: happ_target_dir.clone(),
+        workspace_root: tempdir.path().to_path_buf(),
     };
 
     let manager = HappManager::from(options);
@@ -116,6 +118,7 @@ fn should_fail_if_hash_mismatch_manifest() {
         zomes_dir: tempdir.path().join("zomes"),
         dna_target_dir: tempdir.path().join("dnas"),
         happ_target_dir: happ_target_dir.clone(),
+        workspace_root: tempdir.path().to_path_buf(),
     };
 
     let manager = HappManager::from(options);

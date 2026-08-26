@@ -33,6 +33,7 @@ impl HappBuilder<'_> {
     /// The built hApp(s) will appear as `/happs/<scenario-name>/<happ-name>.happ` from the project root.
     pub fn build_happs(&self) -> anyhow::Result<()> {
         self.print_rerun_for_package(&self.options.manifest_dir);
+        self.print_rerun_for_workspace();
 
         let mut built_dnas = vec![];
 
@@ -238,6 +239,16 @@ impl HappBuilder<'_> {
         }
 
         Ok(wasm_path)
+    }
+
+    /// Ensure the build script is re-run when the workspace manifest or lockfile changes.
+    fn print_rerun_for_workspace(&self) {
+        for file in ["Cargo.toml", "Cargo.lock"] {
+            let path = self.options.workspace_root.join(file);
+            if path.exists() {
+                println!("cargo:rerun-if-changed={}", path.display());
+            }
+        }
     }
 
     fn print_rerun_for_package(&self, package_dir: &Path) {
