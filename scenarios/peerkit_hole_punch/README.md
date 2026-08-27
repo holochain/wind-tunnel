@@ -14,7 +14,9 @@ behaviour `node`, which repeats the following cycle:
    each to every peer connected this cycle.
 4. Fold any messages received from other agents' batches into per-sender
    trackers, emitting a metric once a batch of `PEERKIT_MESSAGES_PER_PEER`
-   messages from one sender has fully arrived.
+   messages from one sender has fully arrived. This is repeated over a short
+   grace period, because sends are fire-and-forget and hanging up straight
+   after the last dispatch can cut a batch short on the receiving peer.
 5. Disconnect from every peer connected this cycle.
 6. Sleep for `PEERKIT_CYCLE_INTERVAL_MS` before starting the next cycle.
 
@@ -32,28 +34,41 @@ The scenario runs for 60 s by default unless otherwise configured with option
 - `wt.instruments.operation_duration` (`operation_id=disconnect`) — time
   taken by each `dsct` call, recorded automatically by the instrumented
   client.
-- `peerkit_peer_discovery_time` (field `value_s`) — seconds between this
-  node connecting to the relay and it discovering each peer. Because the
+- `wt.instruments.operation_duration` (`operation_id=send_text`) — time taken
+  by each individual `send` call, recorded automatically by the instrumented
+  client. This is emitted **per message**, so a run produces
+  `PEERKIT_MESSAGES_PER_PEER` × peers × cycles points per agent and
+  dominates the volume written to InfluxDB. The aggregate
+  `wt.custom.peerkit_send_batch` below covers the same dispatch work per
+  batch; prefer it unless per-call latency is what you are after.
+- `wt.custom.peerkit_peer_discovery_time` (field `value_s`) — seconds between
+  this node connecting to the relay and it discovering each peer. Because the
   measurement is relative to *this* node's own relay connection time, peers
   that start later inflate the reported value: it includes their startup
   skew, not just discovery latency.
-- `peerkit_connection_established` (tag `type` = `direct` | `relayed` |
-  `unknown`, field `count`) — emitted once per successful connect, after
-  re-polling `peers`. The connection type is polled immediately after
-  connecting, so a later DCUtR upgrade from `relayed` to `direct` is not
-  re-reported.
-- `peerkit_send_batch` (fields `duration_s`, `messages`, `bytes`) — emitted
-  per peer per cycle after dispatching all sends to that peer. This measures
-  REPL dispatch time on the sending side, not delivery — delivery time is
-  captured separately by `peerkit_receive_batch` on the receiving node.
-- `peerkit_receive_batch` (fields `duration_s`, `messages`, `bytes`) —
-  emitted on the receiving node when the last message of a sender's batch
-  arrives; `duration_s` is the time between the arrival of the first and
-  last message in that batch.
-- `peerkit_error_count` (tag `kind` = `connect` | `send` | `send_async` |
-  `disconnect` | `receive_incomplete`, field `count`) — emitted as errors
-  happen. `receive_incomplete` counts batches that were dropped because they
-  did not complete within 300 s of receiving their first message.
+- `wt.custom.peerkit_connection_established` (tag `type` = `direct` |
+  `relayed` | `unknown`, field `count`) — emitted once per successful
+  connect, after re-polling `peers`. The connection type is polled
+  immediately after connecting, so a later DCUtR upgrade from `relayed` to
+  `direct` is not re-reported.
+- `wt.custom.peerkit_send_batch` (fields `duration_s`, `messages`, `bytes`) —
+  emitted per peer per cycle after dispatching all sends to that peer.
+  `bytes` counts the payloads actually dispatched, which exceeds
+  `PEERKIT_MESSAGE_BYTES` per message when that value is smaller than the
+  message header. This measures REPL dispatch time on the sending side, not
+  delivery — delivery time is captured separately by
+  `wt.custom.peerkit_receive_batch` on the receiving node.
+- `wt.custom.peerkit_receive_batch` (fields `duration_s`, `messages`,
+  `bytes`) — emitted on the receiving node when the last message of a
+  sender's batch arrives; `duration_s` is the time between the arrival of the
+  first and last message in that batch.
+- `wt.custom.peerkit_error_count` (tag `kind` = `connect` | `send` |
+  `send_async` | `disconnect` | `receive_incomplete`, field `count`) —
+  emitted as errors happen. `receive_incomplete` counts batches that were
+  dropped because they did not complete within 30 s of receiving their first
+  message, plus any batch still in flight when the agent tears down, which is
+  flushed and counted then. The framework's shutdown signal at the end of a
+  run is not an error and is never counted here.
 
 ### Prerequisites
 
