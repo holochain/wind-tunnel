@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use wind_tunnel_core::prelude::AgentBailError;
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
@@ -16,6 +17,8 @@ struct AgentContextValue {
 }
 
 impl UserValuesConstraint for AgentContextValue {}
+
+static ORDINARY_ERROR_ATTEMPTS: AtomicUsize = AtomicUsize::new(0);
 
 fn sample_cli_cfg() -> WindTunnelScenarioCli {
     WindTunnelScenarioCli {
@@ -92,6 +95,30 @@ fn capture_error_in_agent_setup_and_continue() {
     let result = run(scenario);
 
     assert!(result.is_ok());
+}
+
+#[test]
+fn ordinary_agent_behaviour_errors_are_rate_limited() {
+    fn agent_behaviour(
+        _ctx: &mut AgentContext<RunnerContextValue, AgentContextValue>,
+    ) -> HookResult {
+        ORDINARY_ERROR_ATTEMPTS.fetch_add(1, Ordering::SeqCst);
+        Err(anyhow::anyhow!("Error in agent behaviour hook"))
+    }
+
+    ORDINARY_ERROR_ATTEMPTS.store(0, Ordering::SeqCst);
+
+    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
+        "ordinary_agent_behaviour_errors_are_rate_limited",
+        sample_cli_cfg(),
+    )
+    .with_default_duration_s(2)
+    .use_agent_behaviour(agent_behaviour);
+
+    let result = run(scenario);
+
+    assert!(result.is_ok());
+    assert!(ORDINARY_ERROR_ATTEMPTS.load(Ordering::SeqCst) <= 3);
 }
 
 #[test]

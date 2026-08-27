@@ -28,7 +28,9 @@ pub enum PeerkitEvent {
     ConnectSucceeded { alias: String },
     /// Response to a failed `conn` command.
     ConnectFailed { alias: String, reason: String },
-    /// Printed when a `send` command fails (success prints nothing).
+    /// Response to a successful `send` command.
+    SendSucceeded { alias: String },
+    /// Response to a failed `send` command.
     SendFailed { reason: String },
     /// One row of `peers` command output; the agent ID is truncated
     /// to the CLI's `first8…last4` form.
@@ -90,6 +92,11 @@ pub fn parse_line(raw: &str) -> Option<PeerkitEvent> {
     if let Some(reason) = line.strip_prefix("Send failed: ") {
         return Some(PeerkitEvent::SendFailed {
             reason: reason.to_string(),
+        });
+    }
+    if let Some(alias) = line.strip_prefix("Sent to ") {
+        return Some(PeerkitEvent::SendSucceeded {
+            alias: alias.trim().to_string(),
         });
     }
     if let Some(event) = parse_bracketed_event(&line) {
@@ -279,6 +286,16 @@ mod tests {
             Some(PeerkitEvent::ConnectFailed {
                 alias: "1".to_string(),
                 reason: "Error: dial failure".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn parses_send_results() {
+        assert_eq!(
+            parse_line("Sent to 1"),
+            Some(PeerkitEvent::SendSucceeded {
+                alias: "1".to_string()
             })
         );
         assert_eq!(

@@ -3,7 +3,8 @@ use anyhow::{Context, bail};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
@@ -61,10 +62,9 @@ struct NodeState {
     /// connect/disconnect events.
     peers: HashMap<String, PeerInfo>,
     messages: Vec<ReceivedMessage>,
-    /// Count of async `Send failed:` lines since the last drain.
-    send_failures: u64,
     last_connect: Option<PeerkitEvent>,
     last_disconnect: Option<PeerkitEvent>,
+    last_send: Option<PeerkitEvent>,
     exited: bool,
 }
 
@@ -74,8 +74,71 @@ pub struct PeerkitNode {
     agent_id: String,
     child: Mutex<Child>,
     stdin: Mutex<ChildStdin>,
+    send: Mutex<()>,
+    send_ownership: Arc<StdMutex<SendOwnership>>,
+    send_failures: Arc<AtomicU64>,
+    send_unusable: AtomicBool,
     state: Arc<(Mutex<NodeState>, Notify)>,
     reporter: Arc<Reporter>,
+}
+
+#[derive(Debug, Default)]
+struct SendOwnership {
+    active: bool,
+    terminal_failure_pending: bool,
+}
+
+struct SendLifecycle<'a> {
+    ownership: &'a StdMutex<SendOwnership>,
+    send_failures: &'a AtomicU64,
+    unusable: &'a AtomicBool,
+    completed: bool,
+}
+
+impl<'a> SendLifecycle<'a> {
+    fn new(
+        ownership: &'a StdMutex<SendOwnership>,
+        send_failures: &'a AtomicU64,
+        unusable: &'a AtomicBool,
+    ) -> Self {
+        Self {
+            ownership,
+            send_failures,
+            unusable,
+            completed: false,
+        }
+    }
+
+    fn complete(&mut self) {
+        let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+        ownership.active = false;
+        ownership.terminal_failure_pending = false;
+        self.completed = true;
+    }
+
+    fn fail(&mut self) {
+        let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+        ownership.active = false;
+        ownership.terminal_failure_pending = false;
+        self.unusable.store(true, Ordering::Release);
+        self.completed = true;
+    }
+}
+
+impl Drop for SendLifecycle<'_> {
+    fn drop(&mut self) {
+        let terminal_failure_pending = {
+            let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+            ownership.active = false;
+            std::mem::take(&mut ownership.terminal_failure_pending)
+        };
+        if !self.completed && terminal_failure_pending {
+            self.send_failures.fetch_add(1, Ordering::Relaxed);
+        }
+        if !self.completed {
+            self.unusable.store(true, Ordering::Release);
+        }
+    }
 }
 
 impl PeerkitNode {
@@ -95,7 +158,11 @@ impl PeerkitNode {
         let stdin = child.stdin.take().expect("stdin is piped");
 
         let state: Arc<(Mutex<NodeState>, Notify)> = Arc::default();
+        let send_ownership = Arc::new(StdMutex::new(SendOwnership::default()));
+        let send_failures = Arc::new(AtomicU64::new(0));
         let reader_state = state.clone();
+        let reader_send_ownership = send_ownership.clone();
+        let reader_send_failures = send_failures.clone();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stdout).lines();
             while let Ok(Some(line)) = lines.next_line().await {
@@ -106,7 +173,12 @@ impl PeerkitNode {
                     log::debug!("peerkit stdout: {content}");
                 }
                 let mut guard = reader_state.0.lock().await;
-                apply_event(&mut guard, event);
+                apply_event(
+                    &mut guard,
+                    event,
+                    &reader_send_ownership,
+                    &reader_send_failures,
+                );
                 drop(guard);
                 reader_state.1.notify_waiters();
             }
@@ -118,6 +190,10 @@ impl PeerkitNode {
             agent_id: String::new(),
             child: Mutex::new(child),
             stdin: Mutex::new(stdin),
+            send: Mutex::new(()),
+            send_ownership,
+            send_failures,
+            send_unusable: AtomicBool::new(false),
             state,
             reporter,
         };
@@ -272,11 +348,56 @@ impl PeerkitNode {
 
     /// Send a text message to a peer by alias.
     ///
-    /// The CLI prints nothing on success, so this only measures the command
-    /// dispatch. Delivery is observed on the receiving side.
+    /// Waits for the CLI's matching success or failure record after the
+    /// command reaches stdin. The wait fails if the process exits or no record
+    /// arrives within 30 seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the CLI reports a send failure, exits, or does not
+    /// produce a terminal send record within 30 seconds.
     #[wind_tunnel_instrument]
     pub async fn send_text(&self, alias: &str, text: &str) -> anyhow::Result<()> {
-        self.write_command(&format!("send {alias} {text}")).await
+        if self.send_unusable.load(Ordering::Acquire) {
+            bail!("peerkit node is unusable after a send failure, timeout, or cancellation")
+        }
+        let _send = self.send.lock().await;
+        if self.send_unusable.load(Ordering::Acquire) {
+            bail!("peerkit node is unusable after a send failure, timeout, or cancellation")
+        }
+        let mut lifecycle = SendLifecycle::new(
+            &self.send_ownership,
+            &self.send_failures,
+            &self.send_unusable,
+        );
+        let mut state = self.state.0.lock().await;
+        state.last_send = None;
+        {
+            let mut ownership = self.send_ownership.lock().expect("send ownership poisoned");
+            ownership.active = true;
+            ownership.terminal_failure_pending = false;
+        }
+        drop(state);
+        self.write_command(&format!("send {alias} {text}")).await?;
+        self.wait_for(Duration::from_secs(30), |state| {
+            matches!(
+                &state.last_send,
+                Some(PeerkitEvent::SendSucceeded { alias: sent_alias }) if sent_alias == alias
+            ) || matches!(&state.last_send, Some(PeerkitEvent::SendFailed { .. }))
+        })
+        .await
+        .context("no response to send command")?;
+        match self.state.0.lock().await.last_send.clone() {
+            Some(PeerkitEvent::SendSucceeded { alias: sent_alias }) if sent_alias == alias => {
+                lifecycle.complete();
+                Ok(())
+            }
+            Some(PeerkitEvent::SendFailed { reason }) => {
+                lifecycle.fail();
+                bail!("send failed: {reason}")
+            }
+            _ => bail!("no response to send command"),
+        }
     }
 
     /// Drain messages received since the last call.
@@ -292,7 +413,7 @@ impl PeerkitNode {
 
     /// Drain the count of asynchronous `Send failed:` lines since the last call.
     pub async fn take_send_failures(&self) -> u64 {
-        std::mem::take(&mut self.state.0.lock().await.send_failures)
+        self.send_failures.swap(0, Ordering::AcqRel)
     }
 
     /// Ask the CLI to exit and wait for the process to stop.
@@ -312,7 +433,12 @@ impl PeerkitNode {
     }
 }
 
-fn apply_event(state: &mut NodeState, event: PeerkitEvent) {
+fn apply_event(
+    state: &mut NodeState,
+    event: PeerkitEvent,
+    send_ownership: &StdMutex<SendOwnership>,
+    send_failures: &AtomicU64,
+) {
     let now = Instant::now();
     match event {
         PeerkitEvent::SessionStarted { agent_id } => state.agent_id = Some(agent_id),
@@ -379,10 +505,63 @@ fn apply_event(state: &mut NodeState, event: PeerkitEvent) {
             }
             state.last_disconnect = Some(event)
         }
+        event @ PeerkitEvent::SendSucceeded { .. } => {
+            let ownership = send_ownership.lock().expect("send ownership poisoned");
+            if ownership.active && state.last_send.is_none() {
+                state.last_send = Some(event);
+            }
+        }
         PeerkitEvent::SendFailed { reason } => {
             log::warn!("peerkit send failed: {reason}");
-            state.send_failures += 1;
+            let mut ownership = send_ownership.lock().expect("send ownership poisoned");
+            if ownership.active && state.last_send.is_none() {
+                ownership.terminal_failure_pending = true;
+                state.last_send = Some(PeerkitEvent::SendFailed { reason });
+            } else {
+                send_failures.fetch_add(1, Ordering::Relaxed);
+            }
         }
         PeerkitEvent::Other(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropped_send_counts_an_unconsumed_terminal_failure() {
+        let ownership = StdMutex::new(SendOwnership {
+            active: true,
+            terminal_failure_pending: true,
+        });
+        let send_failures = AtomicU64::new(0);
+        let unusable = AtomicBool::new(false);
+
+        {
+            let _lifecycle = SendLifecycle::new(&ownership, &send_failures, &unusable);
+        }
+
+        assert!(!ownership.lock().unwrap().active);
+        assert_eq!(send_failures.load(Ordering::Acquire), 1);
+        assert!(unusable.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn completed_send_does_not_count_its_terminal_failure() {
+        let ownership = StdMutex::new(SendOwnership {
+            active: true,
+            terminal_failure_pending: true,
+        });
+        let send_failures = AtomicU64::new(0);
+        let unusable = AtomicBool::new(false);
+
+        let mut lifecycle = SendLifecycle::new(&ownership, &send_failures, &unusable);
+        lifecycle.complete();
+        drop(lifecycle);
+
+        assert!(!ownership.lock().unwrap().active);
+        assert_eq!(send_failures.load(Ordering::Acquire), 0);
+        assert!(!unusable.load(Ordering::Acquire));
     }
 }

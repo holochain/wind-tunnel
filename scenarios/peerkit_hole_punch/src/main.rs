@@ -15,13 +15,13 @@ const RECEIVE_TRACKER_TIMEOUT: Duration = Duration::from_secs(30);
 /// Number of drain attempts made after dispatching a cycle's message batches
 /// and before disconnecting from the peers they were sent to.
 ///
-/// `send_text` is fire-and-forget: the CLI acknowledges nothing, so the only
-/// evidence of delivery is the receiving side's message events. Hanging up
-/// immediately after the last dispatch can therefore cut a batch short on the
-/// peer, leaving a `peerkit_receive_batch` that silently never completes.
-/// Polling for a bounded grace period gives the other end real wall-clock time
-/// to receive. Together with [RECEIVE_GRACE_INTERVAL] this budgets 2 s, which
-/// is short enough not to dominate a cycle that has just moved megabytes.
+/// A completed `send_text` command includes local stream backpressure, but it
+/// does not prove remote application delivery. Hanging up immediately after
+/// the last dispatch can still cut a batch short on the peer, leaving a
+/// `peerkit_receive_batch` that never completes. Polling for a bounded grace
+/// period gives the other end real wall-clock time to receive. Together with
+/// [RECEIVE_GRACE_INTERVAL] this budgets 2 s, which is short enough not to
+/// dominate a cycle that has just moved megabytes.
 const RECEIVE_GRACE_ATTEMPTS: u32 = 10;
 
 /// Delay between the drain attempts of the receive grace period.
@@ -74,6 +74,58 @@ fn receive_tracker_key(alias: &str, text_prefix: &str) -> Option<String> {
     Some(format!("{alias}:{sender_cycle}"))
 }
 
+struct SendBatchResult {
+    sent: u64,
+    sent_bytes: u64,
+    error: Option<anyhow::Error>,
+    stopped_for_shutdown: bool,
+}
+
+enum SendBatchError {
+    Shutdown,
+    Failed(anyhow::Error),
+}
+
+fn send_peer_batch<Send>(
+    cycle: u64,
+    messages_per_peer: u64,
+    message_bytes: usize,
+    mut send: Send,
+) -> SendBatchResult
+where
+    Send: FnMut(String) -> Result<(), SendBatchError>,
+{
+    let mut result = SendBatchResult {
+        sent: 0,
+        sent_bytes: 0,
+        error: None,
+        stopped_for_shutdown: false,
+    };
+
+    for seq in 1..=messages_per_peer {
+        let payload = message_payload(cycle, seq, message_bytes);
+        let payload_bytes = payload.len() as u64;
+        match send(payload) {
+            Ok(()) => {
+                result.sent += 1;
+                // `message_payload` cannot shrink below its header, so the
+                // payload's own length is the only accurate byte count.
+                result.sent_bytes += payload_bytes;
+            }
+            Err(SendBatchError::Shutdown) => {
+                result.stopped_for_shutdown = true;
+                break;
+            }
+            Err(SendBatchError::Failed(error)) => {
+                result.error = Some(error);
+                break;
+            }
+        }
+    }
+
+    result
+}
+
 fn agent_setup(ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>) -> HookResult {
     start_node(ctx)
 }
@@ -83,7 +135,7 @@ fn node_behaviour(
 ) -> anyhow::Result<()> {
     let max_peers = env_u64("PEERKIT_MAX_PEERS", 10)? as usize;
     let messages_per_peer = env_u64("PEERKIT_MESSAGES_PER_PEER", 100)?;
-    let message_bytes = env_u64("PEERKIT_MESSAGE_BYTES", 32_768)? as usize;
+    let message_bytes = env_u64("PEERKIT_MESSAGE_BYTES", 262_144)? as usize;
 
     let cycle = ctx.get().cycle;
     ctx.get_mut().cycle += 1;
@@ -137,48 +189,43 @@ fn node_behaviour(
     }
 
     // Send the message batch to every connected peer.
+    let mut behavior_error = None;
     for alias in &connected {
         if ctx.shutdown_listener().should_shutdown() {
             break;
         }
         let started = Instant::now();
-        let mut sent: u64 = 0;
-        let mut sent_bytes: u64 = 0;
-        for seq in 1..=messages_per_peer {
+        let result = send_peer_batch(cycle, messages_per_peer, message_bytes, |payload| {
             if ctx.shutdown_listener().should_shutdown() {
-                break;
+                return Err(SendBatchError::Shutdown);
             }
-            let payload = message_payload(cycle, seq, message_bytes);
-            let payload_bytes = payload.len() as u64;
-            match send_text(ctx, alias, &payload) {
-                Ok(()) => {
-                    sent += 1;
-                    // `message_payload` cannot shrink below its header, so the
-                    // payload's own length is the only accurate byte count.
-                    sent_bytes += payload_bytes;
-                }
-                Err(e) => {
-                    if ctx.shutdown_listener().should_shutdown() {
-                        break;
-                    }
-                    log::warn!("send to {alias} failed: {e:#}");
-                    report_error(ctx, "send", 1);
-                }
-            }
+            send_text(ctx, alias, &payload).map_err(SendBatchError::Failed)
+        });
+        let shutting_down = ctx.shutdown_listener().should_shutdown();
+        if let Some(e) = result.error
+            && !shutting_down
+        {
+            log::warn!("send to {alias} failed: {e:#}");
+            report_error(ctx, "send", 1);
+            behavior_error.get_or_insert(e);
         }
         // A batch cut short by shutdown is still reported, for the part of it
         // that was actually dispatched.
         ctx.runner_context().reporter().add_custom(
             ReportMetric::new("peerkit_send_batch")
                 .with_field("duration_s", started.elapsed().as_secs_f64())
-                .with_field("messages", sent)
-                .with_field("bytes", sent_bytes),
+                .with_field("messages", result.sent)
+                .with_field("bytes", result.sent_bytes),
         );
+        if result.stopped_for_shutdown || shutting_down {
+            break;
+        }
     }
 
     // Account for messages received from other agents' batches. When this
     // cycle dispatched a batch of its own, hold the connections open while
-    // doing so — see [RECEIVE_GRACE_ATTEMPTS] for why disconnecting
+    // doing so — local send completion does not prove remote application
+    // delivery. See [RECEIVE_GRACE_ATTEMPTS] for why disconnecting
     // immediately is unsafe. A cycle that sent nothing has nothing to wait
     // for, so it drains once and moves on.
     let drains = if connected.is_empty() {
@@ -217,6 +264,12 @@ fn node_behaviour(
     let send_failures = take_send_failures(ctx)?;
     if send_failures > 0 {
         report_error(ctx, "send_async", send_failures);
+    }
+
+    if let Some(error) = behavior_error
+        && !ctx.shutdown_listener().should_shutdown()
+    {
+        return Err(error);
     }
 
     sleep_interval(ctx)
@@ -370,5 +423,70 @@ mod tests {
     #[test]
     fn receive_tracker_key_rejects_a_message_without_a_header() {
         assert_eq!(receive_tracker_key("4", "no-header-here"), None);
+    }
+
+    #[test]
+    fn send_batch_stops_after_the_first_send_error() {
+        let mut attempts = Vec::new();
+        let result = send_peer_batch(1, 100, 32, |payload| {
+            attempts.push(payload);
+            Err(SendBatchError::Failed(anyhow::anyhow!("peer exited")))
+        });
+
+        assert_eq!(attempts.len(), 1);
+        assert_eq!(result.sent, 0);
+        assert_eq!(result.sent_bytes, 0);
+        assert!(result.error.is_some());
+        assert!(!result.stopped_for_shutdown);
+    }
+
+    #[test]
+    fn send_batch_reports_messages_before_a_later_send_error() {
+        let mut attempts = Vec::new();
+        let result = send_peer_batch(1, 100, 32, |payload| {
+            attempts.push(payload);
+            if attempts.len() == 1 {
+                Ok(())
+            } else {
+                Err(SendBatchError::Failed(anyhow::anyhow!("peer exited")))
+            }
+        });
+
+        assert_eq!(attempts.len(), 2);
+        assert_eq!(result.sent, 1);
+        assert_eq!(result.sent_bytes, 32);
+        assert!(result.error.is_some());
+        assert!(!result.stopped_for_shutdown);
+    }
+
+    #[test]
+    fn send_batch_stops_without_an_error_when_shutdown_arrives() {
+        let mut attempts = Vec::new();
+        let result = send_peer_batch(1, 100, 32, |payload| {
+            attempts.push(payload);
+            if attempts.len() == 1 {
+                Ok(())
+            } else {
+                Err(SendBatchError::Shutdown)
+            }
+        });
+
+        assert_eq!(attempts.len(), 2);
+        assert_eq!(result.sent, 1);
+        assert_eq!(result.sent_bytes, 32);
+        assert!(result.error.is_none());
+        assert!(result.stopped_for_shutdown);
+    }
+
+    #[test]
+    fn a_failed_peer_batch_does_not_prevent_the_next_peer_batch() {
+        let failed = send_peer_batch(1, 100, 32, |_payload| {
+            Err(SendBatchError::Failed(anyhow::anyhow!("peer exited")))
+        });
+        let successful = send_peer_batch(1, 2, 32, |_payload| Ok(()));
+
+        assert!(failed.error.is_some());
+        assert_eq!(successful.sent, 2);
+        assert_eq!(successful.sent_bytes, 64);
     }
 }

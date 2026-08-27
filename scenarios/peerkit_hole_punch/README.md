@@ -15,8 +15,9 @@ behaviour `node`, which repeats the following cycle:
 4. Fold any messages received from other agents' batches into per-sender
    trackers, emitting a metric once a batch of `PEERKIT_MESSAGES_PER_PEER`
    messages from one sender has fully arrived. This is repeated over a short
-   grace period, because sends are fire-and-forget and hanging up straight
-   after the last dispatch can cut a batch short on the receiving peer.
+   grace period because local send completion includes stream backpressure but
+   does not prove remote application delivery; hanging up straight after the
+   last dispatch can still cut a batch short on the receiving peer.
 5. Disconnect from every peer connected this cycle.
 6. Sleep for `PEERKIT_CYCLE_INTERVAL_MS` before starting the next cycle.
 
@@ -35,8 +36,10 @@ The scenario runs for 60 s by default unless otherwise configured with option
   taken by each `dsct` call, recorded automatically by the instrumented
   client.
 - `wt.instruments.operation_duration` (`operation_id=send_text`) — time taken
-  by each individual `send` call, recorded automatically by the instrumented
-  client. This is emitted **per message**, so a run produces
+  by each individual `send` command, including command dispatch and local
+  stream backpressure, recorded automatically by the instrumented client. It
+  does not prove remote application delivery. This is emitted **per message**,
+  so a run produces
   `PEERKIT_MESSAGES_PER_PEER` × peers × cycles points per agent and
   dominates the volume written to InfluxDB. The aggregate
   `wt.custom.peerkit_send_batch` below covers the same dispatch work per
@@ -55,13 +58,15 @@ The scenario runs for 60 s by default unless otherwise configured with option
   emitted per peer per cycle after dispatching all sends to that peer.
   `bytes` counts the payloads actually dispatched, which exceeds
   `PEERKIT_MESSAGE_BYTES` per message when that value is smaller than the
-  message header. This measures REPL dispatch time on the sending side, not
-  delivery — delivery time is captured separately by
-  `wt.custom.peerkit_receive_batch` on the receiving node.
+  message header. `duration_s` measures command dispatch plus local stream
+  backpressure on the sending side, not remote delivery. Remote-delivery
+  evidence is captured separately by `wt.custom.peerkit_receive_batch` on the
+  receiving node.
 - `wt.custom.peerkit_receive_batch` (fields `duration_s`, `messages`,
   `bytes`) — emitted on the receiving node when the last message of a
   sender's batch arrives; `duration_s` is the time between the arrival of the
-  first and last message in that batch.
+  first and last message in that batch. These receive metrics are the evidence
+  of remote delivery, unlike sender-side send timing.
 - `wt.custom.peerkit_error_count` (tag `kind` = `connect` | `send` |
   `send_async` | `disconnect` | `receive_incomplete`, field `count`) —
   emitted as errors happen. `receive_incomplete` counts batches that were
@@ -111,7 +116,7 @@ WT_PEERKIT_PATH="$peerkit_bin" PEERKIT_MESSAGES_PER_PEER=5 PEERKIT_MESSAGE_BYTES
 - `PEERKIT_MESSAGES_PER_PEER` — the number of messages sent to each peer
   connected in a cycle. Defaults to 100.
 - `PEERKIT_MESSAGE_BYTES` — the size in bytes of each message payload.
-  Defaults to 32768 (32 KiB).
+  Defaults to 262144 (256 KiB).
 - `PEERKIT_CYCLE_INTERVAL_MS` — the delay in milliseconds between behaviour
   cycles. Defaults to 1000.
 - `PEERKIT_NETWORK_ACCESS` — the relay's access secret. When set, it is

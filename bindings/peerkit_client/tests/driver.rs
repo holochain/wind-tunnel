@@ -25,8 +25,24 @@ while IFS= read -r line; do
     "conn 1")
       echo "Connected to 1"
       ;;
+    "send 1 delayed")
+      echo "2026-08-12T10:00:05.000Z [Message from __command_read__]: send 1 delayed"
+      (sleep 0.2; echo "Sent to 1") &
+      ;;
+    "send 1 cancel")
+      echo "2026-08-12T10:00:05.000Z [Message from __command_read__]: send 1 cancel"
+      (sleep 0.2; echo "Sent to 1") &
+      ;;
+    "send 1 later")
+      echo "2026-08-12T10:00:05.000Z [Message from __command_read__]: send 1 later"
+      (sleep 0.4; echo "Sent to 1") &
+      ;;
     "send 1 "*)
       echo "2026-08-12T10:00:05.000Z [Message from 1]: pong"
+      echo "Sent to 1"
+      ;;
+    "send 9 "*)
+      (sleep 0.2; echo "Send failed: Error: Unknown alias: 9"; sleep 0.2; echo "Send failed: Error: asynchronous failure") &
       ;;
     "dsct 1")
       echo "Disconnected from 1"
@@ -63,21 +79,40 @@ fn write_fake_peerkit(dir: &std::path::Path) -> PathBuf {
     path
 }
 
-#[tokio::test(flavor = "multi_thread")]
-async fn drives_the_repl_end_to_end() {
-    let dir = tempfile::tempdir().unwrap();
-    let peerkit_bin = write_fake_peerkit(dir.path());
-
-    let node = PeerkitNode::start(
+async fn start_fake_peerkit(dir: &std::path::Path) -> PeerkitNode {
+    let peerkit_bin = write_fake_peerkit(dir);
+    PeerkitNode::start(
         PeerkitNodeConfig {
             peerkit_bin,
             relay_dial_addrs: vec!["/ip4/127.0.0.1/udp/9000/webrtc-direct".to_string()],
-            identity_path: dir.path().join("identity.key"),
+            identity_path: dir.join("identity.key"),
         },
         test_reporter(),
     )
     .await
+    .unwrap()
+}
+
+async fn wait_for_command_read(node: &PeerkitNode, command: &str) {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let found = node.take_messages().await.into_iter().any(|message| {
+                message.alias == "__command_read__" && message.text_prefix == command
+            });
+            if found {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
     .unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn drives_the_repl_end_to_end() {
+    let dir = tempfile::tempdir().unwrap();
+    let node = start_fake_peerkit(dir.path()).await;
 
     assert_eq!(node.agent_id(), "a".repeat(64));
 
@@ -125,6 +160,54 @@ async fn drives_the_repl_end_to_end() {
 
     let times = node.take_discovery_times().await;
     assert_eq!(times.len(), 1);
+
+    node.shutdown().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn waits_for_send_completion_events() {
+    let dir = tempfile::tempdir().unwrap();
+    let node = Arc::new(start_fake_peerkit(dir.path()).await);
+
+    node.send_text("1", "first").await.unwrap();
+
+    let mut delayed_send = tokio::spawn({
+        let node = Arc::clone(&node);
+        async move { node.send_text("1", "delayed").await }
+    });
+    wait_for_command_read(&node, "send 1 delayed").await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), &mut delayed_send)
+            .await
+            .is_err()
+    );
+    delayed_send.await.unwrap().unwrap();
+
+    let error = node.send_text("9", "failure").await.unwrap_err();
+    assert!(error.to_string().contains("Unknown alias: 9"));
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(node.take_send_failures().await, 1);
+    let unusable = node.send_text("1", "after-failure").await.unwrap_err();
+    assert!(unusable.to_string().contains("unusable"));
+
+    node.shutdown().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn rejects_sends_after_cancellation_before_late_completion() {
+    let dir = tempfile::tempdir().unwrap();
+    let node = Arc::new(start_fake_peerkit(dir.path()).await);
+
+    let send_task = tokio::spawn({
+        let node = Arc::clone(&node);
+        async move { node.send_text("1", "cancel").await }
+    });
+    wait_for_command_read(&node, "send 1 cancel").await;
+    send_task.abort();
+    assert!(send_task.await.unwrap_err().is_cancelled());
+
+    let error = node.send_text("1", "later").await.unwrap_err();
+    assert!(error.to_string().contains("unusable"));
 
     node.shutdown().await.unwrap();
 }
