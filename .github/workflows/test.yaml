@@ -241,6 +241,7 @@ jobs:
           set -x
 
           relay_log="$(mktemp)"
+          scenario_log="$(mktemp)"
 
           # Shared access secret for relay and nodes. A throwaway value is fine
           # here: the relay only lives for this step. No effect while the pinned
@@ -258,7 +259,8 @@ jobs:
           relay_addr="$(sed -n 's/^Relay address: //p' "$relay_log" | head -n 1)"
           test -n "$relay_addr"
 
-          # Run the scenario against the local relay
+          # Run the scenario against the local relay. The in-memory reporter
+          # prints custom metrics so the run can be checked for real work.
           peerkit_bin="$(nix develop .#peerkit -c bash -c 'command -v peerkit')"
           WT_PEERKIT_PATH="$peerkit_bin" \
           PEERKIT_MAX_PEERS=2 PEERKIT_MESSAGES_PER_PEER=5 PEERKIT_MESSAGE_BYTES=1024 \
@@ -266,10 +268,16 @@ jobs:
             --package peerkit_hole_punch -- \
             --relay-dial-addr "$relay_addr" \
             --agents 3 --behaviour node:3 \
-            --duration 15 --no-progress
+            --duration 15 --no-progress \
+            --reporter in-memory-with-custom-metrics 2>&1 | tee "$scenario_log"
 
           # Stop the relay
           pkill -f '@peerkit/cli' || true
+
+          # Exiting 0 is not enough: without at least one connection the
+          # scenario would idle through discovery failures and still pass.
+          grep -q 'wt.custom.peerkit_connection_established' "$scenario_log" \
+            || { echo "no peer connection was established during the run"; exit 1; }
 
           echo "==> Available space after step"
           echo
