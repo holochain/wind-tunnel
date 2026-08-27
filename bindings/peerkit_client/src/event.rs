@@ -1,3 +1,14 @@
+/// Connection status of a peer as shown by the `peers` command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PeerStatus {
+    /// Direct (hole-punched or directly dialed) connection.
+    Direct,
+    /// Connection through the relay circuit.
+    Relayed,
+    /// Discovered but not currently connected.
+    NotConnected,
+}
+
 /// A parsed line of `peerkit node` stdout.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PeerkitEvent {
@@ -17,14 +28,21 @@ pub enum PeerkitEvent {
     ConnectSucceeded { alias: String },
     /// Response to a failed `conn` command.
     ConnectFailed { alias: String, reason: String },
-    /// Printed when a `send` command fails (success prints nothing).
+    /// Response to a successful `send` command.
+    SendSucceeded { alias: String },
+    /// Response to a failed `send` command.
     SendFailed { reason: String },
     /// One row of `peers` command output; the agent ID is truncated
     /// to the CLI's `first8…last4` form.
     PeersEntry {
         alias: String,
         short_agent_id: String,
+        status: Option<PeerStatus>,
     },
+    /// Response to a successful `dsct` command.
+    DisconnectSucceeded { alias: String },
+    /// Response to a failed `dsct` command.
+    DisconnectFailed { alias: String, reason: String },
     /// Any other non-empty line (startup banner, help text, ...).
     Other(String),
 }
@@ -58,9 +76,27 @@ pub fn parse_line(raw: &str) -> Option<PeerkitEvent> {
             reason: reason.to_string(),
         });
     }
+    if let Some(alias) = line.strip_prefix("Disconnected from ") {
+        return Some(PeerkitEvent::DisconnectSucceeded {
+            alias: alias.trim().to_string(),
+        });
+    }
+    if let Some(rest) = line.strip_prefix("Disconnecting from ")
+        && let Some((alias, reason)) = rest.split_once(" failed: ")
+    {
+        return Some(PeerkitEvent::DisconnectFailed {
+            alias: alias.to_string(),
+            reason: reason.to_string(),
+        });
+    }
     if let Some(reason) = line.strip_prefix("Send failed: ") {
         return Some(PeerkitEvent::SendFailed {
             reason: reason.to_string(),
+        });
+    }
+    if let Some(alias) = line.strip_prefix("Sent to ") {
+        return Some(PeerkitEvent::SendSucceeded {
+            alias: alias.trim().to_string(),
         });
     }
     if let Some(event) = parse_bracketed_event(&line) {
@@ -122,6 +158,13 @@ fn parse_peers_entry(line: &str) -> Option<PeerkitEvent> {
         return None;
     }
     let status_start = head.find('[')?;
+    let status_end = head[status_start..].find(']').map(|i| status_start + i)?;
+    let status = match &head[status_start + 1..status_end] {
+        "direct" => Some(PeerStatus::Direct),
+        "relayed" => Some(PeerStatus::Relayed),
+        "not connected" => Some(PeerStatus::NotConnected),
+        _ => None,
+    };
     let alias = head[..status_start].trim();
     if alias.is_empty() || alias.contains(' ') {
         return None;
@@ -136,6 +179,7 @@ fn parse_peers_entry(line: &str) -> Option<PeerkitEvent> {
     Some(PeerkitEvent::PeersEntry {
         alias: alias.to_string(),
         short_agent_id: short_agent_id.to_string(),
+        status,
     })
 }
 
@@ -244,6 +288,16 @@ mod tests {
                 reason: "Error: dial failure".to_string()
             })
         );
+    }
+
+    #[test]
+    fn parses_send_results() {
+        assert_eq!(
+            parse_line("Sent to 1"),
+            Some(PeerkitEvent::SendSucceeded {
+                alias: "1".to_string()
+            })
+        );
         assert_eq!(
             parse_line("Send failed: Error: Unknown alias: 9"),
             Some(PeerkitEvent::SendFailed {
@@ -259,7 +313,54 @@ mod tests {
             parse_line(line),
             Some(PeerkitEvent::PeersEntry {
                 alias: "1".to_string(),
-                short_agent_id: "aaaaaaaa…aaaa".to_string()
+                short_agent_id: "aaaaaaaa…aaaa".to_string(),
+                status: Some(PeerStatus::NotConnected),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_peers_entry_status() {
+        let cases = [
+            (
+                "1   [direct]   0 blob(s)  aaaaaaaa…aaaa",
+                Some(PeerStatus::Direct),
+            ),
+            (
+                "1   [relayed]  0 blob(s)  aaaaaaaa…aaaa",
+                Some(PeerStatus::Relayed),
+            ),
+            (
+                "1   [not connected] 0 blob(s)  aaaaaaaa…aaaa",
+                Some(PeerStatus::NotConnected),
+            ),
+        ];
+        for (line, status) in cases {
+            assert_eq!(
+                parse_line(line),
+                Some(PeerkitEvent::PeersEntry {
+                    alias: "1".to_string(),
+                    short_agent_id: "aaaaaaaa…aaaa".to_string(),
+                    status,
+                }),
+                "line: {line}"
+            );
+        }
+    }
+
+    #[test]
+    fn parses_disconnect_results() {
+        assert_eq!(
+            parse_line("Disconnected from 1"),
+            Some(PeerkitEvent::DisconnectSucceeded {
+                alias: "1".to_string()
+            })
+        );
+        assert_eq!(
+            parse_line("Disconnecting from 1 failed: Error: Not connected to 1"),
+            Some(PeerkitEvent::DisconnectFailed {
+                alias: "1".to_string(),
+                reason: "Error: Not connected to 1".to_string()
             })
         );
     }

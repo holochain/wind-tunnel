@@ -217,6 +217,18 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
                                     log::error!(
                                         "Agent behaviour [{assigned_behaviour}] failed for agent {agent_name}: {e:?}"
                                     );
+
+                                    if cycle_shutdown_receiver.should_shutdown() {
+                                        log::debug!("Stopping agent {agent_name}");
+                                        break;
+                                    }
+
+                                    std::thread::sleep(Duration::from_secs(1));
+
+                                    if cycle_shutdown_receiver.should_shutdown() {
+                                        log::debug!("Stopping agent {agent_name}");
+                                        break;
+                                    }
                                 }
                             }
                         }

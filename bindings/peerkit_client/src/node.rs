@@ -1,10 +1,11 @@
-use crate::event::{PeerkitEvent, parse_line, short_agent_id};
+use crate::event::{PeerStatus, PeerkitEvent, parse_line, short_agent_id};
 use anyhow::{Context, bail};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex as StdMutex};
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, Notify};
@@ -22,15 +23,48 @@ pub struct PeerkitNodeConfig {
     pub identity_path: PathBuf,
 }
 
+/// One message received from a peer, as observed on this node's stdout.
+#[derive(Debug, Clone)]
+pub struct ReceivedMessage {
+    /// CLI alias of the sender.
+    pub alias: String,
+    /// First 64 characters of the message text (enough for scenario headers;
+    /// full payloads are not retained to bound memory).
+    pub text_prefix: String,
+    /// Full byte length of the message text.
+    pub len: usize,
+    /// When the message line was read from the CLI's stdout.
+    pub received_at: Instant,
+}
+
+/// Snapshot of one row of the `peers` command output.
+#[derive(Debug, Clone)]
+pub struct PeerInfo {
+    /// CLI alias assigned to the peer.
+    pub alias: String,
+    /// Truncated `first8…last4` form of the peer's agent ID.
+    pub short_agent_id: String,
+    /// `None` when connected but the type is not yet known (e.g. straight
+    /// after a `[Peer connected]` event, before the next `peers` poll).
+    pub status: Option<PeerStatus>,
+}
+
 #[derive(Debug, Default)]
 struct NodeState {
     agent_id: Option<String>,
-    relay_connected: bool,
+    relay_connected_at: Option<Instant>,
+    /// Seconds from relay connection to each `[Peer discovered]` event.
+    discovery_times_s: Vec<f64>,
     discovered: HashSet<String>,
     /// short agent ID -> alias, refreshed by `peers` output.
     aliases: HashMap<String, String>,
-    messages: Vec<(String, String)>,
+    /// alias -> latest known peer info, refreshed by `peers` output and
+    /// connect/disconnect events.
+    peers: HashMap<String, PeerInfo>,
+    messages: Vec<ReceivedMessage>,
     last_connect: Option<PeerkitEvent>,
+    last_disconnect: Option<PeerkitEvent>,
+    last_send: Option<PeerkitEvent>,
     exited: bool,
 }
 
@@ -40,8 +74,87 @@ pub struct PeerkitNode {
     agent_id: String,
     child: Mutex<Child>,
     stdin: Mutex<ChildStdin>,
+    send: Mutex<()>,
+    send_ownership: Arc<StdMutex<SendOwnership>>,
+    send_failures: Arc<AtomicU64>,
+    /// Latched when a send left the protocol in an unknown state: a 30 second
+    /// wait with no terminal record, a cancellation, or an error raised before
+    /// the round trip completed. A late record from such a send would be
+    /// attributed to the next send, so no further send is allowed.
+    ///
+    /// A `Send failed:` response is *not* an unknown state and does not latch
+    /// this, because the CLI has answered the command and the node can go on
+    /// sending.
+    send_unusable: AtomicBool,
     state: Arc<(Mutex<NodeState>, Notify)>,
     reporter: Arc<Reporter>,
+}
+
+#[derive(Debug, Default)]
+struct SendOwnership {
+    active: bool,
+    terminal_failure_pending: bool,
+}
+
+struct SendLifecycle<'a> {
+    ownership: &'a StdMutex<SendOwnership>,
+    send_failures: &'a AtomicU64,
+    unusable: &'a AtomicBool,
+    completed: bool,
+}
+
+impl<'a> SendLifecycle<'a> {
+    fn new(
+        ownership: &'a StdMutex<SendOwnership>,
+        send_failures: &'a AtomicU64,
+        unusable: &'a AtomicBool,
+    ) -> Self {
+        Self {
+            ownership,
+            send_failures,
+            unusable,
+            completed: false,
+        }
+    }
+
+    /// Close out a send that the CLI acknowledged as delivered.
+    fn complete(&mut self) {
+        let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+        ownership.active = false;
+        ownership.terminal_failure_pending = false;
+        self.completed = true;
+    }
+
+    /// Close out a send that the CLI answered with a `Send failed:` line.
+    ///
+    /// This is an ordinary, recoverable outcome — a scenario that disconnects
+    /// from its peers between cycles races a "not connected" failure by design
+    /// — so the node is left usable for later sends. The failure is claimed
+    /// here rather than counted in `send_failures`: [PeerkitNode::send_text]
+    /// returns it to its caller, and `send_failures` only tracks the
+    /// `Send failed:` lines that no call was waiting for.
+    fn fail(&mut self) {
+        let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+        ownership.active = false;
+        ownership.terminal_failure_pending = false;
+        self.completed = true;
+    }
+}
+
+impl Drop for SendLifecycle<'_> {
+    fn drop(&mut self) {
+        let terminal_failure_pending = {
+            let mut ownership = self.ownership.lock().expect("send ownership poisoned");
+            ownership.active = false;
+            std::mem::take(&mut ownership.terminal_failure_pending)
+        };
+        if !self.completed && terminal_failure_pending {
+            self.send_failures.fetch_add(1, Ordering::Relaxed);
+        }
+        if !self.completed {
+            self.unusable.store(true, Ordering::Release);
+        }
+    }
 }
 
 impl PeerkitNode {
@@ -61,7 +174,11 @@ impl PeerkitNode {
         let stdin = child.stdin.take().expect("stdin is piped");
 
         let state: Arc<(Mutex<NodeState>, Notify)> = Arc::default();
+        let send_ownership = Arc::new(StdMutex::new(SendOwnership::default()));
+        let send_failures = Arc::new(AtomicU64::new(0));
         let reader_state = state.clone();
+        let reader_send_ownership = send_ownership.clone();
+        let reader_send_failures = send_failures.clone();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stdout).lines();
             while let Ok(Some(line)) = lines.next_line().await {
@@ -72,7 +189,12 @@ impl PeerkitNode {
                     log::debug!("peerkit stdout: {content}");
                 }
                 let mut guard = reader_state.0.lock().await;
-                apply_event(&mut guard, event);
+                apply_event(
+                    &mut guard,
+                    event,
+                    &reader_send_ownership,
+                    &reader_send_failures,
+                );
                 drop(guard);
                 reader_state.1.notify_waiters();
             }
@@ -84,6 +206,10 @@ impl PeerkitNode {
             agent_id: String::new(),
             child: Mutex::new(child),
             stdin: Mutex::new(stdin),
+            send: Mutex::new(()),
+            send_ownership,
+            send_failures,
+            send_unusable: AtomicBool::new(false),
             state,
             reporter,
         };
@@ -145,7 +271,7 @@ impl PeerkitNode {
 
     /// Wait until the node has a circuit address on the relay.
     pub async fn wait_for_relay(&self, timeout: Duration) -> anyhow::Result<()> {
-        self.wait_for(timeout, |state| state.relay_connected)
+        self.wait_for(timeout, |state| state.relay_connected_at.is_some())
             .await
             .context("relay connection not established")
     }
@@ -197,18 +323,120 @@ impl PeerkitNode {
         }
     }
 
-    /// Send a text message to a peer by alias.
-    ///
-    /// The CLI prints nothing on success, so this only measures the command
-    /// dispatch. Delivery is observed on the receiving side.
+    /// Disconnect from a connected peer by alias.
     #[wind_tunnel_instrument]
-    pub async fn send_text(&self, alias: &str, text: &str) -> anyhow::Result<()> {
-        self.write_command(&format!("send {alias} {text}")).await
+    pub async fn disconnect(&self, alias: &str) -> anyhow::Result<()> {
+        self.state.0.lock().await.last_disconnect = None;
+        self.write_command(&format!("dsct {alias}")).await?;
+        self.wait_for(Duration::from_secs(30), |state| {
+            state.last_disconnect.is_some()
+        })
+        .await
+        .context("no response to dsct command")?;
+        match self.state.0.lock().await.last_disconnect.clone() {
+            Some(PeerkitEvent::DisconnectSucceeded { .. }) => Ok(()),
+            Some(PeerkitEvent::DisconnectFailed { reason, .. }) => {
+                bail!("disconnect failed: {reason}")
+            }
+            _ => bail!("no response to dsct command"),
+        }
     }
 
-    /// Drain messages received since the last call. Pairs of (alias, text).
-    pub async fn take_messages(&self) -> Vec<(String, String)> {
+    /// Refresh and return the peer table by running the `peers` command.
+    ///
+    /// The table is discarded before the command is sent, so the returned
+    /// snapshot holds only the rows this poll produced rather than every peer
+    /// ever seen with a possibly stale status.
+    ///
+    /// The CLI prints one row per peer with no terminator, so this waits a
+    /// fixed 300ms for the rows to arrive before taking a snapshot. A poll
+    /// that outruns that window therefore reports fewer peers than the CLI
+    /// knows about. Rows for peers that have expired from the CLI's agent
+    /// store are never removed by the CLI, so departed peers keep showing as
+    /// `[not connected]`.
+    pub async fn list_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
+        self.state.0.lock().await.peers.clear();
+        self.write_command("peers").await?;
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let state = self.state.0.lock().await;
+        Ok(state.peers.values().cloned().collect())
+    }
+
+    /// Send a text message to a peer by alias.
+    ///
+    /// Waits for the CLI's matching success or failure record after the
+    /// command reaches stdin. The wait fails if the process exits or no record
+    /// arrives within 30 seconds.
+    ///
+    /// A reported send failure is recoverable: the node remains usable and
+    /// later sends are still attempted. Only an outcome that leaves the
+    /// protocol in an unknown state — a timeout, a cancellation, or an error
+    /// raised before the round trip completed — stops the node from sending
+    /// again, because a late record would then be attributed to the wrong send.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the CLI reports a send failure, exits, does not
+    /// produce a terminal send record within 30 seconds, or an earlier send
+    /// left the node in an unknown state.
+    #[wind_tunnel_instrument]
+    pub async fn send_text(&self, alias: &str, text: &str) -> anyhow::Result<()> {
+        if self.send_unusable.load(Ordering::Acquire) {
+            bail!("peerkit node is unusable after a send timeout or cancellation")
+        }
+        let _send = self.send.lock().await;
+        if self.send_unusable.load(Ordering::Acquire) {
+            bail!("peerkit node is unusable after a send timeout or cancellation")
+        }
+        let mut lifecycle = SendLifecycle::new(
+            &self.send_ownership,
+            &self.send_failures,
+            &self.send_unusable,
+        );
+        let mut state = self.state.0.lock().await;
+        state.last_send = None;
+        {
+            let mut ownership = self.send_ownership.lock().expect("send ownership poisoned");
+            ownership.active = true;
+            ownership.terminal_failure_pending = false;
+        }
+        drop(state);
+        self.write_command(&format!("send {alias} {text}")).await?;
+        self.wait_for(Duration::from_secs(30), |state| {
+            matches!(
+                &state.last_send,
+                Some(PeerkitEvent::SendSucceeded { alias: sent_alias }) if sent_alias == alias
+            ) || matches!(&state.last_send, Some(PeerkitEvent::SendFailed { .. }))
+        })
+        .await
+        .context("no response to send command")?;
+        match self.state.0.lock().await.last_send.clone() {
+            Some(PeerkitEvent::SendSucceeded { alias: sent_alias }) if sent_alias == alias => {
+                lifecycle.complete();
+                Ok(())
+            }
+            Some(PeerkitEvent::SendFailed { reason }) => {
+                lifecycle.fail();
+                bail!("send failed: {reason}")
+            }
+            _ => bail!("no response to send command"),
+        }
+    }
+
+    /// Drain messages received since the last call.
+    pub async fn take_messages(&self) -> Vec<ReceivedMessage> {
         std::mem::take(&mut self.state.0.lock().await.messages)
+    }
+
+    /// Drain discovery times (seconds from relay connection to each peer
+    /// discovery) recorded since the last call.
+    pub async fn take_discovery_times(&self) -> Vec<f64> {
+        std::mem::take(&mut self.state.0.lock().await.discovery_times_s)
+    }
+
+    /// Drain the count of asynchronous `Send failed:` lines since the last call.
+    pub async fn take_send_failures(&self) -> u64 {
+        self.send_failures.swap(0, Ordering::AcqRel)
     }
 
     /// Ask the CLI to exit and wait for the process to stop.
@@ -228,30 +456,155 @@ impl PeerkitNode {
     }
 }
 
-fn apply_event(state: &mut NodeState, event: PeerkitEvent) {
+fn apply_event(
+    state: &mut NodeState,
+    event: PeerkitEvent,
+    send_ownership: &StdMutex<SendOwnership>,
+    send_failures: &AtomicU64,
+) {
+    let now = Instant::now();
     match event {
         PeerkitEvent::SessionStarted { agent_id } => state.agent_id = Some(agent_id),
-        PeerkitEvent::RelayConnected { .. } => state.relay_connected = true,
+        PeerkitEvent::RelayConnected { .. } => {
+            state.relay_connected_at.get_or_insert(now);
+        }
         PeerkitEvent::PeerDiscovered { agent_id } => {
-            state.discovered.insert(agent_id);
+            if state.discovered.insert(agent_id)
+                && let Some(relay_at) = state.relay_connected_at
+            {
+                state
+                    .discovery_times_s
+                    .push(now.duration_since(relay_at).as_secs_f64());
+            }
         }
         PeerkitEvent::PeerConnected { alias, agent_id } => {
             state.discovered.insert(agent_id.clone());
-            state.aliases.insert(short_agent_id(&agent_id), alias);
+            let short = short_agent_id(&agent_id);
+            state.aliases.insert(short.clone(), alias.clone());
+            state.peers.insert(
+                alias.clone(),
+                PeerInfo {
+                    alias,
+                    short_agent_id: short,
+                    status: None,
+                },
+            );
+        }
+        PeerkitEvent::PeerDisconnected { alias } => {
+            if let Some(info) = state.peers.get_mut(&alias) {
+                info.status = Some(PeerStatus::NotConnected);
+            }
         }
         PeerkitEvent::PeersEntry {
             alias,
             short_agent_id,
+            status,
         } => {
-            state.aliases.insert(short_agent_id, alias);
+            state.aliases.insert(short_agent_id.clone(), alias.clone());
+            state.peers.insert(
+                alias.clone(),
+                PeerInfo {
+                    alias,
+                    short_agent_id,
+                    status,
+                },
+            );
         }
-        PeerkitEvent::MessageReceived { alias, text } => state.messages.push((alias, text)),
+        PeerkitEvent::MessageReceived { alias, text } => state.messages.push(ReceivedMessage {
+            alias,
+            text_prefix: text.chars().take(64).collect(),
+            len: text.len(),
+            received_at: now,
+        }),
         event @ (PeerkitEvent::ConnectSucceeded { .. } | PeerkitEvent::ConnectFailed { .. }) => {
             state.last_connect = Some(event)
         }
+        event @ (PeerkitEvent::DisconnectSucceeded { .. }
+        | PeerkitEvent::DisconnectFailed { .. }) => {
+            if let PeerkitEvent::DisconnectSucceeded { alias } = &event
+                && let Some(info) = state.peers.get_mut(alias)
+            {
+                info.status = Some(PeerStatus::NotConnected);
+            }
+            state.last_disconnect = Some(event)
+        }
+        event @ PeerkitEvent::SendSucceeded { .. } => {
+            let ownership = send_ownership.lock().expect("send ownership poisoned");
+            if ownership.active && state.last_send.is_none() {
+                state.last_send = Some(event);
+            }
+        }
         PeerkitEvent::SendFailed { reason } => {
             log::warn!("peerkit send failed: {reason}");
+            let mut ownership = send_ownership.lock().expect("send ownership poisoned");
+            if ownership.active && state.last_send.is_none() {
+                ownership.terminal_failure_pending = true;
+                state.last_send = Some(PeerkitEvent::SendFailed { reason });
+            } else {
+                send_failures.fetch_add(1, Ordering::Relaxed);
+            }
         }
-        PeerkitEvent::PeerDisconnected { .. } | PeerkitEvent::Other(_) => {}
+        PeerkitEvent::Other(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropped_send_counts_an_unconsumed_terminal_failure() {
+        let ownership = StdMutex::new(SendOwnership {
+            active: true,
+            terminal_failure_pending: true,
+        });
+        let send_failures = AtomicU64::new(0);
+        let unusable = AtomicBool::new(false);
+
+        {
+            let _lifecycle = SendLifecycle::new(&ownership, &send_failures, &unusable);
+        }
+
+        assert!(!ownership.lock().unwrap().active);
+        assert_eq!(send_failures.load(Ordering::Acquire), 1);
+        assert!(unusable.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn completed_send_does_not_count_its_terminal_failure() {
+        let ownership = StdMutex::new(SendOwnership {
+            active: true,
+            terminal_failure_pending: true,
+        });
+        let send_failures = AtomicU64::new(0);
+        let unusable = AtomicBool::new(false);
+
+        let mut lifecycle = SendLifecycle::new(&ownership, &send_failures, &unusable);
+        lifecycle.complete();
+        drop(lifecycle);
+
+        assert!(!ownership.lock().unwrap().active);
+        assert_eq!(send_failures.load(Ordering::Acquire), 0);
+        assert!(!unusable.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn failed_send_leaves_the_node_usable() {
+        let ownership = StdMutex::new(SendOwnership {
+            active: true,
+            terminal_failure_pending: true,
+        });
+        let send_failures = AtomicU64::new(0);
+        let unusable = AtomicBool::new(false);
+
+        let mut lifecycle = SendLifecycle::new(&ownership, &send_failures, &unusable);
+        lifecycle.fail();
+        drop(lifecycle);
+
+        assert!(!ownership.lock().unwrap().active);
+        // The failure is returned to the caller of `send_text`, so it must not
+        // also be counted as an asynchronous one.
+        assert_eq!(send_failures.load(Ordering::Acquire), 0);
+        assert!(!unusable.load(Ordering::Acquire));
     }
 }
