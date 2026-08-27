@@ -73,6 +73,7 @@ pub fn start_node(ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentConte
     let relay_dial_addrs = get_relay_dial_addrs(ctx)?;
     let (seed, expected_agent_id) = generate_identity();
     let identity_path = write_identity_file(&expected_agent_id, &seed)?;
+    ctx.get_mut().identity_path = Some(identity_path.clone());
     let peerkit_bin = peerkit_bin_path()?;
     let reporter = ctx.runner_context().reporter();
     let node = ctx
@@ -178,16 +179,32 @@ pub fn take_send_failures(
         .execute_in_place(async move { Ok(node.take_send_failures().await) })
 }
 
-/// Agent teardown hook: stop the `peerkit node` process.
+/// Agent teardown hook: stop the `peerkit node` process and remove its
+/// identity key file.
+///
+/// Deleting the key is best effort: a failure is logged rather than failing
+/// the teardown, since the node itself has already been stopped by then.
 pub fn shutdown_node(
     ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>,
 ) -> HookResult {
-    if let Some(node) = ctx.get_mut().node.take() {
-        ctx.runner_context()
+    let shutdown = match ctx.get_mut().node.take() {
+        Some(node) => ctx
+            .runner_context()
             .executor()
-            .execute_in_place(async move { node.shutdown().await })?;
+            .execute_in_place(async move { node.shutdown().await }),
+        None => Ok(()),
+    };
+    // Remove the key even if the node refused to stop, so it cannot outlive
+    // the agent either way.
+    if let Some(identity_path) = ctx.get_mut().identity_path.take()
+        && let Err(e) = std::fs::remove_file(&identity_path)
+    {
+        log::warn!(
+            "failed to remove identity key {path}: {e}",
+            path = identity_path.display()
+        );
     }
-    Ok(())
+    shutdown
 }
 
 /// Run a Peerkit scenario with the WindTunnel runner.

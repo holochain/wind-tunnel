@@ -96,20 +96,24 @@ async fn drives_the_repl_end_to_end() {
     node.send_text(&alias, "ping").await.unwrap();
 
     // The fake replies to `send` with a message event.
-    tokio::time::timeout(Duration::from_secs(5), async {
+    let received = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let messages = node.take_messages().await;
-            if messages
-                .iter()
-                .any(|message| message.alias == "1" && message.text_prefix == "pong")
+            if let Some(message) = messages
+                .into_iter()
+                .find(|message| message.alias == "1" && message.text_prefix == "pong")
             {
-                break;
+                return message;
             }
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
     })
     .await
     .unwrap();
+
+    // `text_prefix` is capped at 64 characters, not 64 bytes.
+    assert!(received.text_prefix.chars().count() <= 64);
+    assert_eq!(received.len, "pong".len());
 
     let peers = node.list_peers().await.unwrap();
     assert_eq!(peers.len(), 1);
@@ -121,9 +125,6 @@ async fn drives_the_repl_end_to_end() {
 
     let times = node.take_discovery_times().await;
     assert_eq!(times.len(), 1);
-
-    let messages = node.take_messages().await;
-    assert!(messages.iter().all(|m| m.text_prefix.len() <= 64));
 
     node.shutdown().await.unwrap();
 }

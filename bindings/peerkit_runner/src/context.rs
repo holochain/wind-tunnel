@@ -1,5 +1,6 @@
 use peerkit_client_instrumented::PeerkitNode;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use wind_tunnel_runner::prelude::UserValuesConstraint;
 
@@ -21,6 +22,10 @@ pub struct ReceiveTracker {
 pub struct PeerkitAgentContext {
     /// The running `peerkit node` process for this agent.
     pub(crate) node: Option<Arc<PeerkitNode>>,
+    /// The Ed25519 private key seed file backing this agent's identity. It
+    /// lives in a shared temp directory and is deleted at teardown so that
+    /// keys do not accumulate on long-lived hosts.
+    pub(crate) identity_path: Option<PathBuf>,
     /// Scratch for scenarios: the current behaviour-loop iteration.
     pub cycle: u64,
     /// Scratch for scenarios: in-flight receive batches, keyed by

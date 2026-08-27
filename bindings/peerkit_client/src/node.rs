@@ -252,11 +252,18 @@ impl PeerkitNode {
 
     /// Refresh and return the peer table by running the `peers` command.
     ///
+    /// The table is discarded before the command is sent, so the returned
+    /// snapshot holds only the rows this poll produced rather than every peer
+    /// ever seen with a possibly stale status.
+    ///
     /// The CLI prints one row per peer with no terminator, so this waits a
-    /// fixed 300ms for the rows to arrive before taking a snapshot. Rows for
-    /// peers that have expired from the CLI's agent store are never removed
-    /// by the CLI, so departed peers keep showing as `[not connected]`.
+    /// fixed 300ms for the rows to arrive before taking a snapshot. A poll
+    /// that outruns that window therefore reports fewer peers than the CLI
+    /// knows about. Rows for peers that have expired from the CLI's agent
+    /// store are never removed by the CLI, so departed peers keep showing as
+    /// `[not connected]`.
     pub async fn list_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
+        self.state.0.lock().await.peers.clear();
         self.write_command("peers").await?;
         tokio::time::sleep(Duration::from_millis(300)).await;
         let state = self.state.0.lock().await;
