@@ -5,7 +5,27 @@ const NODE: &str = "node";
 
 /// How long an in-flight receive batch may go without completing before it is
 /// dropped and counted as a `receive_incomplete` error.
-const RECEIVE_TRACKER_TIMEOUT: Duration = Duration::from_secs(300);
+///
+/// Must stay comfortably below realistic run durations — 60 s by default here
+/// and 300 s in the Nomad jobs — otherwise no batch can ever age out during a
+/// run and the metric never fires. 30 s is still generous relative to the
+/// 1000 ms default cycle interval.
+const RECEIVE_TRACKER_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Number of drain attempts made after dispatching a cycle's message batches
+/// and before disconnecting from the peers they were sent to.
+///
+/// `send_text` is fire-and-forget: the CLI acknowledges nothing, so the only
+/// evidence of delivery is the receiving side's message events. Hanging up
+/// immediately after the last dispatch can therefore cut a batch short on the
+/// peer, leaving a `peerkit_receive_batch` that silently never completes.
+/// Polling for a bounded grace period gives the other end real wall-clock time
+/// to receive. Together with [RECEIVE_GRACE_INTERVAL] this budgets 2 s, which
+/// is short enough not to dominate a cycle that has just moved megabytes.
+const RECEIVE_GRACE_ATTEMPTS: u32 = 10;
+
+/// Delay between the drain attempts of the receive grace period.
+const RECEIVE_GRACE_INTERVAL: Duration = Duration::from_millis(200);
 
 fn env_u64(name: &str, default: u64) -> anyhow::Result<u64> {
     match std::env::var(name) {
@@ -31,11 +51,27 @@ fn report_error(
 /// Build one message payload: a `<cycle>.<seq>.` header (parsed back on the
 /// receiving side) padded with `x` up to `size` bytes. No whitespace — the
 /// CLI normalizes whitespace in `send` arguments.
+///
+/// A `size` smaller than the header cannot be honoured, because the header is
+/// what lets the receiving side attribute the message to a batch. The payload
+/// is then just the header and is longer than `size`; callers that report the
+/// size must use the returned payload's own length.
 fn message_payload(cycle: u64, seq: u64, size: usize) -> String {
     let mut payload = format!("{cycle}.{seq}.");
     let fill = size.saturating_sub(payload.len());
     payload.push_str(&"x".repeat(fill));
     payload
+}
+
+/// Derive the receive-tracker key for a message received from `alias`.
+///
+/// The key pairs the sender's alias with the cycle number taken from the
+/// `<cycle>.<seq>.` header written by [message_payload], so concurrent batches
+/// from the same peer are tracked separately. Returns `None` when the message
+/// carries no such header and therefore belongs to no batch.
+fn receive_tracker_key(alias: &str, text_prefix: &str) -> Option<String> {
+    let (sender_cycle, _rest) = text_prefix.split_once('.')?;
+    Some(format!("{alias}:{sender_cycle}"))
 }
 
 fn agent_setup(ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>) -> HookResult {
@@ -60,17 +96,27 @@ fn node_behaviour(
         .collect();
     let mut connected = Vec::new();
     for peer in &candidates {
+        // A `conn` for a departed peer blocks for up to 30 s, so re-check
+        // between attempts to keep a stalled cycle interruptible.
+        if ctx.shutdown_listener().should_shutdown() {
+            break;
+        }
         match connect_to_alias(ctx, &peer.alias) {
             Ok(()) => connected.push(peer.alias.clone()),
             Err(e) => {
-                log::warn!("connect to {} failed: {e:#}", peer.alias);
+                // Shutdown is how every run ends, so it must never be counted
+                // as a Peerkit failure.
+                if ctx.shutdown_listener().should_shutdown() {
+                    break;
+                }
+                log::warn!("connect to {alias} failed: {e:#}", alias = peer.alias);
                 report_error(ctx, "connect", 1);
             }
         }
     }
 
     // Record the established connection types with a single `peers` poll.
-    if !connected.is_empty() {
+    if !connected.is_empty() && !ctx.shutdown_listener().should_shutdown() {
         let peers = list_peers(ctx)?;
         for alias in &connected {
             let connection_type = match peers
@@ -92,32 +138,70 @@ fn node_behaviour(
 
     // Send the message batch to every connected peer.
     for alias in &connected {
+        if ctx.shutdown_listener().should_shutdown() {
+            break;
+        }
         let started = Instant::now();
         let mut sent: u64 = 0;
+        let mut sent_bytes: u64 = 0;
         for seq in 1..=messages_per_peer {
+            if ctx.shutdown_listener().should_shutdown() {
+                break;
+            }
             let payload = message_payload(cycle, seq, message_bytes);
+            let payload_bytes = payload.len() as u64;
             match send_text(ctx, alias, &payload) {
-                Ok(()) => sent += 1,
+                Ok(()) => {
+                    sent += 1;
+                    // `message_payload` cannot shrink below its header, so the
+                    // payload's own length is the only accurate byte count.
+                    sent_bytes += payload_bytes;
+                }
                 Err(e) => {
+                    if ctx.shutdown_listener().should_shutdown() {
+                        break;
+                    }
                     log::warn!("send to {alias} failed: {e:#}");
                     report_error(ctx, "send", 1);
                 }
             }
         }
+        // A batch cut short by shutdown is still reported, for the part of it
+        // that was actually dispatched.
         ctx.runner_context().reporter().add_custom(
             ReportMetric::new("peerkit_send_batch")
                 .with_field("duration_s", started.elapsed().as_secs_f64())
                 .with_field("messages", sent)
-                .with_field("bytes", sent * message_bytes as u64),
+                .with_field("bytes", sent_bytes),
         );
     }
 
-    // Account for messages received from other agents' batches.
-    drain_received(ctx, messages_per_peer)?;
+    // Account for messages received from other agents' batches. When this
+    // cycle dispatched a batch of its own, hold the connections open while
+    // doing so — see [RECEIVE_GRACE_ATTEMPTS] for why disconnecting
+    // immediately is unsafe. A cycle that sent nothing has nothing to wait
+    // for, so it drains once and moves on.
+    let drains = if connected.is_empty() {
+        1
+    } else {
+        RECEIVE_GRACE_ATTEMPTS
+    };
+    for attempt in 0..drains {
+        drain_received(ctx, messages_per_peer)?;
+        if attempt + 1 < drains {
+            sleep(ctx, RECEIVE_GRACE_INTERVAL)?;
+        }
+    }
 
     // Disconnect from every peer connected this cycle.
     for alias in &connected {
+        if ctx.shutdown_listener().should_shutdown() {
+            break;
+        }
         if let Err(e) = disconnect_from_alias(ctx, alias) {
+            if ctx.shutdown_listener().should_shutdown() {
+                break;
+            }
             log::warn!("disconnect from {alias} failed: {e:#}");
             report_error(ctx, "disconnect", 1);
         }
@@ -149,11 +233,9 @@ fn drain_received(
     let messages = take_received_messages(ctx)?;
     let mut completed = Vec::new();
     for message in messages {
-        // Header format written by `message_payload`: `<cycle>.<seq>.<fill>`.
-        let Some((sender_cycle, _rest)) = message.text_prefix.split_once('.') else {
+        let Some(key) = receive_tracker_key(&message.alias, &message.text_prefix) else {
             continue;
         };
-        let key = format!("{}:{sender_cycle}", message.alias);
         let tracker = ctx
             .get_mut()
             .receive_trackers
@@ -205,18 +287,40 @@ fn drain_received(
     Ok(())
 }
 
+/// Sleep for `duration`, returning early with a shutdown error if the run ends
+/// while waiting.
+fn sleep(
+    ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>,
+    duration: Duration,
+) -> anyhow::Result<()> {
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            tokio::time::sleep(duration).await;
+            Ok(())
+        })
+}
+
 /// Sleep between behaviour iterations. Configurable with env var
 /// `PEERKIT_CYCLE_INTERVAL_MS`, defaults to 1000.
 fn sleep_interval(
     ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>,
 ) -> anyhow::Result<()> {
     let interval_ms = env_u64("PEERKIT_CYCLE_INTERVAL_MS", 1000)?;
-    ctx.runner_context()
-        .executor()
-        .execute_in_place(async move {
-            tokio::time::sleep(Duration::from_millis(interval_ms)).await;
-            Ok(())
-        })
+    sleep(ctx, Duration::from_millis(interval_ms))
+}
+
+/// Agent teardown: flush the batches still in flight, then stop the node.
+///
+/// Without this, a tracker that is incomplete when the run ends is dropped
+/// with no metric at all, so a truncated batch would go entirely unreported.
+fn agent_teardown(ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>) -> HookResult {
+    let in_flight = ctx.get().receive_trackers.len() as u64;
+    if in_flight > 0 {
+        ctx.get_mut().receive_trackers.clear();
+        report_error(ctx, "receive_incomplete", in_flight);
+    }
+    shutdown_node(ctx)
 }
 
 fn main() -> WindTunnelResult<()> {
@@ -230,8 +334,41 @@ fn main() -> WindTunnelResult<()> {
     .add_capture_env("PEERKIT_CYCLE_INTERVAL_MS")
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour(NODE, node_behaviour)
-    .use_agent_teardown(shutdown_node)
+    .use_agent_teardown(agent_teardown)
     .with_default_duration_s(60);
     run(builder)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn message_payload_pads_to_the_requested_size() {
+        let payload = message_payload(3, 7, 32);
+        assert!(payload.starts_with("3.7."));
+        assert_eq!(payload.len(), 32);
+        assert!(payload["3.7.".len()..].chars().all(|c| c == 'x'));
+    }
+
+    #[test]
+    fn message_payload_keeps_the_whole_header_when_the_size_is_too_small() {
+        let payload = message_payload(1234, 5678, 2);
+        assert_eq!(payload, "1234.5678.");
+        assert!(payload.len() > 2);
+    }
+
+    #[test]
+    fn receive_tracker_key_pairs_the_alias_with_the_sender_cycle() {
+        assert_eq!(
+            receive_tracker_key("4", &message_payload(12, 99, 16)).as_deref(),
+            Some("4:12")
+        );
+    }
+
+    #[test]
+    fn receive_tracker_key_rejects_a_message_without_a_header() {
+        assert_eq!(receive_tracker_key("4", "no-header-here"), None);
+    }
 }
