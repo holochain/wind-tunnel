@@ -162,6 +162,11 @@ jobs:
     needs: run-scenarios
     uses: ./.github/workflows/nomad-common-post.yaml
     if: ${{ always() }}
+    # The workflow-level `permissions` above caps every job at `contents: read`,
+    # which makes the summary job's push to `gh-pages` fail with a 403. Raise it
+    # here so the summary visualiser and runs list can be published.
+    permissions:
+      contents: write
     secrets:
       NOMAD_ACCESS_TOKEN: ${{ secrets.NOMAD_ACCESS_TOKEN }}
       INFLUX_TOKEN: ${{ secrets.INFLUX_TOKEN }}
