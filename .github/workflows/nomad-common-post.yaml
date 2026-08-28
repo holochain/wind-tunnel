@@ -199,7 +199,21 @@ jobs:
           HOLOCHAIN_BIN_URL: ${{ inputs.holochain-bin-url }}
         run: |
           nix develop --command ./nomad/scripts/ci_allocs.sh generate_run_summary alloc_ids.csv "$RUN_SUMMARY_PATH"
-          cat "$RUN_SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+          # The run summary holds one line per agent, so dumping it whole blows past the
+          # 1MB step summary limit and GitHub discards the lot. Emit one row per run
+          # instead. Repeated scenario names here mean job variants that the summariser
+          # will collapse into a single report, because it keys on scenario name and
+          # fingerprint rather than run id.
+          {
+            echo "### Run summary"
+            echo
+            echo "| Scenario | Run ID | Duration (s) | Peers at start | Peers at end |"
+            echo "| --- | --- | --- | ---: | ---: |"
+            jq -s -r 'unique_by(.run_id) | sort_by(.scenario_name, .run_id)[]
+              | "| \(.scenario_name) | \(.run_id) | \(.run_duration // "-") | \(.peer_count) | \(.peer_end_count) |"' \
+              "$RUN_SUMMARY_PATH"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cache summariser
         uses: actions/cache@v6
