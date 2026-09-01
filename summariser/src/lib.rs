@@ -73,6 +73,11 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_app_install
         )),
+        "conductor_startup" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_conductor_startup
+        )),
         "dht_sync_lag" => Some(execute_report_with_common_metrics!(
             client,
             summary,
