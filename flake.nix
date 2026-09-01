@@ -617,6 +617,7 @@
                 config.rustHelper.rust
                 customHolochain
                 inputs'.holonix.packages.hc
+                pkgs.coreutils
                 pkgs.perl
                 pkgs.gnumake
                 pkgs.cmake
@@ -626,6 +627,14 @@
                 set -euo pipefail
 
                 export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
+
+                if [[ -z "''${WT_METRICS_DIR:-}" ]]; then
+                  smoke_metrics_dir="$(mktemp -d)"
+                  export WT_METRICS_DIR="$smoke_metrics_dir"
+                  trap 'rm -rf -- "$smoke_metrics_dir"' EXIT
+                else
+                  mkdir -p "$WT_METRICS_DIR"
+                fi
 
                 RUST_LOG=info cargo run "$@"
               '';
