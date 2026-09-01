@@ -1036,6 +1036,32 @@ pub fn stop_holochain_conductor<SV: UserValuesConstraint>(
 pub fn start_holochain_conductor<SV: UserValuesConstraint>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
 ) -> WindTunnelResult<()> {
+    start_holochain_conductor_without_app(ctx)?;
+
+    if ctx.get().holochain_runner.is_some() {
+        let cell_role_name = ctx.get().cell_role_name();
+        use_installed_app(ctx, &cell_role_name)?;
+    }
+
+    Ok(())
+}
+
+/// Starts an existing Holochain conductor without reattaching an installed app.
+///
+/// Use this instead of [`start_holochain_conductor`] when the scenario manages app installation
+/// itself (for example when apps are installed but deliberately left disabled) and there is no
+/// app in the `Running` state to reconnect to.
+///
+/// If no conductor was created, this function does nothing.
+/// If using an external conductor via connection-string, this function does nothing.
+///
+/// # Errors
+///
+/// Returns an error when the conductor cannot start, does not expose an admin WebSocket URL, or
+/// its app WebSocket interface cannot be configured.
+pub fn start_holochain_conductor_without_app<SV: UserValuesConstraint>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+) -> WindTunnelResult<()> {
     if let Some(mut runner) = ctx.get_mut().holochain_runner.take() {
         log::info!("Starting Holochain conductor");
 
@@ -1059,9 +1085,6 @@ pub fn start_holochain_conductor<SV: UserValuesConstraint>(
         ctx.get_mut().admin_ws_url = Some(admin_ws_url);
 
         configure_app_ws_url(ctx)?;
-
-        let cell_role_name = ctx.get().cell_role_name();
-        use_installed_app(ctx, &cell_role_name)?;
     } else {
         log::debug!(
             "No Holochain runner in context, did you forget to call create_and_start_holochain_conductor?"
