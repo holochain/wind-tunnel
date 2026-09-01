@@ -1,0 +1,57 @@
+{{ define "conductor_startup_description" }}
+<p>This scenario measures Holochain conductor startup time when many cells are installed. The agent starts an empty conductor, installs a configurable number of apps without enabling them (disabled cells), restarts the conductor, and then enables cells one by one — timing each enable call and periodically restarting the conductor to measure startup time as the share of enabled cells grows.</p>
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Conductor Startup"
+    "description" (tmpl.Exec "conductor_startup_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Initial conductor startup timing"
+            "description" "Startup time with an empty conductor before any cells are installed."
+            "content" (tmpl.Exec "timing_and_trend" .startup_timing.initial)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Disabled-cell conductor startup timing"
+            "description" "Startup time after all configured cells are installed but remain disabled."
+            "content" (tmpl.Exec "timing_and_trend" .startup_timing.post_install)
+        ) }}
+
+        {{ with .startup_timing.periodic }}
+            {{ template "scenario_metric" (dict
+                "name" "Progressive conductor startup timing"
+                "description" "Startup time sampled periodically as more installed cells are enabled."
+                "content" (tmpl.Exec "timing_and_trend" .)
+            ) }}
+        {{ end }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Cell enable timing"
+            "description" "Time to enable one previously disabled cell via the admin interface."
+            "content" (tmpl.Exec "timing_and_trend" .cell_enable_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Installed cells"
+            "description" "Number of cells installed on the conductor during setup."
+            "content" (tmpl.Exec "scalar" (dict "value" .cells_total "unit" " cells"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Maximum enabled cells"
+            "description" "Highest percentage of installed cells enabled during the run."
+            "content" (tmpl.Exec "scalar" (dict "value" .max_enabled_pct "unit" "%"))
+        ) }}
+    {{ end }}
+
+    {{ with .holochain_metrics }}{{ template "holochain_metrics" . }}{{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
+</div>
