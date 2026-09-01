@@ -1,0 +1,17 @@
+{
+  "job_name": "conductor_startup_canonical_scaled",
+  "description": "150 nodes each run one agent that installs 200 disabled cells, restarts the conductor, then progressively enables cells, measuring enable time and conductor startup time at each 10% step.",
+  "scenario_name": "conductor_startup",
+  "duration": 900,
+  "assignments": [
+    {
+      "behaviour": "default",
+      "nodes": 150,
+      "agents": 1
+    }
+  ],
+  "env": {
+    "WT_CELL_COUNT": "200",
+    "WT_RESTART_INTERVAL": "20"
+  }
+}

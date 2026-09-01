@@ -346,6 +346,14 @@ jobs:
           echo
           df -h
 
+      - name: Smoke test - conductor_startup
+        run: |
+          WT_CELL_COUNT=5 WT_RESTART_INTERVAL=2 nix run .#rust-smoke-test -- --package conductor_startup -- --duration 60 --no-progress
+
+          echo "==> Available space after step"
+          echo
+          df -h
+
       # Temporarily disabled while Unyt app is not upgraded to Holochain v0.7.0
       # - name: Smoke test - unyt_chain_transaction
       #   run: |

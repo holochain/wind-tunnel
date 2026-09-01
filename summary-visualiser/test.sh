@@ -37,6 +37,7 @@ smoke_test_scenario() {
 }
 
 smoke_test_scenario "app_install"
+smoke_test_scenario "conductor_startup"
 smoke_test_scenario "dht_sync_lag"
 smoke_test_scenario "first_call"
 smoke_test_scenario "full_arc_create_validated_zero_arc_read"
