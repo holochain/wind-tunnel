@@ -9,12 +9,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Features
 
 - Add `peerkit_client_instrumented` and `peerkit_wind_tunnel_runner` crates, providing a Peerkit binding for wind-tunnel alongside the existing Holochain and Kitsune bindings.
-- Add `peerkit_first_connection` scenario, exercising a first connection between two Peerkit peers via a deployed relay.
+- Add `peerkit_hole_punch` scenario, exercising Peerkit's hole punching and throughput via a deployed relay. Every node connects to up to `PEERKIT_MAX_PEERS` discovered peers at a time, sends `PEERKIT_MESSAGES_PER_PEER` messages of `PEERKIT_MESSAGE_BYTES` bytes to each, and disconnects, repeating on a `PEERKIT_CYCLE_INTERVAL_MS` interval. Peer identities are random per agent, so any number of agents may share the single `node` behaviour. Metrics record peer discovery time, connection type (direct/relayed), and send/receive batch durations and byte counts, alongside an error count by kind.
 - Add a `peerkit` Nix devShell for local development against the Peerkit binding and scenario.
 
 ### Changed
 
 - **BREAKING**: Rename the Nomad job template `nomad/run_scenario.tpl.hcl` to `nomad/holochain_scenario.tpl.hcl` and introduce a new `runtime` vars key to select the scenario runtime. Anything that renders Nomad job templates by path must be updated to the new filename.
+- `wind_tunnel_runner` now waits 1 second before retrying an agent behaviour that returned an ordinary error, so that a persistently failing behaviour cannot spin in a retry storm. This applies to every scenario.
 
 ## \[[0.7.0](https://github.com/holochain/wind-tunnel/compare/v0.6.0...v0.7.0)\] - 2026-06-10
 
