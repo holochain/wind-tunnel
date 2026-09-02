@@ -172,14 +172,14 @@ hdk = { version = "0.7.0", features = ["unstable-functions"] }
 hdi = { version = "0.8.0", features = ["unstable-functions"] }
 
 # Deps for Kitsune
-kitsune2 = { version = "0.5.0", default-features = false, features = [
+kitsune2 = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5", default-features = false, features = [
   "transport-iroh",
 ] }
-kitsune2_api = "0.5.0"
-kitsune2_core = "0.5.0"
-kitsune2_gossip = "0.5.0"
-kitsune2_transport_iroh = { version = "0.5.0", default-features = false }
-kitsune2_bootstrap_srv = { version = "0.5.0", default-features = false }
+kitsune2_api = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_bootstrap_srv = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5", default-features = false }
+kitsune2_core = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_gossip = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_transport_iroh = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5", default-features = false }
 
 # Deps for Unyt
 # rave_engine = "0.3.2"
@@ -223,6 +223,16 @@ countersigning_integrity = { path = "./zomes/countersigning/integrity" }
 validated_integrity = { path = "./zomes/validated/integrity" }
 agent_activity_integrity = { path = "./zomes/agent_activity/integrity" }
 validated_must_get_agent_activity_integrity = { path = "./zomes/validated_must_get_agent_activity/integrity" }
+
+[patch.crates-io]
+kitsune2 = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_api = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_bootstrap_client = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_bootstrap_srv = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_core = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_dht = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_gossip = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
+kitsune2_transport_iroh = { git = "https://github.com/holochain/kitsune2", rev = "5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
