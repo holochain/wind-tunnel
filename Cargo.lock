@@ -1919,8 +1919,8 @@ dependencies = [
  "happ_builder",
  "holochain_types",
  "holochain_wind_tunnel_runner",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "timed_and_validated_integrity",
 ]
 
@@ -2443,7 +2443,7 @@ dependencies = [
  "holochain_serialized_bytes",
  "holochain_util",
  "holochain_wasmer_common",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "must_future",
  "rand 0.9.5",
  "schemars 0.9.0",
@@ -2470,7 +2470,7 @@ dependencies = [
  "holochain_types",
  "holochain_websocket",
  "holochain_zome_types",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lair_keystore_api",
  "parking_lot",
  "rand 0.8.7",
@@ -2490,7 +2490,7 @@ dependencies = [
  "holochain_types",
  "holochain_websocket",
  "holochain_zome_types",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "url",
  "wind_tunnel_core",
  "wind_tunnel_instruments",
@@ -2512,8 +2512,8 @@ dependencies = [
  "holochain_util",
  "holochain_zome_types",
  "indexmap 2.14.0",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kitsune2_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.4.0",
  "num_cpus",
  "schemars 0.9.0",
@@ -2732,7 +2732,7 @@ dependencies = [
  "holochain_zome_types",
  "indexmap 2.14.0",
  "itertools 0.14.0",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mr_bundle",
  "must_future",
  "nanoid 0.4.0",
@@ -2828,8 +2828,8 @@ dependencies = [
  "holochain_conductor_api",
  "holochain_conductor_config",
  "holochain_types",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "log",
  "rand 0.9.5",
  "serde",
@@ -3699,12 +3699,11 @@ dependencies = [
 [[package]]
 name = "kitsune2"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d7d36e37fa43ab9c1929f7696f25ff24cb5f2a7a0bf9af89755111bc9a8efee"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
 dependencies = [
  "bytes",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "kitsune2_gossip",
  "kitsune2_transport_iroh",
  "serde",
@@ -3728,13 +3727,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "kitsune2_api"
+version = "0.5.1"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "futures",
+ "prost 0.14.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "kitsune2_bootstrap_client"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26b07b724567aade174c12e618830268d1bce71b9e74349f1874e785416ad64"
 dependencies = [
  "base64 0.22.1",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde",
+ "serde_json",
+ "tracing",
+ "ureq",
+ "url",
+]
+
+[[package]]
+name = "kitsune2_bootstrap_client"
+version = "0.5.1"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
+dependencies = [
+ "base64 0.22.1",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "serde",
  "serde_json",
  "tracing",
@@ -3745,8 +3774,7 @@ dependencies = [
 [[package]]
 name = "kitsune2_bootstrap_srv"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d87ece6c9e394a355fd4170fa2935087c4eaf71ce7e3b7aa26b06d16d6b3ac9"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
 dependencies = [
  "async-channel",
  "axum",
@@ -3789,8 +3817,28 @@ dependencies = [
  "bytes",
  "ed25519-dalek 2.2.0",
  "futures",
- "kitsune2_api",
- "kitsune2_bootstrap_client",
+ "kitsune2_api 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kitsune2_bootstrap_client 0.5.0",
+ "prost 0.14.4",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "kitsune2_core"
+version = "0.5.1"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "ed25519-dalek 2.2.0",
+ "futures",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_bootstrap_client 0.5.1",
  "prost 0.14.4",
  "rand 0.8.7",
  "serde",
@@ -3802,25 +3850,23 @@ dependencies = [
 
 [[package]]
 name = "kitsune2_dht"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "788c8ed516c8251a7fb5e5d9815ad0b8392729198ad2793e6f1a6e3e682835a7"
+version = "0.5.1"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
 dependencies = [
  "bytes",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "tracing",
 ]
 
 [[package]]
 name = "kitsune2_gossip"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01bd4f31c1112b7352386b7b7775e37075c80004aeeb374cc4c71e42407dab79"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
 dependencies = [
  "bytes",
  "futures",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "kitsune2_dht",
  "prost 0.14.4",
  "rand 0.8.7",
@@ -3834,14 +3880,13 @@ dependencies = [
 [[package]]
 name = "kitsune2_transport_iroh"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90c962f108997f98f9b62eabb21de809b5853c9866242c02cfb267068603acba"
+source = "git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5#5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5"
 dependencies = [
  "base64 0.22.1",
  "bytes",
  "iroh",
- "kitsune2_api",
- "kitsune2_bootstrap_client",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_bootstrap_client 0.5.1",
  "n0-watcher",
  "serde",
  "tokio",
@@ -3857,9 +3902,9 @@ dependencies = [
  "bytes",
  "env_logger",
  "kitsune2",
- "kitsune2_api",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "kitsune2_bootstrap_srv",
- "kitsune2_core",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "kitsune2_gossip",
  "kitsune2_transport_iroh",
  "log",
@@ -9497,8 +9542,8 @@ dependencies = [
  "holochain_types",
  "holochain_wind_tunnel_runner",
  "holochain_zome_types",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "log",
 ]
 
@@ -9511,8 +9556,8 @@ dependencies = [
  "holochain_types",
  "holochain_wind_tunnel_runner",
  "holochain_zome_types",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "log",
  "rand 0.9.5",
  "tokio",
@@ -9704,8 +9749,8 @@ dependencies = [
  "happ_builder",
  "holochain_types",
  "holochain_wind_tunnel_runner",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "timed_integrity",
 ]
 
@@ -9717,8 +9762,8 @@ dependencies = [
  "happ_builder",
  "holochain_types",
  "holochain_wind_tunnel_runner",
- "kitsune2_api",
- "kitsune2_core",
+ "kitsune2_api 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
+ "kitsune2_core 0.5.1 (git+https://github.com/holochain/kitsune2?rev=5e96fc82bed1b60b5c97ee20475e3fc716bd4dd5)",
  "timed_and_validated_integrity",
 ]
 
