@@ -140,6 +140,12 @@ async fn app_install_large() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn conductor_startup() -> anyhow::Result<()> {
+    run_snapshot_test!("6d6e81572f233342543d2d40f19f54dcad6b326ceb96975eaa821e8cd3218013");
+    Ok(())
+}
+
+#[tokio::test]
 async fn dht_sync_lag() -> anyhow::Result<()> {
     run_snapshot_test!("0c97cc426147debdd0ff2c7bfdeec11c73b24c8201fb0f4e1fca2ee146774e3b");
     Ok(())

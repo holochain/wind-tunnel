@@ -52,6 +52,9 @@ fi
 "$REPO_ROOT"/summariser/capture.sh app_install \
   --duration 30 --behaviour large
 
+WT_CELL_COUNT=10 WT_RESTART_INTERVAL=3 "$REPO_ROOT"/summariser/capture.sh conductor_startup \
+  --duration 30
+
 "$REPO_ROOT"/summariser/capture.sh dht_sync_lag \
   --duration 60 --agents 2 --behaviour write:1 --behaviour record_lag:1
 
