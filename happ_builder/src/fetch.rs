@@ -35,7 +35,7 @@ impl HappFetcher<'_> {
             .options
             .happ_target_dir
             .join(&self.options.package_name)
-            .join(format!("{name}.happ", name = &happ.name));
+            .join(format!("{name}.happ", name = happ.name));
 
         if out_path.exists()
             && let Ok(existing_sha256) = Self::sha256_file(&out_path)
