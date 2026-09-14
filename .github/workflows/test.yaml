@@ -236,11 +236,13 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - peerkit_first_connection
+      - name: Smoke test - peerkit_hole_punch
         run: |
-          set -x
+          # `pipefail` so the scenario's exit code is not masked by `tee`.
+          set -xo pipefail
 
           relay_log="$(mktemp)"
+          scenario_log="$(mktemp)"
 
           # Shared access secret for relay and nodes. A throwaway value is fine
           # here: the relay only lives for this step. No effect while the pinned
@@ -258,16 +260,30 @@ jobs:
           relay_addr="$(sed -n 's/^Relay address: //p' "$relay_log" | head -n 1)"
           test -n "$relay_addr"
 
-          # Run the scenario against the local relay
+          # Run the scenario against the local relay. The in-memory reporter
+          # prints custom metrics so the run can be checked for real work.
           peerkit_bin="$(nix develop .#peerkit -c bash -c 'command -v peerkit')"
-          WT_PEERKIT_PATH="$peerkit_bin" nix run .#rust-smoke-test -- \
-            --package peerkit_first_connection -- \
+          WT_PEERKIT_PATH="$peerkit_bin" \
+          PEERKIT_MAX_PEERS=2 PEERKIT_MESSAGES_PER_PEER=5 PEERKIT_MESSAGE_BYTES=1024 \
+            nix run .#rust-smoke-test -- \
+            --package peerkit_hole_punch -- \
             --relay-dial-addr "$relay_addr" \
-            --agents 2 --behaviour initiator:1 --behaviour responder:1 \
-            --duration 15 --no-progress
+            --agents 3 --behaviour node:3 \
+            --duration 30 --no-progress \
+            --reporter in-memory-with-custom-metrics 2>&1 | tee "$scenario_log"
 
           # Stop the relay
           pkill -f '@peerkit/cli' || true
+
+          # Exiting 0 is not enough: without at least one connection the
+          # scenario would idle through discovery failures and still pass.
+          grep -q 'wt.custom.peerkit_connection_established' "$scenario_log" \
+            || { echo "no peer connection was established during the run"; exit 1; }
+
+          # A connection on its own does not prove the nodes exchanged
+          # anything, so require a dispatched message batch too.
+          grep -q 'wt.custom.peerkit_send_batch' "$scenario_log" \
+            || { echo "no message batch was sent during the run"; exit 1; }
 
           echo "==> Available space after step"
           echo

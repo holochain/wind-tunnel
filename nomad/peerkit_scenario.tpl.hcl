@@ -54,7 +54,7 @@ variable "nodejs_sha256" {
 variable "peerkit_cli_version" {
   type        = string
   description = "The @peerkit/cli npm version to install"
-  default     = {{ index (ds "vars") "peerkit_cli_version" | default "0.1.0-alpha.15" | quote }}
+  default     = {{ index (ds "vars") "peerkit_cli_version" | default "0.1.0-alpha.16" | quote }}
 }
 
 job "{{ (ds "vars").job_name }}" {
