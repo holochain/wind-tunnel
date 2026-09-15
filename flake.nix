@@ -253,7 +253,7 @@
                   # Newest @peerkit/cli version published to npm (under the `next` dist-tag;
                   # the npm `latest` tag is stale, so pin exactly). Keep in sync with
                   # nomad/peerkit_scenario.tpl.hcl and .github/workflows/test.yaml.
-                  peerkitCliVersion = "0.1.0-alpha.15";
+                  peerkitCliVersion = "0.1.0-alpha.16";
                   peerkitCli = pkgs.writeShellScriptBin "peerkit" ''
                     exec ${pkgs.nodejs}/bin/npx --yes "@peerkit/cli@${peerkitCliVersion}" "$@"
                   '';
