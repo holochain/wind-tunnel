@@ -239,7 +239,7 @@ jobs:
       - name: Smoke test - peerkit_hole_punch
         run: |
           # `pipefail` so the scenario's exit code is not masked by `tee`.
-          set -xo pipefail
+          set -exo pipefail
 
           relay_log="$(mktemp)"
           scenario_log="$(mktemp)"

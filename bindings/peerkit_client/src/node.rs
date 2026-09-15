@@ -358,28 +358,28 @@ impl PeerkitNode {
         if self.desynced.load(Ordering::Acquire) {
             bail!("peerkit node is unusable after a command did not complete");
         }
-        let mut guard = CommandGuard {
-            desynced: &self.desynced,
-            active_command: &self.active_command,
-            completed: false,
-        };
-        self.active_command.store(kind.code(), Ordering::Release);
         let before = {
             let mut state = self.state.0.lock().await;
             prepare_command(&mut state, kind)
         };
         self.command_start_completed
             .store(before, Ordering::Release);
+        let mut guard = CommandGuard {
+            desynced: &self.desynced,
+            active_command: &self.active_command,
+            completed: false,
+        };
+        self.active_command.store(kind.code(), Ordering::Release);
         self.write_command(command).await?;
         self.wait_for(timeout, |state| state.commands_completed() > before)
             .await
             .with_context(|| format!("no completion for `{name}` command"))?;
         self.active_command.store(0, Ordering::Release);
+        guard.completed = true;
         let response = {
             let mut state = self.state.0.lock().await;
             finish_command(&mut state, kind)
         };
-        guard.completed = true;
         Ok(response)
     }
 
