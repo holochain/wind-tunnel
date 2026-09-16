@@ -183,6 +183,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             std::thread::Builder::new()
                 .name(agent_name.clone())
                 .spawn(move || {
+                    // Keep the runtime entered until after the agent context is dropped. Some
+                    // async resources require a runtime context during destruction.
+                    let executor = runner_context.executor().clone();
+                    let _runtime_guard = executor.enter();
+
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context = AgentContext::new(
                         agent_index,

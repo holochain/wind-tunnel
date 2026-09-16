@@ -19,6 +19,17 @@ struct AgentContextValue {
 
 impl UserValuesConstraint for AgentContextValue {}
 
+#[derive(Debug, Default)]
+struct RuntimeBoundAgentContext;
+
+impl UserValuesConstraint for RuntimeBoundAgentContext {}
+
+impl Drop for RuntimeBoundAgentContext {
+    fn drop(&mut self) {
+        let _task = tokio::spawn(async {});
+    }
+}
+
 fn sample_cli_cfg() -> WindTunnelScenarioCli {
     WindTunnelScenarioCli {
         connection_string: Some("test_connection_string".to_string()),
@@ -103,6 +114,28 @@ fn fail_on_agent_panic_runs_teardown_before_returning() {
     let _result = run(scenario);
 
     assert!(TEARDOWN_CALLED_AFTER_AGENT_PANIC.load(Ordering::SeqCst));
+}
+
+#[test]
+fn agent_context_is_dropped_within_runtime_context() {
+    fn stop_scenario(
+        ctx: &mut AgentContext<RunnerContextValue, RuntimeBoundAgentContext>,
+    ) -> HookResult {
+        ctx.runner_context().force_stop_scenario();
+        Ok(())
+    }
+
+    let mut cfg = sample_cli_cfg();
+    cfg.fail_on_agent_panic = true;
+    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, RuntimeBoundAgentContext>::new(
+        "agent_context_is_dropped_within_runtime_context",
+        cfg,
+    )
+    .use_agent_setup(stop_scenario);
+
+    let result = run(scenario);
+
+    assert!(result.is_ok(), "unexpected error: {result:?}");
 }
 
 #[test]
