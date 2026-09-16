@@ -235,8 +235,12 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     }
 
     for (index, handle) in handles.into_iter().enumerate() {
-        if let Err(e) = handle.join() {
-            log::error!("Could not join thread for test agent {index}: {e:?}")
+        if let Err(error) = handle.join() {
+            if definition.fail_on_agent_panic {
+                anyhow::bail!("Could not join thread for test agent {index}: {error:?}");
+            }
+
+            log::error!("Could not join thread for test agent {index}: {error:?}");
         }
     }
 

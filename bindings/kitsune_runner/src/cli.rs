@@ -52,6 +52,10 @@ pub struct WindTunnelKitsuneScenarioCli {
     #[clap(long, default_value = "false")]
     pub no_progress: bool,
 
+    /// Fail the scenario if an agent thread panics.
+    #[clap(long, default_value = "false")]
+    pub fail_on_agent_panic: bool,
+
     /// The reporter to use.
     #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
     pub reporter: ReporterOpt,
@@ -77,6 +81,7 @@ impl TryInto<WindTunnelScenarioCli> for WindTunnelKitsuneScenarioCli {
             duration: self.duration,
             soak: self.soak,
             no_progress: self.no_progress,
+            fail_on_agent_panic: self.fail_on_agent_panic,
             reporter: self.reporter,
             run_id: self.run_id,
         })
