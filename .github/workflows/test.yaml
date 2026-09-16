@@ -16,8 +16,6 @@ concurrency:
 
 jobs:
   test:
-    env:
-      WT_METRICS_DIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +23,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Configure metrics directory
+        run: printf 'WT_METRICS_DIR=%s\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v7
 
       - name: Maximize build space

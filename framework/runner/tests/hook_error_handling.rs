@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use wind_tunnel_core::prelude::AgentBailError;
 use wind_tunnel_runner::prelude::{
     AgentContext, HookResult, ReporterOpt, RunnerContext, ScenarioDefinitionBuilder,
@@ -43,6 +44,13 @@ fn panic_in_agent(_ctx: &mut AgentContext<RunnerContextValue, AgentContextValue>
     panic!("agent panic for test");
 }
 
+static TEARDOWN_CALLED_AFTER_AGENT_PANIC: AtomicBool = AtomicBool::new(false);
+
+fn mark_teardown_after_agent_panic(_ctx: Arc<RunnerContext<RunnerContextValue>>) -> HookResult {
+    TEARDOWN_CALLED_AFTER_AGENT_PANIC.store(true, Ordering::SeqCst);
+    Ok(())
+}
+
 #[test]
 fn agent_panic_is_logged_by_default() {
     let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
@@ -76,6 +84,25 @@ fn fail_on_agent_panic_returns_join_error() {
             .contains("Could not join thread for test agent 0"),
         "unexpected error: {error:?}"
     );
+}
+
+#[test]
+fn fail_on_agent_panic_runs_teardown_before_returning() {
+    TEARDOWN_CALLED_AFTER_AGENT_PANIC.store(false, Ordering::SeqCst);
+
+    let mut cfg = sample_cli_cfg();
+    cfg.fail_on_agent_panic = true;
+    let scenario = ScenarioDefinitionBuilder::<RunnerContextValue, AgentContextValue>::new(
+        "fail_on_agent_panic_runs_teardown_before_returning",
+        cfg,
+    )
+    .with_default_duration_s(1)
+    .use_agent_behaviour(panic_in_agent)
+    .use_teardown(mark_teardown_after_agent_panic);
+
+    let _result = run(scenario);
+
+    assert!(TEARDOWN_CALLED_AFTER_AGENT_PANIC.load(Ordering::SeqCst));
 }
 
 #[test]

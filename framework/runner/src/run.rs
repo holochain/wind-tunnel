@@ -234,13 +234,16 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         );
     }
 
+    let mut agent_join_error = None;
     for (index, handle) in handles.into_iter().enumerate() {
         if let Err(error) = handle.join() {
-            if definition.fail_on_agent_panic {
-                anyhow::bail!("Could not join thread for test agent {index}: {error:?}");
+            if definition.fail_on_agent_panic && agent_join_error.is_none() {
+                agent_join_error = Some(anyhow::anyhow!(
+                    "Could not join thread for test agent {index}: {error:?}"
+                ));
+            } else {
+                log::error!("Could not join thread for test agent {index}: {error:?}");
             }
-
-            log::error!("Could not join thread for test agent {index}: {error:?}");
         }
     }
 
@@ -277,6 +280,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     runner_context_for_teardown
         .executor()
         .shutdown_with_timeout(Duration::from_secs(30));
+
+    if let Some(error) = agent_join_error {
+        return Err(error);
+    }
 
     Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }
