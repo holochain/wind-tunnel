@@ -239,10 +239,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         if let Err(error) = handle.join() {
             if definition.fail_on_agent_panic && agent_join_error.is_none() {
                 agent_join_error = Some(anyhow::anyhow!(
-                    "Could not join thread for test agent {index}: {error:?}"
+                    "Could not join thread for test agent {index}: {error}"
                 ));
             } else {
-                log::error!("Could not join thread for test agent {index}: {error:?}");
+                log::error!("Could not join thread for test agent {index}: {error}");
             }
         }
     }
