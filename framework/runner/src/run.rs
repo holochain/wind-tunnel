@@ -23,6 +23,16 @@ const RUN_SUMMARY_PATH_ENV: &str = "RUN_SUMMARY_PATH";
 /// Default path for the run summary file
 const DEFAULT_RUN_SUMMARY_PATH: &str = "run_summary.jsonl";
 
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        message
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message
+    } else {
+        "non-string panic payload"
+    }
+}
+
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
 ) -> anyhow::Result<usize> {
@@ -237,6 +247,7 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     let mut agent_join_error = None;
     for (index, handle) in handles.into_iter().enumerate() {
         if let Err(error) = handle.join() {
+            let error = panic_message(error.as_ref());
             if definition.fail_on_agent_panic && agent_join_error.is_none() {
                 agent_join_error = Some(anyhow::anyhow!(
                     "Could not join thread for test agent {index}: {error}"

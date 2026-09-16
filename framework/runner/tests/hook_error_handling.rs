@@ -81,7 +81,7 @@ fn fail_on_agent_panic_returns_join_error() {
     assert!(
         error
             .to_string()
-            .contains("Could not join thread for test agent 0"),
+            .contains("Could not join thread for test agent 0: agent panic for test"),
         "unexpected error: {error:?}"
     );
 }
