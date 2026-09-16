@@ -28,6 +28,11 @@ impl Executor {
         }
     }
 
+    /// Enter this executor's Tokio runtime on the current thread.
+    pub(crate) fn enter(&self) -> tokio::runtime::EnterGuard<'_> {
+        self.handle.enter()
+    }
+
     /// Run async code in place, blocking until it completes.
     ///
     /// Note that the future will be cancelled if the runner is shutdown. You do not need to do anything
