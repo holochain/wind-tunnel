@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   test:
+    env:
+      WT_METRICS_DIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -121,7 +123,7 @@ jobs:
 
       - name: Smoke test - zome_call_single_value
         run: |
-          nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package zome_call_single_value -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -129,7 +131,7 @@ jobs:
 
       - name: Smoke test - single_write_many_read
         run: |
-          nix run .#rust-smoke-test -- --package single_write_many_read -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package single_write_many_read -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -137,7 +139,7 @@ jobs:
 
       - name: Smoke test - dht_sync_lag
         run: |
-          nix run .#rust-smoke-test -- --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package dht_sync_lag -- --agents 2 --behaviour write:1 --behaviour record_lag:1 --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -145,7 +147,7 @@ jobs:
 
       - name: Smoke test - app_install
         run: |
-          nix run .#rust-smoke-test -- --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package app_install -- --agents 2 --behaviour minimal:1 --behaviour large:1 --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -153,7 +155,7 @@ jobs:
 
       - name: Smoke test - first_call
         run: |
-          nix run .#rust-smoke-test -- --package first_call -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package first_call -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -161,7 +163,7 @@ jobs:
 
       - name: Smoke test - write_read
         run: |
-          nix run .#rust-smoke-test -- --package write_read -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package write_read -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -169,7 +171,7 @@ jobs:
 
       - name: Smoke test - write_query
         run: |
-          nix run .#rust-smoke-test -- --package write_query -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package write_query -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -177,7 +179,7 @@ jobs:
 
       - name: Smoke test - local_signals
         run: |
-          nix run .#rust-smoke-test -- --package local_signals -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package local_signals -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -185,7 +187,7 @@ jobs:
 
       - name: Smoke test - write_validated
         run: |
-          nix run .#rust-smoke-test -- --package write_validated -- --duration 5 --no-progress
+          nix run .#rust-smoke-test -- --package write_validated -- --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -193,7 +195,7 @@ jobs:
 
       - name: Smoke test - remote_call_rate
         run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_call_rate -- --agents 2 --duration 30 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_call_rate -- --agents 2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -203,7 +205,7 @@ jobs:
         run: |
           set -x
 
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package validation_receipts -- --duration 45 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package validation_receipts -- --duration 45 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -211,7 +213,7 @@ jobs:
 
       - name: Smoke test - remote_signals
         run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_signals -- --agents 2 --duration 30 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package remote_signals -- --agents 2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -227,7 +229,7 @@ jobs:
           nix develop .#kitsune -c bash -c "kitsune2-bootstrap-srv --no-sbd --listen $kitsune_host &"
 
           # Run the scenario
-          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2
+          nix run .#rust-smoke-test -- --package kitsune_continuous_flow -- --bootstrap-server-url "http://$kitsune_host" --relay-url "http://$kitsune_host" --duration 15 --agents 2 --fail-on-agent-panic
 
           # Stop servers
           pkill -f kitsune2-bootstrap-srv || true
@@ -264,7 +266,7 @@ jobs:
             --package peerkit_first_connection -- \
             --relay-dial-addr "$relay_addr" \
             --agents 2 --behaviour initiator:1 --behaviour responder:1 \
-            --duration 15 --no-progress
+            --duration 15 --no-progress --fail-on-agent-panic
 
           # Stop the relay
           pkill -f '@peerkit/cli' || true
@@ -275,7 +277,7 @@ jobs:
 
       - name: Smoke test - write_get_agent_activity
         run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour get_agent_activity:1 --duration 5 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -283,7 +285,7 @@ jobs:
 
       - name: Smoke test - write_get_agent_activity_volatile
         run: |
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity_volatile -- --agents 2 --behaviour write:1 --behaviour get_agent_activity_volatile:1 --duration 60 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_get_agent_activity_volatile -- --agents 2 --behaviour write:1 --behaviour get_agent_activity_volatile:1 --duration 60 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -292,7 +294,7 @@ jobs:
       - name: Smoke test - write_validated_must_get_agent_activity
         run: |
           # Run the scenario
-          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress
+          MIN_AGENTS=2 nix run .#rust-smoke-test -- --package write_validated_must_get_agent_activity -- --agents 2 --behaviour write:1 --behaviour must_get_agent_activity:1 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -300,7 +302,7 @@ jobs:
 
       - name: Smoke test - zero_arc_create_data
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_data -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package zero_arc_create_data -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -308,7 +310,7 @@ jobs:
 
       - name: Smoke test - zero_arc_create_data_validated
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_data_validated -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package zero_arc_create_data_validated -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -316,7 +318,7 @@ jobs:
 
       - name: Smoke test - zero_arc_create_and_read
         run: |
-          nix run .#rust-smoke-test -- --package zero_arc_create_and_read -- --agents 4 --behaviour zero_read:1 --behaviour zero_write:1 --behaviour full:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package zero_arc_create_and_read -- --agents 4 --behaviour zero_read:1 --behaviour zero_write:1 --behaviour full:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -324,7 +326,7 @@ jobs:
 
       - name: Smoke test - full_arc_create_validated_zero_arc_read
         run: |
-          nix run .#rust-smoke-test -- --package full_arc_create_validated_zero_arc_read -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package full_arc_create_validated_zero_arc_read -- --agents 3 --behaviour zero:1 --behaviour full:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -332,7 +334,7 @@ jobs:
 
       - name: Smoke test - mixed_arc_get_agent_activity
         run: |
-          nix run .#rust-smoke-test -- --package mixed_arc_get_agent_activity -- --agents 5 --behaviour zero_read:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package mixed_arc_get_agent_activity -- --agents 5 --behaviour zero_read:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -340,7 +342,7 @@ jobs:
 
       - name: Smoke test - mixed_arc_must_get_agent_activity
         run: |
-          nix run .#rust-smoke-test -- --package mixed_arc_must_get_agent_activity -- --agents 5 --behaviour zero_must_get_agent_activity:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress
+          nix run .#rust-smoke-test -- --package mixed_arc_must_get_agent_activity -- --agents 5 --behaviour zero_must_get_agent_activity:2 --behaviour zero_write:1 --behaviour full_write:2 --duration 30 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo
@@ -469,7 +471,7 @@ jobs:
   changelog-preview-comment:
     if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'hra-release') && github.actor != 'dependabot[bot]'
     name: Add comment of changelog preview
-    uses: holochain/actions/.github/workflows/changelog-preview-comment.yml@v1.17.0
+    uses: holochain/actions/.github/workflows/changelog-preview-comment.yml@v1.18.0
 
   ci_pass:
     if: ${{ always() }}
