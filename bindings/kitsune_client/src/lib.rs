@@ -227,6 +227,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "this test is ignored because it depends on a fix on kitsune2 <https://github.com/holochain/kitsune2/pull/628>"]
     async fn say_something_to_other_chatter() {
         let _ = env_logger::builder().is_test(true).try_init();
         if CryptoProvider::get_default().is_none() {
