@@ -23,6 +23,16 @@ const RUN_SUMMARY_PATH_ENV: &str = "RUN_SUMMARY_PATH";
 /// Default path for the run summary file
 const DEFAULT_RUN_SUMMARY_PATH: &str = "run_summary.jsonl";
 
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        message
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message
+    } else {
+        "non-string panic payload"
+    }
+}
+
 pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     definition: ScenarioDefinitionBuilder<RV, V>,
 ) -> anyhow::Result<usize> {
@@ -173,6 +183,11 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
             std::thread::Builder::new()
                 .name(agent_name.clone())
                 .spawn(move || {
+                    // Keep the runtime entered until after the agent context is dropped. Some
+                    // async resources require a runtime context during destruction.
+                    let executor = runner_context.executor().clone();
+                    let _runtime_guard = executor.enter();
+
                     // TODO synchronize these setups so that the scenario waits for all of them to complete before proceeding.
                     let mut context = AgentContext::new(
                         agent_index,
@@ -234,9 +249,17 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
         );
     }
 
+    let mut agent_join_error = None;
     for (index, handle) in handles.into_iter().enumerate() {
-        if let Err(e) = handle.join() {
-            log::error!("Could not join thread for test agent {index}: {e:?}")
+        if let Err(error) = handle.join() {
+            let error = panic_message(error.as_ref());
+            if definition.fail_on_agent_panic && agent_join_error.is_none() {
+                agent_join_error = Some(anyhow::anyhow!(
+                    "Could not join thread for test agent {index}: {error}"
+                ));
+            } else {
+                log::error!("Could not join thread for test agent {index}: {error}");
+            }
         }
     }
 
@@ -273,6 +296,10 @@ pub fn run<RV: UserValuesConstraint, V: UserValuesConstraint>(
     runner_context_for_teardown
         .executor()
         .shutdown_with_timeout(Duration::from_secs(30));
+
+    if let Some(error) = agent_join_error {
+        return Err(error);
+    }
 
     Ok(agents_run_to_completion.load(std::sync::atomic::Ordering::Acquire))
 }

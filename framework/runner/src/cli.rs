@@ -40,6 +40,10 @@ pub struct WindTunnelScenarioCli {
     #[clap(long, default_value = "false")]
     pub no_progress: bool,
 
+    /// Fail the scenario if an agent thread panics.
+    #[clap(long, default_value = "false")]
+    pub fail_on_agent_panic: bool,
+
     /// The reporter to use.
     #[arg(long, value_enum, default_value_t = ReporterOpt::InMemory)]
     pub reporter: ReporterOpt,
