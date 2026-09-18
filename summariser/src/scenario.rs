@@ -1,4 +1,5 @@
 mod app_install;
+mod conductor_startup;
 mod dht_sync_lag;
 mod first_call;
 mod full_arc_create_validated_zero_arc_read;
@@ -25,6 +26,7 @@ mod zero_arc_create_data_validated;
 mod zome_call_single_value;
 
 pub(crate) use app_install::summarize_app_install;
+pub(crate) use conductor_startup::summarize_conductor_startup;
 pub(crate) use dht_sync_lag::summarize_dht_sync_lag;
 pub(crate) use first_call::summarize_first_call;
 pub(crate) use full_arc_create_validated_zero_arc_read::summarize_full_arc_create_validated_zero_arc_read;
