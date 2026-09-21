@@ -7,8 +7,6 @@ use wind_tunnel_runner::prelude::UserValuesConstraint;
 pub struct PeerkitAgentContext {
     /// The running `peerkit node` process for this agent.
     pub(crate) node: Option<Arc<PeerkitNode>>,
-    /// Scratch slot for scenarios: the alias of the peer this agent talks to.
-    pub target_alias: Option<String>,
 }
 
 impl UserValuesConstraint for PeerkitAgentContext {}
