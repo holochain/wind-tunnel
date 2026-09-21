@@ -239,7 +239,7 @@ jobs:
           echo
           df -h
 
-      - name: Smoke test - peerkit_first_connection
+      - name: Smoke test - peerkit_hole_punch
         run: |
           set -x
 
@@ -263,11 +263,12 @@ jobs:
 
           # Run the scenario against the local relay
           peerkit_bin="$(nix develop .#peerkit -c bash -c 'command -v peerkit')"
-          WT_PEERKIT_PATH="$peerkit_bin" nix run .#rust-smoke-test -- \
-            --package peerkit_first_connection -- \
+          WT_PEERKIT_PATH="$peerkit_bin" PEERKIT_DIRECT_UPGRADE_TIMEOUT_MS=2000 \
+            nix run .#rust-smoke-test -- \
+            --package peerkit_hole_punch -- \
             --relay-dial-addr "$relay_addr" \
-            --agents 2 --behaviour initiator:1 --behaviour responder:1 \
-            --duration 15 --no-progress --fail-on-agent-panic
+            --agents 3 --behaviour node:3 \
+            --duration 30 --no-progress --fail-on-agent-panic
 
           # Stop the relay
           pkill -f '@peerkit/cli' || true
