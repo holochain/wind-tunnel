@@ -135,6 +135,13 @@ function wait_for_job() {
         print_failed_tasks_and_logs "$alloc_id" "$nomad_status"
         return 1
     done
+
+    if [[ "$scenario_name" == "peerkit_hole_punch" ]]; then
+        echo "Fetching diagnostic logs for task: run_scenario"
+        nomad alloc logs -stderr "$alloc_id" run_scenario || echo "Failed to fetch stderr logs for task: run_scenario"
+        nomad alloc logs -stdout "$alloc_id" run_scenario || echo "Failed to fetch stdout logs for task: run_scenario"
+    fi
+
     echo "Scenario $scenario_name ($alloc_id) completed successfully in $(get_elapsed) seconds."
 
     return 0
