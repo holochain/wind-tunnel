@@ -10,6 +10,9 @@ const NODE: &str = "node";
 /// polling the peer table is the only way to observe it.
 const UPGRADE_POLL_INTERVAL: Duration = Duration::from_millis(250);
 
+/// Delay between `peers` polls while waiting for a dialable peer.
+const DISCOVERY_POLL_INTERVAL: Duration = Duration::from_millis(10);
+
 /// How the wait for the direct upgrade of a new connection ended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ConnectionOutcome {
@@ -173,7 +176,7 @@ fn node_cycle(
     let Some(peer) = candidates.choose(&mut rand::rng()) else {
         // Nothing to dial yet: discovery is still in progress, or every
         // discovered peer has already dialled this node.
-        return sleep_interval(ctx);
+        return sleep(ctx, DISCOVERY_POLL_INTERVAL);
     };
     let alias = peer.alias.clone();
 
@@ -186,7 +189,7 @@ fn node_cycle(
         }
         log::warn!("connect to {alias} failed: {error:#}");
         report_error(ctx, "connect");
-        return sleep_interval(ctx);
+        return Ok(());
     }
 
     let outcome = wait_for_direct(ctx, &alias, upgrade_timeout);
@@ -211,7 +214,7 @@ fn node_cycle(
         report_error(ctx, "disconnect");
     }
 
-    sleep_interval(ctx)
+    Ok(())
 }
 
 /// Sleep for `duration`, returning early with a shutdown error if the run ends
@@ -228,22 +231,12 @@ fn sleep(
         })
 }
 
-/// Sleep between behaviour iterations. Configurable with env var
-/// `PEERKIT_CYCLE_INTERVAL_MS`, defaults to 1000.
-fn sleep_interval(
-    ctx: &mut AgentContext<PeerkitRunnerContext, PeerkitAgentContext>,
-) -> anyhow::Result<()> {
-    let interval_ms = env_u64("PEERKIT_CYCLE_INTERVAL_MS", 1000)?;
-    sleep(ctx, Duration::from_millis(interval_ms))
-}
-
 fn main() -> WindTunnelResult<()> {
     let builder = PeerkitScenarioDefinitionBuilder::<PeerkitRunnerContext, PeerkitAgentContext>::new_with_init(
         env!("CARGO_PKG_NAME"),
     )?
     .into_std()
     .add_capture_env("PEERKIT_DIRECT_UPGRADE_TIMEOUT_MS")
-    .add_capture_env("PEERKIT_CYCLE_INTERVAL_MS")
     .use_agent_setup(start_node)
     .use_named_agent_behaviour(NODE, node_behaviour)
     .use_agent_teardown(|ctx| {

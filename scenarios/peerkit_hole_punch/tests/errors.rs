@@ -51,7 +51,6 @@ fn error_metrics(failure: &str) -> Vec<String> {
         .env("TMPDIR", dir.path())
         .env("FAKE_PEERKIT_FAILURE", failure)
         .env("PEERKIT_DIRECT_UPGRADE_TIMEOUT_MS", "10000")
-        .env("PEERKIT_CYCLE_INTERVAL_MS", "10")
         .env("RUST_LOG", "off")
         .output()
         .unwrap();
