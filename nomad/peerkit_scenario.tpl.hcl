@@ -208,6 +208,10 @@ job "{{ (ds "vars").job_name }}" {
           command = "bash"
           args    = ["${NOMAD_TASK_DIR}/install_peerkit.sh"]
         }
+
+        resources {
+          memory = 1536
+        }
       }
 
       dynamic "task" {
