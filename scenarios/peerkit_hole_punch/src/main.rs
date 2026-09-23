@@ -20,6 +20,9 @@ enum ConnectionOutcome {
     /// The connection was reported as relayed and then disappeared, for
     /// example because the peer hung up first.
     Lost,
+    /// The peer was seen in the table but disappeared before ever being
+    /// reported as relayed, for example because the dial failed silently.
+    NeverConnected,
     /// The peer table never reported a connection type before the timeout.
     Unknown,
 }
@@ -78,12 +81,19 @@ fn connect_candidates(peers: Vec<PeerInfo>) -> Vec<PeerInfo> {
 /// Decide whether one `peers` observation ends the upgrade wait.
 ///
 /// `relayed_seen` tells whether an earlier observation of the same wait
-/// already reported the connection as relayed. `peer_present` tells whether
-/// `alias` is still in the peer table: a missing `status` while the peer is
-/// present just means its connection type has not resolved yet, not that the
-/// peer disconnected. Returns `None` while the wait must go on.
+/// already reported the connection as relayed. `ever_present` tells whether
+/// `alias` has been seen in the peer table at all during the wait, relayed or
+/// not. `peer_present` tells whether `alias` is still in the peer table on
+/// this observation: a missing `status` while the peer is present just means
+/// its connection type has not resolved yet, not that the peer disconnected.
+/// Returns `None` while the wait must go on.
+///
+/// A peer that disappears is `Lost` if it was relayed first, `NeverConnected`
+/// if it was only ever seen without a relayed status, distinguishing a peer
+/// that hung up after connecting from one whose dial silently failed.
 fn observe(
     relayed_seen: bool,
+    ever_present: bool,
     peer_present: bool,
     status: Option<PeerStatus>,
 ) -> Option<ConnectionOutcome> {
@@ -93,6 +103,7 @@ fn observe(
         Some(PeerStatus::NotConnected) if relayed_seen => Some(ConnectionOutcome::Lost),
         Some(PeerStatus::NotConnected) => None,
         None if !peer_present && relayed_seen => Some(ConnectionOutcome::Lost),
+        None if !peer_present && ever_present => Some(ConnectionOutcome::NeverConnected),
         None => None,
     }
 }
@@ -115,16 +126,18 @@ fn wait_for_direct(
 ) -> anyhow::Result<ConnectionOutcome> {
     let deadline = Instant::now() + timeout;
     let mut relayed_seen = false;
+    let mut ever_present = false;
     loop {
         let peer = list_peers(ctx)?
             .into_iter()
             .find(|peer| peer.alias == alias);
         let peer_present = peer.is_some();
         let status = peer.and_then(|peer| peer.status);
-        if let Some(outcome) = observe(relayed_seen, peer_present, status) {
+        if let Some(outcome) = observe(relayed_seen, ever_present, peer_present, status) {
             return Ok(outcome);
         }
         relayed_seen |= status == Some(PeerStatus::Relayed);
+        ever_present |= peer_present;
         if Instant::now() >= deadline {
             return Ok(timed_out(relayed_seen));
         }
@@ -187,6 +200,7 @@ fn node_cycle(
         ConnectionOutcome::Direct => report_connection_established(ctx, "direct"),
         ConnectionOutcome::Relayed => report_connection_established(ctx, "relayed"),
         ConnectionOutcome::Lost => report_error(ctx, "connection_lost"),
+        ConnectionOutcome::NeverConnected => report_error(ctx, "never_connected"),
         ConnectionOutcome::Unknown => report_error(ctx, "connection_type_unknown"),
     }
     if let Err(error) = disconnected {
@@ -232,7 +246,12 @@ fn main() -> WindTunnelResult<()> {
     .add_capture_env("PEERKIT_CYCLE_INTERVAL_MS")
     .use_agent_setup(start_node)
     .use_named_agent_behaviour(NODE, node_behaviour)
-    .use_agent_teardown(shutdown_node)
+    .use_agent_teardown(|ctx| {
+        // A node discovered during the final cycle has no later cycle to
+        // report its discovery time, so flush it here before shutdown.
+        report_discovery_times(ctx)?;
+        shutdown_node(ctx)
+    })
     .with_default_duration_s(60);
     run(builder)?;
     Ok(())
@@ -271,34 +290,54 @@ mod tests {
     #[test]
     fn a_direct_observation_ends_the_wait() {
         assert_eq!(
-            observe(false, true, Some(PeerStatus::Direct)),
+            observe(false, true, true, Some(PeerStatus::Direct)),
             Some(ConnectionOutcome::Direct)
         );
         assert_eq!(
-            observe(true, true, Some(PeerStatus::Direct)),
+            observe(true, true, true, Some(PeerStatus::Direct)),
             Some(ConnectionOutcome::Direct)
         );
     }
 
     #[test]
     fn a_relayed_observation_keeps_waiting_for_the_upgrade() {
-        assert_eq!(observe(false, true, Some(PeerStatus::Relayed)), None);
-        assert_eq!(observe(true, true, Some(PeerStatus::Relayed)), None);
+        assert_eq!(observe(false, true, true, Some(PeerStatus::Relayed)), None);
+        assert_eq!(observe(true, true, true, Some(PeerStatus::Relayed)), None);
     }
 
     #[test]
     fn a_connection_that_disappears_after_being_relayed_is_lost() {
         assert_eq!(
-            observe(true, true, Some(PeerStatus::NotConnected)),
+            observe(true, true, true, Some(PeerStatus::NotConnected)),
             Some(ConnectionOutcome::Lost)
         );
-        assert_eq!(observe(true, false, None), Some(ConnectionOutcome::Lost));
+        assert_eq!(
+            observe(true, true, false, None),
+            Some(ConnectionOutcome::Lost)
+        );
+    }
+
+    #[test]
+    fn a_connection_that_disappears_without_ever_being_relayed_is_never_connected() {
+        // The peer was seen in the table (`ever_present`) but never reached
+        // a relayed status before vanishing: distinct from `Lost`, which
+        // requires having been relayed first.
+        assert_eq!(
+            observe(false, true, false, None),
+            Some(ConnectionOutcome::NeverConnected)
+        );
     }
 
     #[test]
     fn a_connection_with_no_type_yet_keeps_waiting() {
-        assert_eq!(observe(false, true, Some(PeerStatus::NotConnected)), None);
-        assert_eq!(observe(false, false, None), None);
+        assert_eq!(
+            observe(false, true, true, Some(PeerStatus::NotConnected)),
+            None
+        );
+        // Never yet seen in the table at all: this may just be the peer
+        // table catching up after `connect_to_alias`, so keep waiting rather
+        // than reporting `NeverConnected` prematurely.
+        assert_eq!(observe(false, false, false, None), None);
     }
 
     #[test]
@@ -306,7 +345,7 @@ mod tests {
         // The peer is still in the table (`peer_present`) but the next
         // `peers` poll has not resolved its connection type yet. This must
         // not be confused with the peer having disappeared.
-        assert_eq!(observe(true, true, None), None);
+        assert_eq!(observe(true, true, true, None), None);
     }
 
     #[test]

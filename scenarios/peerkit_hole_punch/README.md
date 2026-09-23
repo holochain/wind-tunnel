@@ -47,19 +47,23 @@ The scenario runs for 60 s by default unless otherwise configured with option
   rate is `direct / (direct + relayed)`. Two agents may dial each other in
   the same moment; both then record the one connection they share.
 - `wt.custom.peerkit_error_count` (tag `kind` = `connect` | `disconnect` |
-  `connection_lost` | `connection_type_unknown` | `behaviour`, field `count`) — emitted as
-  errors happen. `connection_lost` counts connections that were reported as
-  relayed and then disappeared before the upgrade wait ended, which is what
-  happens when the other peer hangs up first; expect some of these in small
-  networks, where agents often dial each other at the same time.
-  `connection_type_unknown` counts connections for which the peer table never
-  reported a type before the timeout. Neither produces a
-  `peerkit_connection_established` point. `connect` and `disconnect` exclude
-  the CLI's `Already connected` and `Not connected` refusals, because the
-  requested state is reached either way. The framework's shutdown signal at
-  the end of a run is not an error and is never counted here.
-  `behaviour` counts terminal errors such as a failed peer-table command and
-  stops the affected agent; other agents continue running.
+  `connection_lost` | `never_connected` | `connection_type_unknown` |
+  `behaviour`, field `count`) — emitted as errors happen. `connection_lost`
+  counts connections that were reported as relayed and then disappeared
+  before the upgrade wait ended, which is what happens when the other peer
+  hangs up first; expect some of these in small networks, where agents often
+  dial each other at the same time. `never_connected` counts connections that
+  disappeared from the peer table without ever being reported as relayed,
+  which points at the dial failing silently rather than the peer hanging up
+  after connecting. `connection_type_unknown` counts connections for which
+  the peer table never reported a type before the timeout. None of these
+  produce a `peerkit_connection_established` point. `connect` and
+  `disconnect` exclude the CLI's `Already connected` and `Not connected`
+  refusals, because the requested state is reached either way. The
+  framework's shutdown signal at the end of a run is not an error and is
+  never counted here. `behaviour` counts terminal errors such as a failed
+  peer-table command and stops the affected agent; other agents continue
+  running.
 
 ### Prerequisites
 
