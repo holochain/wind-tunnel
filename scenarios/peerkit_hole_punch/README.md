@@ -15,7 +15,9 @@ connection between two nodes. Every agent runs the single named behaviour
    succeeded, `relayed` when the connection was still going through the
    relay at the timeout.
 5. Disconnect from the peer.
-6. Sleep for `PEERKIT_CYCLE_INTERVAL_MS` before starting the next cycle.
+
+The next cycle starts immediately. When there is no discovered peer available
+to dial, the behaviour waits 10 ms before polling the peer table again.
 
 No application message is exchanged. Establishing a connection already opens
 a stream for the handshake, which is enough to exercise hole punching.
@@ -103,8 +105,6 @@ WT_PEERKIT_PATH="$peerkit_bin" RUST_LOG=info cargo run -p peerkit_hole_punch -- 
 - `PEERKIT_DIRECT_UPGRADE_TIMEOUT_MS` — how long, in milliseconds, an agent
   waits for a new connection to be upgraded to a direct one before recording
   it as `relayed`. Defaults to 10000.
-- `PEERKIT_CYCLE_INTERVAL_MS` — the delay in milliseconds between behaviour
-  cycles. Defaults to 1000.
 - `PEERKIT_NETWORK_ACCESS` — the relay's access secret. When set, it is
   inherited automatically by every spawned `peerkit node` process and must
   match the value the relay was started with. It is never passed to
