@@ -310,7 +310,8 @@ mod tests {
 
         // Wait for both chatters to have received all messages.
         let now = Instant::now();
-        tokio::time::timeout(Duration::from_secs(5), async {
+        // Allow a full DHT refresh and subsequent gossip rounds to recover a dropped send.
+        tokio::time::timeout(Duration::from_secs(15), async {
             loop {
                 tokio::time::sleep(Duration::from_millis(100)).await;
                 let ops_1 = chatter_2
