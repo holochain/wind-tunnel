@@ -217,7 +217,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     };
 
     let balance = ledger.balance.get_base_unyt();
-    let fees = ledger.fees_owed;
+    let fees = ledger.fees_owed.get_base_unyt();
     log::info!(
         "[agent {}] balance: {:?}, credit limit: {:?}, fees: {:?}",
         ctx.agent_index(),

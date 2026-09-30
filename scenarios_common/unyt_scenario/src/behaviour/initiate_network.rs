@@ -9,17 +9,17 @@ use crate::{UnytScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
-    InitializeGlobalDefinition, Oracles, PermissionSpace, UnitIndexMap,
+    FeeTerms, InitializeGlobalDefinition, NewUnit, Oracles, PermissionSpace, UnitIndexMap,
     entries::{
         AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
         DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, GlobalDefinition, InputRules,
         Instruction, LaneDefinition, ProvidedBy, RoleQualification, SmartAgreement,
-        SystemRAVEAgreements, TransactionFeeCompute,
+        SystemRAVEAgreements, TransactionFeeCompute, UnitDefinition,
     },
 };
 use serde_json::json;
 use std::{collections::BTreeMap, thread, time::Duration};
-use zfuel::fuel::ZFuel;
+use zfuel::{fraction::Fraction, fuel::ZFuel};
 
 /// Progenitor behaviour that initializes the Unyt network.
 ///
@@ -60,7 +60,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                     },
                     rave_agreements: CommonRAVEAgreements {
                         bridging_agreement: None,
-                        credit_limit_adjustment: credit_limit_smart_agreement.clone(),
+                        credit_limit_adjustment: Some(credit_limit_smart_agreement.clone()),
                         proof_of_service: fee_transfer_smart_agreement.clone(),
                     },
                     additional_special_agents: vec![],
@@ -74,12 +74,22 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                     compute_credit_limit: credit_limit_smart_agreement,
                     compute_transaction_fee: TransactionFeeCompute {
                         agreement: fee_transfer_smart_agreement,
-                        fee_trigger: ZFuel::new_with_default_precision(100),
-                        fee_percentage: 1,
+                        unit_fees: Vec::new(),
                     },
                 },
+                migration: Default::default(),
+                hf_swapper: None,
             },
-            new_unit_definitions: Vec::new(),
+            new_unit_definitions: vec![NewUnit {
+                definition: UnitDefinition::base_unit(),
+                fee: Some(FeeTerms {
+                    spender_pay_percent: Fraction::new(1, 100)?,
+                    fee_cap: None,
+                    fee_trigger: ZFuel::new_with_default_precision(100),
+                    exempt_agents: Vec::new(),
+                }),
+            }],
+            migration: None,
         })?;
         log::info!("Code templates, smart agreements and global definition written");
     } else {
