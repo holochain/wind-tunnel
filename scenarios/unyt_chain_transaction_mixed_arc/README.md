@@ -1,13 +1,13 @@
-## Unyt Chain Transaction Zero Arc
+## Unyt Chain Transaction Mixed Arc
 
 ### Description
 
-This scenario tests the performance of a Unyt chain transaction system where some agents operate with a **0-arc** DHT
-configuration, meaning they do not store any DHT data locally and must rely on full-arc peers for data retrieval. It
-builds on the same credit ledger and smart-agreement primitives as `unyt_chain_transaction`, but adds observability into
-how data propagates between zero-arc and full-arc nodes.
+This scenario tests the performance of a Unyt chain transaction system with both full-arc and 0-arc DHT
+transaction agents. Zero-arc agents do not store DHT data locally and must rely on full-arc peers for data retrieval.
+It builds on the same credit ledger and smart-agreement primitives as `unyt_chain_transaction`, but adds observability
+into how data propagates between zero-arc and full-arc nodes.
 
-There are five roles:
+There are six configurable roles:
 
 #### `initiate` (Progenitor Agent)
 
@@ -17,6 +17,17 @@ The `initiate` agent is responsible for initializing the network. This involves:
 - Setting up global configuration with effective dates, credit limits, and fee structures
 - Establishing the foundational smart agreements that govern the network
 - Staying idle once the network is properly initialized
+
+#### `full_spend` (Full-Arc Transaction Agents)
+
+The `full_spend` agents run with a full-arc DHT configuration and actively participate in the transaction system by:
+
+- Waiting for and detecting network initialization
+- Accepting incoming commitment transactions from other agents
+- Calculating spendable amounts based on current balance, fees, and applied credit limits
+- Identifying other participating agents in the network
+- Creating spend transactions distributed among available agents
+- Continuously cycling through this process to create transaction chains
 
 #### `zero_spend` (Zero-Arc Transaction Agents)
 
@@ -61,6 +72,10 @@ by:
 - Reporting the total number of discovered templates over time
 
 This role enables a direct comparison of data propagation times between zero-arc and full-arc nodes.
+
+The number of full-arc and zero-arc transaction agents is configured with the standard Wind Tunnel behaviour counts:
+`--behaviour full_spend:N` and `--behaviour zero_spend:M` for local runs, or the corresponding Nomad assignment
+`nodes` values for `full_spend` and `zero_spend`.
 
 ### Metrics Collected
 
@@ -144,5 +159,5 @@ of `UNYT_DURABLE_OBJECTS_SECRET`.
 Then, in another terminal pane, run the scenario with the following command:
 
 ```bash
-RUST_LOG=wind_tunnel_unyt_scenario=warn,warn cargo run --package unyt_chain_transaction_zero_arc -- --agents 7 --behaviour initiate:1 --behaviour zero_spend:2 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1 --duration 300
+RUST_LOG=wind_tunnel_unyt_scenario=warn,warn cargo run --package unyt_chain_transaction_mixed_arc -- --agents 7 --behaviour initiate:1 --behaviour full_spend:1 --behaviour zero_spend:1 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1 --duration 300
 ```

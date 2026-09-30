@@ -15,7 +15,7 @@ fn agent_setup(
 }
 
 fn main() -> WindTunnelResult<()> {
-    log::info!("Starting Unyt Chain Transaction Zero Arc scenario");
+    log::info!("Starting Unyt Chain Transaction Mixed Arc scenario");
     let builder = ScenarioDefinitionBuilder::<
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
@@ -25,6 +25,9 @@ fn main() -> WindTunnelResult<()> {
         "initiate",
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour,
     )
+    .use_named_agent_behaviour("full_spend", |ctx| {
+        wind_tunnel_unyt_scenario::behaviour::spend::agent_behaviour(ctx, ArcType::Full)
+    })
     .use_named_agent_behaviour("zero_spend", |ctx| {
         wind_tunnel_unyt_scenario::behaviour::spend::agent_behaviour(ctx, ArcType::Zero)
     })

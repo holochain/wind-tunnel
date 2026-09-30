@@ -146,6 +146,14 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     }
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
+    // A zero-arc node does not hold a DHT shard, so wait until it has
+    // discovered at least one full-arc peer before authoring Unyt records.
+    // Otherwise its flag template can be published before any storage node is
+    // available to hold the authored ops for later full-arc discovery.
+    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
+        try_wait_until_full_arc_peer_discovered(ctx)?;
+    }
+
     ctx.unyt_init()?;
 
     log::info!(
@@ -156,11 +164,6 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
 
     // Every agent creates a code template to flag that they have joined the network
     ctx.unyt_create_flag_template()?;
-
-    // Wait for full-arc peer if this agent is 0-arc
-    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
-        try_wait_until_full_arc_peer_discovered(ctx)?;
-    }
 
     ctx.get_mut()
         .scenario_values

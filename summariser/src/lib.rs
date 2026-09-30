@@ -138,10 +138,10 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_unyt_chain_transaction
         )),
-        "unyt_chain_transaction_zero_arc" => Some(execute_report_with_common_metrics!(
+        "unyt_chain_transaction_mixed_arc" => Some(execute_report_with_common_metrics!(
             client,
             summary,
-            summarize_unyt_chain_transaction_zero_arc
+            summarize_unyt_chain_transaction_mixed_arc
         )),
         "unyt_proposal" => Some(execute_report_with_common_metrics!(
             client,

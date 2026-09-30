@@ -290,7 +290,7 @@ async fn unyt_chain_transaction() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn unyt_chain_transaction_zero_arc() -> anyhow::Result<()> {
+async fn unyt_chain_transaction_mixed_arc() -> anyhow::Result<()> {
     run_snapshot_test!("ed50e375f22a00b8657ac5bab4bac5d788c2036f256ecbfd14a42b8039567d6b");
     Ok(())
 }

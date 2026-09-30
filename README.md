@@ -53,7 +53,7 @@ There is more information about how to create scenarios in a [separate section](
 
 The `scenarios_common` directory contains shared library crates that are reused across multiple scenario binaries. Each subdirectory is a Rust library providing common helpers such as network initialization, agent setup, and behaviour logic for a family of related scenarios.
 
-- `unyt_scenario` (`wind_tunnel_unyt_scenario`) — shared infrastructure for the Unyt load-testing scenarios (`unyt_chain_transaction`, `unyt_chain_transaction_zero_arc`), including agent extensions, durable object communication, and zome call wrappers.
+- `unyt_scenario` (`wind_tunnel_unyt_scenario`) — shared infrastructure for the Unyt load-testing scenarios (`unyt_chain_transaction`, `unyt_chain_transaction_mixed_arc`), including agent extensions, durable object communication, and zome call wrappers.
 
 ### Creating hApps for use in scenarios
 

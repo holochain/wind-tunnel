@@ -159,7 +159,7 @@ MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_validated_must_get_agent_a
 UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_chain_transaction \
   --duration 300 --agents 5 --behaviour initiate:1 --behaviour spend:4
 
-UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 MIN_AGENTS=7 "$REPO_ROOT"/summariser/capture.sh unyt_chain_transaction_zero_arc \
-  --duration 300 --agents 7 --behaviour initiate:1 --behaviour zero_spend:2 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1
+UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 MIN_AGENTS=7 "$REPO_ROOT"/summariser/capture.sh unyt_chain_transaction_mixed_arc \
+  --duration 300 --agents 7 --behaviour initiate:1 --behaviour full_spend:1 --behaviour zero_spend:1 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1
 
 "$REPO_ROOT"/summariser/truncate.sh

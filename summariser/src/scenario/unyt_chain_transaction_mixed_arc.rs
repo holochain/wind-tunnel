@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct UnytChainTransactionZeroArcSummary {
+pub(crate) struct UnytChainTransactionMixedArcSummary {
     /// Seconds elapsed from session start until each agent detected the global_definition
     /// propagation. Recorded once per agent via the `at` field. Records the `arc` type
     /// as well.
@@ -99,11 +99,11 @@ pub(crate) struct UnytChainTransactionZeroArcSummary {
     pub error_count: usize,
 }
 
-pub(crate) async fn summarize_unyt_chain_transaction_zero_arc(
+pub(crate) async fn summarize_unyt_chain_transaction_mixed_arc(
     client: influxdb::Client,
     summary: RunSummary,
-) -> anyhow::Result<UnytChainTransactionZeroArcSummary> {
-    assert_eq!(summary.scenario_name, "unyt_chain_transaction_zero_arc");
+) -> anyhow::Result<UnytChainTransactionMixedArcSummary> {
+    assert_eq!(summary.scenario_name, "unyt_chain_transaction_mixed_arc");
 
     let global_definition_propagation_time = query::query_custom_data(
         client.clone(),
@@ -414,7 +414,7 @@ pub(crate) async fn summarize_unyt_chain_transaction_zero_arc(
         .await
         .context("Load error count")?;
 
-    Ok(UnytChainTransactionZeroArcSummary {
+    Ok(UnytChainTransactionMixedArcSummary {
         global_definition_propagation_time: partitioned_timing_stats(
             global_definition_propagation_time,
             "value",

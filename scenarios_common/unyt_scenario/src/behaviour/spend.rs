@@ -173,7 +173,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     }
 
     // test 3
-    // check incoming transactions and accept them so that you can have more to spend
+    // check incoming transactions and accept them so that you can have more to spend.
     let actionable_transactions = action_list_actionable.unwrap_or(Actionable {
         proposal_actionable: vec![],
         commitment_actionable: vec![],
@@ -365,6 +365,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
                 "[agent {}] no participating agents to spend with",
                 ctx.agent_index()
             );
+            thread::sleep(Duration::from_secs(5));
             return Ok(());
         }
         // from the spend amount lets just use 25 % of it so that we have fees accounted for
