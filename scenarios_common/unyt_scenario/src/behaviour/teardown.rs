@@ -18,7 +18,7 @@ pub fn agent_teardown<SV: UnytScenarioValues>(
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
                 .with_field("value", balance.units),
         );
-        let fees = ledger.fees_owed;
+        let fees = ledger.fees_owed.get_base_unyt();
         reporter.add_custom(
             ReportMetric::new("ledger_fees")
                 .with_field("value", fees.units)

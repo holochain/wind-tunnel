@@ -328,6 +328,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     };
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees_owed;
+    let fees_base = fees.get_base_unyt();
     let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
         Ok(cl) => cl,
         Err(err) => {
@@ -339,12 +340,12 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             return Ok(());
         }
     };
-    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
+    let spendable_amount = (balance - fees_base + credit_limit.get_base_unyt())?;
     log::info!(
         "[agent {}] balance: {}, fees: {}, credit_limit: {}, spendable: {}",
         ctx.agent_index(),
         balance,
-        fees,
+        fees_base,
         credit_limit.get_base_unyt(),
         spendable_amount
     );
@@ -412,7 +413,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
             "[agent {}] no spendable amount, balance: {}, fees: {}, credit_limit: {}",
             ctx.agent_index(),
             balance,
-            fees,
+            fees_base,
             credit_limit.get_base_unyt(),
         );
     }
