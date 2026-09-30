@@ -236,7 +236,7 @@ pub fn get_spendable_amount(
         ledger
     );
     let balance = ledger.balance.get_base_unyt();
-    let fees = ledger.fees_owed;
+    let fees = ledger.fees_owed.get_base_unyt();
     let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
         Ok(cl) => cl,
         Err(err) => {

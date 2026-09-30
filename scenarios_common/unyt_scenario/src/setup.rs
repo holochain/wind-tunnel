@@ -41,6 +41,7 @@ pub fn create_role_settings(
                 network_seed: None,
                 properties: Some(YamlProperties::new(dna_properties)),
             }),
+            init_properties: None,
         },
     )]);
 
