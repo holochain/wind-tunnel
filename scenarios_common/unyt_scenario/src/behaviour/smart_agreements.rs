@@ -230,7 +230,7 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     // Committing a negative amount means spending/making a payment.
     // Accepting a negative commitment credits the acceptor immediately. A commitment with a
     // positive amount would require a 3rd step of creating a receipt of the accept.
-    let spendable_for_commitments = (balance - fees + credit_limit.get_base_unyt())?;
+    let spendable_for_commitments = (balance - fees_base + credit_limit.get_base_unyt())?;
     if spendable_for_commitments > ZFuel::zero() {
         log::debug!(
             "Spendable credit available, looking for participating agents to make commitment."
@@ -294,8 +294,8 @@ pub fn agent_behaviour<SV: UnytScenarioValues>(
     }
 
     // test 6: Create parked spends if we have positive balance
-    if balance > fees {
-        let spendable_amount = (balance - fees)?;
+    if balance > fees_base {
+        let spendable_amount = (balance - fees_base)?;
         let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
 
         if spendable_amount > ZFuel::zero() {
