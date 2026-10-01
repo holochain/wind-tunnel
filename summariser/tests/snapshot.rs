@@ -188,6 +188,12 @@ async fn mixed_arc_must_get_agent_activity() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn peerkit_hole_punch() -> anyhow::Result<()> {
+    run_snapshot_test!("f986901623cf26d54901c681ad59d666d2ff77b5bdea3d93a9cf75d35067394c");
+    Ok(())
+}
+
+#[tokio::test]
 async fn remote_call_rate() -> anyhow::Result<()> {
     run_snapshot_test!("32f40bfc9ea4993f23f6e411ee690d0b5054142787b970eeb5214f3786bba9be");
     Ok(())

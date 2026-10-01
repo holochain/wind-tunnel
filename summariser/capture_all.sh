@@ -73,6 +73,41 @@ WT_CELL_COUNT=10 WT_RESTART_INTERVAL=3 "$REPO_ROOT"/summariser/capture.sh conduc
 "$REPO_ROOT"/summariser/capture.sh mixed_arc_must_get_agent_activity \
   --duration 60 --agents 6 --behaviour zero_must_get_agent_activity:3 --behaviour zero_write:1 --behaviour full_write:2
 
+# peerkit_hole_punch needs a Peerkit relay and the `peerkit` CLI from the `.#peerkit` dev shell.
+PEERKIT_RELAY_LOG="$(mktemp)"
+PEERKIT_RELAY_PID=""
+stop_peerkit_relay() {
+    if [ -n "$PEERKIT_RELAY_PID" ]; then
+        kill "$PEERKIT_RELAY_PID" 2>/dev/null || true
+        wait "$PEERKIT_RELAY_PID" 2>/dev/null || true
+    fi
+    rm -f "$PEERKIT_RELAY_LOG"
+}
+trap stop_peerkit_relay EXIT
+
+# Resolve the binary once and run it directly: backgrounding `nix develop -c` would make the
+# PID the wrapper's, and killing it might leave the relay running.
+PEERKIT_BIN="$(nix develop "$REPO_ROOT#peerkit" -c bash -c 'command -v peerkit')"
+"$PEERKIT_BIN" relay 127.0.0.1:9910 > "$PEERKIT_RELAY_LOG" 2>&1 &
+PEERKIT_RELAY_PID=$!
+for _ in $(seq 1 120); do
+    grep -q 'Relay address: ' "$PEERKIT_RELAY_LOG" && break
+    sleep 1
+done
+PEERKIT_RELAY_ADDR="$(sed -n 's/^Relay address: //p' "$PEERKIT_RELAY_LOG" | head -n 1)"
+if [ -z "$PEERKIT_RELAY_ADDR" ]; then
+    echo "Peerkit relay did not print its dial address:" >&2
+    cat "$PEERKIT_RELAY_LOG" >&2
+    exit 1
+fi
+
+WT_PEERKIT_PATH="$PEERKIT_BIN" \
+  PEERKIT_DIRECT_UPGRADE_TIMEOUT_MS=2000 "$REPO_ROOT"/summariser/capture.sh peerkit_hole_punch \
+  --relay-dial-addr "$PEERKIT_RELAY_ADDR" --duration 60 --agents 3 --behaviour node:3
+
+stop_peerkit_relay
+trap - EXIT
+
 MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh remote_call_rate \
   --duration 30 --agents 2
 
