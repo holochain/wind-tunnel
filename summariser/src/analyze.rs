@@ -8,6 +8,7 @@ use anyhow::Context;
 use itertools::Itertools;
 use polars::frame::DataFrame;
 use polars::prelude::*;
+use std::collections::BTreeMap;
 
 pub(crate) fn standard_timing_stats(
     frame: DataFrame,
@@ -455,6 +456,55 @@ pub(crate) fn partitioned_counter_stats_allow_empty(
             }
         }
     }
+}
+
+/// Treat a missing InfluxDB series as `None`.
+///
+/// Use this for metrics where zero occurrences is a valid outcome, such as error counts. Any
+/// other query error is returned unchanged.
+pub(crate) fn allow_no_series(
+    frame: anyhow::Result<DataFrame>,
+) -> anyhow::Result<Option<DataFrame>> {
+    match frame {
+        Ok(frame) => Ok(Some(frame)),
+        Err(e)
+            if matches!(
+                e.downcast_ref::<LoadError>(),
+                Some(LoadError::NoSeriesInResult { .. })
+            ) =>
+        {
+            Ok(None)
+        }
+        Err(e) => Err(e),
+    }
+}
+
+/// Sum the `count` field of an event metric per value of `tag`.
+///
+/// Use this for metrics that emit one point per event with `count = 1`, rather than a
+/// cumulative counter: the total is the sum of the points, not `last - first`. The grouping is
+/// vectorised; only the small set of distinct tag values is converted into a map. Tag values
+/// with a null tag are dropped.
+pub(crate) fn event_counts_by_tag(
+    frame: &DataFrame,
+    tag: &str,
+) -> anyhow::Result<BTreeMap<String, u64>> {
+    let counts = frame
+        .clone()
+        .lazy()
+        .group_by([col(tag)])
+        .agg([col("count").cast(DataType::UInt64).sum()])
+        .collect()
+        .with_context(|| format!("Sum event counts by {tag}"))?;
+
+    let tags = counts.column(tag)?.str()?;
+    let sums = counts.column("count")?.u64()?;
+
+    Ok(tags
+        .iter()
+        .zip(sums.iter())
+        .filter_map(|(tag, sum)| Some((tag?.to_string(), sum.unwrap_or(0))))
+        .collect())
 }
 
 /// Compute [`ChainHeadStats`] from a frame containing observations from multiple reading agents
@@ -1343,4 +1393,53 @@ pub(crate) fn running_conductors_stats(
             window_duration: window_duration.to_string(),
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn event_counts_are_summed_per_tag_value() -> anyhow::Result<()> {
+        let frame = DataFrame::new(vec![
+            Series::new("type".into(), ["direct", "relayed", "direct", "direct"]).into(),
+            Series::new("count".into(), [1.0_f64, 1.0, 1.0, 1.0]).into(),
+        ])?;
+
+        let counts = event_counts_by_tag(&frame, "type")?;
+
+        assert_eq!(counts.get("direct"), Some(&3));
+        assert_eq!(counts.get("relayed"), Some(&1));
+        assert_eq!(counts.len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn missing_series_is_treated_as_no_data() -> anyhow::Result<()> {
+        let missing: anyhow::Result<DataFrame> = Err(LoadError::NoSeriesInResult {
+            table: "table".to_string(),
+            result: serde_json::Value::Null,
+        }
+        .into());
+
+        assert!(allow_no_series(missing)?.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn present_series_is_passed_through() -> anyhow::Result<()> {
+        let frame = DataFrame::new(vec![Series::new("count".into(), [1_i64]).into()])?;
+
+        let loaded = allow_no_series(Ok(frame))?.expect("frame is kept");
+
+        assert_eq!(loaded.height(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn other_query_errors_are_propagated() {
+        let failed: anyhow::Result<DataFrame> = Err(anyhow::anyhow!("connection refused"));
+
+        assert!(allow_no_series(failed).is_err());
+    }
 }

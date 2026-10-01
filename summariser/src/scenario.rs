@@ -6,6 +6,7 @@ mod full_arc_create_validated_zero_arc_read;
 mod local_signals;
 mod mixed_arc_get_agent_activity;
 mod mixed_arc_must_get_agent_activity;
+mod peerkit_hole_punch;
 mod remote_call_rate;
 mod remote_signals;
 mod single_write_many_read;
@@ -33,6 +34,7 @@ pub(crate) use full_arc_create_validated_zero_arc_read::summarize_full_arc_creat
 pub(crate) use local_signals::summarize_local_signals;
 pub(crate) use mixed_arc_get_agent_activity::summarize_mixed_arc_get_agent_activity;
 pub(crate) use mixed_arc_must_get_agent_activity::summarize_mixed_arc_must_get_agent_activity;
+pub(crate) use peerkit_hole_punch::summarize_peerkit_hole_punch;
 pub(crate) use remote_call_rate::summarize_remote_call_rate;
 pub(crate) use remote_signals::summarize_remote_signals;
 pub(crate) use single_write_many_read::summarize_single_write_many_read;

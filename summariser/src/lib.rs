@@ -108,6 +108,11 @@ pub fn execute_report_for_run_summary(
             summary,
             summarize_mixed_arc_must_get_agent_activity
         )),
+        "peerkit_hole_punch" => Some(execute_report_with_common_metrics!(
+            client,
+            summary,
+            summarize_peerkit_hole_punch
+        )),
         "remote_call_rate" => Some(execute_report_with_common_metrics!(
             client,
             summary,

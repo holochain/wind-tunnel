@@ -1,0 +1,79 @@
+{{ define "peerkit_hole_punch_description" }}
+<p>This scenario measures how often Peerkit manages to hole punch a direct connection between two nodes. Every agent repeatedly picks a random peer discovered through the relay, connects to it, waits for the connection to be upgraded to a direct one, records whether the upgrade happened before the timeout, and disconnects.</p>
+{{ end }}
+
+{{ define "peerkit_hole_punch_connections" }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Direct"
+        "description" "Dials whose connection was upgraded to a direct one before the timeout"
+        "content" (tmpl.Exec "scalar" (dict "value" .direct_dials))
+    ) }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Relayed"
+        "description" "Dials whose connection was still going through the relay at the timeout"
+        "content" (tmpl.Exec "scalar" (dict "value" .relayed_dials))
+    ) }}
+{{ end }}
+
+{{ define "peerkit_hole_punch_errors" }}
+    {{ template "scenario_metric_content_item" (dict
+        "name" "Total"
+        "content" (tmpl.Exec "scalar" (dict "value" .error_count))
+    ) }}
+    {{ range $kind, $count := .errors_by_kind }}
+        {{ template "scenario_metric_content_item" (dict
+            "name" $kind
+            "content" (tmpl.Exec "scalar" (dict "value" $count))
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ template "scenario_summary" (dict
+    "title" "Peerkit Hole Punch"
+    "description" (tmpl.Exec "peerkit_hole_punch_description")
+    "data" .run_summary
+) }}
+
+<div class="scenario-metrics">
+    {{ with .scenario_metrics }}
+        {{ template "scenario_metric" (dict
+            "name" "Hole punch success rate"
+            "description" "Share of established connections that were upgraded to a direct connection before the timeout. Lost and never-established connections are not part of this ratio."
+            "content" (tmpl.Exec "scalar" (dict "value" .hole_punch_success_pct "unit" "%"))
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Dials established"
+            "description" "Number of successful dials by the connection type reached when the upgrade wait ended. Each dial is one connect call by one agent, so the same pair of agents can appear many times. Two agents dialing each other at the same moment both record the connection they share."
+            "content" (tmpl.Exec "peerkit_hole_punch_connections" .)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Connect timing"
+            "description" "Time taken by each successful connect call. It covers establishing the connection, not the later upgrade to a direct one."
+            "content" (tmpl.Exec "timing_and_trend" .connect_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Disconnect timing"
+            "description" "Time taken by each successful disconnect call."
+            "content" (tmpl.Exec "timing_and_trend" .disconnect_timing)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Peer discovery time"
+            "description" "Time between a node connecting to the relay and it discovering each peer. Peers that start later inflate this value, because it includes their startup delay."
+            "content" (tmpl.Exec "timing_and_trend" .peer_discovery_time)
+        ) }}
+
+        {{ template "scenario_metric" (dict
+            "name" "Errors"
+            "description" "Errors recorded by all agents, in total and by kind. Lost connections are expected in small networks, where agents often dial each other at the same time."
+            "content" (tmpl.Exec "peerkit_hole_punch_errors" .)
+        ) }}
+    {{ end }}
+
+    {{ with .host_metrics }}
+        {{ template "host_metrics" . }}
+    {{ end }}
+</div>
