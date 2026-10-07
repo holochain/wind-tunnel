@@ -163,6 +163,6 @@ UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.s
   --duration 300 --agents 7 --behaviour initiate:1 --behaviour zero_spend:2 --behaviour zero_smart_agreements:2 --behaviour full_observer:1 --behaviour zero_observer:1
 
 UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_swap \
-  --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour bridge:1 --behaviour swap_agent:1 --behaviour swap:1
+  --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2
 
 "$REPO_ROOT"/summariser/truncate.sh

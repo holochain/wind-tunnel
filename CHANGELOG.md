@@ -18,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **BREAKING**: Rename the Nomad job template `nomad/run_scenario.tpl.hcl` to `nomad/holochain_scenario.tpl.hcl` and introduce a new `runtime` vars key to select the scenario runtime. Anything that renders Nomad job templates by path must be updated to the new filename.
 - The Peerkit binding and Nomad job template now pin `@peerkit/cli` `0.1.0-alpha.16`, and the instrumented client detects command completion from the CLI's prompt.
 - Align `unyt_swap` with the Unyt v0.108.0 hApp and use `rave_engine` 0.11 wire types for the pinned hApp, fixing RAVE and transaction-history decoding in Unyt scenarios.
+- Re-enable Unyt proposal and swap Nix deployment packages, smoke tests, and canonical/demo Nomad jobs with the current participant behaviours, while keeping chain scenarios disabled pending deprecation.
 
 ## \[[0.7.0](https://github.com/holochain/wind-tunnel/compare/v0.6.0...v0.7.0)\] - 2026-06-10
 
