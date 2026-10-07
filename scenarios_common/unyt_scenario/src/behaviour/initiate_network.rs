@@ -9,7 +9,7 @@ use crate::{UnytScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_types::prelude::{ActionHashB64, Timestamp};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
-    FeeTerms, InitializeGlobalDefinition, NewUnit, Oracles, PermissionSpace, UnitIndexMap,
+    InitializeGlobalDefinition, NewUnit, Oracles, PermissionSpace, UnitIndexMap,
     entries::{
         AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
         DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, GlobalDefinition, InputRules,
@@ -19,7 +19,6 @@ use rave_engine::types::{
 };
 use serde_json::json;
 use std::{collections::BTreeMap, thread, time::Duration};
-use zfuel::{fraction::Fraction, fuel::ZFuel};
 
 /// Progenitor behaviour that initializes the Unyt network.
 ///
@@ -71,7 +70,7 @@ pub fn agent_behaviour_with_units<SV: UnytScenarioValues>(
                     },
                     rave_agreements: CommonRAVEAgreements {
                         bridging_agreement: None,
-                        credit_limit_adjustment: Some(credit_limit_smart_agreement.clone()),
+                        credit_limit_adjustment: credit_limit_smart_agreement.clone(),
                         proof_of_service: fee_transfer_smart_agreement.clone(),
                     },
                     additional_special_agents: vec![],
@@ -89,9 +88,12 @@ pub fn agent_behaviour_with_units<SV: UnytScenarioValues>(
                     },
                 },
                 migration: Default::default(),
-                hf_swapper: None,
             },
-            new_unit_definitions,
+            new_unit_definitions: new_unit_definitions
+                .into_iter()
+                .map(NewUnit::from)
+                .collect(),
+            migration: None,
         })?;
         log::info!("Code templates, smart agreements and global definition written");
     } else {
