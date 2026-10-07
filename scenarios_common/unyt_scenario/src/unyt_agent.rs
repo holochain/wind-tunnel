@@ -8,10 +8,10 @@ use crate::UnytScenarioValues;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
-    AcceptInput, Actionable, BridgingAgentInitiateDepositInput, CommitmentInput,
-    CreateParkedLinkInput, CreateParkedSpendInput, History, InitializeGlobalDefinition, LaneExt,
-    LaneInit, Ledger, NotificationLinks, Pagination, PermissionSpace, RAVEExecuteInputs, State,
-    Transaction, UnitDefinitionExt, UnitMap, ZomeFnInput,
+    AcceptInput, Actionable, CommitmentInput, CreateParkedLinkInput, CreateParkedSpendInput,
+    History, InitializeGlobalDefinition, LaneExt, LaneInit, Ledger, NotificationLinks, Pagination,
+    PermissionSpace, RAVEExecuteInputs, State, Transaction, UnitDefinitionExt, UnitMap,
+    ZomeFnInput,
     entries::{
         AgreementDefInput, CodeTemplateExt, CommitmentToProposalInput, CounterProposalInput,
         ExecutionEngine, GlobalDefinitionExt, ProposalInput, RAVE, ReceiptInput, ReclaimInput,
@@ -191,13 +191,6 @@ pub trait UnytAgentExt {
         &mut self,
         input: CreateParkedLinkInput,
     ) -> Result<(ActionHash, AgentPubKey), anyhow::Error>;
-
-    /// Runs the bridging agent's deposit step, turning oracle-posted
-    /// proof-of-deposit links into a RAVE that credits the depositor.
-    fn unyt_blockchain_bridging_agent_initiate_deposit(
-        &mut self,
-        input: BridgingAgentInitiateDepositInput,
-    ) -> Result<String, anyhow::Error>;
 
     /// Lists all lanes known to this agent.
     fn unyt_get_all_lane(&mut self) -> Result<Vec<LaneExt>, anyhow::Error>;
@@ -528,13 +521,6 @@ impl<SV: UnytScenarioValues> UnytAgentExt
         input: CreateParkedLinkInput,
     ) -> Result<(ActionHash, AgentPubKey), anyhow::Error> {
         self.call_zome_alliance("create_parked_link", input)
-    }
-
-    fn unyt_blockchain_bridging_agent_initiate_deposit(
-        &mut self,
-        input: BridgingAgentInitiateDepositInput,
-    ) -> Result<String, anyhow::Error> {
-        self.call_zome_alliance("blockchain_bridging_agent_initiate_deposit", input)
     }
 
     fn unyt_get_all_lane(&mut self) -> Result<Vec<LaneExt>, anyhow::Error> {
