@@ -72,12 +72,6 @@ impl UnytScenarioValues for ScenarioValues {
     fn set_progenitor_agent_pubkey(&mut self, key: AgentPubKeyB64) {
         self.common.set_progenitor_agent_pubkey(key);
     }
-    fn seen_templates(&self) -> &HashSet<ActionHashB64> {
-        self.common.seen_templates()
-    }
-    fn seen_templates_mut(&mut self) -> &mut HashSet<ActionHashB64> {
-        self.common.seen_templates_mut()
-    }
     fn seen_transactions(&self) -> &HashSet<(ActionHashB64, &'static str)> {
         self.common.seen_transactions()
     }
