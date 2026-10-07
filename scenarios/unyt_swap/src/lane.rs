@@ -14,8 +14,8 @@ use rave_engine::types::{
     LaneInit, PermissionSpace, TagFilter, UnitIndexMap,
     entries::{
         AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
-        DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, InputRules, Instruction,
-        LaneBasicProperties, LaneDefinition, NonValidatedQuery, ProvidedBy, RoleQualification,
+        CustomQuery, DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, InputRules,
+        Instruction, LaneBasicProperties, LaneDefinition, ProvidedBy, RoleQualification,
         SmartAgreement, UnitDefinition, UnytType,
     },
 };
@@ -84,7 +84,7 @@ fn setup_credit_limit_adjustment<SV: UnytScenarioValues>(
             },
             DataFetchInstruction {
                 name: "previous_execution".to_string(),
-                instruction: Instruction::Custom(NonValidatedQuery::GetPreviousExecution),
+                instruction: Instruction::Custom(CustomQuery::GetPreviousExecution),
             },
             // Index of the external unit whose credit limit this adjusts (wHOT).
             DataFetchInstruction {
@@ -145,7 +145,7 @@ fn setup_bridging_agreement<SV: UnytScenarioValues>(
             provided_by("withdraw_to_address", "withdrawer"),
             DataFetchInstruction {
                 name: "previous_execution".to_string(),
-                instruction: Instruction::Custom(NonValidatedQuery::GetPreviousExecution),
+                instruction: Instruction::Custom(CustomQuery::GetPreviousExecution),
             },
             executor_provided("coupons"),
             DataFetchInstruction {

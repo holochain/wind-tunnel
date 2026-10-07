@@ -5,7 +5,6 @@ use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::UnitDefinition;
 use rave_engine::types::UnytType;
-use wind_tunnel_unyt_scenario::ArcType;
 
 use self::values::ScenarioValues;
 
@@ -49,12 +48,8 @@ fn main() -> WindTunnelResult<()> {
             ],
         )
     })
-    .use_named_agent_behaviour("user", |ctx| {
-        self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
-    })
-    .use_named_agent_behaviour("zero_user", |ctx| {
-        self::behaviours::user::agent_behaviour(ctx, ArcType::Zero)
-    })
+    .use_named_agent_behaviour("propose", self::behaviours::propose::agent_behaviour)
+    .use_named_agent_behaviour("respond", self::behaviours::respond::agent_behaviour)
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
     .add_capture_env("UNYT_PROPOSER_WEIGHTS")
