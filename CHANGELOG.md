@@ -14,6 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Remove the deprecated scenarios `unyt_chain_transaction` and `unyt_chain_transaction_zero_arc`.
 - Stabilize summary-statistic rounding at decimal boundaries across machines and refresh affected snapshots, including the Unyt proposal system-load mean.
 - **BREAKING**: Rename the Nomad job template `nomad/run_scenario.tpl.hcl` to `nomad/holochain_scenario.tpl.hcl` and introduce a new `runtime` vars key to select the scenario runtime. Anything that renders Nomad job templates by path must be updated to the new filename.
 - The Peerkit binding and Nomad job template now pin `@peerkit/cli` `0.1.0-alpha.16`, and the instrumented client detects command completion from the CLI's prompt.
