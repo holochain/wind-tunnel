@@ -3,7 +3,7 @@
 { config, lib, ... }:
 let
   # Chain scenarios remain disabled pending deprecation.
-  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name) && !(lib.strings.hasPrefix "unyt_chain_transaction" name)) (builtins.attrNames (builtins.readDir ../../scenarios));
+  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name)) (builtins.attrNames (builtins.readDir ../../scenarios));
 
   scenarios = map
     (name: {

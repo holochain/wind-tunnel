@@ -37,6 +37,7 @@ impl fmt::Display for ArcType {
         f.write_str(self.as_tag())
     }
 }
+
 use holochain_wind_tunnel_runner::prelude::UserValuesConstraint;
 use std::collections::HashSet;
 
@@ -82,13 +83,6 @@ pub trait UnytScenarioValues: UserValuesConstraint {
     /// Sets the progenitor agent's public key.
     fn set_progenitor_agent_pubkey(&mut self, key: AgentPubKeyB64);
 
-    /// Returns the set of code template hashes already seen by this agent.
-    /// Used by the full_observer to track discovery progress.
-    fn seen_templates(&self) -> &HashSet<ActionHashB64>;
-
-    /// Returns a mutable reference to the seen templates set.
-    fn seen_templates_mut(&mut self) -> &mut HashSet<ActionHashB64>;
-
     /// Returns the set of (transaction hash, tx_type) pairs already seen by this agent.
     /// Keyed by both hash and type so the same transaction can be recorded for different
     /// tx_types (e.g. "commitment", "rave", "grouped_parked") without deduplicating across types.
@@ -119,13 +113,9 @@ pub struct CommonScenarioValues {
     pub(crate) executor_pubkey: Option<AgentPubKeyB64>,
     pub(crate) smart_agreement_hash: Option<ActionHashB64>,
     pub(crate) progenitor_agent_pubkey: Option<AgentPubKeyB64>,
-    /// Tracks code template hashes already observed by this agent.
-    /// Primarily used by the zero-arc observer behaviour; unused fields
-    /// default to an empty set with no runtime cost.
-    pub(crate) seen_templates: HashSet<ActionHashB64>,
     /// Tracks (transaction hash, tx_type) pairs already observed by this agent.
-    /// Used by zero-arc spend/smart_agreements behaviours for sync lag
-    /// measurement; defaults to an empty set with no runtime cost.
+    /// Used by proposal behaviours for sync lag measurement; defaults to
+    /// an empty set with no runtime cost.
     pub(crate) seen_transactions: HashSet<(ActionHashB64, &'static str)>,
     /// Transaction hashes being watched for completion via `get_status`.
     /// Mirrors the UI "watch list" feature where initiated transactions
@@ -182,12 +172,6 @@ impl UnytScenarioValues for CommonScenarioValues {
     fn set_progenitor_agent_pubkey(&mut self, key: AgentPubKeyB64) {
         self.progenitor_agent_pubkey = Some(key);
     }
-    fn seen_templates(&self) -> &HashSet<ActionHashB64> {
-        &self.seen_templates
-    }
-    fn seen_templates_mut(&mut self) -> &mut HashSet<ActionHashB64> {
-        &mut self.seen_templates
-    }
     fn seen_transactions(&self) -> &HashSet<(ActionHashB64, &'static str)> {
         &self.seen_transactions
     }
@@ -205,21 +189,6 @@ impl UnytScenarioValues for CommonScenarioValues {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn default_has_empty_state() {
-        let sv = CommonScenarioValues::default();
-
-        assert!(sv.session_start_time().is_none());
-        assert!(!sv.network_initialized());
-        assert!(sv.participating_agents().is_empty());
-        assert!(sv.executor_pubkey().is_none());
-        assert!(sv.smart_agreement_hash().is_none());
-        assert!(sv.progenitor_agent_pubkey().is_none());
-        assert!(sv.seen_templates().is_empty());
-        assert!(sv.seen_transactions().is_empty());
-        assert!(sv.watched_transactions().is_empty());
-    }
 
     #[test]
     fn set_and_get_participating_agents() {
@@ -282,33 +251,6 @@ mod tests {
         sv.set_progenitor_agent_pubkey(key.clone());
 
         assert_eq!(sv.progenitor_agent_pubkey(), Some(&key));
-    }
-
-    #[test]
-    fn seen_templates_insert_and_contains() {
-        let mut sv = CommonScenarioValues::default();
-        let h1 = dummy_action_hash_b64(1);
-        let h2 = dummy_action_hash_b64(2);
-
-        sv.seen_templates_mut().insert(h1.clone());
-
-        assert!(sv.seen_templates().contains(&h1));
-        assert!(!sv.seen_templates().contains(&h2));
-        assert_eq!(sv.seen_templates().len(), 1);
-
-        sv.seen_templates_mut().insert(h2.clone());
-        assert_eq!(sv.seen_templates().len(), 2);
-    }
-
-    #[test]
-    fn seen_templates_dedup_on_reinsert() {
-        let mut sv = CommonScenarioValues::default();
-        let h = dummy_action_hash_b64(5);
-
-        sv.seen_templates_mut().insert(h.clone());
-        sv.seen_templates_mut().insert(h);
-
-        assert_eq!(sv.seen_templates().len(), 1);
     }
 
     #[test]

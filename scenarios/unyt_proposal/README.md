@@ -3,9 +3,8 @@
 ### Description
 
 This scenario tests the performance of the Unyt negotiated transaction flow, where agents create proposals, exchange
-counter-proposals, commit to agreed terms, and finalize or reject transactions. Unlike `unyt_chain_transaction` which
-uses direct commitments, this scenario exercises the full proposal-based negotiation lifecycle including counter-offers,
-rejections, balance reclaims, and receipt creation.
+counter-proposals, commit to agreed terms, and finalize or reject transactions. It exercises the full proposal-based
+negotiation lifecycle including counter-offers, rejections, balance reclaims, and receipt creation.
 
 There are three roles:
 
