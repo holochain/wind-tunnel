@@ -289,18 +289,6 @@ async fn zero_arc_create_and_read() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn unyt_chain_transaction() -> anyhow::Result<()> {
-    run_snapshot_test!("52be02e52af8cd6540e93d47da881b7bd94799805c10c76c5284ed739072e40f");
-    Ok(())
-}
-
-#[tokio::test]
-async fn unyt_chain_transaction_zero_arc() -> anyhow::Result<()> {
-    run_snapshot_test!("ed50e375f22a00b8657ac5bab4bac5d788c2036f256ecbfd14a42b8039567d6b");
-    Ok(())
-}
-
 fn find_test_data_file(summary_fingerprint: &str, stage: &str) -> Option<DirEntry> {
     let all_matches = WalkDir::new(
         Path::new(env!("CARGO_MANIFEST_DIR"))

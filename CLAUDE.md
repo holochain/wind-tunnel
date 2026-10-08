@@ -80,7 +80,7 @@ Common functionality available for scenarios:
 
 Reusable library crates shared across multiple scenario binaries. Each subdirectory is a Rust library (not a standalone binary) providing common helpers for a family of related scenarios.
 
-- `unyt_scenario` (`wind_tunnel_unyt_scenario`) — shared infrastructure for the Unyt scenarios (`unyt_chain_transaction`, `unyt_chain_transaction_zero_arc`), including network initialization, agent setup, durable object communication, and behaviour logic.
+- `unyt_scenario` (`wind_tunnel_unyt_scenario`) — shared infrastructure used by `unyt_proposal`, including network initialization, agent setup, durable object communication, and behaviour logic.
 
 ### Zomes (`zomes/`)
 

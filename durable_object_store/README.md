@@ -57,5 +57,5 @@ Run it from the repository root with:
 nix run .#local-durable-objects
 ```
 
-See the [unyt_chain_transaction scenario README](../scenarios/unyt_chain_transaction/README.md)
+See the [unyt_proposal scenario README](../scenarios/unyt_proposal/README.md)
 for an example of how this store is used.
