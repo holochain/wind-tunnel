@@ -159,4 +159,7 @@ MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_validated_must_get_agent_a
 UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_swap \
   --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2
 
+UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_proposal \
+  --duration 300 --agents 5 --behaviour initiate:1 --behaviour propose:2 --behavior respond:2\
+
 "$REPO_ROOT"/summariser/truncate.sh
