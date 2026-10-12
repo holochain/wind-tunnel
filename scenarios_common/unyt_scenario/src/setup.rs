@@ -106,26 +106,23 @@ pub fn generate_progenitor<SV: UnytScenarioValues>(
 /// Handles conductor startup, hApp installation (with progenitor key
 /// embedding), agent discovery, and flag template creation.
 ///
-/// Behaviours listed in `zero_arc_behaviours` are configured with
-/// `target_arc_factor(0)` before the conductor starts, and will wait
-/// for a full-arc peer to be discovered after setup completes.
+/// Behaviours listed in `zero_arc_behaviours` use `target_arc_factor(0)`;
+/// all other behaviours use `target_arc_factor(1)`. This is configured before
+/// conductor startup. Zero-arc agents wait for a full-arc peer before Unyt
+/// initialization and flag-template authoring.
 pub fn common_agent_setup<SV: UnytScenarioValues>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     happ_path: PathBuf,
     zero_arc_behaviours: &[&str],
 ) -> HookResult {
-    let assigned_behaviour = ctx.assigned_behaviour().to_string();
-
-    // Configure 0-arc for designated behaviours before starting the conductor
-    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
-        ctx.get_mut()
-            .holochain_config_mut()
-            .with_target_arc_factor(0);
-    }
+    let is_zero_arc = zero_arc_behaviours.contains(&ctx.assigned_behaviour());
+    ctx.get_mut()
+        .holochain_config_mut()
+        .with_target_arc_factor(if is_zero_arc { 0 } else { 1 });
 
     start_conductor_and_configure_urls(ctx)?;
 
-    if assigned_behaviour == "initiate" {
+    if ctx.assigned_behaviour() == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
         let progenitor_agent_pubkey = generate_progenitor(ctx)?;
         let role_settings = create_role_settings(&progenitor_agent_pubkey)?;
@@ -146,6 +143,11 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     }
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
+    // Zero-arc records need a storage peer before they can be published.
+    if is_zero_arc {
+        try_wait_until_full_arc_peer_discovered(ctx)?;
+    }
+
     ctx.unyt_init()?;
 
     log::info!(
@@ -156,11 +158,6 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
 
     // Every agent creates a code template to flag that they have joined the network
     ctx.unyt_create_flag_template()?;
-
-    // Wait for full-arc peer if this agent is 0-arc
-    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
-        try_wait_until_full_arc_peer_discovered(ctx)?;
-    }
 
     ctx.get_mut()
         .scenario_values

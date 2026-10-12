@@ -2,7 +2,7 @@
 
 ### Description
 
-This scenario exercises Unyt's two conversion flows. The `user` and `zero_user` roles run both in sequence, and
+This scenario exercises Unyt's two conversion flows. The `full_user` and `zero_user` roles run both in sequence, and
 the swap flow builds on the wHOT produced by bridging:
 
 - **HOT → wHOT (bridging):** an external blockchain token (HOT) is bridged into Unyt's internal wrapped credit
@@ -19,6 +19,10 @@ The scenario pins the Unyt v0.108.0 hApp and uses `rave_engine` 0.11 wire types.
 `executed_timestamp` field that v0.108.0 does not return in RAVEs or transaction history.
 
 There are five roles:
+
+`initiate`, `bridge_agent`, and `swap_agent` always use full storage arcs. Only `zero_user` uses a zero storage
+arc; it relies on full-arc peers and addresses its swap commitments to the full-arc `swap_agent`.
+Zero-arc users wait for a full-arc peer before Unyt initialization and flag-template authoring.
 
 #### `initiate` (Progenitor Agent)
 
@@ -41,7 +45,7 @@ call so the aggregated proof payload stays within Holochain's link tag size limi
 
 Accepts every incoming swap commitment, paying out HF against the network's global credit limit.
 
-#### `user` (Depositor + Swapper)
+#### `full_user` (Full-arc Depositor + Swapper)
 
 Receives bridged HOT as wHOT and swaps it for HF. Each round it polls for incoming deposit RAVEs and collects each
 one (crediting its ledger with wHOT), then — if it holds any wHOT — commits that wHOT to the swap agent for HF and
@@ -49,7 +53,7 @@ finalises any accepted commitments with a receipt.
 
 #### `zero_user` (Zero-arc Depositor + Swapper)
 
-Runs the same deposit collection and swap flow as `user`, but with a zero-arc conductor that relies on full-arc peers.
+Runs the same deposit collection and swap flow as `full_user`, but with a zero-arc conductor that relies on full-arc peers.
 
 Known limitation: zero-arc swap commitments can remain uncompleted due to an existing bug.
 
@@ -87,8 +91,9 @@ Both user modes require a `swap_agent`: deposit collection and swap initiation r
 # In a separate terminal, start the local Durable Object service:
 nix run .#local-durable-objects
 
-# Full flow (bridging + swap):
-nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=4 cargo run --package unyt_swap -- --agents 4 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
+# All-full flow (bridging + swap):
+nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=4 cargo run --package unyt_swap -- --agents 4 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour full_user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
 
-# Replace user:1 with zero_user:1 to exercise the zero-arc flow.
+# Mixed full-arc and zero-arc users, with full-arc infrastructure:
+nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=5 cargo run --package unyt_swap -- --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour full_user:1 --behaviour zero_user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
 ```

@@ -1,14 +1,19 @@
+//! Runs HOT → wHOT bridging followed by wHOT → HF swaps.
+//!
+//! `full_user` and `zero_user` share the depositor/swapper workload, using full and
+//! zero storage arcs respectively. `initiate`, `bridge_agent`, and `swap_agent`
+//! always use full arcs, so zero-arc users commit to a full-arc counterparty.
+
 mod behaviours;
 mod lane;
 mod values;
 
-use crate::values::ScenarioValues;
+use crate::values::{ArcType, ScenarioValues};
 use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::{durable_object::DurableObject, unyt_agent::UnytAgentExt};
 
 const NETWORK_INIT_TIMEOUT: Duration = Duration::from_secs(180);
@@ -120,7 +125,7 @@ fn main() -> WindTunnelResult<()> {
     .use_named_agent_behaviour("swap_agent", self::behaviours::swap_agent::agent_behaviour)
     // Bridge and swap: receives bridged HOT -> wHOT credit by collecting from the RAVE.
     // Then converts wHOT -> HF by committing to the swap agent and receipting.
-    .use_named_agent_behaviour("user", |ctx| {
+    .use_named_agent_behaviour("full_user", |ctx| {
         self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })
     .use_named_agent_behaviour("zero_user", |ctx| {
