@@ -1,11 +1,10 @@
 use crate::lane::{HF_UNIT_INDEX, WHOT_UNIT_INDEX};
-use crate::values::ScenarioValues;
+use crate::values::{ArcType, ScenarioValues};
 use holochain_types::dna::hash_type::Agent;
 use holochain_types::dna::{ActionHash, HoloHashB64};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{Actionable, CommitmentInput, ReceiptInput, TransactionType, UnitMap};
 use std::time::Instant;
-use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::durable_object::DurableObject;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fuel::ZFuel;

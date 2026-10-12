@@ -1,8 +1,31 @@
 use holochain_types::prelude::{ActionHashB64, AgentPubKeyB64};
 use holochain_wind_tunnel_runner::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::time::Instant;
 use wind_tunnel_unyt_scenario::{CommonScenarioValues, UnytScenarioValues};
+
+/// Storage arc label used by the swap workload's logs and metrics.
+#[derive(Debug, Clone, Copy)]
+pub enum ArcType {
+    Full,
+    Zero,
+}
+
+impl ArcType {
+    pub fn as_tag(self) -> &'static str {
+        match self {
+            Self::Full => "full",
+            Self::Zero => "zero",
+        }
+    }
+}
+
+impl fmt::Display for ArcType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_tag())
+    }
+}
 
 /// Per-agent scenario state: the shared Unyt state plus the swap behaviour's
 /// cached swap agent key (the commitment counterparty), fetched once from the
