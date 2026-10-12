@@ -1,10 +1,12 @@
 {{ define "unyt_proposal_description" }}
 <p>This scenario tests the performance of the Unyt negotiated transaction flow.
 Agents create proposals, exchange counter-proposals, commit to agreed terms, and
-finalize or reject transactions. There are three roles:
-<b><code>initiate</code></b> (progenitor),
-<b><code>propose</code></b> (proposer agents), and
-<b><code>respond</code></b> (responder agents).</p>
+finalize or reject transactions. There are five roles:
+<b><code>initiate</code></b> (full-arc progenitor),
+<b><code>full_propose</code></b> and <b><code>zero_propose</code></b> (proposer agents), and
+<b><code>full_respond</code></b> and <b><code>zero_respond</code></b> (responder agents).
+Each workload pair runs the same transactions with different storage arcs.
+Zero-arc agents rely on full-arc storage peers.</p>
 {{ end }}
 
 {{ template "scenario_summary" (dict

@@ -372,7 +372,7 @@ jobs:
           nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
 
           # Run the scenario.
-          nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 300 --no-progress --fail-on-agent-panic
+          nix run .#rust-smoke-test -- --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour full_propose:1 --behaviour zero_propose:1 --behaviour full_respond:1 --behaviour zero_respond:1 --duration 300 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo

@@ -1,3 +1,9 @@
+//! Negotiated Unyt transactions with explicit full-arc and zero-arc workload roles.
+//!
+//! `initiate` initializes the network on a full arc. `full_propose` and
+//! `zero_propose` share the proposer workload; `full_respond` and `zero_respond`
+//! share the responder workload. Zero-arc roles rely on full-arc storage peers.
+
 mod behaviours;
 mod values;
 
@@ -11,7 +17,11 @@ use self::values::ScenarioValues;
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &[])
+    wind_tunnel_unyt_scenario::setup::common_agent_setup(
+        ctx,
+        happ_path!("unyt"),
+        &["zero_propose", "zero_respond"],
+    )
 }
 
 fn main() -> WindTunnelResult<()> {
@@ -48,8 +58,10 @@ fn main() -> WindTunnelResult<()> {
             ],
         )
     })
-    .use_named_agent_behaviour("propose", self::behaviours::propose::agent_behaviour)
-    .use_named_agent_behaviour("respond", self::behaviours::respond::agent_behaviour)
+    .use_named_agent_behaviour("full_propose", self::behaviours::propose::agent_behaviour)
+    .use_named_agent_behaviour("zero_propose", self::behaviours::propose::agent_behaviour)
+    .use_named_agent_behaviour("full_respond", self::behaviours::respond::agent_behaviour)
+    .use_named_agent_behaviour("zero_respond", self::behaviours::respond::agent_behaviour)
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
     .add_capture_env("UNYT_PROPOSER_WEIGHTS")

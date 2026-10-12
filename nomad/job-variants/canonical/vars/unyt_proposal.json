@@ -1,5 +1,5 @@
 {
-  "description": "1 progenitor initialises the network; 15 propose and 14 respond agents run concurrent proposal flows. Target 50/50 propose/respond; actual 51.7/48.3 at 29 proposal agents (30 nodes total).",
+  "description": "1 full-arc progenitor initialises the network; 15 proposers (8 full arc, 7 zero arc) and 14 responders (7 full arc, 7 zero arc) run concurrent proposal flows. Target 50/50 proposer/responder; actual 51.7/48.3 at 29 workload agents (30 nodes total).",
   "job_name": "unyt_proposal_canonical",
   "scenario_name": "unyt_proposal",
   "duration": 900,
@@ -8,12 +8,20 @@
       "behaviour": "initiate"
     },
     {
-      "behaviour": "propose",
-      "nodes": 15
+      "behaviour": "full_propose",
+      "nodes": 8
     },
     {
-      "behaviour": "respond",
-      "nodes": 14
+      "behaviour": "zero_propose",
+      "nodes": 7
+    },
+    {
+      "behaviour": "full_respond",
+      "nodes": 7
+    },
+    {
+      "behaviour": "zero_respond",
+      "nodes": 7
     }
   ],
   "env": {

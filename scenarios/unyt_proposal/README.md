@@ -6,7 +6,9 @@ This scenario tests the performance of the Unyt negotiated transaction flow, whe
 counter-proposals, commit to agreed terms, and finalize or reject transactions. It exercises the full proposal-based
 negotiation lifecycle including counter-offers, rejections, balance reclaims, and receipt creation.
 
-There are three roles:
+There are five roles. `initiate`, `full_propose`, and `full_respond` use full storage arcs;
+`zero_propose` and `zero_respond` use zero storage arcs and rely on full-arc peers.
+The storage arc is configured before conductor startup, and agents wait for a storage peer before authoring.
 
 #### `initiate` (Progenitor Agent)
 
@@ -17,9 +19,10 @@ The `initiate` agent is responsible for initializing the network. This involves:
 - Establishing the foundational smart agreements that govern the network
 - Staying idle once the network is properly initialized
 
-#### `propose` (Proposer Agents)
+#### `full_propose` / `zero_propose` (Proposer Agents)
 
-The `propose` agents wait for the network to be initialized and then actively create proposals and drive negotiations:
+Both proposer roles run the same workload, differing only in their storage arc. They wait for the network to be initialized
+and then actively create proposals and drive negotiations:
 
 - Waiting for and detecting network initialization
 - Creating proposals to other participating agents in the network
@@ -28,9 +31,10 @@ The `propose` agents wait for the network to be initialized and then actively cr
 - Reclaiming committed balance after rejections
 - Polling transaction status and history to mirror UI behaviour
 
-#### `respond` (Responder Agents)
+#### `full_respond` / `zero_respond` (Responder Agents)
 
-The `respond` agents wait for the network to be initialized and then react to incoming proposals:
+Both responder roles run the same workload, differing only in their storage arc. They wait for the network to be initialized
+and then react to incoming proposals:
 
 - Waiting for and detecting network initialization
 - Responding to incoming proposals by committing, counter-proposing, or rejecting according to `UNYT_RESPONDER_WEIGHTS`
@@ -90,7 +94,7 @@ under the same name, <https://nomad-server-01.holochain.org:4646/ui/variables/va
 - `UNYT_MAX_NEGOTIATION_ROUNDS` (default: `5`): Maximum number of counter-proposal rounds before a proposal is
   force-accepted. Prevents infinite ping-pong when both sides have non-zero counter weights
 
-### Suggested command
+### Suggested commands
 
 You can run the scenario locally but to do this you first need to run a local
 instance of the Durable Object store, do this by running the following command
@@ -104,8 +108,14 @@ This will start a Durable Object store running locally in dev mode with the
 port set to that of `UNYT_DURABLE_OBJECTS_URL` and the `SECRET_KEY` set to that
 of `UNYT_DURABLE_OBJECTS_SECRET`.
 
-Then, in another terminal pane, run the scenario with the following command:
+Then, in another terminal pane, run an all-full-arc workload:
 
 ```bash
-RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 300
+RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour full_propose:2 --behaviour full_respond:2 --duration 300
+```
+
+Or run a mixed-arc workload with one agent in each workload role:
+
+```bash
+RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour full_propose:1 --behaviour zero_propose:1 --behaviour full_respond:1 --behaviour zero_respond:1 --duration 300
 ```
