@@ -63,6 +63,10 @@ Agreement code copied from https://github.com/unytco/smart_agreement_library/blo
 
 Custom metrics emitted by the scenario:
 
+- `agent_role` — one setup sample per installed agent, with its public key, assigned behaviour, and storage arc
+- `open_connections` — sampled connection counts, tagged by agent and behaviour
+- `commitment_accepted` — one event after a successful accept, identifying the acceptor, actual commitment author,
+  and commitment ID
 - `bridge_parked_links_completed` — completed proof-of-deposit processing sequences
 - `bridge_parked_links_failed` — failed proof-of-deposit processing sequences
 - `deposit_raves_collected` — deposit RAVEs collected by users (completed HOT → wHOT)
@@ -72,10 +76,27 @@ Custom metrics emitted by the scenario:
 - `swap_completion_duration_s` — duration it took for a complete swap operation
 
 Count metrics are cumulative per-agent counters; completion durations are individual samples.
+The summary reports user metrics in `users_by_arc.full` and `users_by_arc.zero`, joining agent-tagged
+measurements to the setup role registry. Each group includes its registered `agent_count`, zome-call
+`error_count`, collection/commitment/receipt counters, and optional completion and zome-call timings.
+Infrastructure metrics and the run-wide zome-call error count remain separate. No individual agent identities
+are included in the summary or report.
+
+Counter `partition_count` is the number of agents with observed counter samples, not the number of registered
+users; `partitions_above_zero` is the number with positive outcomes. A counter with no observed agents is
+**no data**, not an observed zero. A sampled counter that remains zero is an observed zero. Missing completion
+timings mean no completions were observed, not instantaneous completion; one arc's success never supplies
+the other arc's missing timings.
 
 Per-call zome timings (`create_parked_link`, `execute_rave`, `create_parked_spend`, `get_incoming_raves`,
-`create_collect_from_rave`, `create_commitment`, `create_accept`, `create_receipt_for_accept`) are also captured by
-the instrumented client and summarised per agent.
+`create_collect_from_rave`, `create_commitment`, `create_accept`, `create_receipt_for_accept`) are captured by
+the instrumented client. Only successful calls contribute timings; failed calls contribute error counts.
+User timings are aggregated per agent within each arc group.
+
+`accepted_commitments` reports author-arc → acceptor-arc directions from the actual commitment creator and
+successful acceptor identities. It counts unique commitment/acceptor pairs, not completed receipts:
+acceptance can succeed while receipt completion remains stalled. `open_connections` reports observed
+connection counts by behaviour. Open connections do not establish synchronization or application readiness.
 
 ### Environment variables
 

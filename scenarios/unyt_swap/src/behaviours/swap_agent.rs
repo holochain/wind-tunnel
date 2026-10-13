@@ -1,6 +1,7 @@
 use crate::values::ScenarioValues;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::AcceptInput;
+use wind_tunnel_unyt_scenario::telemetry::record_commitment_accepted;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 
 /// Swap agent to exchange wHOT -> HF. It accepts every incoming commitment,
@@ -26,7 +27,10 @@ pub fn agent_behaviour(
             commitment: commitment.id.clone(),
             note: None,
         }) {
-            Ok(_) => accepted += 1,
+            Ok(_) => {
+                record_commitment_accepted(ctx, &commitment);
+                accepted += 1;
+            }
             Err(err) => log::warn!(
                 "[swap_agent] failed to accept commitment {}: {err}",
                 commitment.id

@@ -4,9 +4,10 @@
 //! building the DNA role settings required to install the hApp with
 //! the correct progenitor configuration.
 
-use crate::UnytScenarioValues;
 use crate::durable_object::DurableObject;
+use crate::telemetry::record_agent_role;
 use crate::unyt_agent::UnytAgentExt;
+use crate::{ArcType, UnytScenarioValues};
 use anyhow::Context;
 use holochain_types::{
     app::RoleSettings,
@@ -141,6 +142,14 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
         let role_name = String::from("alliance");
         install_app_custom(ctx, happ_path, &role_name, None, Some(role_settings))?;
     }
+    record_agent_role(
+        ctx,
+        if is_zero_arc {
+            ArcType::Zero
+        } else {
+            ArcType::Full
+        },
+    );
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
     // Zero-arc records need a storage peer before they can be published.
