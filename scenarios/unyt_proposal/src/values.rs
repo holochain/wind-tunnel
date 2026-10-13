@@ -7,6 +7,7 @@ use wind_tunnel_unyt_scenario::{CommonScenarioValues, UnytScenarioValues};
 #[derive(Debug, Default)]
 pub struct UnytProposalScenarioValues {
     pub common: CommonScenarioValues,
+    pub open_connections_last_recorded: Option<Instant>,
     /// Tracks proposal created by this agent with their creation time, for round-trip measurement
     pub pending_proposals: HashMap<ActionHashB64, Instant>,
 }

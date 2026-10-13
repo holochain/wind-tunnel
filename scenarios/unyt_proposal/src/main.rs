@@ -11,6 +11,7 @@ use holochain_wind_tunnel_runner::happ_path;
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::UnitDefinition;
 use rave_engine::types::UnytType;
+use wind_tunnel_unyt_scenario::telemetry::record_open_connections_if_necessary;
 
 use self::values::ScenarioValues;
 
@@ -24,6 +25,15 @@ fn agent_setup(
     )
 }
 
+fn record_open_connections(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    let previous = ctx.get().scenario_values.open_connections_last_recorded;
+    let next = record_open_connections_if_necessary(ctx, previous)?;
+    ctx.get_mut().scenario_values.open_connections_last_recorded = next;
+    Ok(())
+}
+
 fn main() -> WindTunnelResult<()> {
     log::info!("Starting Unyt Proposal scenario");
     let builder = ScenarioDefinitionBuilder::<
@@ -32,6 +42,7 @@ fn main() -> WindTunnelResult<()> {
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("initiate", |ctx| {
+        record_open_connections(ctx)?;
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour(
             ctx,
             // Define two service units globally, so proposals can be bidirectional. The happ
@@ -58,10 +69,22 @@ fn main() -> WindTunnelResult<()> {
             ],
         )
     })
-    .use_named_agent_behaviour("full_propose", self::behaviours::propose::agent_behaviour)
-    .use_named_agent_behaviour("zero_propose", self::behaviours::propose::agent_behaviour)
-    .use_named_agent_behaviour("full_respond", self::behaviours::respond::agent_behaviour)
-    .use_named_agent_behaviour("zero_respond", self::behaviours::respond::agent_behaviour)
+    .use_named_agent_behaviour("full_propose", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::propose::agent_behaviour(ctx)
+    })
+    .use_named_agent_behaviour("zero_propose", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::propose::agent_behaviour(ctx)
+    })
+    .use_named_agent_behaviour("full_respond", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::respond::agent_behaviour(ctx)
+    })
+    .use_named_agent_behaviour("zero_respond", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::respond::agent_behaviour(ctx)
+    })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
     .add_capture_env("UNYT_DURABLE_OBJECTS_URL")
     .add_capture_env("UNYT_PROPOSER_WEIGHTS")

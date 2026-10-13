@@ -14,6 +14,7 @@ use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
+use wind_tunnel_unyt_scenario::telemetry::record_commitment_accepted;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
@@ -182,6 +183,7 @@ pub fn handle_commitments(
             note: None,
         }) {
             Ok(accept_hash) => {
+                record_commitment_accepted(ctx, tx);
                 ctx.get_mut()
                     .scenario_values
                     .watched_transactions_mut()

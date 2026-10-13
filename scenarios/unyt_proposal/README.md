@@ -46,6 +46,13 @@ and then react to incoming proposals:
 ### Metrics Collected
 
 The scenario records several custom metrics:
+- `wt.custom.agent_role`: Registered once after app installation, before authoring, with the agent public key,
+  assigned `behaviour`, and `arc` (`full` or `zero`). Infrastructure agents also register.
+- `wt.custom.open_connections`: Periodic connection-count samples tagged by agent and behaviour, collected without
+  throttling the workload. Connection counts do not establish successful delivery, peer storage arcs, or whether
+  a usable full-arc storage peer is reachable.
+- `wt.custom.commitment_accepted`: Recorded only after successful `create_accept`, with the acceptor agent,
+  the actual commitment creator (`author`), and commitment ID.
 
 - `wt.custom.global_definition_propagation_time`: Records the time at which the global definition becomes readable for
   each agent, helping measure network initialization propagation speed
@@ -61,6 +68,29 @@ The scenario records several custom metrics:
   scenario teardown (one metric per type)
 
 Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.
+
+### Summary interpretation
+
+JSON and HTML report `workloads_by_behaviour` separately for `full_propose`, `zero_propose`,
+`full_respond`, and `zero_respond`. The registry supplies roles and arcs for agent-tagged custom metrics.
+Each role is filtered before aggregation: proposer outcomes cannot conceal absent responder activity, and successful
+full-arc outcomes cannot conceal missing zero-arc outcomes. `agent_count` counts configured registered agents;
+the accepted/rejected round-trip agent counts count only agents that produced those outcomes.
+
+Each role includes initialization propagation, accepted/rejected round-trip timing, negotiation rounds, sync lag by
+transaction type, successful zome-call latency, zome errors, and completed/pending teardown counts.
+Timing and teardown values are absent (`null`) when there are no matching observations, not fabricated zeros.
+An observed zero negotiation-round value means direct commitment; an observed zero pending count means that
+reporting agent had no actionable transactions of that type at teardown. Teardown aggregates expose the number of
+reporting agents, which may be smaller than the configured population. Pending/actionable counts describe the
+run cutoff; missing terminal round trips or pending work are not evidence of eventual failure or completion.
+
+The run-wide error count includes infrastructure, while each workload error count includes only its role.
+Zome-call timing excludes failed calls. Top-level `open_connections` groups samples by behaviour.
+Top-level `accepted_commitments` correlates the actual commitment creator's registered arc with the acceptor's
+registered arc, deduplicating successful commitment/acceptor pairs into at most four directions.
+It does not infer the author from the counterparty or acceptor role, and an acceptance event does not imply that
+the full proposal round trip or receipt completed before cutoff.
 
 ### Durable Objects store
 
