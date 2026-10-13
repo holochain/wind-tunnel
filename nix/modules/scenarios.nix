@@ -2,8 +2,8 @@
 
 { config, lib, ... }:
 let
-  # Temporarily exclude unyt scenarios, until they're upgraded to Holochain v0.7.
-  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name) && !(lib.strings.hasPrefix "unyt_" name)) (builtins.attrNames (builtins.readDir ../../scenarios));
+  # Chain scenarios remain disabled pending deprecation.
+  scenario_names = builtins.filter (name: !(lib.strings.hasInfix "." name) && !(lib.strings.hasPrefix "unyt_chain_transaction" name)) (builtins.attrNames (builtins.readDir ../../scenarios));
 
   scenarios = map
     (name: {
