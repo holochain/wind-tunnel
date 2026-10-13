@@ -1,12 +1,13 @@
 use holo_hash::{ActionHash, DnaHash};
 use holochain_client::{
     AdminWebsocket, AgentPubKey, AppInfo, AppStatusFilter, AuthorizeSigningCredentialsPayload,
-    EnableAppResponse, InstallAppPayload, SigningCredentials,
+    EnableAppResponse, InstallAppPayload, SigningCredentials, WebsocketConfig,
 };
 use holochain_types::network::HolochainTransportStats;
 use holochain_types::prelude::{CellId, DeleteCloneCellPayload};
 use holochain_zome_types::prelude::{DnaDef, GrantZomeCallCapabilityPayload};
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::ToSocketAddr;
 use crate::error::handle_api_err;
@@ -30,8 +31,28 @@ impl AdminWebsocketInstrumented {
         origin: Option<String>,
         reporter: Arc<Reporter>,
     ) -> Result<Self> {
+        Self::connect_with_request_timeout(
+            admin_url,
+            origin,
+            reporter,
+            WebsocketConfig::CLIENT_DEFAULT.default_request_timeout,
+        )
+        .await
+    }
+
+    /// Connect with a configurable deadline for each admin request.
+    pub async fn connect_with_request_timeout(
+        admin_url: impl ToSocketAddr,
+        origin: Option<String>,
+        reporter: Arc<Reporter>,
+        request_timeout: Duration,
+    ) -> Result<Self> {
         let addr = admin_url.to_socket_addr()?;
-        Ok(AdminWebsocket::connect(addr, origin)
+        let config = Arc::new(WebsocketConfig {
+            default_request_timeout: request_timeout,
+            ..WebsocketConfig::CLIENT_DEFAULT
+        });
+        Ok(AdminWebsocket::connect_with_config(addr, config, origin)
             .await
             .map(|inner| Self { inner, reporter })?)
     }

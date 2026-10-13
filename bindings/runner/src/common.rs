@@ -192,6 +192,9 @@ where
 /// The [`RoleName`] you provide is used to find the cell ID within the installed app that you want
 /// to call during your scenario.
 ///
+/// Admin requests during installation allow five minutes for cold WASM compilation and genesis.
+/// The app websocket retains its default request timeout for scenario operations.
+///
 /// Requires:
 /// - The [`HolochainRunnerContext`] must have a valid `app_ws_url`. Consider calling
 ///   [`start_conductor_and_configure_urls`] in your setup before using this function.
@@ -282,7 +285,13 @@ where
         .executor()
         .execute_in_place(async move {
             log::debug!("Connecting a Holochain admin client: {admin_ws_url}");
-            let client = AdminWebsocket::connect(admin_ws_url, None, reporter.clone()).await?;
+            let client = AdminWebsocket::connect_with_request_timeout(
+                admin_ws_url,
+                None,
+                reporter.clone(),
+                Duration::from_secs(300),
+            )
+            .await?;
 
             let key = match agent_pubkey {
                 Some(key) => {
