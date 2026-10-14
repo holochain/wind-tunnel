@@ -120,8 +120,8 @@ MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh remote_signals \
 "$REPO_ROOT"/summariser/capture.sh two_party_countersigning \
   --duration 120 --agents 5 --behaviour initiate:2 --behaviour participate:3
 
-MIN_AGENTS=5 "$REPO_ROOT"/summariser/capture.sh unyt_proposal \
-  --agents 5 --behaviour initiate:1 --behaviour propose:2 --behaviour respond:2 --duration 300
+UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 MIN_AGENTS=5 "$REPO_ROOT"/summariser/capture.sh unyt_proposal \
+  --agents 5 --behaviour initiate:1 --behaviour user:4 --duration 300
 
 NO_VALIDATION_COMPLETE=1 MIN_AGENTS=10 "$REPO_ROOT"/summariser/capture.sh validation_receipts \
   --duration 60 --agents 10
@@ -158,8 +158,5 @@ MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_validated_must_get_agent_a
 
 UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_swap \
   --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2
-
-UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_proposal \
-  --duration 300 --agents 5 --behaviour initiate:1 --behaviour propose:2 --behavior respond:2\
 
 "$REPO_ROOT"/summariser/truncate.sh
