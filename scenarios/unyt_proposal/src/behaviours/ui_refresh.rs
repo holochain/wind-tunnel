@@ -104,10 +104,11 @@ pub fn ui_action_list_refresh(
     reporter.add_custom(
         ReportMetric::new("ui_action_list_refresh_failed_calls")
             .with_field("value", cumulative_failed_calls)
-            .with_tag("agent", agent_key),
+            .with_tag("agent", agent_key.clone()),
     );
     reporter.add_custom(
         ReportMetric::new("ui_action_list_refresh_duration_s")
+            .with_tag("agent", agent_key)
             .with_field("value", started.elapsed().as_secs_f64()),
     );
 
@@ -136,6 +137,7 @@ pub fn ui_transaction_detail_refresh(
         // `totals` and folded into the cumulative counters below.
         reporter.add_custom(
             ReportMetric::new("ui_transaction_detail_item_refresh_duration_s")
+                .with_tag("agent", agent_key.clone())
                 .with_field("value", item_started.elapsed().as_secs_f64()),
         );
         totals.primary_transaction_total_calls += outcome.primary_transaction_total_calls;
@@ -165,6 +167,7 @@ pub fn ui_transaction_detail_refresh(
 
     reporter.add_custom(
         ReportMetric::new("ui_transaction_detail_refresh_duration_s")
+            .with_tag("agent", agent_key.clone())
             .with_field("value", started.elapsed().as_secs_f64()),
     );
     reporter.add_custom(
