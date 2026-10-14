@@ -14,7 +14,7 @@ use rave_engine::types::{
         AddressBook, AgreementDefInput, CodeTemplate, CommonRAVEAgreements, CommonSpecialAgents,
         DataFetchInstruction, EARole, ExecutionEngine, ExecutorRules, GlobalDefinition, InputRules,
         Instruction, LaneDefinition, ProvidedBy, RoleQualification, SmartAgreement,
-        SystemRAVEAgreements, TransactionFeeCompute, UnitDefinition, UnytType,
+        SystemRAVEAgreements, TransactionFeeCompute, UnitDefinition,
     },
 };
 use serde_json::json;
@@ -84,35 +84,16 @@ pub fn agent_behaviour_with_units<SV: UnytScenarioValues>(
                     compute_credit_limit: credit_limit_smart_agreement,
                     compute_transaction_fee: TransactionFeeCompute {
                         agreement: fee_transfer_smart_agreement,
-                        fee_trigger: ZFuel::new_with_default_precision(100),
-                        // Do not collect fees, because there's a bug at the moment.
-                        fee_percentage: 0,
+                        unit_fees: Vec::new(),
                     },
                 },
                 migration: Default::default(),
             },
-            // Define two service units globally, so proposals can be bidirectional. The happ
-            // adds these to the global definition's `service_units` at indices
-            // ("0", "1"). Unit 0 mirrors the base unit the happ would create by default.
-            // Unit 1 lets a proposal send value, which is what makes
-            // the acceptor create a receipt, exercising the full commit -> accept -> receipt
-            // flow.
-            new_unit_definitions: vec![
-                UnitDefinition {
-                    unit_type: UnytType::default(),
-                    unit_symbol: "ZF".to_string(),
-                    unit_name: "Fuel".to_string(),
-                    unit_description: "Base Unit".to_string(),
-                    unit_color: "#02b4b3".to_string(),
-                },
-                UnitDefinition {
-                    unit_type: UnytType::default(),
-                    unit_symbol: "SU1".to_string(),
-                    unit_name: "Service Unit 1".to_string(),
-                    unit_description: "Secondary unit for bidirectional proposals".to_string(),
-                    unit_color: "#02b4b3".to_string(),
-                },
-            ],
+            new_unit_definitions: new_unit_definitions
+                .into_iter()
+                .map(NewUnit::from)
+                .collect(),
+            migration: None,
         })?;
         log::info!("Code templates, smart agreements and global definition written");
     } else {

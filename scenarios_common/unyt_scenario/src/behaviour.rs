@@ -1,4 +1,4 @@
-pub mod common;
+mod common;
 pub mod initiate_network;
 pub mod observer;
 pub mod smart_agreements;

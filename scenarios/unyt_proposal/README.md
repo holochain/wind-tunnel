@@ -2,6 +2,8 @@
 
 ### Description
 
+This forward-port uses Unyt v0.108.0, including its unit-valued ledger fees and network-initialization types.
+
 This scenario tests the performance of the Unyt negotiated transaction flow, where agents create proposals, exchange
 counter-proposals, commit to agreed terms, and finalize or reject transactions. Unlike `unyt_chain_transaction` which
 uses direct commitments, this scenario exercises the full proposal-based negotiation lifecycle including counter-offers,
