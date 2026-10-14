@@ -23,6 +23,16 @@ fn arc_type_for(behaviour: &str) -> ArcType {
     }
 }
 
+fn record_open_connections(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    let previous = ctx.get().scenario_values.last_recorded_open_connections;
+    let recorded =
+        wind_tunnel_unyt_scenario::telemetry::record_open_connections_if_necessary(ctx, previous)?;
+    ctx.get_mut().scenario_values.last_recorded_open_connections = recorded;
+    Ok(())
+}
+
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
@@ -60,6 +70,21 @@ fn agent_setup(
             .ok_or_else(|| anyhow::anyhow!("`session_started_at` not set"))?;
         let arc_type = arc_type_for(ctx.assigned_behaviour());
         log::info!("[{arc_type}-arc] Network initialized for agent {agent_key}");
+        // Counter aggregates subtract the first sample; record zero before UI work starts.
+        for metric in [
+            "ui_action_list_refresh_failed_calls",
+            "ui_transaction_detail_refresh_transactions_processed",
+            "ui_transaction_detail_refresh_primary_transaction_total_calls",
+            "ui_transaction_detail_refresh_primary_transaction_failed_calls",
+            "ui_transaction_detail_refresh_related_transaction_total_calls",
+            "ui_transaction_detail_refresh_related_transaction_failed_calls",
+        ] {
+            ctx.runner_context().reporter().add_custom(
+                ReportMetric::new(metric)
+                    .with_field("value", 0u64)
+                    .with_tag("agent", agent_key.clone()),
+            );
+        }
         ctx.runner_context().reporter().add_custom(
             ReportMetric::new("global_definition_propagation_time")
                 .with_field("value", session_started_at.elapsed().as_secs())
@@ -80,6 +105,7 @@ fn main() -> WindTunnelResult<()> {
     >::new_with_init(env!("CARGO_PKG_NAME"))
     .use_agent_setup(agent_setup)
     .use_named_agent_behaviour("initiate", |ctx| {
+        record_open_connections(ctx)?;
         wind_tunnel_unyt_scenario::behaviour::initiate_network::agent_behaviour(
             ctx,
             // Define two service units globally, so proposals can be bidirectional. The happ
@@ -107,9 +133,11 @@ fn main() -> WindTunnelResult<()> {
         )
     })
     .use_named_agent_behaviour("user", |ctx| {
+        record_open_connections(ctx)?;
         self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })
     .use_named_agent_behaviour("zero_user", |ctx| {
+        record_open_connections(ctx)?;
         self::behaviours::user::agent_behaviour(ctx, ArcType::Zero)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)

@@ -213,6 +213,7 @@ pub fn handle_commitments(
             note: None,
         }) {
             Ok(accept_hash) => {
+                wind_tunnel_unyt_scenario::telemetry::record_commitment_accepted(ctx, tx);
                 log::info!("[{arc_type}-arc] Accepted commitment {}", tx.id);
                 // The proposer never sees this through `accept_actionable` (that
                 // is delivered to the committer, who creates the receipt), so we record the
