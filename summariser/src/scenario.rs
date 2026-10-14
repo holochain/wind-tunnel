@@ -11,6 +11,7 @@ mod remote_call_rate;
 mod remote_signals;
 mod single_write_many_read;
 mod two_party_countersigning;
+mod unyt;
 mod unyt_chain_transaction;
 mod unyt_chain_transaction_zero_arc;
 mod unyt_proposal;
