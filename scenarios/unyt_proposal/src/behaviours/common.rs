@@ -310,7 +310,7 @@ pub fn get_spendable_amount(
         ledger
     );
     let balance = ledger.balance.get_base_unyt();
-    let fees = ledger.fees_owed;
+    let fees = ledger.fees_owed.get_base_unyt();
     // proposed_balance is value the agent has already promised to spend, but
     // that hasn't settled yet. It has to be counted here to prevent pushing
     // the agent over its credit limit.
