@@ -2,7 +2,7 @@
 
 ### Description
 
-This scenario exercises Unyt's two conversion flows. The `user` and `zero_user` roles run both in sequence, and
+This scenario exercises Unyt's two conversion flows. The `full_user` and `zero_user` roles run both in sequence, and
 the swap flow builds on the wHOT produced by bridging:
 
 - **HOT → wHOT (bridging):** an external blockchain token (HOT) is bridged into Unyt's internal wrapped credit
@@ -19,6 +19,10 @@ The scenario pins the Unyt v0.108.0 hApp and uses `rave_engine` 0.11 wire types.
 `executed_timestamp` field that v0.108.0 does not return in RAVEs or transaction history.
 
 There are five roles:
+
+`initiate`, `bridge_agent`, and `swap_agent` always use full storage arcs. Only `zero_user` uses a zero storage
+arc; it relies on full-arc peers and addresses its swap commitments to the full-arc `swap_agent`.
+Zero-arc users wait for a full-arc peer before Unyt initialization and flag-template authoring.
 
 #### `initiate` (Progenitor Agent)
 
@@ -41,7 +45,7 @@ call so the aggregated proof payload stays within Holochain's link tag size limi
 
 Accepts every incoming swap commitment, paying out HF against the network's global credit limit.
 
-#### `user` (Depositor + Swapper)
+#### `full_user` (Full-arc Depositor + Swapper)
 
 Receives bridged HOT as wHOT and swaps it for HF. Each round it polls for incoming deposit RAVEs and collects each
 one (crediting its ledger with wHOT), then — if it holds any wHOT — commits that wHOT to the swap agent for HF and
@@ -49,7 +53,7 @@ finalises any accepted commitments with a receipt.
 
 #### `zero_user` (Zero-arc Depositor + Swapper)
 
-Runs the same deposit collection and swap flow as `user`, but with a zero-arc conductor that relies on full-arc peers.
+Runs the same deposit collection and swap flow as `full_user`, but with a zero-arc conductor that relies on full-arc peers.
 
 Known limitation: zero-arc swap commitments can remain uncompleted due to an existing bug.
 
@@ -59,6 +63,10 @@ Agreement code copied from https://github.com/unytco/smart_agreement_library/blo
 
 Custom metrics emitted by the scenario:
 
+- `agent_role` — one setup sample per installed agent, with its public key, assigned behaviour, and storage arc
+- `open_connections` — sampled connection counts, tagged by agent and behaviour
+- `commitment_accepted` — one event after a successful accept, identifying the acceptor, actual commitment author,
+  and commitment ID
 - `bridge_parked_links_completed` — completed proof-of-deposit processing sequences
 - `bridge_parked_links_failed` — failed proof-of-deposit processing sequences
 - `deposit_raves_collected` — deposit RAVEs collected by users (completed HOT → wHOT)
@@ -68,10 +76,27 @@ Custom metrics emitted by the scenario:
 - `swap_completion_duration_s` — duration it took for a complete swap operation
 
 Count metrics are cumulative per-agent counters; completion durations are individual samples.
+The summary reports user metrics in `users_by_arc.full` and `users_by_arc.zero`, joining agent-tagged
+measurements to the setup role registry. Each group includes its registered `agent_count`, zome-call
+`error_count`, collection/commitment/receipt counters, and optional completion and zome-call timings.
+Infrastructure metrics and the run-wide zome-call error count remain separate. No individual agent identities
+are included in the summary or report.
+
+Counter `partition_count` is the number of agents with observed counter samples, not the number of registered
+users; `partitions_above_zero` is the number with positive outcomes. A counter with no observed agents is
+**no data**, not an observed zero. A sampled counter that remains zero is an observed zero. Missing completion
+timings mean no completions were observed, not instantaneous completion; one arc's success never supplies
+the other arc's missing timings.
 
 Per-call zome timings (`create_parked_link`, `execute_rave`, `create_parked_spend`, `get_incoming_raves`,
-`create_collect_from_rave`, `create_commitment`, `create_accept`, `create_receipt_for_accept`) are also captured by
-the instrumented client and summarised per agent.
+`create_collect_from_rave`, `create_commitment`, `create_accept`, `create_receipt_for_accept`) are captured by
+the instrumented client. Only successful calls contribute timings; failed calls contribute error counts.
+User timings are aggregated per agent within each arc group.
+
+`accepted_commitments` reports author-arc → acceptor-arc directions from the actual commitment creator and
+successful acceptor identities. It counts unique commitment/acceptor pairs, not completed receipts:
+acceptance can succeed while receipt completion remains stalled. `open_connections` reports observed
+connection counts by behaviour. Open connections do not establish synchronization or application readiness.
 
 ### Environment variables
 
@@ -87,8 +112,9 @@ Both user modes require a `swap_agent`: deposit collection and swap initiation r
 # In a separate terminal, start the local Durable Object service:
 nix run .#local-durable-objects
 
-# Full flow (bridging + swap):
-nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=4 cargo run --package unyt_swap -- --agents 4 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
+# All-full flow (bridging + swap):
+nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=4 cargo run --package unyt_swap -- --agents 4 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour full_user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
 
-# Replace user:1 with zero_user:1 to exercise the zero-arc flow.
+# Mixed full-arc and zero-arc users, with full-arc infrastructure:
+nix develop -c env RUST_LOG=warn,unyt_swap=info MIN_AGENTS=5 cargo run --package unyt_swap -- --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour full_user:1 --behaviour zero_user:1 --duration 300 --fail-on-agent-panic --reporter influx-file
 ```

@@ -433,7 +433,7 @@ jobs:
           nix run .#local-durable-objects </dev/null >local-durable-objects.log 2>&1 &
 
           # Run the scenario exercising both conversions (bridging + swap).
-          nix run .#rust-smoke-test -- --package unyt_swap -- --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2 --duration 300 --no-progress --fail-on-agent-panic
+          nix run .#rust-smoke-test -- --package unyt_swap -- --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour full_user:1 --behaviour zero_user:1 --duration 300 --no-progress --fail-on-agent-panic
 
           echo "==> Available space after step"
           echo

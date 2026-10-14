@@ -219,7 +219,7 @@ async fn unyt_proposal() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn unyt_swap() -> anyhow::Result<()> {
-    run_snapshot_test!("932e400eddec7ef89ddea8f59cd173bac8cc8bbde0d8798d879d2a87919d1305");
+    run_snapshot_test!("cd81fd9a70a439a1204dfa178682afa52a905b2de24e1b276afe61e21fddbfbd");
     Ok(())
 }
 
