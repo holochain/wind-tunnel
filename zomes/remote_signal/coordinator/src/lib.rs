@@ -3,13 +3,15 @@ use remote_signal_integrity::*;
 
 #[hdk_extern]
 fn init() -> ExternResult<InitCallbackResult> {
-    create_cap_grant(CapGrantEntry {
+    create_cap_grant(CapGrant {
         tag: "unrestricted-access".into(),
-        access: CapAccess::Unrestricted,
-        functions: GrantedFunctions::Listed(HashSet::from([(
-            zome_info()?.name,
-            "recv_remote_signal".into(),
-        )])),
+        constraint: GrantConstraint::Unrestricted,
+        capability: Capability::ZomeCall(ZomeCallGrant {
+            functions: GrantedFunctions::Listed(HashSet::from([(
+                zome_info()?.name,
+                "recv_remote_signal".into(),
+            )])),
+        }),
     })?;
 
     Ok(InitCallbackResult::Pass)

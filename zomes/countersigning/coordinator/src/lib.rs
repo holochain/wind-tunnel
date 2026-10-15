@@ -19,11 +19,10 @@ fn init() -> ExternResult<InitCallbackResult> {
     fns.insert((zome_info()?.name, "recv_remote_signal".into()));
     fns.insert((zome_info()?.name, "call_remote_signal".into()));
     let functions = GrantedFunctions::Listed(fns);
-    create_cap_grant(CapGrantEntry {
+    create_cap_grant(CapGrant {
         tag: "".into(),
-        // empty access converts to unrestricted
-        access: ().into(),
-        functions,
+        constraint: GrantConstraint::Unrestricted,
+        capability: Capability::ZomeCall(ZomeCallGrant { functions }),
     })?;
 
     Ok(InitCallbackResult::Pass)
