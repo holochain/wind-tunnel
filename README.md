@@ -720,7 +720,7 @@ To run it, simply navigate to <https://github.com/holochain/wind-tunnel/actions/
 sub-selection of the scenarios then simply comment-out or remove the scenarios that you want to exclude
 from the matrix in [the workflow file](.github/workflows/nomad.yaml), push your changes and make sure to
 select the correct branch. You can also override the URL to download the Holochain binary from, if you would
-like to test a different version of Holochain, the default is the latest 0.6.x release, at the time of writing
+like to test a different version of Holochain, the default is the latest 0.7.x release, at the time of writing
 <https://github.com/holochain/holochain/releases/download/holochain-0.7.1>.
 
 > [!Warning]
