@@ -1,3 +1,5 @@
+use crate::behaviours::common::ProposalConfig;
+use crate::behaviours::ui_refresh::UiRefreshCounters;
 use holochain_types::prelude::{ActionHashB64, AgentPubKeyB64};
 use holochain_wind_tunnel_runner::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -9,6 +11,23 @@ pub struct UnytProposalScenarioValues {
     pub common: CommonScenarioValues,
     /// Tracks proposal created by this agent with their creation time, for round-trip measurement
     pub pending_proposals: HashMap<ActionHashB64, Instant>,
+    /// Environment-derived configuration, parsed and validated once in agent setup.
+    pub config: Option<ProposalConfig>,
+    /// Cumulative counts of UI refresh calls.
+    pub ui_refresh_counters: UiRefreshCounters,
+}
+
+impl UnytProposalScenarioValues {
+    /// The scenario configuration. Panics if accessed before agent setup has populated it.
+    pub fn config(&self) -> ProposalConfig {
+        self.config
+            .expect("proposal config accessed before agent setup populated it")
+    }
+
+    /// Mutable access to this agent's cumulative UI-refresh counters.
+    pub fn ui_refresh_counters_mut(&mut self) -> &mut UiRefreshCounters {
+        &mut self.ui_refresh_counters
+    }
 }
 
 impl UserValuesConstraint for UnytProposalScenarioValues {}

@@ -1,8 +1,14 @@
-use crate::analyze::{aggregated_single_value, partitioned_timing_stats, standard_timing_stats};
+use crate::analyze::{
+    aggregated_single_value, partitioned_counter_stats, partitioned_counter_stats_allow_empty,
+    partitioned_timing_stats, standard_timing_stats,
+};
 use crate::frame::LoadError;
-use crate::model::{AggregatedSingleValue, PartitionedTimingStats, StandardTimingsStats};
+use crate::model::{
+    AggregatedSingleValue, PartitionedCounterStats, PartitionedTimingStats, StandardTimingsStats,
+};
 use crate::query;
 use anyhow::Context;
+use polars::frame::DataFrame;
 use polars::prelude::{IntoLazy, col, lit};
 use serde::{Deserialize, Serialize};
 use wind_tunnel_summary_model::RunSummary;
@@ -15,45 +21,49 @@ use wind_tunnel_summary_model::RunSummary;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct UnytProposalSummary {
     /// Time (seconds since session start) at which each agent first detects network
-    /// initialization. Higher values indicate slower global-definition propagation.
-    global_definition_propagation_time: StandardTimingsStats,
+    /// initialization, partitioned by agent and arc type. Higher values indicate slower
+    /// global-definition propagation; comparing the `arc` partitions shows whether zero-arc
+    /// agents take longer to see the network initialized.
+    global_definition_propagation_time: PartitionedTimingStats,
 
-    /// Duration of proposal round trips that ended in acceptance, per agent (seconds).
-    /// Measures time from initial proposal creation to final acceptance/receipt.
-    /// `None` when no proposals completed acceptance during the run.
-    proposal_round_trip_accepted: Option<PartitionedTimingStats>,
+    /// Duration of proposal round trips that ended in acceptance (seconds), partitioned by
+    /// arc type and agent. Measures time from initial proposal creation to final
+    /// acceptance/receipt. Zeroed when no proposals completed acceptance during the run.
+    proposal_round_trip_accepted: PartitionedTimingStats,
 
-    /// Duration of proposal round trips that ended in rejection, per agent (seconds).
-    /// Measures time from initial proposal creation to rejection/reclaim.
-    /// `None` when no proposals were rejected during the run.
-    proposal_round_trip_rejected: Option<PartitionedTimingStats>,
+    /// Duration of proposal round trips that ended in rejection (seconds), partitioned by
+    /// arc type and agent. Measures time from initial proposal creation to rejection/reclaim.
+    /// Zeroed when no proposals were rejected during the run.
+    proposal_round_trip_rejected: PartitionedTimingStats,
 
-    /// Distribution of counter-proposal rounds before a proposal reaches commitment.
-    /// Lower values indicate faster negotiation convergence. A value of 0 means the
-    /// first proposal was committed to directly without counter-proposals.
-    negotiation_rounds: StandardTimingsStats,
+    /// Distribution of counter-proposal rounds before a proposal reaches commitment,
+    /// partitioned by agent and arc type. Lower values indicate faster negotiation
+    /// convergence. A value of 0 means the first proposal was committed to directly
+    /// without counter-proposals.
+    negotiation_rounds: PartitionedTimingStats,
 
     /// Delay between transaction publish and first observation for proposal-type
-    /// transactions (seconds). Indicates DHT propagation speed for new proposals.
-    sync_lag_proposal: Option<PartitionedTimingStats>,
+    /// transactions (seconds), partitioned by arc type and agent. Indicates DHT propagation
+    /// speed for new proposals; zero-arc agents may see higher lag.
+    sync_lag_proposal: PartitionedTimingStats,
 
     /// Delay between transaction publish and first observation for commitment-type
-    /// transactions (seconds).
-    sync_lag_commitment: Option<PartitionedTimingStats>,
+    /// transactions (seconds), partitioned by arc type and agent.
+    sync_lag_commitment: PartitionedTimingStats,
 
     /// Delay between transaction publish and first observation for accept-type
-    /// transactions (seconds).
-    sync_lag_accept: Option<PartitionedTimingStats>,
+    /// transactions (seconds), partitioned by arc type and agent.
+    sync_lag_accept: PartitionedTimingStats,
 
     /// Delay between transaction publish and first observation for reject-type
-    /// transactions (seconds).
-    sync_lag_reject: Option<PartitionedTimingStats>,
+    /// transactions (seconds), partitioned by arc type and agent.
+    sync_lag_reject: PartitionedTimingStats,
 
     /// Duration of `create_proposal` zome calls per agent (seconds)
     create_proposal_zome_call: PartitionedTimingStats,
 
     /// Duration of `create_counter_proposal` zome calls per agent (seconds).
-    /// `None` when no counter-proposals were created (e.g. `UNYT_PROPOSER_WEIGHTS=100,0,0`).
+    /// `None` when no counter-proposals were created (e.g. `UNYT_PROPOSAL_WEIGHTS=100,0,0`).
     create_counter_proposal_zome_call: Option<PartitionedTimingStats>,
 
     /// Duration of `create_commit_to_proposal` zome calls per agent (seconds).
@@ -79,6 +89,27 @@ pub(crate) struct UnytProposalSummary {
     /// Duration of `get_actionable_transactions` zome calls per agent (seconds).
     /// This is called every iteration, so high latency here directly impacts loop throughput.
     get_actionable_transactions_zome_call: PartitionedTimingStats,
+
+    /// Duration of the UI action list refresh per behaviour iteration (seconds).
+    ui_action_list_refresh_duration_s: StandardTimingsStats,
+    /// UI action list refresh sub-calls that failed, as a per-agent counter. Recorded as a
+    /// cumulative running total per agent, so `total_count` is the run total across all agents
+    /// and `max_per_partition` identifies the agent that saw the most failures.
+    ui_action_list_refresh_failed_calls: PartitionedCounterStats,
+    /// Duration of refreshing a single transaction detail item per behaviour iteration (seconds).
+    ui_transaction_detail_item_refresh_duration_s: StandardTimingsStats,
+    /// Duration of refreshing all watched transaction details per behaviour iteration (seconds).
+    ui_transaction_detail_refresh_duration_s: StandardTimingsStats,
+    /// Transactions processed during the full detail refresh, as a per-agent cumulative counter.
+    ui_transaction_detail_refresh_transactions_processed: PartitionedCounterStats,
+    /// Primary transaction fetches made during the full detail refresh, as a per-agent cumulative counter.
+    ui_transaction_detail_refresh_primary_transaction_total_calls: PartitionedCounterStats,
+    /// Primary transaction fetches that failed during the full detail refresh, as a per-agent cumulative counter.
+    ui_transaction_detail_refresh_primary_transaction_failed_calls: PartitionedCounterStats,
+    /// Related transaction fetches made during the full detail refresh, as a per-agent cumulative counter.
+    ui_transaction_detail_refresh_related_transaction_total_calls: PartitionedCounterStats,
+    /// Related transaction fetches that failed during the full detail refresh, as a per-agent cumulative counter.
+    ui_transaction_detail_refresh_related_transaction_failed_calls: PartitionedCounterStats,
 
     /// Number of zome call errors observed during the run
     error_count: usize,
@@ -121,7 +152,7 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.global_definition_propagation_time",
-        &["agent"],
+        &["agent", "arc"],
     )
     .await
     .context("Load global_definition_propagation_time")?;
@@ -130,15 +161,16 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.proposal_round_trip_time",
-        &["agent", "outcome"],
+        &["agent", "outcome", "arc"],
     )
-    .await;
+    .await
+    .context("Load proposal_round_trip_time")?;
 
     let negotiation_data = query::query_custom_data(
         client.clone(),
         &summary,
         "wt.custom.negotiation_rounds",
-        &["agent"],
+        &["agent", "arc"],
     )
     .await
     .context("Load negotiation_rounds")?;
@@ -147,9 +179,10 @@ pub(crate) async fn summarize_unyt_proposal(
         client.clone(),
         &summary,
         "wt.custom.sync_lag",
-        &["agent", "tx_type"],
+        &["agent", "tx_type", "arc"],
     )
-    .await;
+    .await
+    .context("Load sync_lag")?;
 
     // --- Zome call timing data (single query, filtered per fn_name) ---
 
@@ -215,30 +248,110 @@ pub(crate) async fn summarize_unyt_proposal(
     )
     .await;
 
-    // --- Compute round-trip stats by outcome ---
+    // --- UI refresh metrics ---
 
-    let (round_trip_accepted, round_trip_rejected) = match round_trip_data {
-        Ok(frame) => {
-            let accepted = frame
-                .clone()
-                .lazy()
-                .filter(col("outcome").eq(lit("accepted")))
-                .collect()?;
-            let rejected = frame
-                .lazy()
-                .filter(col("outcome").eq(lit("rejected")))
-                .collect()?;
-            (Some(accepted), Some(rejected))
-        }
-        Err(_) => (None, None),
+    let ui_action_list_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_action_list_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_action_list_refresh_duration_s data")?;
+
+    // Cumulative per-agent counter; queried with the `agent` tag so it can be partitioned.
+    // Passed as a `Result` to the allow-empty helper so a run with no series degrades to zero.
+    let ui_action_list_refresh_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_action_list_refresh_failed_calls",
+        &["agent"],
+    )
+    .await;
+
+    let ui_transaction_detail_item_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_item_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_item_refresh_duration_s data")?;
+
+    let ui_transaction_detail_refresh_duration_s = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_duration_s",
+        &[],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_duration_s data")?;
+
+    let ui_transaction_detail_refresh_transactions_processed = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_transactions_processed",
+        &["agent"],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_transactions_processed data")?;
+
+    let ui_transaction_detail_refresh_primary_transaction_total_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_primary_transaction_total_calls",
+        &["agent"],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_primary_transaction_total_calls data")?;
+
+    let ui_transaction_detail_refresh_primary_transaction_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_primary_transaction_failed_calls",
+        &["agent"],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_primary_transaction_failed_calls data")?;
+
+    let ui_transaction_detail_refresh_related_transaction_total_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_related_transaction_total_calls",
+        &["agent"],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_related_transaction_total_calls data")?;
+
+    let ui_transaction_detail_refresh_related_transaction_failed_calls = query::query_custom_data(
+        client.clone(),
+        &summary,
+        "wt.custom.ui_transaction_detail_refresh_related_transaction_failed_calls",
+        &["agent"],
+    )
+    .await
+    .context("Load ui_transaction_detail_refresh_related_transaction_failed_calls data")?;
+
+    // --- Split round-trip data by outcome and sync-lag data by tx_type ---
+    //
+    // Each frame keeps its `arc` and `agent` tags, which become partition keys in the
+    // `partitioned_timing_stats` calls below. A category with no matching rows yields a
+    // zeroed `PartitionedTimingStats` rather than being dropped.
+
+    let filter_rows = |frame: &DataFrame, column: &str, value: &str| -> anyhow::Result<DataFrame> {
+        Ok(frame
+            .clone()
+            .lazy()
+            .filter(col(column).eq(lit(value)))
+            .collect()?)
     };
 
-    // --- Compute sync lag stats by tx_type ---
-
-    let sync_lag_proposal = filter_sync_lag(&sync_lag_data, "proposal");
-    let sync_lag_commitment = filter_sync_lag(&sync_lag_data, "commitment");
-    let sync_lag_accept = filter_sync_lag(&sync_lag_data, "accept");
-    let sync_lag_reject = filter_sync_lag(&sync_lag_data, "reject");
+    let round_trip_accepted = filter_rows(&round_trip_data, "outcome", "accepted")?;
+    let round_trip_rejected = filter_rows(&round_trip_data, "outcome", "rejected")?;
+    let sync_lag_proposal = filter_rows(&sync_lag_data, "tx_type", "proposal")?;
+    let sync_lag_commitment = filter_rows(&sync_lag_data, "tx_type", "commitment")?;
+    let sync_lag_accept = filter_rows(&sync_lag_data, "tx_type", "accept")?;
+    let sync_lag_reject = filter_rows(&sync_lag_data, "tx_type", "reject")?;
 
     // --- Compute zome call stats per fn_name ---
 
@@ -268,29 +381,62 @@ pub(crate) async fn summarize_unyt_proposal(
         };
 
     Ok(UnytProposalSummary {
-        global_definition_propagation_time: standard_timing_stats(
+        global_definition_propagation_time: partitioned_timing_stats(
             propagation_time,
             "value",
             "10s",
-            None,
+            &["agent", "arc"],
         )
         .context("Stats for global_definition_propagation_time")?,
-        proposal_round_trip_accepted: round_trip_accepted
-            .filter(|f| f.height() > 0)
-            .map(|f| partitioned_timing_stats(f, "value", "10s", &["agent"]))
-            .transpose()
-            .context("Round-trip timing (accepted)")?,
-        proposal_round_trip_rejected: round_trip_rejected
-            .filter(|f| f.height() > 0)
-            .map(|f| partitioned_timing_stats(f, "value", "10s", &["agent"]))
-            .transpose()
-            .context("Round-trip timing (rejected)")?,
-        negotiation_rounds: standard_timing_stats(negotiation_data, "value", "10s", None)
-            .context("Stats for negotiation_rounds")?,
-        sync_lag_proposal,
-        sync_lag_commitment,
-        sync_lag_accept,
-        sync_lag_reject,
+        proposal_round_trip_accepted: partitioned_timing_stats(
+            round_trip_accepted,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Round-trip timing (accepted)")?,
+        proposal_round_trip_rejected: partitioned_timing_stats(
+            round_trip_rejected,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Round-trip timing (rejected)")?,
+        negotiation_rounds: partitioned_timing_stats(
+            negotiation_data,
+            "value",
+            "10s",
+            &["agent", "arc"],
+        )
+        .context("Stats for negotiation_rounds")?,
+        sync_lag_proposal: partitioned_timing_stats(
+            sync_lag_proposal,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Stats for sync_lag_proposal")?,
+        sync_lag_commitment: partitioned_timing_stats(
+            sync_lag_commitment,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Stats for sync_lag_commitment")?,
+        sync_lag_accept: partitioned_timing_stats(
+            sync_lag_accept,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Stats for sync_lag_accept")?,
+        sync_lag_reject: partitioned_timing_stats(
+            sync_lag_reject,
+            "value",
+            "10s",
+            &["arc", "agent"],
+        )
+        .context("Stats for sync_lag_reject")?,
         create_proposal_zome_call: zome_call_stats("create_proposal")?,
         create_counter_proposal_zome_call: optional_zome_call_stats("create_counter_proposal")?,
         create_commit_to_proposal_zome_call: optional_zome_call_stats("create_commit_to_proposal")?,
@@ -299,6 +445,77 @@ pub(crate) async fn summarize_unyt_proposal(
         create_receipt_for_accept_zome_call: optional_zome_call_stats("create_receipt_for_accept")?,
         create_reclaim_balance_zome_call: optional_zome_call_stats("create_reclaim_balance")?,
         get_actionable_transactions_zome_call: zome_call_stats("get_actionable_transactions")?,
+        ui_action_list_refresh_duration_s: standard_timing_stats(
+            ui_action_list_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_action_list_refresh_duration_s")?,
+        ui_action_list_refresh_failed_calls: partitioned_counter_stats_allow_empty(
+            ui_action_list_refresh_failed_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Counter stats for ui_action_list_refresh_failed_calls")?,
+        ui_transaction_detail_item_refresh_duration_s: standard_timing_stats(
+            ui_transaction_detail_item_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_transaction_detail_item_refresh_duration_s")?,
+        ui_transaction_detail_refresh_duration_s: standard_timing_stats(
+            ui_transaction_detail_refresh_duration_s,
+            "value",
+            "10s",
+            None,
+        )
+        .context("Timing stats for ui_transaction_detail_refresh_duration_s")?,
+        ui_transaction_detail_refresh_transactions_processed: partitioned_counter_stats(
+            ui_transaction_detail_refresh_transactions_processed,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context("Counter stats for ui_transaction_detail_refresh_transactions_processed")?,
+        ui_transaction_detail_refresh_primary_transaction_total_calls: partitioned_counter_stats(
+            ui_transaction_detail_refresh_primary_transaction_total_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context(
+            "Counter stats for ui_transaction_detail_refresh_primary_transaction_total_calls",
+        )?,
+        ui_transaction_detail_refresh_primary_transaction_failed_calls: partitioned_counter_stats(
+            ui_transaction_detail_refresh_primary_transaction_failed_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context(
+            "Counter stats for ui_transaction_detail_refresh_primary_transaction_failed_calls",
+        )?,
+        ui_transaction_detail_refresh_related_transaction_total_calls: partitioned_counter_stats(
+            ui_transaction_detail_refresh_related_transaction_total_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context(
+            "Counter stats for ui_transaction_detail_refresh_related_transaction_total_calls",
+        )?,
+        ui_transaction_detail_refresh_related_transaction_failed_calls: partitioned_counter_stats(
+            ui_transaction_detail_refresh_related_transaction_failed_calls,
+            "value",
+            "10s",
+            &["agent"],
+        )
+        .context(
+            "Counter stats for ui_transaction_detail_refresh_related_transaction_failed_calls",
+        )?,
         error_count: query::zome_call_error_count(client.clone(), &summary).await?,
         completed_transaction_accepts: optional_aggregated_single_value(
             completed_transaction_accepts,
@@ -329,30 +546,6 @@ pub(crate) async fn summarize_unyt_proposal(
             "actionable_transaction_rejects",
         )?,
     })
-}
-
-/// Filters sync lag data by `tx_type` and computes partitioned timing stats.
-///
-/// Returns `None` when the sync lag query itself failed (no data) or when no rows
-/// match the given `tx_type`.
-fn filter_sync_lag(
-    sync_lag_result: &anyhow::Result<polars::frame::DataFrame>,
-    tx_type: &str,
-) -> Option<PartitionedTimingStats> {
-    let frame = match sync_lag_result {
-        Ok(f) => f,
-        Err(_) => return None,
-    };
-    let filtered = frame
-        .clone()
-        .lazy()
-        .filter(col("tx_type").eq(lit(tx_type)))
-        .collect()
-        .ok()?;
-    if filtered.height() == 0 {
-        return None;
-    }
-    partitioned_timing_stats(filtered, "value", "10s", &["agent"]).ok()
 }
 
 /// Returns an [`AggregatedSingleValue`] from a query result, defaulting to zero when the

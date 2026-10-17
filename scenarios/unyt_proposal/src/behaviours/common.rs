@@ -1,24 +1,27 @@
+mod config;
 mod weights;
 
 use crate::ScenarioValues;
+use holochain_types::prelude::ActionHashB64;
 use holochain_wind_tunnel_runner::prelude::{
     AgentContext, HolochainAgentContext, HolochainRunnerContext, ReportMetric,
 };
 use rave_engine::types::Actionable;
 use rave_engine::types::{
     AcceptInput, CommitmentToProposalInput, CounterProposalInput, Pagination, ReceiptInput,
-    ReclaimInput, RejectInput, Transaction, UnitMap, WatchStatus,
+    ReclaimInput, RejectInput, Transaction, TransactionType, UnitMap, WatchStatus,
 };
 use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
+use wind_tunnel_unyt_scenario::ArcType;
 use wind_tunnel_unyt_scenario::UnytScenarioValues as _;
 use wind_tunnel_unyt_scenario::unyt_agent::UnytAgentExt;
 use zfuel::fraction::Fraction;
 use zfuel::fuel::ZFuel;
 
-pub use self::weights::ProposalWeights;
+pub use self::config::ProposalConfig;
 
 /// For each reject actionable, call `unyt_create_reclaim_balance`.
 pub fn create_reclaim_balance(
@@ -26,11 +29,12 @@ pub fn create_reclaim_balance(
     rejected_txs: Vec<Transaction>,
 ) {
     for tx in rejected_txs {
-        if let Err(err) = ctx.unyt_create_reclaim_balance(ReclaimInput {
+        match ctx.unyt_create_reclaim_balance(ReclaimInput {
             rejection: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reclaim balance for {}: {err}", tx.id);
+            Ok(_) => log::info!("Reclaimed balance for {}", tx.id),
+            Err(err) => log::warn!("Failed to reclaim balance for {}: {err}", tx.id),
         }
     }
 }
@@ -41,11 +45,12 @@ pub fn create_receipt_for_accept(
     accepted_txs: Vec<Transaction>,
 ) {
     for tx in accepted_txs {
-        if let Err(err) = ctx.unyt_create_receipt_for_accept(ReceiptInput {
+        match ctx.unyt_create_receipt_for_accept(ReceiptInput {
             hash: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to create receipt for {}: {err}", tx.id);
+            Ok(_) => log::info!("Created receipt for accept {}", tx.id),
+            Err(err) => log::warn!("Failed to create receipt for {}: {err}", tx.id),
         }
     }
 }
@@ -55,22 +60,20 @@ pub fn counter_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     transactions: Vec<Transaction>,
 ) -> anyhow::Result<()> {
-    let pct: u8 = std::env::var("UNYT_COUNTER_ADJUSTMENT_PCT")
-        .unwrap_or_else(|_| "10".to_string())
-        .parse()?;
-
-    if pct > 100 {
-        anyhow::bail!("UNYT_COUNTER_ADJUSTMENT_PCT must be between 0 and 100, got {pct}");
-    }
+    let pct = ctx.get().scenario_values.config().counter_adjustment_pct;
 
     for tx in transactions {
         let adjusted_amount = adjust_amount(&tx.amount, pct)?;
-        if let Err(err) = ctx.unyt_create_counter_proposal(CounterProposalInput {
+        match ctx.unyt_create_counter_proposal(CounterProposalInput {
             previous_proposal: tx.id.clone(),
             amount: adjusted_amount,
             note: None,
         }) {
-            log::warn!("Failed to create counter-proposal for {}: {err}", tx.id);
+            Ok(_) => log::info!(
+                "Created counter-proposal for {} (adjusted by {pct}%)",
+                tx.id
+            ),
+            Err(err) => log::warn!("Failed to create counter-proposal for {}: {err}", tx.id),
         }
     }
 
@@ -89,11 +92,11 @@ pub fn counter_proposals(
 pub fn handle_proposals(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     proposals: Vec<Transaction>,
-    weights: &ProposalWeights,
+    arc_type: &ArcType,
 ) -> anyhow::Result<()> {
-    let max_rounds: usize = std::env::var("UNYT_MAX_NEGOTIATION_ROUNDS")
-        .unwrap_or_else(|_| "5".to_string())
-        .parse()?;
+    let config = ctx.get().scenario_values.config();
+    let weights = &config.weights;
+    let max_rounds = config.max_negotiation_rounds;
 
     // Separate proposals that exceeded max rounds — these are force-accepted
     let (over_limit, within_limit): (Vec<_>, Vec<_>) = proposals
@@ -101,8 +104,10 @@ pub fn handle_proposals(
         .partition(|tx| tx.history.len() >= max_rounds);
 
     let total = within_limit.len();
-    let accept_end = total * weights.accept as usize / 100;
-    let counter_end = accept_end + total * weights.counter as usize / 100;
+    // Round up values, which will favor accepts over rejections. Otherwise
+    // rejections will dominate when number of proposals are small.
+    let accept_end = (total * weights.accept as usize).div_ceil(100);
+    let counter_end = (total * (weights.accept as usize + weights.counter as usize)).div_ceil(100);
 
     let mut iter = within_limit.into_iter();
     let mut to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();
@@ -110,20 +115,42 @@ pub fn handle_proposals(
     let to_counter: Vec<_> = iter.by_ref().take(counter_end - accept_end).collect();
     let to_reject: Vec<_> = iter.collect();
 
+    // How much this agent can still spend before reaching its credit limit. Committing to
+    // a proposal spends its amount, so only commit while it can be afforded and leave the
+    // rest for a later iteration, once earlier spends have settled and freed up credit.
+    // Re-read after a commit, since nothing else here changes the balance.
+    let mut available = get_spendable_amount(ctx)?.unwrap_or_else(ZFuel::zero);
+
     let reporter = ctx.runner_context().reporter();
     let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
 
     // Accept: commit to the proposal
     for tx in &to_accept {
+        // Committing for this agent means spending a positive amount.
+        let spend = tx.amount.get_base_unyt();
+        if available < spend {
+            log::info!(
+                "Deferring commit to proposal {}: spend {spend:?} exceeds remaining credit {available:?}",
+                tx.id
+            );
+            continue;
+        }
         match ctx.unyt_create_commit_to_proposal(CommitmentToProposalInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
             Ok(commitment_hash) => {
+                available = get_spendable_amount(ctx)?.unwrap_or_else(ZFuel::zero);
+                log::info!(
+                    "[{arc_type}-arc] Committed to proposal {} after {} negotiation round(s)",
+                    tx.id,
+                    tx.history.len()
+                );
                 // Emit negotiation_rounds: history length = number of counter-proposal rounds
                 reporter.add_custom(
                     ReportMetric::new("negotiation_rounds")
                         .with_tag("agent", agent_key.clone())
+                        .with_tag("arc", arc_type.as_tag())
                         .with_field("value", tx.history.len() as u64),
                 );
                 ctx.get_mut()
@@ -139,11 +166,12 @@ pub fn handle_proposals(
 
     // Reject: reject the proposal
     for tx in &to_reject {
-        if let Err(err) = ctx.unyt_create_reject_proposal(RejectInput {
+        match ctx.unyt_create_reject_proposal(RejectInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reject proposal {}: {err}", tx.id);
+            Ok(_) => log::info!("[{arc_type}-arc] Rejected proposal {}", tx.id),
+            Err(err) => log::warn!("Failed to reject proposal {}: {err}", tx.id),
         }
     }
 
@@ -160,28 +188,51 @@ pub fn handle_proposals(
 pub fn handle_commitments(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     commitments: Vec<Transaction>,
+    arc_type: &ArcType,
 ) -> anyhow::Result<()> {
-    let accept_pct: u8 = std::env::var("UNYT_COMMITMENT_ACCEPT_PCT")
-        .unwrap_or_else(|_| "80".to_string())
-        .parse()?;
+    let accept_pct = ctx.get().scenario_values.config().commitment_accept_pct;
 
-    if accept_pct > 100 {
-        anyhow::bail!("UNYT_COMMITMENT_ACCEPT_PCT must be between 0 and 100, got {accept_pct}");
-    }
-
+    // Round up values, which will favor accepts over rejections. Otherwise
+    // rejections will dominate when number of proposals are small.
     let total = commitments.len();
-    let accept_end = total * accept_pct as usize / 100;
+    let accept_end = (total * accept_pct as usize).div_ceil(100);
 
     let mut iter = commitments.into_iter();
     let to_accept: Vec<_> = iter.by_ref().take(accept_end).collect();
     let to_reject: Vec<_> = iter.collect();
 
+    let reporter = ctx.runner_context().reporter();
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+
+    // This agent's proposals that reached acceptance in this pass, removed
+    // from tracking below.
+    let mut accepted_proposals = Vec::new();
     for tx in &to_accept {
         match ctx.unyt_create_accept(AcceptInput {
             commitment: tx.id.clone(),
             note: None,
         }) {
             Ok(accept_hash) => {
+                log::info!("[{arc_type}-arc] Accepted commitment {}", tx.id);
+                // The proposer never sees this through `accept_actionable` (that
+                // is delivered to the committer, who creates the receipt), so we record the
+                // accepted round-trip here instead.
+                if let Some(proposal_hash) = find_root_proposal(tx)
+                    && let Some(created_at) = ctx
+                        .get()
+                        .scenario_values
+                        .pending_proposals
+                        .get(&proposal_hash)
+                {
+                    reporter.add_custom(
+                        ReportMetric::new("proposal_round_trip_time")
+                            .with_tag("agent", agent_key.clone())
+                            .with_tag("outcome", "accepted")
+                            .with_tag("arc", arc_type.as_tag())
+                            .with_field("value", created_at.elapsed().as_secs_f64()),
+                    );
+                    accepted_proposals.push(proposal_hash);
+                }
                 ctx.get_mut()
                     .scenario_values
                     .watched_transactions_mut()
@@ -192,17 +243,40 @@ pub fn handle_commitments(
             }
         }
     }
+    for id in &accepted_proposals {
+        ctx.get_mut().scenario_values.pending_proposals.remove(id);
+    }
 
     for tx in &to_reject {
-        if let Err(err) = ctx.unyt_create_reject_proposal(RejectInput {
+        match ctx.unyt_create_reject_proposal(RejectInput {
             proposal: tx.id.clone(),
             note: None,
         }) {
-            log::warn!("Failed to reject commitment {}: {err}", tx.id);
+            Ok(_) => log::info!("[{arc_type}-arc] Rejected commitment {}", tx.id),
+            Err(err) => log::warn!("Failed to reject commitment {}: {err}", tx.id),
         }
     }
 
     Ok(())
+}
+
+/// Walk a transaction's history tree to find the root proposal hash.
+///
+/// Accept, reject and commitment transactions carry their own action hash as `id`, not the
+/// original proposal hash. The negotiation history is stored in `tx.history` as a chain of
+/// `Transaction` entries. This function recursively searches for the deepest `Proposal`
+/// entry, which is the original proposal that started the negotiation.
+pub fn find_root_proposal(tx: &Transaction) -> Option<ActionHashB64> {
+    // Depth-first: check children first so we find the *root* (earliest) proposal
+    for child in &tx.history {
+        if let Some(hash) = find_root_proposal(child) {
+            return Some(hash);
+        }
+    }
+    if tx.tx_type == TransactionType::Proposal {
+        return Some(tx.id.clone());
+    }
+    None
 }
 
 /// Reduces each unit in the `UnitMap` by `pct` percent.
@@ -237,6 +311,10 @@ pub fn get_spendable_amount(
     );
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees_owed.get_base_unyt();
+    // proposed_balance is value the agent has already promised to spend, but
+    // that hasn't settled yet. It has to be counted here to prevent pushing
+    // the agent over its credit limit.
+    let proposed_balance = ledger.proposed_balance.get_base_unyt();
     let credit_limit = match ctx.unyt_get_my_current_applied_credit_limit() {
         Ok(cl) => cl,
         Err(err) => {
@@ -245,7 +323,7 @@ pub fn get_spendable_amount(
             return Ok(None);
         }
     };
-    let spendable_amount = (balance - fees + credit_limit.get_base_unyt())?;
+    let spendable_amount = (balance - fees + proposed_balance + credit_limit.get_base_unyt())?;
 
     Ok(Some(spendable_amount))
 }
@@ -297,6 +375,7 @@ pub fn poll_watched_transactions(
 pub fn measure_sync_lag(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     actionable: &Actionable,
+    arc_type: &ArcType,
 ) {
     let reporter = ctx.runner_context().reporter();
     let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
@@ -328,6 +407,7 @@ pub fn measure_sync_lag(
                 ReportMetric::new("sync_lag")
                     .with_tag("agent", agent_key.clone())
                     .with_tag("tx_type", tx_type)
+                    .with_tag("arc", arc_type.as_tag())
                     .with_field("value", lag_s),
             );
             ctx.get_mut()
@@ -356,45 +436,5 @@ pub fn poll_history(
         Err(err) => {
             log::warn!("Failed to get history: {err}");
         }
-    }
-}
-
-pub fn is_network_initialized(
-    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
-) -> anyhow::Result<bool> {
-    let session_started_at = ctx
-        .get()
-        .scenario_values
-        .session_start_time()
-        .ok_or(anyhow::anyhow!("`session_started_at` not set"))?;
-    let reporter = ctx.runner_context().reporter();
-    let network_initialized = ctx.get().scenario_values.network_initialized();
-
-    // short-circuit on network initialized (stored-value)
-    if network_initialized {
-        return Ok(true);
-    }
-
-    // check if network is initialized
-    if ctx.is_network_initialized() {
-        log::info!(
-            "Network initialized for agent {}",
-            ctx.get().cell_id().agent_pubkey()
-        );
-        reporter.add_custom(
-            ReportMetric::new("global_definition_propagation_time")
-                .with_field("value", session_started_at.elapsed().as_secs())
-                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
-        );
-        ctx.get_mut().scenario_values.set_network_initialized(true);
-        Ok(true)
-    } else {
-        // if the network is not initialized do not proceed with further testing without waiting for it to be initialized
-        log::info!(
-            "Network not initialized for agent {}, waiting for it to be initialized",
-            ctx.get().cell_id().agent_pubkey()
-        );
-        thread::sleep(Duration::from_secs(2));
-        Ok(false)
     }
 }
