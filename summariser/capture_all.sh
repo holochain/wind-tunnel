@@ -156,7 +156,7 @@ MIN_AGENTS=2 "$REPO_ROOT"/summariser/capture.sh write_validated_must_get_agent_a
 "$REPO_ROOT"/summariser/capture.sh zome_call_single_value \
   --duration 30
 
-UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_swap \
-  --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:2
+MIN_AGENTS=5 UNYT_DURABLE_OBJECTS_URL=http://localhost:8787 "$REPO_ROOT"/summariser/capture.sh unyt_swap \
+  --duration 300 --agents 5 --behaviour initiate:1 --behaviour bridge_agent:1 --behaviour swap_agent:1 --behaviour user:1 --behaviour zero_user:1
 
 "$REPO_ROOT"/summariser/truncate.sh
