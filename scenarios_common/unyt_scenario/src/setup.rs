@@ -4,9 +4,9 @@
 //! building the DNA role settings required to install the hApp with
 //! the correct progenitor configuration.
 
-use crate::UnytScenarioValues;
 use crate::durable_object::DurableObject;
 use crate::unyt_agent::UnytAgentExt;
+use crate::{ArcType, UnytScenarioValues};
 use anyhow::Context;
 use holochain_types::{
     app::RoleSettings,
@@ -107,8 +107,9 @@ pub fn generate_progenitor<SV: UnytScenarioValues>(
 /// embedding), agent discovery, and flag template creation.
 ///
 /// Behaviours listed in `zero_arc_behaviours` are configured with
-/// `target_arc_factor(0)` before the conductor starts, and will wait
-/// for a full-arc peer to be discovered after setup completes.
+/// `target_arc_factor(0)` before the conductor starts. Other behaviours retain
+/// their existing arc configuration. Zero-arc agents wait for a full-arc peer
+/// before Unyt initialization and flag-template authoring.
 pub fn common_agent_setup<SV: UnytScenarioValues>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     happ_path: PathBuf,
@@ -116,8 +117,9 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
 ) -> HookResult {
     let assigned_behaviour = ctx.assigned_behaviour().to_string();
 
+    let is_zero_arc = zero_arc_behaviours.contains(&assigned_behaviour.as_str());
     // Configure 0-arc for designated behaviours before starting the conductor
-    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
+    if is_zero_arc {
         ctx.get_mut()
             .holochain_config_mut()
             .with_target_arc_factor(0);
@@ -144,7 +146,30 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
         let role_name = String::from("alliance");
         install_app_custom(ctx, happ_path, &role_name, None, Some(role_settings))?;
     }
+    record_agent_role(
+        ctx,
+        if is_zero_arc {
+            ArcType::Zero
+        } else {
+            ArcType::Full
+        },
+    );
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
+
+    // Start the propagation clock at the same point for every agent after
+    // minimum-agent discovery, so `global_definition_propagation_time` is comparable
+    // across arc types. This must happen before the wait below, otherwise 0-arc agents
+    // would start their clock later and appear to observe the network almost instantly.
+    // This includes storage-peer discovery, Unyt initialization, and flag creation.
+    ctx.get_mut()
+        .scenario_values
+        .set_session_start_time(tokio::time::Instant::now());
+
+    // Wait for full-arc peer if this agent is 0-arc
+    // Zero-arc records need a storage peer before they can be published.
+    if is_zero_arc {
+        try_wait_until_full_arc_peer_discovered(ctx)?;
+    }
 
     ctx.unyt_init()?;
 
@@ -157,20 +182,21 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     // Every agent creates a code template to flag that they have joined the network
     ctx.unyt_create_flag_template()?;
 
-    // Start the propagation clock at the same point for every agent right after
-    // joining the network, so `global_definition_propagation_time` is comparable across
-    // arc types. This must happen before the wait below, otherwise 0-arc agents
-    // would start their clock later and appear to observe the network almost instantly.
-    ctx.get_mut()
-        .scenario_values
-        .set_session_start_time(tokio::time::Instant::now());
-
-    // Wait for full-arc peer if this agent is 0-arc
-    if zero_arc_behaviours.contains(&assigned_behaviour.as_str()) {
-        try_wait_until_full_arc_peer_discovered(ctx)?;
-    }
-
     Ok(())
+}
+
+/// Registers the installed agent's assigned behaviour and storage arc once during setup.
+fn record_agent_role<SV: UnytScenarioValues>(
+    ctx: &AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    arc: ArcType,
+) {
+    ctx.runner_context().reporter().add_custom(
+        ReportMetric::new("agent_role")
+            .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string())
+            .with_tag("behaviour", ctx.assigned_behaviour().to_string())
+            .with_tag("arc", arc.as_tag())
+            .with_field("value", 1u64),
+    );
 }
 
 #[cfg(test)]

@@ -1,3 +1,9 @@
+//! Runs HOT → wHOT bridging followed by wHOT → HF swaps.
+//!
+//! `user` and `zero_user` share the depositor/swapper workload, using full and
+//! zero storage arcs respectively. `initiate`, `bridge_agent`, and `swap_agent`
+//! always use full arcs, so zero-arc users commit to a full-arc counterparty.
+
 mod behaviours;
 mod lane;
 mod values;
@@ -13,11 +19,52 @@ use wind_tunnel_unyt_scenario::{durable_object::DurableObject, unyt_agent::UnytA
 
 const NETWORK_INIT_TIMEOUT: Duration = Duration::from_secs(180);
 const LANE_SETUP_TIMEOUT: Duration = Duration::from_secs(180);
+const ZERO_USER: &str = "zero_user";
+
+/// The arc type each named behaviour runs with.
+fn arc_type_for(behaviour: &str) -> ArcType {
+    match behaviour {
+        ZERO_USER => ArcType::Zero,
+        _ => ArcType::Full,
+    }
+}
 
 fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &["zero_user"])?;
+    wind_tunnel_unyt_scenario::setup::common_agent_setup(ctx, happ_path!("unyt"), &[ZERO_USER])?;
+
+    let agent_key = ctx.get().cell_id().agent_pubkey().to_string();
+    let reporter = ctx.runner_context().reporter();
+    match ctx.assigned_behaviour() {
+        "user" | ZERO_USER => {
+            let arc = arc_type_for(ctx.assigned_behaviour());
+            reporter.add_custom(
+                ReportMetric::new("deposit_raves_collected")
+                    .with_tag("agent", agent_key.clone())
+                    .with_tag("arc", arc.as_tag())
+                    .with_field("value", 0u64),
+            );
+            reporter.add_custom(
+                ReportMetric::new("swap_commitments_created")
+                    .with_tag("agent", agent_key.clone())
+                    .with_tag("arc", arc.as_tag())
+                    .with_field("value", 0u64),
+            );
+            reporter.add_custom(
+                ReportMetric::new("swap_receipts_created")
+                    .with_tag("agent", agent_key)
+                    .with_tag("arc", arc.as_tag())
+                    .with_field("value", 0u64),
+            );
+        }
+        "swap_agent" => reporter.add_custom(
+            ReportMetric::new("commitments_accepted")
+                .with_tag("agent", agent_key)
+                .with_field("value", 0u64),
+        ),
+        _ => {}
+    }
 
     // The bridge agent publishes its key so the progenitor can authorize it
     // as oracle and bridging_agent when building the lane's agreements.
@@ -123,7 +170,7 @@ fn main() -> WindTunnelResult<()> {
     .use_named_agent_behaviour("user", |ctx| {
         self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })
-    .use_named_agent_behaviour("zero_user", |ctx| {
+    .use_named_agent_behaviour(ZERO_USER, |ctx| {
         self::behaviours::user::agent_behaviour(ctx, ArcType::Zero)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)
