@@ -15,6 +15,7 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 use wind_tunnel_unyt_scenario::ArcType;
+use wind_tunnel_unyt_scenario::metrics::record_open_connections_if_necessary;
 use wind_tunnel_unyt_scenario::{durable_object::DurableObject, unyt_agent::UnytAgentExt};
 
 const NETWORK_INIT_TIMEOUT: Duration = Duration::from_secs(180);
@@ -148,6 +149,15 @@ fn agent_setup(
     Ok(())
 }
 
+fn record_open_connections(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
+    let previous = ctx.get().scenario_values.last_recorded_open_connections;
+    let next = record_open_connections_if_necessary(ctx, previous)?;
+    ctx.get_mut().scenario_values.last_recorded_open_connections = next;
+    Ok(())
+}
+
 fn main() -> WindTunnelResult<()> {
     log::info!("Starting Unyt Swap scenario");
     let builder = ScenarioDefinitionBuilder::<
@@ -157,20 +167,28 @@ fn main() -> WindTunnelResult<()> {
     .use_agent_setup(agent_setup)
     // Progenitor: bootstraps the network, then sets up the lane.
     // Must be named "initiate" so `common_agent_setup` generates the progenitor key.
-    .use_named_agent_behaviour("initiate", self::behaviours::progenitor::agent_behaviour)
+    .use_named_agent_behaviour("initiate", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::progenitor::agent_behaviour(ctx)
+    })
     // Bridge agent: combines oracle + bridging_agent functions, driving deposits.
-    .use_named_agent_behaviour(
-        "bridge_agent",
-        self::behaviours::bridge_agent::agent_behaviour,
-    )
+    .use_named_agent_behaviour("bridge_agent", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::bridge_agent::agent_behaviour(ctx)
+    })
     // Swap agent: the HoloFuel counterparty that accepts swap commitments.
-    .use_named_agent_behaviour("swap_agent", self::behaviours::swap_agent::agent_behaviour)
+    .use_named_agent_behaviour("swap_agent", |ctx| {
+        record_open_connections(ctx)?;
+        self::behaviours::swap_agent::agent_behaviour(ctx)
+    })
     // Bridge and swap: receives bridged HOT -> wHOT credit by collecting from the RAVE.
     // Then converts wHOT -> HF by committing to the swap agent and receipting.
     .use_named_agent_behaviour("user", |ctx| {
+        record_open_connections(ctx)?;
         self::behaviours::user::agent_behaviour(ctx, ArcType::Full)
     })
     .use_named_agent_behaviour(ZERO_USER, |ctx| {
+        record_open_connections(ctx)?;
         self::behaviours::user::agent_behaviour(ctx, ArcType::Zero)
     })
     .use_agent_teardown(wind_tunnel_unyt_scenario::behaviour::teardown::agent_teardown)

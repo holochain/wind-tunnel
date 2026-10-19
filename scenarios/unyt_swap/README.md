@@ -64,6 +64,9 @@ Agreement code copied from https://github.com/unytco/smart_agreement_library/blo
 Custom metrics emitted by the scenario:
 
 - `agent_role` — one setup sample per installed agent, with its public key, assigned behaviour, and storage arc
+- `open_connections` — sampled connection counts, tagged by agent and behaviour
+- `commitment_accepted` — one event after a successful accept, identifying the acceptor, actual commitment author,
+  and commitment ID
 - `bridge_parked_links_completed` — completed proof-of-deposit processing sequences
 - `bridge_parked_links_failed` — failed proof-of-deposit processing sequences
 - `deposit_raves_collected` — deposit RAVEs collected by users (completed HOT → wHOT)
@@ -78,6 +81,8 @@ Per-call zome timings (`create_parked_link`, `execute_rave`, `create_parked_spen
 `create_collect_from_rave`, `create_commitment`, `create_accept`, `create_receipt_for_accept`) are captured by
 the instrumented client. Only successful calls contribute timings; failed calls contribute error counts.
 The summary retains flat metric fields and aggregates user timings per agent across both storage arcs.
+
+Connection and acceptance events are available in raw captures; their summary analysis is deferred to the reporting follow-up.
 
 ### Environment variables
 
