@@ -3,13 +3,15 @@ use hdk::prelude::*;
 
 #[hdk_extern]
 fn init() -> ExternResult<InitCallbackResult> {
-    create_cap_grant(CapGrantEntry {
+    create_cap_grant(CapGrant {
         tag: "access".into(),
-        access: CapAccess::Unrestricted,
-        functions: GrantedFunctions::Listed(HashSet::from([(
-            "crud".into(),
-            "create_sample_entry".into(),
-        )])),
+        constraint: GrantConstraint::Unrestricted,
+        capability: Capability::ZomeCall(ZomeCallGrant {
+            functions: GrantedFunctions::Listed(HashSet::from([(
+                "crud".into(),
+                "create_sample_entry".into(),
+            )])),
+        }),
     })?;
 
     Ok(InitCallbackResult::Pass)
