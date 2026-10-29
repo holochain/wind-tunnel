@@ -1,0 +1,681 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>
+ | Wind Tunnel Report</title>
+        <meta name="description" content="
+Run summaries for the scenario(s): "/>
+        <style>
+            /*
+Sample CSS for use in scenario templates.
+This CSS needs the following variables to be defined:
+
+  Colours:
+    --background: the background colour for each scenario
+    --subtle: less prominent text/graphics
+    --more-subtle: even less prominent text/graphics
+    --smoke: an extremely light colour, used for overlays
+    --good: indicate a desirable value (e.g., performance increases)
+    --bad: indicate an undesirable value (e.g., latency increases)
+    --highlight: an item that should have attention drawn to it via colour,
+                 used for example as the line in trend graphs
+    --highlight-subtle: highlighted, but secondary to --highlight
+
+  Layout:
+    --grid: Column sizes for label/content style information; the first is for
+            labels and the second is for content. You should give a generous
+            amount of space to content.
+    --grid-gap: The space between labels and content.
+    --numeric-size: Many metrics have a numeric widget of some sort, whether a
+                    simple scalar, a min/std value, or a composite value.
+                    These metrics often also have a trend graph or other widget
+                    that comes after them -- this value gives a consistent
+                    amount of space for the numeric value so that whatever comes
+                    after it will be lined up row-on-row.
+*/
+
+:root {
+    --background: #ffffff;
+    --subtle: rgba(0, 0, 0, 0.5);
+    --more-subtle: rgba(0, 0, 0, 0.35);
+    --smoke: rgba(0, 0, 0, 0.2);
+    --good: rgb(0, 173, 12);
+    --bad: rgb(195, 25, 25);
+    --highlight: rgb(52, 152, 219);
+    --highlight-subtle: rgba(52, 152, 219, 0.5);
+    --grid: 0.5fr 1fr;
+    --grid-gap: 2rem;
+    --numeric-size: 14rem;
+}
+
+html,body {
+    min-width: 64rem;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #323232;
+        --subtle: rgba(255, 255, 255, 0.6);
+        --more-subtle: rgba(255, 255, 255, 0.4);
+        --smoke: rgba(255, 255, 255, 0.12);
+        --good: rgb(52, 199, 89);
+        --bad: rgb(255, 69, 58);
+        --highlight: rgb(64, 156, 255);
+        --highlight-subtle: rgba(64, 156, 255, 0.5);
+    }
+
+    body {
+        color: #f0f0f0;
+        background-color: #1a1a1a;
+    }
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.scenarios-index {
+    background-color: var(--background);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+    margin: 2em 0;
+}
+
+.scenarios-index-title {
+    margin: 0 0 0.75em 0;
+    font-size: 1.1em;
+    color: var(--subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.scenarios-index-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1.5em;
+}
+
+.scenarios-index-list a {
+    color: var(--highlight);
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+.scenarios-index-list a:hover {
+    text-decoration: underline;
+}
+
+.scenario {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 30px;
+    margin: 2em 0;
+    background-color: var(--background);
+}
+
+.scenario code {
+    font-size: 1.2em;
+}
+
+.scenario-summary {
+    margin-bottom: 4em;
+}
+
+.scenario-summary-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+.scenario-summary-header h1 {
+    margin: 0;
+}
+
+.scenario-summary-back {
+    color: var(--highlight);
+    text-decoration: none;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.scenario-summary-back:hover {
+    text-decoration: underline;
+}
+
+.scenario-summary-description {
+    font-size: 1.25em;
+    color: var(--subtle);
+    margin: 2em 0;
+}
+
+.scenario-summary-details-line {
+    display: grid;
+    grid-template-columns: var(--grid);
+    gap: var(--grid-gap);
+    margin: 0.75em 0;
+}
+
+.scenario-summary-details-label {
+    text-align: right;
+    color: var(--subtle);
+}
+
+.scenario-summary-details-value {
+    font-weight: bold;
+}
+
+.scenario-summary-behaviours {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.scenario-summary-behaviour-agent-count {
+    font-weight: normal;
+    color: var(--subtle);
+}
+
+/* Scenario Subsection */
+.scenario-subsection-title {
+  color: var(--subtle);
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 1em 1em 1em 0;
+}
+
+details.scenario-subsection-hidden {
+    margin: 1em 0 1em 0;
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+/* Metric structure */
+
+.scenario-metric {
+    display: grid;
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--grid-gap);
+    border-width: 2px;
+}
+
+/* Most metrics don't look good with their label top-aligned,
+but for some larger metrics, it's hard to see the label without scrolling. */
+.scenario-metric.large {
+    align-items: start;
+}
+
+.scenario-metric, .scenario-metric-content-item {
+    margin: 1em 0;
+    width: 100%;
+}
+
+.scenario-metric, .scenario-metric-content-item:not(:first-child) {
+    padding-top: 1em;
+    border-top-style: solid;
+    border-color: var(--smoke);
+}
+
+.scenario-metric-content-item {
+    border-width: 1px;
+}
+
+.scenario-metric-content-item:first-child {
+    margin-top: 0;
+}
+
+.scenario-metric-label, .scenario-metric-content-item-label, .scalar-label {
+    color: var(--subtle);
+}
+
+.scenario-metric-content-item-label {
+    margin-bottom: 1em;
+}
+
+.scenario-metric-name {
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+.scenario-metric-label {
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.composite-key {
+    list-style: none;
+    padding: 0;
+}
+
+/*** Widgets ***/
+
+.scalar {
+    display: inline-block;
+    margin-right: 1em;
+}
+
+.scalar-value {
+    font-size: 2rem;
+    font-weight: 600;
+    text-wrap-mode: nowrap;
+    display: inline-block;
+}
+
+.scalar-unit {
+    text-wrap-mode: nowrap;
+    display: inline-block;
+}
+
+.scalar-sm {
+    display: inline-block;
+}
+
+/* Supplementary numbers shouldn't be so big. */
+.scalar-sm .scalar-value,
+.std .scalar-value,
+.mean-max-max .scalar-value,
+.min-max-mean-std-min .scalar-value,
+.min-max-mean-std-max .scalar-value,
+.delta-change .scalar-value {
+    font-size: inherit;
+}
+
+.mean-std {
+    flex-direction: column;
+    justify-content: start;
+    display: flex;
+}
+
+.min-max-mean-std,
+.delta-start-end {
+    display: flex;
+    gap: 0.5em;
+}
+
+.min-max-mean-std {
+    display: flex;
+    justify-content: start;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.min-max-mean-std-min,
+.min-max-mean-std-max,
+.min-max-mean-std-middle,
+.min-max-mean-std .divider {
+    padding-top: 1rem;
+}
+
+.min-max-mean-std-middle .scalar-value {
+    font-size: inherit;
+}
+
+.delta-start-end {
+    align-items: baseline;
+}
+
+.delta-change {
+    display: block;
+}
+
+.divider {
+    color: var(--more-subtle);
+    font-size: 2em;
+}
+
+/*** Graph SVG ***/
+
+/* Axis labels for a graph */
+.axis-label {
+    font-size: 11px;
+    fill: var(--subtle);
+}
+
+/* The line in a trend graph */
+.trend-line {
+    fill: none;
+    stroke: var(--highlight);
+    stroke-width: 2;
+}
+
+/* The area under the trend line */
+.trend-area {
+    fill: var(--smoke);
+    opacity: 0.2;
+}
+
+/* The mean line in a trend graph */
+.mean-line {
+    stroke: var(--highlight-subtle);
+    stroke-width: 2;
+    stroke-dasharray: 3, 3;
+}
+
+/* To line up with the start of the graph, indent the "no trend data available" note.
+This is a bit of a hard-coded hack based on our knowledge that the JS gives 60px for the Y axis labels. */
+.no-trend-graph {
+    color: var(--subtle);
+}
+
+.alert-good {
+    background-color: var(--good);
+    color: white;
+    padding: 0.5em;
+    display: inline-block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.alert-bad {
+    background-color: var(--bad);
+    color: white;
+    padding: 0.5em;
+    display: inline-block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+/**
+    Classes for toggleable visibility in pure css.
+**/
+.toggle-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-content {
+  display: none;
+}
+
+.toggle-checkbox:checked ~ .toggle-content {
+  display: block;
+}
+
+        </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+        <script>
+            window.__trendGraphRegistry = window.__trendGraphRegistry || new Map();
+window.__trendGraphRenderQueue = window.__trendGraphRenderQueue || new WeakMap();
+
+function parseWindowDuration(windowDuration) {
+    const match = String(windowDuration || "").trim().match(/^([0-9]+(?:\.[0-9]+)?)([a-zA-Z]+)$/);
+    if (!match) {
+        return {
+            durationValue: 0,
+            durationUnit: "",
+            durationSeconds: 0,
+        };
+    }
+
+    const durationValue = Number(match[1]);
+    const durationUnit = match[2];
+    const unitScale = {
+        ns: 1e-9,
+        us: 1e-6,
+        ms: 1e-3,
+        s: 1,
+        m: 60,
+        h: 3600,
+        d: 86400,
+    };
+
+    return {
+        durationValue,
+        durationUnit,
+        durationSeconds: durationValue * (unitScale[durationUnit] || 1),
+    };
+}
+
+function getTrendGraphMargin(trendData, yUnit) {
+    const maxVal = d3.max(trendData);
+    const maxYLabel = `${maxVal}${yUnit || ""}`;
+    const minYLabel = `0${yUnit || ""}`;
+    const widestYLabel = Math.max(maxYLabel.length, minYLabel.length);
+
+    return {
+        top: 16,
+        right: 20,
+        bottom: 24,
+        left: Math.max(60, (widestYLabel + 2) * 7),
+    };
+}
+
+function renderTrendGraph(entry, plotWidth, margin) {
+    const {
+        svgElement,
+        trendData,
+        meanValue,
+        windowDuration,
+        yUnit,
+    } = entry;
+    const width = Math.max(1, plotWidth);
+    const height = 120;
+    const maxVal = d3.max(trendData);
+    const maxYLabel = `${maxVal}${yUnit || ""}`;
+    const minYLabel = `0${yUnit || ""}`;
+
+    const root = d3.select(svgElement)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom);
+    root.selectAll("*").remove();
+
+    // The guts of the graph go into this `<g>` wrapper,
+    // in order to make the coordinates of the trend data and axis label easy to work with --
+    // they're all zero-referenced to the top-left corner of the graph.
+    // It's then moved to the right position in the SVG to make room for the legends.
+    const svg = root.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Map time window values to the x range of the graph.
+    const x = d3.scaleLinear()
+        .domain([0, trendData.length - 1])
+        .range([0, width]);
+
+    // Map data point values to the y range of the graph.
+    const y = d3.scaleLinear()
+        .domain([0, maxVal])
+        .range([height, 0]);
+
+    // The trend line.
+    const line = d3.line()
+        .x((d, i) => x(i))
+        .y(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-line")
+        .attr("d", line);
+
+    // The area under the trend line.
+    const area = d3.area()
+        .x((d, i) => x(i))
+        .y0(height)
+        .y1(d => y(d));
+    svg.append("path")
+        .datum(trendData)
+        .attr("class", "trend-area")
+        .attr("d", area);
+
+    // Draw the mean line if provided.
+    if (meanValue !== null) {
+        svg.append("line")
+            .attr("class", "mean-line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(meanValue))
+            .attr("y2", y(meanValue));
+    }
+
+    // Y-axis labels -- always zero on the bottom and the max data point value on the top.
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", 2)
+        .attr("text-anchor", "end")
+        .attr("dominant-baseline", "hanging")
+        .text(maxYLabel);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", -5)
+        .attr("y", height - 2)
+        .attr("text-anchor", "end")
+        .attr("dominant-baseline", "text-after-edge")
+        .text(minYLabel);
+
+    // X-axis labels -- 0 seconds at the start,
+    // and the number of data points × the time window duration at the end.
+    const parsedDuration = parseWindowDuration(windowDuration);
+    const totalDuration = parsedDuration.durationValue * trendData.length;
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", 0)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`0${parsedDuration.durationUnit}`);
+
+    svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width)
+        .attr("y", height + 15)
+        .attr("text-anchor", "middle")
+        .text(`${totalDuration}${parsedDuration.durationUnit}`);
+}
+
+function renderScenarioTrendGraphs(scenarioElement) {
+    const scenarioEntries = [];
+    for (const entry of window.__trendGraphRegistry.values()) {
+        if (entry.scenarioElement === scenarioElement) {
+            scenarioEntries.push(entry);
+        }
+    }
+    if (scenarioEntries.length === 0) {
+        return;
+    }
+
+    const longestDurationSeconds = Math.max(
+        ...scenarioEntries.map(entry => Math.max(entry.totalDurationSeconds, 1e-9)),
+    );
+
+    const scenarioMargin = scenarioEntries
+        .map(entry => getTrendGraphMargin(entry.trendData, entry.yUnit))
+        .reduce((acc, margin) => ({
+            top: Math.max(acc.top, margin.top),
+            right: Math.max(acc.right, margin.right),
+            bottom: Math.max(acc.bottom, margin.bottom),
+            left: Math.max(acc.left, margin.left),
+        }));
+
+    const availablePlotWidths = scenarioEntries
+        .map(entry => {
+            const containerWidth = entry.containerElement?.clientWidth || 0;
+            if (containerWidth <= 0) {
+                return null;
+            }
+            return Math.max(1, containerWidth - scenarioMargin.left - scenarioMargin.right);
+        })
+        .filter(width => width !== null);
+    if (availablePlotWidths.length === 0) {
+        return;
+    }
+
+    const targetLongestPlotWidth = Math.min(...availablePlotWidths);
+    const pixelsPerSecond = targetLongestPlotWidth / longestDurationSeconds;
+
+    for (const entry of scenarioEntries) {
+        const plotWidth = Math.max(1, entry.totalDurationSeconds * pixelsPerSecond);
+        renderTrendGraph(entry, plotWidth, scenarioMargin);
+    }
+}
+
+function scheduleScenarioTrendGraphRender(scenarioElement) {
+    if (!scenarioElement) {
+        return;
+    }
+    if (window.__trendGraphRenderQueue.has(scenarioElement)) {
+        return;
+    }
+
+    const rafHandle = window.requestAnimationFrame(() => {
+        window.__trendGraphRenderQueue.delete(scenarioElement);
+        renderScenarioTrendGraphs(scenarioElement);
+    });
+    window.__trendGraphRenderQueue.set(scenarioElement, rafHandle);
+}
+
+if (!window.__trendGraphResizeHandlerRegistered) {
+    window.addEventListener("resize", () => {
+        const scenarios = new Set(
+            Array.from(window.__trendGraphRegistry.values()).map(entry => entry.scenarioElement),
+        );
+        for (const scenarioElement of scenarios) {
+            scheduleScenarioTrendGraphRender(scenarioElement);
+        }
+    });
+    window.__trendGraphResizeHandlerRegistered = true;
+}
+
+window.createTrendGraph = function (svgId, trendData, meanValue, windowDuration, yUnit) {
+    const svgElement = document.getElementById(svgId);
+    if (!svgElement) {
+        return;
+    }
+
+    const parsedDuration = parseWindowDuration(windowDuration);
+    const totalDurationSeconds = parsedDuration.durationSeconds * trendData.length;
+
+    window.__trendGraphRegistry.set(svgId, {
+        svgElement,
+        containerElement: svgElement.closest(".trend-graph"),
+        scenarioElement: svgElement.closest(".scenario"),
+        trendData,
+        meanValue,
+        windowDuration,
+        yUnit,
+        totalDurationSeconds,
+    });
+
+    scheduleScenarioTrendGraphRender(svgElement.closest(".scenario"));
+};
+
+        </script>
+    </head>
+
+    <body><main>
+        
+<nav id="scenarios-index" class="scenarios-index">
+    <h2 class="scenarios-index-title">Scenarios</h2>
+    <ul class="scenarios-index-list">
+        
+    </ul>
+</nav>
+
+        
+
+
+    </main></body>
+</html>
