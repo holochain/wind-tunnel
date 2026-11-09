@@ -11,6 +11,7 @@ mod remote_call_rate;
 mod remote_signals;
 mod single_write_many_read;
 mod two_party_countersigning;
+mod unyt;
 mod unyt_proposal;
 mod unyt_swap;
 mod validation_receipts;

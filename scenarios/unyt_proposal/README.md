@@ -28,9 +28,9 @@ details, polls statuses, and fetches recent history. Transient ledger or credit-
 
 ### Metrics collected
 
-Agent-tagged measurements use public agent identities. The `wt.custom.agent_role` registry includes infrastructure
-and records `agent`, `behaviour`, and `arc` (`full` or `zero`). Instrumented zome calls record duration and
-success/failure automatically.
+Agent-tagged measurements use public agent identities, joined to `wt.custom.agent_role` rather than inferred from a
+runner's local behaviour counts. The registry includes infrastructure and records `agent`, `behaviour`, and `arc`
+(`full` or `zero`). Instrumented zome calls record duration and success/failure automatically.
 
 - `wt.custom.open_connections`: periodic samples labelled by behaviour; connection counts do not prove transaction
   delivery, DHT integration, or authority readiness.
@@ -54,10 +54,79 @@ success/failure automatically.
 
 ### Summary interpretation
 
-The summariser retains the existing flat `UnytProposalSummary` schema. Timing measurements already tagged by arc
-and agent keep those partitions; other fields retain their existing run-wide or per-agent aggregation.
-Behaviour-grouped summaries, registered-population counts, connection distributions, and acceptance-direction
-analysis are deferred to the stacked summariser follow-up.
+JSON and HTML expose exactly two entries in `workloads_by_behaviour`: `user` and `zero_user`, even when one population
+has no observations. Filtering happens before aggregation, so successful full-arc work cannot hide absent zero-arc
+activity. Optional values are `null`/“no data” when no matching samples exist, not fabricated zero measurements.
+
+#### Run-wide fields
+
+| Field | Interpretation |
+| --- | --- |
+| `workloads_by_behaviour` | Independent workload groups for full-arc `user` and zero-arc `zero_user`. |
+| `error_count` | Failed instrumented zome calls across the entire run, including `initiate`. |
+| `open_connections` | Sampled connection-count distributions partitioned by behaviour, including infrastructure. |
+| `accepted_commitments` | Unique successful commitment/acceptor pairs grouped by actual author arc and acceptor arc. Each row has `author_arc`, `acceptor_arc`, and `accepted_count`; absent directions have no observed successful accepts. This is neither proposal RTT coverage nor proof of receipt completion. |
+
+#### Fields within each workload group
+
+| Field | Interpretation |
+| --- | --- |
+| `agent_count` | Registered population, including agents without any workload outcome. |
+| `proposal_round_trip_accepted_agent_count` | Distinct agents with accepted RTT observations; not the number of proposals accepted. |
+| `proposal_round_trip_rejected_agent_count` | Distinct agents with rejected RTT observations; an agent can contribute to both counts. |
+| `error_count` | Failed instrumented zome calls for this workload only, across all operations. |
+| `global_definition_propagation_time` | Distribution of session-start-to-initialization-read times in seconds. |
+| `proposal_round_trip_accepted` | Per-agent proposal-creation-to-successful-acceptance duration in seconds, excluding receipt finalization. |
+| `proposal_round_trip_rejected` | Per-agent proposal-creation-to-rejection-observation duration in seconds, excluding reclaim completion. |
+| `negotiation_rounds` | Distribution of observed proposal history lengths at successful commitment; unitless, despite the shared timing-statistics shape. |
+| `sync_lag_proposal` | Per-agent publish-to-first-observation delay for proposals, in seconds. |
+| `sync_lag_commitment` | Corresponding delay for commitments. |
+| `sync_lag_accept` | Corresponding delay for accepts. |
+| `sync_lag_reject` | Corresponding delay for rejects. |
+| `create_proposal_zome_call` | Successful proposal creation call latency, in seconds. |
+| `create_counter_proposal_zome_call` | Successful counter-proposal creation latency. |
+| `create_commit_to_proposal_zome_call` | Successful commitment creation latency. |
+| `create_accept_zome_call` | Successful commitment acceptance latency, not receipt completion. |
+| `create_reject_proposal_zome_call` | Successful proposal/commitment rejection latency. |
+| `create_receipt_for_accept_zome_call` | Successful receipt creation latency. |
+| `create_reclaim_balance_zome_call` | Successful rejected-balance reclaim latency. |
+| `get_actionable_transactions_zome_call` | Successful actionable-list query latency. |
+| `ui_action_list_refresh_duration_s` | Seconds spent refreshing the UI action list each iteration, including failed sub-calls. |
+| `ui_action_list_refresh_failed_calls` | Cumulative failed action-list sub-calls, partitioned by agent. |
+| `ui_transaction_detail_item_refresh_duration_s` | Seconds spent refreshing a single watched transaction item. |
+| `ui_transaction_detail_refresh_duration_s` | Seconds spent refreshing all watched transaction details in an iteration. |
+| `ui_transaction_detail_refresh_transactions_processed` | Cumulative watched detail items processed, not unique transactions or finalized transactions. |
+| `ui_transaction_detail_refresh_primary_transaction_total_calls` | Cumulative primary transaction fetch attempts during detail refresh. |
+| `ui_transaction_detail_refresh_primary_transaction_failed_calls` | Cumulative failed primary fetches. |
+| `ui_transaction_detail_refresh_related_transaction_total_calls` | Cumulative related transaction fetch attempts. |
+| `ui_transaction_detail_refresh_related_transaction_failed_calls` | Cumulative failed related fetches. |
+| `completed_transaction_accepts` | Accept entries reported from agent histories at teardown; not globally deduplicated transaction completions. |
+| `completed_transaction_spends` | Commitment entries reported from histories (the shared source names this metric “spends”). |
+| `completed_transaction_raves` | RAVE entries reported from histories at teardown. |
+| `actionable_transaction_proposals` | Proposals reported actionable at teardown. |
+| `actionable_transaction_commitments` | Commitments reported actionable at teardown. |
+| `actionable_transaction_accepts` | Accepts reported actionable at teardown. |
+| `actionable_transaction_rejects` | Rejections reported actionable at teardown. |
+
+Successful zome latencies exclude failed calls. Standard distributions expose `mean`, `std`, and `p50`/`p95`/`p99`
+(median and upper percentiles). Their `trend` contains windowed means and `window_duration`. Per-agent timing aggregates
+expose `mean` (average agent mean), `mean_std_dev` (average within-agent deviation, not cross-agent spread), `min_mean`
+and `max_mean` (best/worst agent means), plus chronological `trend` and `window_duration`. Agents with no samples do not
+enter latency statistics. Connection gauge partitions expose a behaviour `key` and `gauge_stats`: `mean`, `std`,
+`p5`/`p95` (the central 90% operating range), and windowed mean `trend`.
+
+UI counters are cumulative running totals: counter statistics aggregate increments, not repeated totals. `total_count`
+is the aggregate event count, `partition_count` is observing agents, and `partitions_above_zero` counts agents with nonzero
+events. `mean_count` is the rounded average per agent; `min_per_partition`/`max_per_partition` describe the spread.
+`trend` is average new events per agent per window, with `window_duration` identifying the 10-second windows; counter
+resets within a window are clamped to zero. An observed zero counter is distinct from a missing counter series.
+
+Teardown aggregates expose `sum`, `mean`, `min`, `max`, and `partition_count` (reporting agents), which can be smaller than
+the registered population. Minimum/maximum are reporting-agent counts, not global completion bounds. Missing reports
+are absent, not zeros. Source limitations matter: the shared teardown substitutes
+empty actionable lists if their query fails and history pagination can stop on failure, yielding fallback zeros or partial
+history counts. A reported zero therefore cannot by itself prove a successful read or no outstanding work. Teardown is a
+cutoff view, not evidence of eventual settlement; RTT coverage likewise does not establish eventual success or failure.
 
 ### Durable Objects store
 
@@ -105,3 +174,15 @@ Or compare the same workload on both arcs:
 ```bash
 RUST_LOG=info MIN_AGENTS=5 cargo run --package unyt_proposal -- --agents 5 --behaviour initiate:1 --behaviour user:2 --behaviour zero_user:2 --duration 300
 ```
+
+### Captured fixture
+
+The mixed-arc snapshot uses a 300-second run with `initiate:1`, `user:2`, and `zero_user:2`.
+It was captured with an isolated Holochain 0.7.0 build containing the publication guard from
+<https://github.com/holochain/holochain/pull/6032>, not the repository-pinned or merged 0.7.1 conductor.
+The repository's Holochain pins are unchanged.
+
+Both workload populations have accepted RTT observations and all nine UI metric series. The observed acceptance
+directions are full → full, full → zero, and zero → full; zero → zero and rejected RTT observations are absent.
+The capture includes failed zome calls and partial-history/read failures, so it is coverage evidence, not a clean-run
+performance baseline or settlement proof. Host metrics are absent because no Telegraf collector was attached.
