@@ -38,7 +38,7 @@ impl FromStr for ProposalWeights {
             .ok_or_else(|| anyhow::anyhow!("failed to parse token"))?
             .parse()?;
 
-        if accept + counter + reject != 100 {
+        if u16::from(accept) + u16::from(counter) + u16::from(reject) != 100 {
             return Err(anyhow::anyhow!("ProposalWeights must sum to 100"));
         }
 
@@ -47,5 +47,16 @@ impl FromStr for ProposalWeights {
             counter,
             reject,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ProposalWeights;
+    use std::str::FromStr;
+
+    #[test]
+    fn overflowing_percentage_totals_are_rejected() {
+        assert!(ProposalWeights::from_str("255,255,102").is_err());
     }
 }

@@ -1,5 +1,5 @@
 {
-  "description": "1 progenitor initialises the network; 29 user agents run concurrent proposal flows. Each user both proposes to peers and responds to incoming proposals/commitments (30 nodes total).",
+  "description": "1 full-arc progenitor initialises the network; 15 full-arc and 14 zero-arc users each propose to peers and respond to incoming transactions (30 nodes total).",
   "job_name": "unyt_proposal_canonical",
   "scenario_name": "unyt_proposal",
   "duration": 900,
@@ -9,7 +9,11 @@
     },
     {
       "behaviour": "user",
-      "nodes": 29
+      "nodes": 15
+    },
+    {
+      "behaviour": "zero_user",
+      "nodes": 14
     }
   ],
   "env": {

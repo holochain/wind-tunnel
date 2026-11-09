@@ -6,6 +6,7 @@
 
 pub mod behaviour;
 pub mod durable_object;
+pub mod metrics;
 pub mod setup;
 pub mod unyt_agent;
 

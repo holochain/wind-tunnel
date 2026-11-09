@@ -15,6 +15,8 @@ use wind_tunnel_unyt_scenario::{CommonScenarioValues, UnytScenarioValues};
 #[derive(Debug, Default)]
 pub struct ScenarioValues {
     pub common: CommonScenarioValues,
+    /// Timestamp of the last labelled connection sample.
+    pub last_recorded_open_connections: Option<Instant>,
     pub swap_agent_key: Option<AgentPubKeyB64>,
     /// Running total of proof-of-deposit parked links the bridge agent has created.
     pub bridge_parked_links_completed: u64,

@@ -115,9 +115,7 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
     happ_path: PathBuf,
     zero_arc_behaviours: &[&str],
 ) -> HookResult {
-    let assigned_behaviour = ctx.assigned_behaviour().to_string();
-
-    let is_zero_arc = zero_arc_behaviours.contains(&assigned_behaviour.as_str());
+    let is_zero_arc = zero_arc_behaviours.contains(&ctx.assigned_behaviour());
     // Configure 0-arc for designated behaviours before starting the conductor
     if is_zero_arc {
         ctx.get_mut()
@@ -127,7 +125,7 @@ pub fn common_agent_setup<SV: UnytScenarioValues>(
 
     start_conductor_and_configure_urls(ctx)?;
 
-    if assigned_behaviour == "initiate" {
+    if ctx.assigned_behaviour() == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
         let progenitor_agent_pubkey = generate_progenitor(ctx)?;
         let role_settings = create_role_settings(&progenitor_agent_pubkey)?;
